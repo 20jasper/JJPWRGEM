@@ -23,7 +23,7 @@ stateDiagram-v2
 
     Key --> Key : any character
     Key --> KeyEnd : "
-    KeyEnd --> ValueStart : colon
+    KeyEnd --> ValueStart : #58;
 
     ValueStart --> Value : "
     Value --> Value : any character
