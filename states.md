@@ -16,9 +16,9 @@ Anything outside of this chart will error
 
 ```mermaid
 stateDiagram-v2
-    Init --> Object : {
+    [*] --> Object : {
 
-    Object --> End : }
+    Object --> [*] : }
     Object --> Key : "
 
     Key --> Key : any character
@@ -28,8 +28,6 @@ stateDiagram-v2
     ValueStart --> Value : "
     Value --> Value : any character
     Value --> Object : "
-
-    End --> Ok : no more chars
 ```
 
 ## Todo
