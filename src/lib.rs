@@ -39,6 +39,7 @@ pub enum Value {
     Null,
     String(String),
     Object(HashMap<String, Value>),
+    Boolean(bool),
 }
 
 impl TryFrom<Token> for Value {
@@ -48,6 +49,7 @@ impl TryFrom<Token> for Value {
         Ok(match token {
             Token::String(s) => Value::String(s),
             Token::Null => Value::Null,
+            Token::Boolean(b) => Value::Boolean(b),
             _ => return Err(Error::Custom("token is not a valid value".to_owned())),
         })
     }
@@ -68,7 +70,7 @@ pub fn parse(json: &str) -> Result<Value> {
                     let _ = val.insert(Value::Object(HashMap::new()));
                     state = State::Object;
                 }
-                Token::Null | Token::String(_) => {
+                Token::Null | Token::String(_) | Token::Boolean(_) => {
                     let _ = val.insert(token.try_into().expect("token should be valid json value"));
                     state = State::End;
                 }
@@ -90,7 +92,7 @@ pub fn parse(json: &str) -> Result<Value> {
                 invalid => return Err(Error::UnexpectedToken(invalid)),
             },
             State::Value => match token {
-                Token::String(_) | Token::Null => {
+                Token::String(_) | Token::Null | Token::Boolean(_) => {
                     if let Some(Value::Object(ref mut map)) = val {
                         map.insert(
                             key.take().expect("key should have been found"),
@@ -209,29 +211,29 @@ mod tests {
         );
     }
 
-    #[test]
-    fn null_object_value() {
+    #[rstest::rstest]
+    #[case("null", Value::Null)]
+    #[case("true", Value::Boolean(true))]
+    #[case("false", Value::Boolean(false))]
+    #[case("\"burger\"", Value::String("burger".into()))]
+    fn primitive_object_value(#[case] primitive: &str, #[case] expected: Value) {
         assert_eq!(
-            parse(
-                r#"{
-                "rust": null
-            }"#
-            )
+            parse(&format!(
+                r#"{{
+                "rust": {primitive}
+            }}"#
+            ))
             .unwrap(),
-            Value::Object(kv_to_map(&[("rust", Value::Null)]))
+            Value::Object(kv_to_map(&[("rust", expected)]))
         )
     }
 
-    #[test]
-    fn null_value() {
-        assert_eq!(parse(r#"null"#).unwrap(), Value::Null)
-    }
-
-    #[test]
-    fn string_value() {
-        assert_eq!(
-            parse(r#""cool string""#).unwrap(),
-            Value::String("cool string".into())
-        )
+    #[rstest::rstest]
+    #[case("null", Value::Null)]
+    #[case("true", Value::Boolean(true))]
+    #[case("false", Value::Boolean(false))]
+    #[case("\"burger\"", Value::String("burger".into()))]
+    fn primitives(#[case] json: &str, #[case] expected: Value) {
+        assert_eq!(parse(json), Ok(expected));
     }
 }

@@ -6,3 +6,6 @@ edition = "2021"
 [dependencies]
 displaydoc = "0.2.5"
 thiserror = "1.0.64"
+
+[dev-dependencies]
+rstest = "0.26.1"
