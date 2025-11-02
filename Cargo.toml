@@ -9,3 +9,4 @@ thiserror = "1.0.64"
 
 [dev-dependencies]
 rstest = "0.26.1"
+rstest_reuse = "0.7.0"

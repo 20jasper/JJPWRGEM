@@ -80,20 +80,20 @@ mod tests {
         )
     }
 
+    #[rstest_reuse::template]
     #[rstest::rstest]
     #[case("null", Token::Null)]
     #[case("true", Token::Boolean(true))]
     #[case("false", Token::Boolean(false))]
     #[case("\"burger\"", Token::String("burger".into()))]
+    fn primitive_template(#[case] json: &str, #[case] expected: Token) {}
+
+    #[rstest_reuse::apply(primitive_template)]
     fn primitives(#[case] json: &str, #[case] expected: Token) {
         assert_eq!(str_to_tokens(json), Ok(vec![expected]));
     }
 
-    #[rstest::rstest]
-    #[case("null", Token::Null)]
-    #[case("true", Token::Boolean(true))]
-    #[case("false", Token::Boolean(false))]
-    #[case("\"burger\"", Token::String("burger".into()))]
+    #[rstest_reuse::apply(primitive_template)]
     fn primitive_object_value(#[case] primitive: &str, #[case] expected: Token) {
         assert_eq!(
             str_to_tokens(&format!(
