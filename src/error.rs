@@ -17,6 +17,8 @@ pub enum Error {
     UnexpectedCharacter(char),
     /// unexpected token {0:?} after json finished
     TokenAfterEnd(Token),
+    /// expected key after comma
+    ExpectedKey,
     /// {0}
     Custom(String),
 }

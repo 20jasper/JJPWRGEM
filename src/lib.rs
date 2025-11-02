@@ -28,6 +28,7 @@ mod tokens {
         OpenCurlyBracket,
         ClosedCurlyBracket,
         Colon,
+        Comma,
         String(String),
     }
 
@@ -44,6 +45,7 @@ mod tokens {
                 '{' => Token::OpenCurlyBracket,
                 '}' => Token::ClosedCurlyBracket,
                 ':' => Token::Colon,
+                ',' => Token::Comma,
                 '"' => Token::String(build_str_while(i + 1, s, &mut chars).into()),
                 invalid => return Err(Error::UnexpectedCharacter(invalid)),
             };
@@ -75,6 +77,30 @@ mod tokens {
         fn should_not_parse_invalid_syntax() {
             assert_eq!(str_to_tokens(r#"a"#), Err(Error::UnexpectedCharacter('a')));
         }
+
+        #[test]
+        fn multiple_keys() {
+            assert_eq!(
+                str_to_tokens(
+                    r#"{
+                "rust": "is a must",
+                "name": "ferris" 
+            }"#
+                )
+                .unwrap(),
+                [
+                    Token::OpenCurlyBracket,
+                    Token::String("rust".into()),
+                    Token::Colon,
+                    Token::String("is a must".into()),
+                    Token::Comma,
+                    Token::String("name".into()),
+                    Token::Colon,
+                    Token::String("ferris".into()),
+                    Token::ClosedCurlyBracket,
+                ]
+            );
+        }
     }
 }
 
@@ -87,6 +113,8 @@ use crate::tokens::{str_to_tokens, Token};
 enum State {
     Init,
     Object,
+    NextObjectKeyOrFinish,
+    NextObjectKey,
     End,
     Key,
     Value,
@@ -102,7 +130,8 @@ pub fn parse(json: &str) -> Result<HashMap<String, String>> {
     }
 
     let mut key = None::<String>;
-    let mut value = None::<String>;
+
+    let mut map = HashMap::new();
 
     for token in tokens {
         match state {
@@ -129,19 +158,29 @@ pub fn parse(json: &str) -> Result<HashMap<String, String>> {
             },
             State::Value => match token {
                 Token::String(s) => {
-                    value = Some(s);
-                    state = State::Object;
+                    map.insert(key.take().expect("key should have been found"), s);
+                    state = State::NextObjectKeyOrFinish;
                 }
                 invalid => return Err(Error::UnexpectedToken(invalid)),
             },
+            State::NextObjectKeyOrFinish => match token {
+                Token::ClosedCurlyBracket => {
+                    state = State::End;
+                }
+                Token::Comma => {
+                    state = State::NextObjectKey;
+                }
+                invalid => return Err(Error::UnexpectedToken(invalid)),
+            },
+            State::NextObjectKey => match token {
+                Token::String(s) => {
+                    key = Some(s);
+                    state = State::Key;
+                }
+                _ => return Err(Error::ExpectedKey),
+            },
             State::End => return Err(Error::TokenAfterEnd(token)),
         }
-    }
-
-    let mut map = HashMap::new();
-
-    if let (Some(k), Some(v)) = (key, value) {
-        map.insert(k, v);
     }
 
     Ok(map)
@@ -150,6 +189,13 @@ pub fn parse(json: &str) -> Result<HashMap<String, String>> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn kv_to_map(tuples: &[(&str, &str)]) -> HashMap<String, String> {
+        tuples
+            .iter()
+            .map(|(k, v)| ((*k).into(), (*v).into()))
+            .collect()
+    }
 
     #[test]
     fn empty() {
@@ -173,10 +219,7 @@ mod tests {
     fn one_key_value_pair() {
         assert_eq!(
             parse(r#"{"hi":"bye"}"#).unwrap(),
-            [("hi", "bye")]
-                .into_iter()
-                .map(|(k, v)| (k.into(), v.into()))
-                .collect()
+            kv_to_map(&[("hi", "bye")])
         );
     }
 
@@ -184,10 +227,7 @@ mod tests {
     fn key_with_braces() {
         assert_eq!(
             parse(r#"{"h{}{}i":"bye"}"#).unwrap(),
-            [("h{}{}i", "bye")]
-                .into_iter()
-                .map(|(k, v)| (k.into(), v.into()))
-                .collect()
+            kv_to_map(&[("h{}{}i", "bye")])
         );
     }
 
@@ -196,6 +236,33 @@ mod tests {
         assert_eq!(
             parse("{}{").unwrap_err(),
             Error::TokenAfterEnd(Token::OpenCurlyBracket)
+        );
+    }
+
+    #[test]
+    fn multiple_keys() {
+        assert_eq!(
+            parse(
+                r#"{
+                "rust": "is a must",
+                "name": "ferris" 
+            }"#
+            )
+            .unwrap(),
+            kv_to_map(&[("rust", "is a must"), ("name", "ferris"),])
+        );
+    }
+
+    #[test]
+    fn trailing_commas_not_allowed() {
+        assert_eq!(
+            parse(
+                r#"{
+                "rust": "is a must",
+            }"#
+            )
+            .unwrap_err(),
+            Error::ExpectedKey
         );
     }
 }
