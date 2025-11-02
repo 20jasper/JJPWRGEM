@@ -18,6 +18,59 @@ mod string {
     }
 }
 
+mod tokens {
+    use crate::string::build_str_while;
+
+    #[derive(Debug, PartialEq, Eq)]
+    pub enum Token {
+        OpenCurlyBracket,
+        ClosedCurlyBracket,
+        Colon,
+        String(String),
+    }
+
+    pub fn str_to_tokens(s: &str) -> Vec<Token> {
+        let mut chars = s.char_indices().peekable();
+
+        let mut res = vec![];
+
+        while let Some((i, c)) = chars.next() {
+            if c.is_whitespace() {
+                continue;
+            }
+            let val = match c {
+                '{' => Token::OpenCurlyBracket,
+                '}' => Token::ClosedCurlyBracket,
+                ':' => Token::Colon,
+                '"' => Token::String(build_str_while(i + 1, s, &mut chars).into()),
+                _ => todo!("char is not supported yet '{c}'"),
+            };
+            res.push(val);
+        }
+
+        res
+    }
+
+    #[cfg(test)]
+    mod tests {
+        use super::*;
+
+        #[test]
+        fn should_parse_single_key_object() {
+            assert_eq!(
+                str_to_tokens(r#"{"rust": "is a must"}"#),
+                [
+                    Token::OpenCurlyBracket,
+                    Token::String("rust".into()),
+                    Token::Colon,
+                    Token::String("is a must".into()),
+                    Token::ClosedCurlyBracket,
+                ]
+            )
+        }
+    }
+}
+
 mod error;
 
 use error::{Error, Result};
