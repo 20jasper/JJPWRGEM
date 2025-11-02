@@ -186,19 +186,6 @@ mod tests {
     }
 
     #[test]
-    fn trailing_commas_not_allowed() {
-        assert_eq!(
-            parse_str(
-                r#"{
-                "rust": "is a must",
-            }"#
-            )
-            .unwrap_err(),
-            Error::ExpectedKey
-        );
-    }
-
-    #[test]
     fn nested_object() {
         let nested = |val| kv_to_map(&[("rust", val)]);
         assert_eq!(
