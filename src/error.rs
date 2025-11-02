@@ -27,6 +27,8 @@ pub enum Error {
     ExpectedKeyOrClosing(Token),
     /// expected comma or closing brace, found {0:?}
     ExpectedCommaOrClosing(Token),
+    /// expected opening curly brace, found {0:?}
+    ExpectedOpening(Token),
     /// {0}
     Custom(String),
 }

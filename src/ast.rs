@@ -1,17 +1,7 @@
 use crate::error::{Error, Result};
-use crate::tokens::{str_to_tokens, Token};
+use crate::tokens::{Token, str_to_tokens};
 use core::iter::Peekable;
 use std::collections::HashMap;
-
-enum State {
-    Init,
-    Object,
-    NextObjectKeyOrFinish,
-    NextObjectKey,
-    End,
-    Key(String),
-    Value { key: String },
-}
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Value {
@@ -43,84 +33,109 @@ pub fn parse_tokens(
     tokens: &mut Peekable<impl Iterator<Item = Token>>,
     fail_on_multiple_value: bool,
 ) -> Result<Value> {
-    let mut state = State::Init;
+    let peeked = if let Some(peeked) = tokens.peek() {
+        peeked
+    } else {
+        return Err(Error::Empty);
+    };
+    let val = match peeked {
+        Token::OpenCurlyBracket => parse_object(tokens, fail_on_multiple_value)?,
+        Token::Null | Token::String(_) | Token::Boolean(_) => {
+            let token = tokens.next().unwrap();
+            token.try_into().expect("token should be valid json value")
+        }
+        invalid => return Err(Error::ExpectedValue(invalid.clone())),
+    };
 
-    let mut val = None::<Value>;
+    if fail_on_multiple_value && let Some(token) = tokens.peek() {
+        return Err(Error::TokenAfterEnd(token.clone()));
+    }
+    Ok(val)
+}
 
-    while let Some(token) = tokens.peek() {
+enum ObjectState {
+    Open,
+    KeyOrEnd(HashMap<String, Value>),
+    NextKeyOrEnd(HashMap<String, Value>),
+    Key(HashMap<String, Value>),
+    Colon {
+        key: String,
+        map: HashMap<String, Value>,
+    },
+    Value {
+        key: String,
+        map: HashMap<String, Value>,
+    },
+    End(HashMap<String, Value>),
+}
+
+fn parse_object(
+    tokens: &mut Peekable<impl Iterator<Item = Token>>,
+    fail_on_multiple_value: bool,
+) -> Result<Value> {
+    let mut state = ObjectState::Open;
+
+    while let Some(peeked) = tokens.peek() {
         match state {
-            State::Init => {
-                let token = tokens.next().unwrap();
-                match token {
-                    Token::OpenCurlyBracket => {
-                        let _ = val.insert(Value::Object(HashMap::new()));
-                        state = State::Object;
-                    }
-                    Token::Null | Token::String(_) | Token::Boolean(_) => {
-                        let _ =
-                            val.insert(token.try_into().expect("token should be valid json value"));
-                        state = State::End;
-                    }
-                    invalid => return Err(Error::ExpectedValue(invalid.clone())),
-                }
-            }
-            State::Object => match tokens.next().unwrap() {
+            ObjectState::Open => match tokens.next().unwrap() {
+                Token::OpenCurlyBracket => state = ObjectState::KeyOrEnd(HashMap::new()),
+                invalid => return Err(Error::ExpectedOpening(invalid)),
+            },
+            ObjectState::KeyOrEnd(map) => match tokens.next().unwrap() {
                 Token::ClosedCurlyBracket => {
-                    state = State::End;
+                    state = ObjectState::End(map);
                 }
                 Token::String(s) => {
-                    state = State::Key(s);
+                    state = ObjectState::Colon { key: s, map };
                 }
                 invalid => return Err(Error::ExpectedKeyOrClosing(invalid)),
             },
-            State::Key(s) => match tokens.next().unwrap() {
-                Token::Colon => state = State::Value { key: s },
+            ObjectState::Colon { map, key } => match tokens.next().unwrap() {
+                Token::Colon => state = ObjectState::Value { map, key },
                 invalid => return Err(Error::ExpectedColon(invalid)),
             },
-            State::Value { key } => {
-                let json_value = match token {
-                    Token::OpenCurlyBracket => parse_tokens(tokens, false)?,
-                    Token::String(_) | Token::Null | Token::Boolean(_) => {
-                        let token = tokens.next().unwrap();
-                        token.try_into().expect("should be valid json value")
-                    }
+            ObjectState::Value { mut map, key } => {
+                let json_value = match peeked {
+                    Token::OpenCurlyBracket
+                    | Token::String(_)
+                    | Token::Null
+                    | Token::Boolean(_) => parse_tokens(tokens, false)?,
                     invalid => return Err(Error::ExpectedValue(invalid.clone())),
                 };
 
-                if let Some(Value::Object(ref mut map)) = val {
-                    map.insert(key, json_value);
-                    state = State::NextObjectKeyOrFinish;
-                } else {
-                    unreachable!("Value must be a map at this point")
-                }
+                map.insert(key, json_value);
+                state = ObjectState::NextKeyOrEnd(map);
             }
-            State::NextObjectKeyOrFinish => match tokens.next().unwrap() {
+            ObjectState::NextKeyOrEnd(map) => match tokens.next().unwrap() {
                 Token::ClosedCurlyBracket => {
-                    state = State::End;
+                    state = ObjectState::End(map);
                 }
                 Token::Comma => {
-                    state = State::NextObjectKey;
+                    state = ObjectState::Key(map);
                 }
                 invalid => return Err(Error::ExpectedCommaOrClosing(invalid.clone())),
             },
-            State::NextObjectKey => match tokens.next().unwrap() {
-                Token::String(s) => {
-                    state = State::Key(s);
+            ObjectState::Key(map) => match tokens.next().unwrap() {
+                Token::String(key) => {
+                    state = ObjectState::Colon { key, map };
                 }
                 invalid => return Err(Error::ExpectedKey(invalid)),
             },
-            State::End => {
+            ObjectState::End(map) => {
                 if fail_on_multiple_value {
-                    return Err(Error::TokenAfterEnd(token.clone()));
+                    return Err(Error::TokenAfterEnd(peeked.clone()));
                 }
-                return val.ok_or(Error::Empty);
+                return Ok(Value::Object(map));
             }
         }
     }
 
-    val.ok_or(Error::Empty)
+    if let ObjectState::End(map) = state {
+        Ok(Value::Object(map))
+    } else {
+        Err(Error::Custom("unterminated something".into()))
+    }
 }
-
 #[cfg(test)]
 mod tests {
     use super::*;
