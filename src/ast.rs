@@ -110,11 +110,13 @@ pub fn parse(json: &str) -> Result<Value> {
 mod tests {
     use super::*;
 
-    fn kv_to_map(tuples: &[(&str, Value)]) -> HashMap<String, Value> {
-        tuples
-            .iter()
-            .map(|(k, v)| ((*k).into(), v.clone()))
-            .collect()
+    fn kv_to_map(tuples: &[(&str, Value)]) -> Value {
+        Value::Object(
+            tuples
+                .iter()
+                .map(|(k, v)| ((*k).into(), v.clone()))
+                .collect(),
+        )
     }
 
     #[test]
@@ -132,14 +134,14 @@ mod tests {
 
     #[test]
     fn empty_object() {
-        assert_eq!(parse("{}").unwrap(), Value::Object(HashMap::new()));
+        assert_eq!(parse("{}").unwrap(), kv_to_map(&[]));
     }
 
     #[test]
     fn one_key_value_pair() {
         assert_eq!(
             parse(r#"{"hi":"bye"}"#).unwrap(),
-            Value::Object(kv_to_map(&[("hi", Value::String("bye".into()))]))
+            kv_to_map(&[("hi", Value::String("bye".into()))])
         );
     }
 
@@ -147,7 +149,7 @@ mod tests {
     fn key_with_braces() {
         assert_eq!(
             parse(r#"{"h{}{}i":"bye"}"#).unwrap(),
-            Value::Object(kv_to_map(&[("h{}{}i", Value::String("bye".into()))]))
+            kv_to_map(&[("h{}{}i", Value::String("bye".into()))])
         );
     }
 
@@ -169,7 +171,7 @@ mod tests {
             }"#
             )
             .unwrap(),
-            Value::Object(kv_to_map(&[
+            (kv_to_map(&[
                 ("rust", Value::String("is a must".into())),
                 ("name", Value::String("ferris".into())),
             ]))
@@ -206,7 +208,7 @@ mod tests {
             }}"#
             ))
             .unwrap(),
-            Value::Object(kv_to_map(&[("rust", expected)]))
+            kv_to_map(&[("rust", expected)])
         )
     }
 
