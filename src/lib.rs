@@ -71,6 +71,7 @@ mod tokens {
             )
         }
 
+        #[test]
         fn should_not_parse_invalid_syntax() {
             assert_eq!(str_to_tokens(r#"a"#), Err(Error::UnexpectedCharacter('a')));
         }
