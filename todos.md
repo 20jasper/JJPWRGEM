@@ -19,4 +19,5 @@
 - [ ] make prettifier
 - [ ] error handling
   - [ ] line/column
-  - [ ] more specific
+  - [x] describe expected token
+    - [ ] line/column of reason why expected (expected closing curly due to umatched open curly at xyz spot)
