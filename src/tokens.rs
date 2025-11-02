@@ -14,9 +14,9 @@ pub enum Token {
     Boolean(bool),
 }
 
-const NULL: &str = "null";
-const FALSE: &str = "false";
-const TRUE: &str = "true";
+pub const NULL: &str = "null";
+pub const FALSE: &str = "false";
+pub const TRUE: &str = "true";
 
 pub fn str_to_tokens(s: &str) -> Result<Vec<Token>> {
     let mut chars = s.char_indices().peekable();
