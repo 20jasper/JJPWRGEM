@@ -1,4 +1,3 @@
-
 # format rust, justfile, and markdown
 format:
     cargo fmt --all
@@ -12,7 +11,6 @@ format-check:
 
 lint:
     RUSTFLAGS=-Dwarnings cargo clippy --all-targets --all-features 
-
 
 test-cov:
     cargo llvm-cov
