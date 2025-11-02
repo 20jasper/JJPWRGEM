@@ -25,6 +25,8 @@ pub enum Error {
     ExpectedValue(Token),
     /// expected key or closing brace, found {0:?}
     ExpectedKeyOrClosing(Token),
+    /// expected comma or closing brace, found {0:?}
+    ExpectedCommaOrClosing(Token),
     /// {0}
     Custom(String),
 }

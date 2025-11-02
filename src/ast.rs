@@ -101,7 +101,7 @@ pub fn parse_tokens(
                 Token::Comma => {
                     state = State::NextObjectKey;
                 }
-                invalid => return Err(Error::UnexpectedToken(invalid.clone())),
+                invalid => return Err(Error::ExpectedCommaOrClosing(invalid.clone())),
             },
             State::NextObjectKey => match tokens.next().unwrap() {
                 Token::String(s) => {
@@ -225,6 +225,7 @@ mod tests {
     #[case(r#"{"hi": , "#, Error::ExpectedValue(Token::Comma))]
     #[case(r#"}"#, Error::ExpectedValue(Token::ClosedCurlyBracket))]
     #[case(r#"{{"#, Error::ExpectedKeyOrClosing(Token::OpenCurlyBracket))]
+    #[case(r#"{"hi": null null"#, Error::ExpectedCommaOrClosing(Token::Null))]
     fn expected_error(#[case] json: &str, #[case] expected: Error) {
         assert_eq!(parse_str(json), Err(expected));
     }
