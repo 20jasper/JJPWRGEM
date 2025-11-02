@@ -1,5 +1,6 @@
 use crate::error::{Error, Result};
 use crate::tokens::{str_to_tokens, Token};
+use core::iter::Peekable;
 use std::collections::HashMap;
 
 enum State {
@@ -33,28 +34,38 @@ impl TryFrom<Token> for Value {
     }
 }
 
-pub fn parse(json: &str) -> Result<Value> {
+pub fn parse_str(json: &str) -> Result<Value> {
     let tokens = str_to_tokens(json)?;
+    parse_tokens(&mut tokens.into_iter().peekable(), true)
+}
 
+pub fn parse_tokens(
+    tokens: &mut Peekable<impl Iterator<Item = Token>>,
+    fail_on_multiple_value: bool,
+) -> Result<Value> {
     let mut state = State::Init;
 
     let mut val = None::<Value>;
 
-    for token in tokens {
+    while let Some(token) = tokens.peek() {
         match state {
-            State::Init => match token {
-                Token::OpenCurlyBracket => {
-                    let _ = val.insert(Value::Object(HashMap::new()));
-                    state = State::Object;
+            State::Init => {
+                let token = tokens.next().unwrap();
+                match token {
+                    Token::OpenCurlyBracket => {
+                        let _ = val.insert(Value::Object(HashMap::new()));
+                        state = State::Object;
+                    }
+                    Token::Null | Token::String(_) | Token::Boolean(_) => {
+                        let _ =
+                            val.insert(token.try_into().expect("token should be valid json value"));
+                        state = State::End;
+                    }
+                    Token::ClosedCurlyBracket => return Err(Error::Unmatched(token.clone())),
+                    invalid => return Err(Error::UnexpectedToken(invalid.clone())),
                 }
-                Token::Null | Token::String(_) | Token::Boolean(_) => {
-                    let _ = val.insert(token.try_into().expect("token should be valid json value"));
-                    state = State::End;
-                }
-                Token::ClosedCurlyBracket => return Err(Error::Unmatched(token)),
-                invalid => return Err(Error::UnexpectedToken(invalid)),
-            },
-            State::Object => match token {
+            }
+            State::Object => match tokens.next().unwrap() {
                 Token::ClosedCurlyBracket => {
                     state = State::End;
                 }
@@ -63,12 +74,22 @@ pub fn parse(json: &str) -> Result<Value> {
                 }
                 invalid => return Err(Error::UnexpectedToken(invalid)),
             },
-            State::Key(s) => match token {
+            State::Key(s) => match tokens.next().unwrap() {
                 Token::Colon => state = State::Value { key: s },
                 invalid => return Err(Error::UnexpectedToken(invalid)),
             },
             State::Value { key } => match token {
+                Token::OpenCurlyBracket => {
+                    if let Some(Value::Object(ref mut map)) = val {
+                        let obj = parse_tokens(tokens, false)?;
+                        map.insert(key, obj);
+                        state = State::NextObjectKeyOrFinish;
+                    } else {
+                        unreachable!("Value must be a map at this point")
+                    }
+                }
                 Token::String(_) | Token::Null | Token::Boolean(_) => {
+                    let token = tokens.next().unwrap();
                     if let Some(Value::Object(ref mut map)) = val {
                         map.insert(key, token.try_into().expect("should be valid json value"));
                         state = State::NextObjectKeyOrFinish;
@@ -76,24 +97,29 @@ pub fn parse(json: &str) -> Result<Value> {
                         unreachable!("Value must be a map at this point")
                     }
                 }
-                invalid => return Err(Error::UnexpectedToken(invalid)),
+                invalid => return Err(Error::UnexpectedToken(invalid.clone())),
             },
-            State::NextObjectKeyOrFinish => match token {
+            State::NextObjectKeyOrFinish => match tokens.next().unwrap() {
                 Token::ClosedCurlyBracket => {
                     state = State::End;
                 }
                 Token::Comma => {
                     state = State::NextObjectKey;
                 }
-                invalid => return Err(Error::UnexpectedToken(invalid)),
+                invalid => return Err(Error::UnexpectedToken(invalid.clone())),
             },
-            State::NextObjectKey => match token {
+            State::NextObjectKey => match tokens.next().unwrap() {
                 Token::String(s) => {
                     state = State::Key(s);
                 }
                 _ => return Err(Error::ExpectedKey),
             },
-            State::End => return Err(Error::TokenAfterEnd(token)),
+            State::End => {
+                if fail_on_multiple_value {
+                    return Err(Error::TokenAfterEnd(token.clone()));
+                }
+                return val.ok_or(Error::Empty);
+            }
         }
     }
 
@@ -115,26 +141,26 @@ mod tests {
 
     #[test]
     fn empty() {
-        assert_eq!(parse("").unwrap_err(), Error::Empty);
+        assert_eq!(parse_str("").unwrap_err(), Error::Empty);
     }
 
     #[test]
     fn unmatched() {
         assert_eq!(
-            parse("}").unwrap_err(),
+            parse_str("}").unwrap_err(),
             Error::Unmatched(Token::ClosedCurlyBracket)
         );
     }
 
     #[test]
     fn empty_object() {
-        assert_eq!(parse("{}").unwrap(), kv_to_map(&[]));
+        assert_eq!(parse_str("{}").unwrap(), kv_to_map(&[]));
     }
 
     #[test]
     fn one_key_value_pair() {
         assert_eq!(
-            parse(r#"{"hi":"bye"}"#).unwrap(),
+            parse_str(r#"{"hi":"bye"}"#).unwrap(),
             kv_to_map(&[("hi", Value::String("bye".into()))])
         );
     }
@@ -142,7 +168,7 @@ mod tests {
     #[test]
     fn key_with_braces() {
         assert_eq!(
-            parse(r#"{"h{}{}i":"bye"}"#).unwrap(),
+            parse_str(r#"{"h{}{}i":"bye"}"#).unwrap(),
             kv_to_map(&[("h{}{}i", Value::String("bye".into()))])
         );
     }
@@ -150,7 +176,7 @@ mod tests {
     #[test]
     fn finished_object_then_another_char() {
         assert_eq!(
-            parse("{}{").unwrap_err(),
+            parse_str("{}{").unwrap_err(),
             Error::TokenAfterEnd(Token::OpenCurlyBracket)
         );
     }
@@ -158,7 +184,7 @@ mod tests {
     #[test]
     fn multiple_keys() {
         assert_eq!(
-            parse(
+            parse_str(
                 r#"{
                 "rust": "is a must",
                 "name": "ferris" 
@@ -175,13 +201,35 @@ mod tests {
     #[test]
     fn trailing_commas_not_allowed() {
         assert_eq!(
-            parse(
+            parse_str(
                 r#"{
                 "rust": "is a must",
             }"#
             )
             .unwrap_err(),
             Error::ExpectedKey
+        );
+    }
+
+    #[test]
+    fn nested_object() {
+        let nested = |val| kv_to_map(&[("rust", val)]);
+        assert_eq!(
+            parse_str(
+                r#"
+                {
+                    "rust": {
+                        "rust": {
+                            "rust": {
+                                "rust": "rust"
+                            }   
+                        }   
+                    }
+                }        
+            "#
+            )
+            .unwrap(),
+            nested(nested(nested(nested(Value::String("rust".into())))))
         );
     }
 
@@ -196,7 +244,7 @@ mod tests {
     #[rstest_reuse::apply(primitive_template)]
     fn primitive_object_value(#[case] primitive: &str, #[case] expected: Value) {
         assert_eq!(
-            parse(&format!(
+            parse_str(&format!(
                 r#"{{
                 "rust": {primitive}
             }}"#
@@ -208,6 +256,6 @@ mod tests {
 
     #[rstest_reuse::apply(primitive_template)]
     fn primitives(#[case] json: &str, #[case] expected: Value) {
-        assert_eq!(parse(json), Ok(expected));
+        assert_eq!(parse_str(json), Ok(expected));
     }
 }

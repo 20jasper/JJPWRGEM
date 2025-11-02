@@ -5,7 +5,7 @@ mod tokens;
 use error::{Error, Result};
 
 use crate::{
-    ast::{parse, Value},
+    ast::{parse_str, Value},
     tokens::NULL,
 };
 
@@ -29,7 +29,7 @@ mod string {
 }
 
 pub fn uglify_str(json: &str) -> Result<String> {
-    Ok(uglify_value(&parse(json)?))
+    Ok(uglify_value(&parse_str(json)?))
 }
 
 pub fn uglify_value(val: &Value) -> String {

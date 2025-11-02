@@ -10,8 +10,10 @@
   - [x] boolean
 - [x] objects
   - [x] multi keys
+  - [ ] validate duplicate keys
 - [ ] arrays
-- [ ] nested values
+- [x] nested object
+  - [x] arbitrarily nested
 - [ ] validate whitespace to skip
 - [ ] make uglifier
 - [ ] make prettifier
