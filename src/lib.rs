@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, intrinsics::unreachable};
 
 mod string {
     use core::{iter::Peekable, str::CharIndices};
@@ -138,7 +138,13 @@ enum State {
     Value,
 }
 
-pub fn parse(json: &str) -> Result<HashMap<String, Token>> {
+#[derive(Debug, PartialEq, Eq, Clone)]
+enum Value {
+    Null,
+    String(String),
+}
+
+pub fn parse(json: &str) -> Result<HashMap<String, Value>> {
     let tokens = str_to_tokens(json)?;
 
     let mut state = State::Init;
@@ -175,7 +181,12 @@ pub fn parse(json: &str) -> Result<HashMap<String, Token>> {
             },
             State::Value => match token {
                 Token::String(_) | Token::Null => {
-                    map.insert(key.take().expect("key should have been found"), token);
+                    let val = match token {
+                        Token::String(s) => Value::String(s),
+                        Token::Null => Value::Null,
+                        _ => unreachable!("{token:?} should not be reachable"),
+                    };
+                    map.insert(key.take().expect("key should have been found"), val);
                     state = State::NextObjectKeyOrFinish;
                 }
                 invalid => return Err(Error::UnexpectedToken(invalid)),
@@ -207,7 +218,7 @@ pub fn parse(json: &str) -> Result<HashMap<String, Token>> {
 mod tests {
     use super::*;
 
-    fn kv_to_map(tuples: &[(&str, Token)]) -> HashMap<String, Token> {
+    fn kv_to_map(tuples: &[(&str, Value)]) -> HashMap<String, Value> {
         tuples
             .iter()
             .map(|(k, v)| ((*k).into(), v.clone()))
@@ -236,7 +247,7 @@ mod tests {
     fn one_key_value_pair() {
         assert_eq!(
             parse(r#"{"hi":"bye"}"#).unwrap(),
-            kv_to_map(&[("hi", Token::String("bye".into()))])
+            kv_to_map(&[("hi", Value::String("bye".into()))])
         );
     }
 
@@ -244,7 +255,7 @@ mod tests {
     fn key_with_braces() {
         assert_eq!(
             parse(r#"{"h{}{}i":"bye"}"#).unwrap(),
-            kv_to_map(&[("h{}{}i", Token::String("bye".into()))])
+            kv_to_map(&[("h{}{}i", Value::String("bye".into()))])
         );
     }
 
@@ -267,8 +278,8 @@ mod tests {
             )
             .unwrap(),
             kv_to_map(&[
-                ("rust", Token::String("is a must".into())),
-                ("name", Token::String("ferris".into())),
+                ("rust", Value::String("is a must".into())),
+                ("name", Value::String("ferris".into())),
             ])
         );
     }
@@ -295,7 +306,7 @@ mod tests {
             }"#
             )
             .unwrap(),
-            kv_to_map(&[("rust", Token::Null)])
+            kv_to_map(&[("rust", Value::Null)])
         )
     }
 }
