@@ -9,10 +9,6 @@ pub type Result<T> = std::result::Result<T, Error>;
 pub enum Error {
     /// Json may not be empty
     Empty,
-    /// unmatched character {0:?}
-    Unmatched(Token),
-    /// Unexpected token {0:?}
-    UnexpectedToken(Token),
     /// Unexpected character {0:?}
     UnexpectedCharacter(char),
     /// unexpected token {0:?} after json finished
@@ -23,12 +19,12 @@ pub enum Error {
     ExpectedColon(Option<Token>),
     /// expected json value, found {0:?}
     ExpectedValue(Option<Token>),
-    /// expected key or closing brace, found {0:?}
-    ExpectedKeyOrClosing(Option<Token>),
-    /// expected comma or closing brace, found {0:?}
-    ExpectedCommaOrClosing(Option<Token>),
-    /// expected opening curly brace, found {0:?}
-    ExpectedOpening(Option<Token>),
+    /// expected key or closed curly brace, found {0:?}
+    ExpectedKeyOrClosedCurlyBrace(Option<Token>),
+    /// expected comma or closed curly brace, found {0:?}
+    ExpectedCommaOrClosedCurlyBrace(Option<Token>),
+    /// expected open curly curly brace, found {0:?}
+    ExpectedOpenCurlyBrace(Option<Token>),
     /// {0}
     Custom(String),
 }
