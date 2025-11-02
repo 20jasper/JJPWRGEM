@@ -105,4 +105,23 @@ mod tests {
                 || res == r#"{"by":"hello","hello hi":null}"#
         );
     }
+
+    #[test]
+    fn uglify_arbitrarily_nested() {
+        let input = r#"
+            {"rust": 
+            {"rust": 
+            {"rust": 
+            {"rust": null
+            }
+            }
+            }
+            }   
+        "#;
+
+        assert_eq!(
+            uglify_str(input).unwrap(),
+            r#"{"rust":{"rust":{"rust":{"rust":null}}}}"#
+        )
+    }
 }
