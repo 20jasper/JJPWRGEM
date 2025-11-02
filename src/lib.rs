@@ -13,6 +13,7 @@ mod string {
         while let Some((i, c)) = chars.next_if(|(_, c)| *c != '"') {
             end = i + c.len_utf8();
         }
+        chars.next();
 
         &input[start..end]
     }
@@ -20,6 +21,7 @@ mod string {
 
 mod tokens {
     use crate::string::build_str_while;
+    use crate::{Error, Result};
 
     #[derive(Debug, PartialEq, Eq)]
     pub enum Token {
@@ -29,7 +31,7 @@ mod tokens {
         String(String),
     }
 
-    pub fn str_to_tokens(s: &str) -> Vec<Token> {
+    pub fn str_to_tokens(s: &str) -> Result<Vec<Token>> {
         let mut chars = s.char_indices().peekable();
 
         let mut res = vec![];
@@ -43,12 +45,12 @@ mod tokens {
                 '}' => Token::ClosedCurlyBracket,
                 ':' => Token::Colon,
                 '"' => Token::String(build_str_while(i + 1, s, &mut chars).into()),
-                _ => todo!("char is not supported yet '{c}'"),
+                invalid => return Err(Error::UnexpectedCharacter(invalid)),
             };
             res.push(val);
         }
 
-        res
+        Ok(res)
     }
 
     #[cfg(test)]
@@ -58,7 +60,7 @@ mod tokens {
         #[test]
         fn should_parse_single_key_object() {
             assert_eq!(
-                str_to_tokens(r#"{"rust": "is a must"}"#),
+                str_to_tokens(r#"{"rust": "is a must"}"#).unwrap(),
                 [
                     Token::OpenCurlyBracket,
                     Token::String("rust".into()),
@@ -68,76 +70,70 @@ mod tokens {
                 ]
             )
         }
+
+        fn should_not_parse_invalid_syntax() {
+            assert_eq!(str_to_tokens(r#"a"#), Err(Error::UnexpectedCharacter('a')));
+        }
     }
 }
 
 mod error;
 
 use error::{Error, Result};
-use string::build_str_while;
+
+use crate::tokens::{str_to_tokens, Token};
 
 enum State {
     Init,
     Object,
     End,
     Key,
-    KeyEnd,
-    ValueStart,
     Value,
 }
 
 pub fn parse(json: &str) -> Result<HashMap<String, String>> {
+    let tokens = str_to_tokens(json)?;
+
     let mut state = State::Init;
 
-    if json.is_empty() {
+    if tokens.is_empty() {
         return Err(Error::Empty);
     }
 
     let mut key = None::<String>;
     let mut value = None::<String>;
 
-    let mut chars = json.char_indices().peekable();
-    while let Some((i, c)) = chars.next() {
+    for token in tokens {
         match state {
-            State::Init => match c {
-                '{' => {
+            State::Init => match token {
+                Token::OpenCurlyBracket => {
                     state = State::Object;
                 }
-                '}' => return Err(Error::Unmatched(c)),
-                invalid => return Err(Error::Unrecognized(invalid)),
+                Token::ClosedCurlyBracket => return Err(Error::Unmatched(token)),
+                invalid => return Err(Error::UnexpectedToken(invalid)),
             },
-            State::Object => match c {
-                '}' => {
+            State::Object => match token {
+                Token::ClosedCurlyBracket => {
                     state = State::End;
                 }
-                '"' => {
+                Token::String(s) => {
+                    key = Some(s);
                     state = State::Key;
                 }
-                invalid => return Err(Error::Unrecognized(invalid)),
+                invalid => return Err(Error::UnexpectedToken(invalid)),
             },
-            State::Key => match c {
-                '"' => state = State::KeyEnd,
-                _ => {
-                    key = Some(build_str_while(i, json, &mut chars).into());
+            State::Key => match token {
+                Token::Colon => state = State::Value,
+                invalid => return Err(Error::UnexpectedToken(invalid)),
+            },
+            State::Value => match token {
+                Token::String(s) => {
+                    value = Some(s);
+                    state = State::Object;
                 }
+                invalid => return Err(Error::UnexpectedToken(invalid)),
             },
-            State::KeyEnd => match c {
-                ':' => state = State::ValueStart,
-                invalid => return Err(Error::Unrecognized(invalid)),
-            },
-            State::Value => match c {
-                '"' => state = State::Object,
-                _ => {
-                    value = Some(build_str_while(i, json, &mut chars).into());
-                }
-            },
-            State::ValueStart => match c {
-                '"' => {
-                    state = State::Value;
-                }
-                invalid => return Err(Error::Unrecognized(invalid)),
-            },
-            State::End => return Err(Error::CharacterAfterEnd(c)),
+            State::End => return Err(Error::TokenAfterEnd(token)),
         }
     }
 
@@ -160,13 +156,11 @@ mod tests {
     }
 
     #[test]
-    fn unrecognized() {
-        assert_eq!(parse("a").unwrap_err(), Error::Unrecognized('a'));
-    }
-
-    #[test]
     fn unmatched() {
-        assert_eq!(parse("}").unwrap_err(), Error::Unmatched('}'));
+        assert_eq!(
+            parse("}").unwrap_err(),
+            Error::Unmatched(Token::ClosedCurlyBracket)
+        );
     }
 
     #[test]
@@ -198,6 +192,9 @@ mod tests {
 
     #[test]
     fn finished_object_then_another_char() {
-        assert_eq!(parse("{}{").unwrap_err(), Error::CharacterAfterEnd('{'));
+        assert_eq!(
+            parse("{}{").unwrap_err(),
+            Error::TokenAfterEnd(Token::OpenCurlyBracket)
+        );
     }
 }
