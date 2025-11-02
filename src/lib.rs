@@ -5,7 +5,7 @@ mod tokens;
 use error::{Error, Result};
 
 use crate::{
-    ast::{parse, Value},
+    ast::{parse_str, Value},
     tokens::NULL,
 };
 
@@ -29,7 +29,7 @@ mod string {
 }
 
 pub fn uglify_str(json: &str) -> Result<String> {
-    Ok(uglify_value(&parse(json)?))
+    Ok(uglify_value(&parse_str(json)?))
 }
 
 pub fn uglify_value(val: &Value) -> String {
@@ -104,5 +104,24 @@ mod tests {
             res == r#"{"hello hi":null,"by":"hello"}"#
                 || res == r#"{"by":"hello","hello hi":null}"#
         );
+    }
+
+    #[test]
+    fn uglify_arbitrarily_nested() {
+        let input = r#"
+            {"rust": 
+            {"rust": 
+            {"rust": 
+            {"rust": null
+            }
+            }
+            }
+            }   
+        "#;
+
+        assert_eq!(
+            uglify_str(input).unwrap(),
+            r#"{"rust":{"rust":{"rust":{"rust":null}}}}"#
+        )
     }
 }
