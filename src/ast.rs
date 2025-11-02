@@ -61,8 +61,7 @@ pub fn parse_tokens(
                             val.insert(token.try_into().expect("token should be valid json value"));
                         state = State::End;
                     }
-                    Token::ClosedCurlyBracket => return Err(Error::Unmatched(token.clone())),
-                    invalid => return Err(Error::UnexpectedToken(invalid.clone())),
+                    invalid => return Err(Error::ExpectedValue(invalid.clone())),
                 }
             }
             State::Object => match tokens.next().unwrap() {
@@ -138,14 +137,6 @@ mod tests {
     #[test]
     fn empty() {
         assert_eq!(parse_str("").unwrap_err(), Error::Empty);
-    }
-
-    #[test]
-    fn unmatched() {
-        assert_eq!(
-            parse_str("}").unwrap_err(),
-            Error::Unmatched(Token::ClosedCurlyBracket)
-        );
     }
 
     #[test]
@@ -232,6 +223,7 @@ mod tests {
     #[rstest::rstest]
     #[case(r#"{"hi", "#, Error::ExpectedColon(Token::Comma))]
     #[case(r#"{"hi": , "#, Error::ExpectedValue(Token::Comma))]
+    #[case(r#"}"#, Error::ExpectedValue(Token::ClosedCurlyBracket))]
     fn expected_error(#[case] json: &str, #[case] expected: Error) {
         assert_eq!(parse_str(json), Err(expected));
     }
