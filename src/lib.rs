@@ -38,9 +38,10 @@ enum State {
 pub enum Value {
     Null,
     String(String),
+    Object(HashMap<String, Value>),
 }
 
-pub fn parse(json: &str) -> Result<HashMap<String, Value>> {
+pub fn parse(json: &str) -> Result<Value> {
     let tokens = str_to_tokens(json)?;
 
     let mut state = State::Init;
@@ -107,7 +108,7 @@ pub fn parse(json: &str) -> Result<HashMap<String, Value>> {
         }
     }
 
-    Ok(map)
+    Ok(Value::Object(map))
 }
 
 #[cfg(test)]
@@ -136,14 +137,14 @@ mod tests {
 
     #[test]
     fn empty_object() {
-        assert_eq!(parse("{}").unwrap(), HashMap::new());
+        assert_eq!(parse("{}").unwrap(), Value::Object(HashMap::new()));
     }
 
     #[test]
     fn one_key_value_pair() {
         assert_eq!(
             parse(r#"{"hi":"bye"}"#).unwrap(),
-            kv_to_map(&[("hi", Value::String("bye".into()))])
+            Value::Object(kv_to_map(&[("hi", Value::String("bye".into()))]))
         );
     }
 
@@ -151,7 +152,7 @@ mod tests {
     fn key_with_braces() {
         assert_eq!(
             parse(r#"{"h{}{}i":"bye"}"#).unwrap(),
-            kv_to_map(&[("h{}{}i", Value::String("bye".into()))])
+            Value::Object(kv_to_map(&[("h{}{}i", Value::String("bye".into()))]))
         );
     }
 
@@ -173,10 +174,10 @@ mod tests {
             }"#
             )
             .unwrap(),
-            kv_to_map(&[
+            Value::Object(kv_to_map(&[
                 ("rust", Value::String("is a must".into())),
                 ("name", Value::String("ferris".into())),
-            ])
+            ]))
         );
     }
 
@@ -202,7 +203,7 @@ mod tests {
             }"#
             )
             .unwrap(),
-            kv_to_map(&[("rust", Value::Null)])
+            Value::Object(kv_to_map(&[("rust", Value::Null)]))
         )
     }
 }
