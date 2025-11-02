@@ -1,12 +1,12 @@
 ## Todo
 
-- [ ] primitive values
+- [x] primitive values
   - [x] string values
     - [ ] escapes
   - [ ] numbers
     - [ ] positive/negative (+/-)
     - [ ] powers (e/E)
-  - [ ] null
+  - [x] null
   - [ ] boolean
 - [x] objects
   - [x] multi keys

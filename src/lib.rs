@@ -1,3 +1,8 @@
+mod error;
+mod tokens;
+
+use crate::tokens::{str_to_tokens, Token};
+use error::{Error, Result};
 use std::collections::HashMap;
 
 mod string {
@@ -19,97 +24,6 @@ mod string {
     }
 }
 
-mod tokens {
-    use crate::string::build_str_while;
-    use crate::{Error, Result};
-
-    #[derive(Debug, PartialEq, Eq)]
-    pub enum Token {
-        OpenCurlyBracket,
-        ClosedCurlyBracket,
-        Colon,
-        Comma,
-        String(String),
-    }
-
-    pub fn str_to_tokens(s: &str) -> Result<Vec<Token>> {
-        let mut chars = s.char_indices().peekable();
-
-        let mut res = vec![];
-
-        while let Some((i, c)) = chars.next() {
-            if c.is_whitespace() {
-                continue;
-            }
-            let val = match c {
-                '{' => Token::OpenCurlyBracket,
-                '}' => Token::ClosedCurlyBracket,
-                ':' => Token::Colon,
-                ',' => Token::Comma,
-                '"' => Token::String(build_str_while(i + 1, s, &mut chars).into()),
-                invalid => return Err(Error::UnexpectedCharacter(invalid)),
-            };
-            res.push(val);
-        }
-
-        Ok(res)
-    }
-
-    #[cfg(test)]
-    mod tests {
-        use super::*;
-
-        #[test]
-        fn should_parse_single_key_object() {
-            assert_eq!(
-                str_to_tokens(r#"{"rust": "is a must"}"#).unwrap(),
-                [
-                    Token::OpenCurlyBracket,
-                    Token::String("rust".into()),
-                    Token::Colon,
-                    Token::String("is a must".into()),
-                    Token::ClosedCurlyBracket,
-                ]
-            )
-        }
-
-        #[test]
-        fn should_not_parse_invalid_syntax() {
-            assert_eq!(str_to_tokens(r#"a"#), Err(Error::UnexpectedCharacter('a')));
-        }
-
-        #[test]
-        fn multiple_keys() {
-            assert_eq!(
-                str_to_tokens(
-                    r#"{
-                "rust": "is a must",
-                "name": "ferris" 
-            }"#
-                )
-                .unwrap(),
-                [
-                    Token::OpenCurlyBracket,
-                    Token::String("rust".into()),
-                    Token::Colon,
-                    Token::String("is a must".into()),
-                    Token::Comma,
-                    Token::String("name".into()),
-                    Token::Colon,
-                    Token::String("ferris".into()),
-                    Token::ClosedCurlyBracket,
-                ]
-            );
-        }
-    }
-}
-
-mod error;
-
-use error::{Error, Result};
-
-use crate::tokens::{str_to_tokens, Token};
-
 enum State {
     Init,
     Object,
@@ -120,24 +34,43 @@ enum State {
     Value,
 }
 
-pub fn parse(json: &str) -> Result<HashMap<String, String>> {
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub enum Value {
+    Null,
+    String(String),
+    Object(HashMap<String, Value>),
+}
+
+impl TryFrom<Token> for Value {
+    type Error = crate::Error;
+
+    fn try_from(token: Token) -> std::result::Result<Self, Self::Error> {
+        Ok(match token {
+            Token::String(s) => Value::String(s),
+            Token::Null => Value::Null,
+            _ => return Err(Error::Custom("token is not a valid value".to_owned())),
+        })
+    }
+}
+
+pub fn parse(json: &str) -> Result<Value> {
     let tokens = str_to_tokens(json)?;
 
     let mut state = State::Init;
 
-    if tokens.is_empty() {
-        return Err(Error::Empty);
-    }
-
+    let mut val = None::<Value>;
     let mut key = None::<String>;
-
-    let mut map = HashMap::new();
 
     for token in tokens {
         match state {
             State::Init => match token {
                 Token::OpenCurlyBracket => {
+                    let _ = val.insert(Value::Object(HashMap::new()));
                     state = State::Object;
+                }
+                Token::Null | Token::String(_) => {
+                    let _ = val.insert(token.try_into().expect("token should be valid json value"));
+                    state = State::End;
                 }
                 Token::ClosedCurlyBracket => return Err(Error::Unmatched(token)),
                 invalid => return Err(Error::UnexpectedToken(invalid)),
@@ -157,9 +90,16 @@ pub fn parse(json: &str) -> Result<HashMap<String, String>> {
                 invalid => return Err(Error::UnexpectedToken(invalid)),
             },
             State::Value => match token {
-                Token::String(s) => {
-                    map.insert(key.take().expect("key should have been found"), s);
-                    state = State::NextObjectKeyOrFinish;
+                Token::String(_) | Token::Null => {
+                    if let Some(Value::Object(ref mut map)) = val {
+                        map.insert(
+                            key.take().expect("key should have been found"),
+                            token.try_into().expect("should be valid json value"),
+                        );
+                        state = State::NextObjectKeyOrFinish;
+                    } else {
+                        unreachable!("Value must be a map at this point")
+                    }
                 }
                 invalid => return Err(Error::UnexpectedToken(invalid)),
             },
@@ -183,17 +123,17 @@ pub fn parse(json: &str) -> Result<HashMap<String, String>> {
         }
     }
 
-    Ok(map)
+    val.ok_or(Error::Empty)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    fn kv_to_map(tuples: &[(&str, &str)]) -> HashMap<String, String> {
+    fn kv_to_map(tuples: &[(&str, Value)]) -> HashMap<String, Value> {
         tuples
             .iter()
-            .map(|(k, v)| ((*k).into(), (*v).into()))
+            .map(|(k, v)| ((*k).into(), v.clone()))
             .collect()
     }
 
@@ -212,14 +152,14 @@ mod tests {
 
     #[test]
     fn empty_object() {
-        assert_eq!(parse("{}").unwrap(), HashMap::new());
+        assert_eq!(parse("{}").unwrap(), Value::Object(HashMap::new()));
     }
 
     #[test]
     fn one_key_value_pair() {
         assert_eq!(
             parse(r#"{"hi":"bye"}"#).unwrap(),
-            kv_to_map(&[("hi", "bye")])
+            Value::Object(kv_to_map(&[("hi", Value::String("bye".into()))]))
         );
     }
 
@@ -227,7 +167,7 @@ mod tests {
     fn key_with_braces() {
         assert_eq!(
             parse(r#"{"h{}{}i":"bye"}"#).unwrap(),
-            kv_to_map(&[("h{}{}i", "bye")])
+            Value::Object(kv_to_map(&[("h{}{}i", Value::String("bye".into()))]))
         );
     }
 
@@ -249,7 +189,10 @@ mod tests {
             }"#
             )
             .unwrap(),
-            kv_to_map(&[("rust", "is a must"), ("name", "ferris"),])
+            Value::Object(kv_to_map(&[
+                ("rust", Value::String("is a must".into())),
+                ("name", Value::String("ferris".into())),
+            ]))
         );
     }
 
@@ -264,5 +207,31 @@ mod tests {
             .unwrap_err(),
             Error::ExpectedKey
         );
+    }
+
+    #[test]
+    fn null_object_value() {
+        assert_eq!(
+            parse(
+                r#"{
+                "rust": null
+            }"#
+            )
+            .unwrap(),
+            Value::Object(kv_to_map(&[("rust", Value::Null)]))
+        )
+    }
+
+    #[test]
+    fn null_value() {
+        assert_eq!(parse(r#"null"#).unwrap(), Value::Null)
+    }
+
+    #[test]
+    fn string_value() {
+        assert_eq!(
+            parse(r#""cool string""#).unwrap(),
+            Value::String("cool string".into())
+        )
     }
 }
