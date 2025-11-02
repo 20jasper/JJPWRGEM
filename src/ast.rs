@@ -49,8 +49,7 @@ pub fn parse(json: &str) -> Result<Value> {
                     state = State::Object;
                 }
                 Token::Null | Token::String(_) | Token::Boolean(_) => {
-                    let _ =
-                        val.insert(token.try_into().expect("token should be valid json value"));
+                    let _ = val.insert(token.try_into().expect("token should be valid json value"));
                     state = State::End;
                 }
                 Token::ClosedCurlyBracket => return Err(Error::Unmatched(token)),
