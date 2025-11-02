@@ -85,7 +85,7 @@ pub fn parse_tokens(
                         let token = tokens.next().unwrap();
                         token.try_into().expect("should be valid json value")
                     }
-                    invalid => return Err(Error::UnexpectedToken(invalid.clone())),
+                    invalid => return Err(Error::ExpectedValue(invalid.clone())),
                 };
 
                 if let Some(Value::Object(ref mut map)) = val {
@@ -229,12 +229,11 @@ mod tests {
         );
     }
 
-    #[test]
-    fn expected_colon() {
-        assert_eq!(
-            parse_str(r#"{"hi", "#),
-            Err(Error::ExpectedColon(Token::Comma))
-        );
+    #[rstest::rstest]
+    #[case(r#"{"hi", "#, Error::ExpectedColon(Token::Comma))]
+    #[case(r#"{"hi": , "#, Error::ExpectedValue(Token::Comma))]
+    fn expected_error(#[case] json: &str, #[case] expected: Error) {
+        assert_eq!(parse_str(json), Err(expected));
     }
 
     #[rstest_reuse::template]

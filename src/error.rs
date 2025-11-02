@@ -21,6 +21,8 @@ pub enum Error {
     ExpectedKey,
     /// expected colon after key, found {0:?}
     ExpectedColon(Token),
+    /// expected json value, found {0:?}
+    ExpectedValue(Token),
     /// {0}
     Custom(String),
 }
