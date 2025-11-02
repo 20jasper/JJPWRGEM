@@ -107,7 +107,7 @@ pub fn parse_tokens(
                 Token::String(s) => {
                     state = State::Key(s);
                 }
-                _ => return Err(Error::ExpectedKey),
+                invalid => return Err(Error::ExpectedKey(invalid)),
             },
             State::End => {
                 if fail_on_multiple_value {
@@ -226,6 +226,7 @@ mod tests {
     #[case(r#"}"#, Error::ExpectedValue(Token::ClosedCurlyBracket))]
     #[case(r#"{{"#, Error::ExpectedKeyOrClosing(Token::OpenCurlyBracket))]
     #[case(r#"{"hi": null null"#, Error::ExpectedCommaOrClosing(Token::Null))]
+    #[case(r#"{"hi": null, }"#, Error::ExpectedKey(Token::ClosedCurlyBracket))]
     fn expected_error(#[case] json: &str, #[case] expected: Error) {
         assert_eq!(parse_str(json), Err(expected));
     }
