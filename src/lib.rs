@@ -54,20 +54,20 @@ pub fn uglify_value(val: &Value) -> String {
 mod tests {
     use super::*;
 
+    #[rstest_reuse::template]
     #[rstest::rstest]
     #[case("null")]
     #[case("false")]
     #[case("true")]
     #[case("\"string\"")]
+    fn primitive_template(#[case] input: &str) {}
+
+    #[rstest_reuse::apply(primitive_template)]
     fn uglify_primitives_should_stay_the_same(#[case] input: &str) {
         assert_eq!(uglify_str(input).unwrap(), input);
     }
 
-    #[rstest::rstest]
-    #[case("null")]
-    #[case("false")]
-    #[case("true")]
-    #[case("\"string\"")]
+    #[rstest_reuse::apply(primitive_template)]
     fn uglify_removes_whitespace_primitive(#[case] input: &str) {
         let ugly_input = format!(
             r#"      {input}    

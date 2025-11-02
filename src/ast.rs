@@ -189,11 +189,15 @@ mod tests {
         );
     }
 
+    #[rstest_reuse::template]
     #[rstest::rstest]
     #[case("null", Value::Null)]
     #[case("true", Value::Boolean(true))]
     #[case("false", Value::Boolean(false))]
     #[case("\"burger\"", Value::String("burger".into()))]
+    fn primitive_template(#[case] primitive: &str, #[case] expected: Value) {}
+
+    #[rstest_reuse::apply(primitive_template)]
     fn primitive_object_value(#[case] primitive: &str, #[case] expected: Value) {
         assert_eq!(
             parse(&format!(
@@ -206,11 +210,7 @@ mod tests {
         )
     }
 
-    #[rstest::rstest]
-    #[case("null", Value::Null)]
-    #[case("true", Value::Boolean(true))]
-    #[case("false", Value::Boolean(false))]
-    #[case("\"burger\"", Value::String("burger".into()))]
+    #[rstest_reuse::apply(primitive_template)]
     fn primitives(#[case] json: &str, #[case] expected: Value) {
         assert_eq!(parse(json), Ok(expected));
     }
