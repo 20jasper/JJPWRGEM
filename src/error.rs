@@ -19,6 +19,8 @@ pub enum Error {
     TokenAfterEnd(Token),
     /// expected key after comma
     ExpectedKey,
+    /// expected colon after key, found {0:?}
+    ExpectedColon(Token),
     /// {0}
     Custom(String),
 }

@@ -76,7 +76,7 @@ pub fn parse_tokens(
             },
             State::Key(s) => match tokens.next().unwrap() {
                 Token::Colon => state = State::Value { key: s },
-                invalid => return Err(Error::UnexpectedToken(invalid)),
+                invalid => return Err(Error::ExpectedColon(invalid)),
             },
             State::Value { key } => {
                 let json_value = match token {
@@ -226,6 +226,14 @@ mod tests {
             )
             .unwrap(),
             nested(nested(nested(nested(Value::String("rust".into())))))
+        );
+    }
+
+    #[test]
+    fn expected_colon() {
+        assert_eq!(
+            parse_str(r#"{"hi", "#),
+            Err(Error::ExpectedColon(Token::Comma))
         );
     }
 
