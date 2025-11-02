@@ -1,3 +1,3 @@
 # json-parser
 
-This is meant as an exercise to practice Finite State Machines. I was inspired by the pragmatic programmer!
+I originally started this project to practice finite state machines, but got back into it when hearing about the internals of some formatters and compilers!
