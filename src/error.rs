@@ -18,17 +18,17 @@ pub enum Error {
     /// unexpected token {0:?} after json finished
     TokenAfterEnd(Token),
     /// expected key after comma, found {0:?}
-    ExpectedKey(Token),
+    ExpectedKey(Option<Token>),
     /// expected colon after key, found {0:?}
-    ExpectedColon(Token),
+    ExpectedColon(Option<Token>),
     /// expected json value, found {0:?}
-    ExpectedValue(Token),
+    ExpectedValue(Option<Token>),
     /// expected key or closing brace, found {0:?}
-    ExpectedKeyOrClosing(Token),
+    ExpectedKeyOrClosing(Option<Token>),
     /// expected comma or closing brace, found {0:?}
-    ExpectedCommaOrClosing(Token),
+    ExpectedCommaOrClosing(Option<Token>),
     /// expected opening curly brace, found {0:?}
-    ExpectedOpening(Token),
+    ExpectedOpening(Option<Token>),
     /// {0}
     Custom(String),
 }
