@@ -41,23 +41,36 @@ pub enum Value {
     Object(HashMap<String, Value>),
 }
 
+impl TryFrom<Token> for Value {
+    type Error = crate::Error;
+
+    fn try_from(token: Token) -> std::result::Result<Self, Self::Error> {
+        Ok(match token {
+            Token::String(s) => Value::String(s),
+            Token::Null => Value::Null,
+            _ => return Err(Error::Custom("token is not a valid value".to_owned())),
+        })
+    }
+}
+
 pub fn parse(json: &str) -> Result<Value> {
     let tokens = str_to_tokens(json)?;
 
     let mut state = State::Init;
 
-    if tokens.is_empty() {
-        return Err(Error::Empty);
-    }
-
-    let mut map = HashMap::new();
+    let mut val = None::<Value>;
     let mut key = None::<String>;
 
     for token in tokens {
         match state {
             State::Init => match token {
                 Token::OpenCurlyBracket => {
+                    let _ = val.insert(Value::Object(HashMap::new()));
                     state = State::Object;
+                }
+                Token::Null | Token::String(_) => {
+                    let _ = val.insert(token.try_into().expect("token should be valid json value"));
+                    state = State::End;
                 }
                 Token::ClosedCurlyBracket => return Err(Error::Unmatched(token)),
                 invalid => return Err(Error::UnexpectedToken(invalid)),
@@ -78,13 +91,15 @@ pub fn parse(json: &str) -> Result<Value> {
             },
             State::Value => match token {
                 Token::String(_) | Token::Null => {
-                    let val = match token {
-                        Token::String(s) => Value::String(s),
-                        Token::Null => Value::Null,
-                        _ => unreachable!("{token:?} should not be reachable"),
-                    };
-                    map.insert(key.take().expect("key should have been found"), val);
-                    state = State::NextObjectKeyOrFinish;
+                    if let Some(Value::Object(ref mut map)) = val {
+                        map.insert(
+                            key.take().expect("key should have been found"),
+                            token.try_into().expect("should be valid json value"),
+                        );
+                        state = State::NextObjectKeyOrFinish;
+                    } else {
+                        unreachable!("Value must be a map at this point")
+                    }
                 }
                 invalid => return Err(Error::UnexpectedToken(invalid)),
             },
@@ -108,7 +123,7 @@ pub fn parse(json: &str) -> Result<Value> {
         }
     }
 
-    Ok(Value::Object(map))
+    val.ok_or(Error::Empty)
 }
 
 #[cfg(test)]
@@ -204,6 +219,19 @@ mod tests {
             )
             .unwrap(),
             Value::Object(kv_to_map(&[("rust", Value::Null)]))
+        )
+    }
+
+    #[test]
+    fn null_value() {
+        assert_eq!(parse(r#"null"#).unwrap(), Value::Null)
+    }
+
+    #[test]
+    fn string_value() {
+        assert_eq!(
+            parse(r#""cool string""#).unwrap(),
+            Value::String("cool string".into())
         )
     }
 }
