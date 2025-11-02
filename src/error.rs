@@ -9,10 +9,6 @@ pub type Result<T> = std::result::Result<T, Error>;
 pub enum Error {
     /// Json may not be empty
     Empty,
-    /// unmatched character {0:?}
-    Unmatched(Token),
-    /// Unexpected token {0:?}
-    UnexpectedToken(Token),
     /// Unexpected character {0:?}
     UnexpectedCharacter(char),
     /// unexpected token {0:?} after json finished
