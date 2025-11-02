@@ -19,15 +19,20 @@ stateDiagram-v2
     [*] --> Object : {
 
     Object --> [*] : }
-    Object --> Key : "
+    Object --> Key(String) : "
 
-    Key --> Key : any character
-    Key --> KeyEnd : "
-    KeyEnd --> ValueStart : #58;
+    Key(String) --> Value(String) : #58;
 
-    ValueStart --> Value : "
-    Value --> Value : any character
-    Value --> Object : "
+    Value(String) --> [*] : }
+```
+
+## String
+
+```mermaid
+stateDiagram-v2
+    [*] --> Inner : "
+    Inner --> Inner : any char
+    Inner --> [*] : "
 ```
 
 ## Todo

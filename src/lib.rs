@@ -1,9 +1,27 @@
-use core::{iter::Peekable, str::CharIndices};
 use std::collections::HashMap;
+
+mod string {
+    use core::{iter::Peekable, str::CharIndices};
+
+    pub fn build_str_while<'a>(
+        start: usize,
+        input: &'a str,
+        chars: &mut Peekable<CharIndices<'a>>,
+    ) -> &'a str {
+        let mut end = start;
+
+        while let Some((i, c)) = chars.next_if(|(_, c)| *c != '"') {
+            end = i + c.len_utf8();
+        }
+
+        &input[start..end]
+    }
+}
 
 mod error;
 
 use error::{Error, Result};
+use string::build_str_while;
 
 enum State {
     Init,
@@ -77,20 +95,6 @@ pub fn parse(json: &str) -> Result<HashMap<String, String>> {
     }
 
     Ok(map)
-}
-
-fn build_str_while<'a>(
-    start: usize,
-    input: &'a str,
-    chars: &mut Peekable<CharIndices<'a>>,
-) -> &'a str {
-    let mut end = start;
-
-    while let Some((i, c)) = chars.next_if(|(_, c)| *c != '"') {
-        end = i + c.len_utf8();
-    }
-
-    &input[start..end]
 }
 
 #[cfg(test)]
