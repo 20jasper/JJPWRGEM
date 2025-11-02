@@ -44,7 +44,7 @@ pub fn parse_tokens(
             let token = tokens.next().unwrap();
             token.try_into().expect("token should be valid json value")
         }
-        invalid => return Err(Error::ExpectedValue(invalid.clone())),
+        invalid => return Err(Error::ExpectedValue(Some(invalid.clone()))),
     };
 
     if fail_on_multiple_value && let Some(token) = tokens.peek() {
@@ -53,6 +53,7 @@ pub fn parse_tokens(
     Ok(val)
 }
 
+#[derive(Debug, PartialEq, Eq, Clone)]
 enum ObjectState {
     Open,
     KeyOrEnd(HashMap<String, Value>),
@@ -69,71 +70,79 @@ enum ObjectState {
     End(HashMap<String, Value>),
 }
 
+impl ObjectState {
+    fn process(
+        self,
+        tokens: &mut Peekable<impl Iterator<Item = Token>>,
+        fail_on_multiple_value: bool,
+    ) -> Result<Self> {
+        let res = match self {
+            ObjectState::Open => match tokens.next() {
+                Some(Token::OpenCurlyBracket) => ObjectState::KeyOrEnd(HashMap::new()),
+                invalid => return Err(Error::ExpectedOpening(invalid)),
+            },
+            ObjectState::KeyOrEnd(map) => match tokens.next() {
+                Some(Token::ClosedCurlyBracket) => ObjectState::End(map),
+                Some(Token::String(key)) => ObjectState::Colon { key, map },
+                invalid => return Err(Error::ExpectedKeyOrClosing(invalid)),
+            },
+            ObjectState::Colon { map, key } => match tokens.next() {
+                Some(Token::Colon) => ObjectState::Value { map, key },
+                invalid => return Err(Error::ExpectedColon(invalid)),
+            },
+            ObjectState::Value { mut map, key } => {
+                let json_value = match tokens.peek() {
+                    Some(
+                        Token::OpenCurlyBracket
+                        | Token::String(_)
+                        | Token::Null
+                        | Token::Boolean(_),
+                    ) => parse_tokens(tokens, false)?,
+                    invalid => return Err(Error::ExpectedValue(invalid.cloned())),
+                };
+
+                map.insert(key, json_value);
+                ObjectState::NextKeyOrEnd(map)
+            }
+            ObjectState::NextKeyOrEnd(map) => match tokens.next() {
+                Some(Token::ClosedCurlyBracket) => ObjectState::End(map),
+                Some(Token::Comma) => ObjectState::Key(map),
+                invalid => return Err(Error::ExpectedCommaOrClosing(invalid.clone())),
+            },
+            ObjectState::Key(map) => match tokens.next() {
+                Some(Token::String(key)) => ObjectState::Colon { key, map },
+                invalid => return Err(Error::ExpectedKey(invalid)),
+            },
+            ObjectState::End(map) => {
+                if fail_on_multiple_value && let Some(peeked) = tokens.peek() {
+                    return Err(Error::TokenAfterEnd(peeked.clone()));
+                }
+                ObjectState::End(map)
+            }
+        };
+
+        Ok(res)
+    }
+}
+
 fn parse_object(
     tokens: &mut Peekable<impl Iterator<Item = Token>>,
     fail_on_multiple_value: bool,
 ) -> Result<Value> {
     let mut state = ObjectState::Open;
 
-    while let Some(peeked) = tokens.peek() {
-        match state {
-            ObjectState::Open => match tokens.next().unwrap() {
-                Token::OpenCurlyBracket => state = ObjectState::KeyOrEnd(HashMap::new()),
-                invalid => return Err(Error::ExpectedOpening(invalid)),
-            },
-            ObjectState::KeyOrEnd(map) => match tokens.next().unwrap() {
-                Token::ClosedCurlyBracket => {
-                    state = ObjectState::End(map);
-                }
-                Token::String(s) => {
-                    state = ObjectState::Colon { key: s, map };
-                }
-                invalid => return Err(Error::ExpectedKeyOrClosing(invalid)),
-            },
-            ObjectState::Colon { map, key } => match tokens.next().unwrap() {
-                Token::Colon => state = ObjectState::Value { map, key },
-                invalid => return Err(Error::ExpectedColon(invalid)),
-            },
-            ObjectState::Value { mut map, key } => {
-                let json_value = match peeked {
-                    Token::OpenCurlyBracket
-                    | Token::String(_)
-                    | Token::Null
-                    | Token::Boolean(_) => parse_tokens(tokens, false)?,
-                    invalid => return Err(Error::ExpectedValue(invalid.clone())),
-                };
+    while tokens.peek().is_some() {
+        state = state.process(tokens, fail_on_multiple_value)?;
 
-                map.insert(key, json_value);
-                state = ObjectState::NextKeyOrEnd(map);
-            }
-            ObjectState::NextKeyOrEnd(map) => match tokens.next().unwrap() {
-                Token::ClosedCurlyBracket => {
-                    state = ObjectState::End(map);
-                }
-                Token::Comma => {
-                    state = ObjectState::Key(map);
-                }
-                invalid => return Err(Error::ExpectedCommaOrClosing(invalid.clone())),
-            },
-            ObjectState::Key(map) => match tokens.next().unwrap() {
-                Token::String(key) => {
-                    state = ObjectState::Colon { key, map };
-                }
-                invalid => return Err(Error::ExpectedKey(invalid)),
-            },
-            ObjectState::End(map) => {
-                if fail_on_multiple_value {
-                    return Err(Error::TokenAfterEnd(peeked.clone()));
-                }
-                return Ok(Value::Object(map));
-            }
+        if !fail_on_multiple_value && let ObjectState::End(map) = state {
+            return Ok(Value::Object(map));
         }
     }
 
-    if let ObjectState::End(map) = state {
-        Ok(Value::Object(map))
-    } else {
-        Err(Error::Custom("unterminated something".into()))
+    match state.process(tokens, fail_on_multiple_value) {
+        Ok(ObjectState::End(map)) => Ok(Value::Object(map)),
+        Err(e) => Err(e),
+        _ => unreachable!("object state will always be end or error"),
     }
 }
 #[cfg(test)]
@@ -223,12 +232,24 @@ mod tests {
     }
 
     #[rstest::rstest]
-    #[case(r#"{"hi", "#, Error::ExpectedColon(Token::Comma))]
-    #[case(r#"{"hi": , "#, Error::ExpectedValue(Token::Comma))]
-    #[case(r#"}"#, Error::ExpectedValue(Token::ClosedCurlyBracket))]
-    #[case(r#"{{"#, Error::ExpectedKeyOrClosing(Token::OpenCurlyBracket))]
-    #[case(r#"{"hi": null null"#, Error::ExpectedCommaOrClosing(Token::Null))]
-    #[case(r#"{"hi": null, }"#, Error::ExpectedKey(Token::ClosedCurlyBracket))]
+    #[case(r#"{"hi", "#, Error::ExpectedColon(Some(Token::Comma)))]
+    #[case(r#"{"hi""#, Error::ExpectedColon(None))]
+    #[case(r#"{"hi": , "#, Error::ExpectedValue(Some(Token::Comma)))]
+    #[case(r#"{"hi":"#, Error::ExpectedValue(None))]
+    #[case(r#"}"#, Error::ExpectedValue(Some(Token::ClosedCurlyBracket)))]
+    #[case(r#""#, Error::Empty)]
+    #[case(r#"{{"#, Error::ExpectedKeyOrClosing(Some(Token::OpenCurlyBracket)))]
+    #[case(r#"{"#, Error::ExpectedKeyOrClosing(None))]
+    #[case(
+        r#"{"hi": null null"#,
+        Error::ExpectedCommaOrClosing(Some(Token::Null))
+    )]
+    #[case(r#"{"hi": null     "#, Error::ExpectedCommaOrClosing(None))]
+    #[case(
+        r#"{"hi": null, }"#,
+        Error::ExpectedKey(Some(Token::ClosedCurlyBracket))
+    )]
+    #[case(r#"{"hi": null, "#, Error::ExpectedKey(None))]
     fn expected_error(#[case] json: &str, #[case] expected: Error) {
         assert_eq!(parse_str(json), Err(expected));
     }
