@@ -11,7 +11,12 @@ pub enum Token {
     Comma,
     String(String),
     Null,
+    Boolean(bool),
 }
+
+const NULL: &str = "null";
+const FALSE: &str = "false";
+const TRUE: &str = "true";
 
 pub fn str_to_tokens(s: &str) -> Result<Vec<Token>> {
     let mut chars = s.char_indices().peekable();
@@ -28,14 +33,25 @@ pub fn str_to_tokens(s: &str) -> Result<Vec<Token>> {
             ':' => Token::Colon,
             ',' => Token::Comma,
             '"' => Token::String(build_str_while(i + 1, s, &mut chars).into()),
-            'n' => {
-                let actual = iter::once('n').chain(chars.by_ref().take(3).map(|(_, c)| c));
-                let expected = "null".chars();
+            'n' | 't' | 'f' => {
+                let expected = match c {
+                    'n' => NULL,
+                    't' => TRUE,
+                    'f' => FALSE,
+                    _ => unreachable!("{c} is not able to be reached"),
+                };
+                let actual =
+                    iter::once(c).chain(chars.by_ref().take(expected.len() - 1).map(|(_, c)| c));
 
-                if actual.eq(expected) {
-                    Token::Null
+                if actual.eq(expected.chars()) {
+                    match c {
+                        'n' => Token::Null,
+                        't' => Token::Boolean(true),
+                        'f' => Token::Boolean(false),
+                        _ => unreachable!("{c} is not able to be reached"),
+                    }
                 } else {
-                    return Err(Error::UnexpectedCharacter('n'));
+                    return Err(Error::UnexpectedCharacter(c));
                 }
             }
             invalid => return Err(Error::UnexpectedCharacter(invalid)),
@@ -64,9 +80,36 @@ mod tests {
         )
     }
 
-    #[test]
-    fn null() {
-        assert_eq!(str_to_tokens(r#"null"#), Ok(vec![Token::Null]));
+    #[rstest::rstest]
+    #[case("null", Token::Null)]
+    #[case("true", Token::Boolean(true))]
+    #[case("false", Token::Boolean(false))]
+    #[case("\"burger\"", Token::String("burger".into()))]
+    fn primitives(#[case] json: &str, #[case] expected: Token) {
+        assert_eq!(str_to_tokens(json), Ok(vec![expected]));
+    }
+
+    #[rstest::rstest]
+    #[case("null", Token::Null)]
+    #[case("true", Token::Boolean(true))]
+    #[case("false", Token::Boolean(false))]
+    #[case("\"burger\"", Token::String("burger".into()))]
+    fn primitive_object_value(#[case] primitive: &str, #[case] expected: Token) {
+        assert_eq!(
+            str_to_tokens(&format!(
+                r#"{{
+                "rust": {primitive}
+            }}"#
+            ))
+            .unwrap(),
+            [
+                Token::OpenCurlyBracket,
+                Token::String("rust".into()),
+                Token::Colon,
+                expected,
+                Token::ClosedCurlyBracket,
+            ]
+        )
     }
 
     #[test]

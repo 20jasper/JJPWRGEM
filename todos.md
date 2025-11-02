@@ -7,7 +7,7 @@
     - [ ] positive/negative (+/-)
     - [ ] powers (e/E)
   - [x] null
-  - [ ] boolean
+  - [x] boolean
 - [x] objects
   - [x] multi keys
 - [ ] arrays
