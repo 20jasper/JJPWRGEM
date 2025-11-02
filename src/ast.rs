@@ -8,8 +8,8 @@ enum State {
     NextObjectKeyOrFinish,
     NextObjectKey,
     End,
-    Key,
-    Value,
+    Key(String),
+    Value { key: String },
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -39,7 +39,6 @@ pub fn parse(json: &str) -> Result<Value> {
     let mut state = State::Init;
 
     let mut val = None::<Value>;
-    let mut key = None::<String>;
 
     for token in tokens {
         match state {
@@ -60,22 +59,18 @@ pub fn parse(json: &str) -> Result<Value> {
                     state = State::End;
                 }
                 Token::String(s) => {
-                    key = Some(s);
-                    state = State::Key;
+                    state = State::Key(s);
                 }
                 invalid => return Err(Error::UnexpectedToken(invalid)),
             },
-            State::Key => match token {
-                Token::Colon => state = State::Value,
+            State::Key(s) => match token {
+                Token::Colon => state = State::Value { key: s },
                 invalid => return Err(Error::UnexpectedToken(invalid)),
             },
-            State::Value => match token {
+            State::Value { key } => match token {
                 Token::String(_) | Token::Null | Token::Boolean(_) => {
                     if let Some(Value::Object(ref mut map)) = val {
-                        map.insert(
-                            key.take().expect("key should have been found"),
-                            token.try_into().expect("should be valid json value"),
-                        );
+                        map.insert(key, token.try_into().expect("should be valid json value"));
                         state = State::NextObjectKeyOrFinish;
                     } else {
                         unreachable!("Value must be a map at this point")
@@ -94,8 +89,7 @@ pub fn parse(json: &str) -> Result<Value> {
             },
             State::NextObjectKey => match token {
                 Token::String(s) => {
-                    key = Some(s);
-                    state = State::Key;
+                    state = State::Key(s);
                 }
                 _ => return Err(Error::ExpectedKey),
             },
