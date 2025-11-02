@@ -20,16 +20,19 @@ mod string {
 }
 
 mod tokens {
+    use core::iter;
+
     use crate::string::build_str_while;
     use crate::{Error, Result};
 
-    #[derive(Debug, PartialEq, Eq)]
+    #[derive(Debug, PartialEq, Eq, Clone)]
     pub enum Token {
         OpenCurlyBracket,
         ClosedCurlyBracket,
         Colon,
         Comma,
         String(String),
+        Null,
     }
 
     pub fn str_to_tokens(s: &str) -> Result<Vec<Token>> {
@@ -47,6 +50,16 @@ mod tokens {
                 ':' => Token::Colon,
                 ',' => Token::Comma,
                 '"' => Token::String(build_str_while(i + 1, s, &mut chars).into()),
+                'n' => {
+                    let actual = iter::once('n').chain(chars.by_ref().take(3).map(|(_, c)| c));
+                    let expected = "null".chars();
+
+                    if actual.eq(expected) {
+                        Token::Null
+                    } else {
+                        return Err(Error::UnexpectedCharacter('n'));
+                    }
+                }
                 invalid => return Err(Error::UnexpectedCharacter(invalid)),
             };
             res.push(val);
@@ -71,6 +84,11 @@ mod tokens {
                     Token::ClosedCurlyBracket,
                 ]
             )
+        }
+
+        #[test]
+        fn null() {
+            assert_eq!(str_to_tokens(r#"null"#), Ok(vec![Token::Null]));
         }
 
         #[test]
@@ -120,7 +138,7 @@ enum State {
     Value,
 }
 
-pub fn parse(json: &str) -> Result<HashMap<String, String>> {
+pub fn parse(json: &str) -> Result<HashMap<String, Token>> {
     let tokens = str_to_tokens(json)?;
 
     let mut state = State::Init;
@@ -129,9 +147,8 @@ pub fn parse(json: &str) -> Result<HashMap<String, String>> {
         return Err(Error::Empty);
     }
 
-    let mut key = None::<String>;
-
     let mut map = HashMap::new();
+    let mut key = None::<String>;
 
     for token in tokens {
         match state {
@@ -157,8 +174,8 @@ pub fn parse(json: &str) -> Result<HashMap<String, String>> {
                 invalid => return Err(Error::UnexpectedToken(invalid)),
             },
             State::Value => match token {
-                Token::String(s) => {
-                    map.insert(key.take().expect("key should have been found"), s);
+                Token::String(_) | Token::Null => {
+                    map.insert(key.take().expect("key should have been found"), token);
                     state = State::NextObjectKeyOrFinish;
                 }
                 invalid => return Err(Error::UnexpectedToken(invalid)),
@@ -190,10 +207,10 @@ pub fn parse(json: &str) -> Result<HashMap<String, String>> {
 mod tests {
     use super::*;
 
-    fn kv_to_map(tuples: &[(&str, &str)]) -> HashMap<String, String> {
+    fn kv_to_map(tuples: &[(&str, Token)]) -> HashMap<String, Token> {
         tuples
             .iter()
-            .map(|(k, v)| ((*k).into(), (*v).into()))
+            .map(|(k, v)| ((*k).into(), v.clone()))
             .collect()
     }
 
@@ -219,7 +236,7 @@ mod tests {
     fn one_key_value_pair() {
         assert_eq!(
             parse(r#"{"hi":"bye"}"#).unwrap(),
-            kv_to_map(&[("hi", "bye")])
+            kv_to_map(&[("hi", Token::String("bye".into()))])
         );
     }
 
@@ -227,7 +244,7 @@ mod tests {
     fn key_with_braces() {
         assert_eq!(
             parse(r#"{"h{}{}i":"bye"}"#).unwrap(),
-            kv_to_map(&[("h{}{}i", "bye")])
+            kv_to_map(&[("h{}{}i", Token::String("bye".into()))])
         );
     }
 
@@ -249,7 +266,10 @@ mod tests {
             }"#
             )
             .unwrap(),
-            kv_to_map(&[("rust", "is a must"), ("name", "ferris"),])
+            kv_to_map(&[
+                ("rust", Token::String("is a must".into())),
+                ("name", Token::String("ferris".into())),
+            ])
         );
     }
 
@@ -264,5 +284,18 @@ mod tests {
             .unwrap_err(),
             Error::ExpectedKey
         );
+    }
+
+    #[test]
+    fn null_object_value() {
+        assert_eq!(
+            parse(
+                r#"{
+                "rust": null
+            }"#
+            )
+            .unwrap(),
+            kv_to_map(&[("rust", Token::Null)])
+        )
     }
 }
