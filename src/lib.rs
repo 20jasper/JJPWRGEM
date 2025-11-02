@@ -28,11 +28,11 @@ mod string {
     }
 }
 
-fn uglify(json: &str) -> Result<String> {
+pub fn uglify_str(json: &str) -> Result<String> {
     Ok(uglify_value(&parse(json)?))
 }
 
-fn uglify_value(val: &Value) -> String {
+pub fn uglify_value(val: &Value) -> String {
     match val {
         ast::Value::Null => NULL.to_owned(),
         ast::Value::String(s) => format!("\"{s}\""),
@@ -60,7 +60,7 @@ mod tests {
     #[case("true")]
     #[case("\"string\"")]
     fn uglify_primitives_should_stay_the_same(#[case] input: &str) {
-        assert_eq!(uglify(input).unwrap(), input);
+        assert_eq!(uglify_str(input).unwrap(), input);
     }
 
     #[rstest::rstest]
@@ -74,7 +74,7 @@ mod tests {
         
             "#
         );
-        assert_eq!(uglify(&ugly_input).unwrap(), input);
+        assert_eq!(uglify_str(&ugly_input).unwrap(), input);
     }
 
     #[test]
@@ -98,7 +98,7 @@ mod tests {
     }    
         
             "#;
-        let res = uglify(input).unwrap();
+        let res = uglify_str(input).unwrap();
         // we aren't guaranteed a key order
         assert!(
             res == r#"{"hello hi":null,"by":"hello"}"#
