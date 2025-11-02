@@ -5,7 +5,7 @@ mod tokens;
 use error::{Error, Result};
 
 use crate::{
-    ast::{parse_str, Value},
+    ast::{Value, parse_str},
     tokens::NULL,
 };
 
