@@ -17,8 +17,16 @@ pub enum Error {
     UnexpectedCharacter(char),
     /// unexpected token {0:?} after json finished
     TokenAfterEnd(Token),
-    /// expected key after comma
-    ExpectedKey,
+    /// expected key after comma, found {0:?}
+    ExpectedKey(Token),
+    /// expected colon after key, found {0:?}
+    ExpectedColon(Token),
+    /// expected json value, found {0:?}
+    ExpectedValue(Token),
+    /// expected key or closing brace, found {0:?}
+    ExpectedKeyOrClosing(Token),
+    /// expected comma or closing brace, found {0:?}
+    ExpectedCommaOrClosing(Token),
     /// {0}
     Custom(String),
 }

@@ -61,8 +61,7 @@ pub fn parse_tokens(
                             val.insert(token.try_into().expect("token should be valid json value"));
                         state = State::End;
                     }
-                    Token::ClosedCurlyBracket => return Err(Error::Unmatched(token.clone())),
-                    invalid => return Err(Error::UnexpectedToken(invalid.clone())),
+                    invalid => return Err(Error::ExpectedValue(invalid.clone())),
                 }
             }
             State::Object => match tokens.next().unwrap() {
@@ -72,11 +71,11 @@ pub fn parse_tokens(
                 Token::String(s) => {
                     state = State::Key(s);
                 }
-                invalid => return Err(Error::UnexpectedToken(invalid)),
+                invalid => return Err(Error::ExpectedKeyOrClosing(invalid)),
             },
             State::Key(s) => match tokens.next().unwrap() {
                 Token::Colon => state = State::Value { key: s },
-                invalid => return Err(Error::UnexpectedToken(invalid)),
+                invalid => return Err(Error::ExpectedColon(invalid)),
             },
             State::Value { key } => {
                 let json_value = match token {
@@ -85,7 +84,7 @@ pub fn parse_tokens(
                         let token = tokens.next().unwrap();
                         token.try_into().expect("should be valid json value")
                     }
-                    invalid => return Err(Error::UnexpectedToken(invalid.clone())),
+                    invalid => return Err(Error::ExpectedValue(invalid.clone())),
                 };
 
                 if let Some(Value::Object(ref mut map)) = val {
@@ -102,13 +101,13 @@ pub fn parse_tokens(
                 Token::Comma => {
                     state = State::NextObjectKey;
                 }
-                invalid => return Err(Error::UnexpectedToken(invalid.clone())),
+                invalid => return Err(Error::ExpectedCommaOrClosing(invalid.clone())),
             },
             State::NextObjectKey => match tokens.next().unwrap() {
                 Token::String(s) => {
                     state = State::Key(s);
                 }
-                _ => return Err(Error::ExpectedKey),
+                invalid => return Err(Error::ExpectedKey(invalid)),
             },
             State::End => {
                 if fail_on_multiple_value {
@@ -138,14 +137,6 @@ mod tests {
     #[test]
     fn empty() {
         assert_eq!(parse_str("").unwrap_err(), Error::Empty);
-    }
-
-    #[test]
-    fn unmatched() {
-        assert_eq!(
-            parse_str("}").unwrap_err(),
-            Error::Unmatched(Token::ClosedCurlyBracket)
-        );
     }
 
     #[test]
@@ -195,19 +186,6 @@ mod tests {
     }
 
     #[test]
-    fn trailing_commas_not_allowed() {
-        assert_eq!(
-            parse_str(
-                r#"{
-                "rust": "is a must",
-            }"#
-            )
-            .unwrap_err(),
-            Error::ExpectedKey
-        );
-    }
-
-    #[test]
     fn nested_object() {
         let nested = |val| kv_to_map(&[("rust", val)]);
         assert_eq!(
@@ -227,6 +205,17 @@ mod tests {
             .unwrap(),
             nested(nested(nested(nested(Value::String("rust".into())))))
         );
+    }
+
+    #[rstest::rstest]
+    #[case(r#"{"hi", "#, Error::ExpectedColon(Token::Comma))]
+    #[case(r#"{"hi": , "#, Error::ExpectedValue(Token::Comma))]
+    #[case(r#"}"#, Error::ExpectedValue(Token::ClosedCurlyBracket))]
+    #[case(r#"{{"#, Error::ExpectedKeyOrClosing(Token::OpenCurlyBracket))]
+    #[case(r#"{"hi": null null"#, Error::ExpectedCommaOrClosing(Token::Null))]
+    #[case(r#"{"hi": null, }"#, Error::ExpectedKey(Token::ClosedCurlyBracket))]
+    fn expected_error(#[case] json: &str, #[case] expected: Error) {
+        assert_eq!(parse_str(json), Err(expected));
     }
 
     #[rstest_reuse::template]
