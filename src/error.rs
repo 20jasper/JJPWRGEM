@@ -23,6 +23,8 @@ pub enum Error {
     ExpectedColon(Token),
     /// expected json value, found {0:?}
     ExpectedValue(Token),
+    /// expected key or closing brace, found {0:?}
+    ExpectedKeyOrClosing(Token),
     /// {0}
     Custom(String),
 }
