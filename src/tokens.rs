@@ -5,8 +5,8 @@ use crate::{Error, Result};
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Token {
-    OpenCurlyBracket,
-    ClosedCurlyBracket,
+    OpenCurlyBrace,
+    ClosedCurlyBrace,
     Colon,
     Comma,
     String(String),
@@ -28,8 +28,8 @@ pub fn str_to_tokens(s: &str) -> Result<Vec<Token>> {
             continue;
         }
         let val = match c {
-            '{' => Token::OpenCurlyBracket,
-            '}' => Token::ClosedCurlyBracket,
+            '{' => Token::OpenCurlyBrace,
+            '}' => Token::ClosedCurlyBrace,
             ':' => Token::Colon,
             ',' => Token::Comma,
             '"' => Token::String(build_str_while(i + 1, s, &mut chars).into()),
@@ -71,11 +71,11 @@ mod tests {
         assert_eq!(
             str_to_tokens(r#"{"rust": "is a must"}"#).unwrap(),
             [
-                Token::OpenCurlyBracket,
+                Token::OpenCurlyBrace,
                 Token::String("rust".into()),
                 Token::Colon,
                 Token::String("is a must".into()),
-                Token::ClosedCurlyBracket,
+                Token::ClosedCurlyBrace,
             ]
         )
     }
@@ -103,11 +103,11 @@ mod tests {
             ))
             .unwrap(),
             [
-                Token::OpenCurlyBracket,
+                Token::OpenCurlyBrace,
                 Token::String("rust".into()),
                 Token::Colon,
                 expected,
-                Token::ClosedCurlyBracket,
+                Token::ClosedCurlyBrace,
             ]
         )
     }
@@ -128,7 +128,7 @@ mod tests {
             )
             .unwrap(),
             [
-                Token::OpenCurlyBracket,
+                Token::OpenCurlyBrace,
                 Token::String("rust".into()),
                 Token::Colon,
                 Token::String("is a must".into()),
@@ -136,7 +136,7 @@ mod tests {
                 Token::String("name".into()),
                 Token::Colon,
                 Token::String("ferris".into()),
-                Token::ClosedCurlyBracket,
+                Token::ClosedCurlyBrace,
             ]
         );
     }

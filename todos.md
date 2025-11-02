@@ -23,4 +23,4 @@
   - [x] describe expected token
     - [ ] line/column of reason why expected (expected closing curly due to umatched open curly at xyz spot)
   - [x] Unterminated
-  - [ ] make naming more specific regarding Object and arrays (curly/square braces, open/opening/close/closing)
+  - [x] make naming more specific regarding Object and arrays (curly/square braces, open/opening/close/closing)

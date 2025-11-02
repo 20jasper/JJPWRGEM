@@ -39,7 +39,7 @@ pub fn parse_tokens(
         return Err(Error::Empty);
     };
     let val = match peeked {
-        Token::OpenCurlyBracket => parse_object(tokens, fail_on_multiple_value)?,
+        Token::OpenCurlyBrace => parse_object(tokens, fail_on_multiple_value)?,
         Token::Null | Token::String(_) | Token::Boolean(_) => {
             let token = tokens.next().unwrap();
             token.try_into().expect("token should be valid json value")
@@ -78,13 +78,13 @@ impl ObjectState {
     ) -> Result<Self> {
         let res = match self {
             ObjectState::Open => match tokens.next() {
-                Some(Token::OpenCurlyBracket) => ObjectState::KeyOrEnd(HashMap::new()),
-                invalid => return Err(Error::ExpectedOpening(invalid)),
+                Some(Token::OpenCurlyBrace) => ObjectState::KeyOrEnd(HashMap::new()),
+                invalid => return Err(Error::ExpectedOpenCurlyBrace(invalid)),
             },
             ObjectState::KeyOrEnd(map) => match tokens.next() {
-                Some(Token::ClosedCurlyBracket) => ObjectState::End(map),
+                Some(Token::ClosedCurlyBrace) => ObjectState::End(map),
                 Some(Token::String(key)) => ObjectState::Colon { key, map },
-                invalid => return Err(Error::ExpectedKeyOrClosing(invalid)),
+                invalid => return Err(Error::ExpectedKeyOrClosedCurlyBrace(invalid)),
             },
             ObjectState::Colon { map, key } => match tokens.next() {
                 Some(Token::Colon) => ObjectState::Value { map, key },
@@ -93,10 +93,7 @@ impl ObjectState {
             ObjectState::Value { mut map, key } => {
                 let json_value = match tokens.peek() {
                     Some(
-                        Token::OpenCurlyBracket
-                        | Token::String(_)
-                        | Token::Null
-                        | Token::Boolean(_),
+                        Token::OpenCurlyBrace | Token::String(_) | Token::Null | Token::Boolean(_),
                     ) => parse_tokens(tokens, false)?,
                     invalid => return Err(Error::ExpectedValue(invalid.cloned())),
                 };
@@ -105,9 +102,9 @@ impl ObjectState {
                 ObjectState::NextKeyOrEnd(map)
             }
             ObjectState::NextKeyOrEnd(map) => match tokens.next() {
-                Some(Token::ClosedCurlyBracket) => ObjectState::End(map),
+                Some(Token::ClosedCurlyBrace) => ObjectState::End(map),
                 Some(Token::Comma) => ObjectState::Key(map),
-                invalid => return Err(Error::ExpectedCommaOrClosing(invalid.clone())),
+                invalid => return Err(Error::ExpectedCommaOrClosedCurlyBrace(invalid.clone())),
             },
             ObjectState::Key(map) => match tokens.next() {
                 Some(Token::String(key)) => ObjectState::Colon { key, map },
@@ -188,7 +185,7 @@ mod tests {
     fn finished_object_then_another_char() {
         assert_eq!(
             parse_str("{}{").unwrap_err(),
-            Error::TokenAfterEnd(Token::OpenCurlyBracket)
+            Error::TokenAfterEnd(Token::OpenCurlyBrace)
         );
     }
 
@@ -236,19 +233,19 @@ mod tests {
     #[case(r#"{"hi""#, Error::ExpectedColon(None))]
     #[case(r#"{"hi": , "#, Error::ExpectedValue(Some(Token::Comma)))]
     #[case(r#"{"hi":"#, Error::ExpectedValue(None))]
-    #[case(r#"}"#, Error::ExpectedValue(Some(Token::ClosedCurlyBracket)))]
+    #[case(r#"}"#, Error::ExpectedValue(Some(Token::ClosedCurlyBrace)))]
     #[case(r#""#, Error::Empty)]
-    #[case(r#"{{"#, Error::ExpectedKeyOrClosing(Some(Token::OpenCurlyBracket)))]
-    #[case(r#"{"#, Error::ExpectedKeyOrClosing(None))]
+    #[case(
+        r#"{{"#,
+        Error::ExpectedKeyOrClosedCurlyBrace(Some(Token::OpenCurlyBrace))
+    )]
+    #[case(r#"{"#, Error::ExpectedKeyOrClosedCurlyBrace(None))]
     #[case(
         r#"{"hi": null null"#,
-        Error::ExpectedCommaOrClosing(Some(Token::Null))
+        Error::ExpectedCommaOrClosedCurlyBrace(Some(Token::Null))
     )]
-    #[case(r#"{"hi": null     "#, Error::ExpectedCommaOrClosing(None))]
-    #[case(
-        r#"{"hi": null, }"#,
-        Error::ExpectedKey(Some(Token::ClosedCurlyBracket))
-    )]
+    #[case(r#"{"hi": null     "#, Error::ExpectedCommaOrClosedCurlyBrace(None))]
+    #[case(r#"{"hi": null, }"#, Error::ExpectedKey(Some(Token::ClosedCurlyBrace)))]
     #[case(r#"{"hi": null, "#, Error::ExpectedKey(None))]
     fn expected_error(#[case] json: &str, #[case] expected: Error) {
         assert_eq!(parse_str(json), Err(expected));
