@@ -78,27 +78,23 @@ pub fn parse_tokens(
                 Token::Colon => state = State::Value { key: s },
                 invalid => return Err(Error::UnexpectedToken(invalid)),
             },
-            State::Value { key } => match token {
-                Token::OpenCurlyBracket => {
-                    if let Some(Value::Object(ref mut map)) = val {
-                        let obj = parse_tokens(tokens, false)?;
-                        map.insert(key, obj);
-                        state = State::NextObjectKeyOrFinish;
-                    } else {
-                        unreachable!("Value must be a map at this point")
+            State::Value { key } => {
+                let json_value = match token {
+                    Token::OpenCurlyBracket => parse_tokens(tokens, false)?,
+                    Token::String(_) | Token::Null | Token::Boolean(_) => {
+                        let token = tokens.next().unwrap();
+                        token.try_into().expect("should be valid json value")
                     }
+                    invalid => return Err(Error::UnexpectedToken(invalid.clone())),
+                };
+
+                if let Some(Value::Object(ref mut map)) = val {
+                    map.insert(key, json_value);
+                    state = State::NextObjectKeyOrFinish;
+                } else {
+                    unreachable!("Value must be a map at this point")
                 }
-                Token::String(_) | Token::Null | Token::Boolean(_) => {
-                    let token = tokens.next().unwrap();
-                    if let Some(Value::Object(ref mut map)) = val {
-                        map.insert(key, token.try_into().expect("should be valid json value"));
-                        state = State::NextObjectKeyOrFinish;
-                    } else {
-                        unreachable!("Value must be a map at this point")
-                    }
-                }
-                invalid => return Err(Error::UnexpectedToken(invalid.clone())),
-            },
+            }
             State::NextObjectKeyOrFinish => match tokens.next().unwrap() {
                 Token::ClosedCurlyBracket => {
                     state = State::End;
