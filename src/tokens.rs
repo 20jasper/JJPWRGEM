@@ -1,7 +1,6 @@
-use core::iter;
-
-use crate::string::build_str_while;
 use crate::{Error, Result};
+use core::iter;
+use core::{iter::Peekable, str::CharIndices};
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Token {
@@ -60,6 +59,24 @@ pub fn str_to_tokens(s: &str) -> Result<Vec<Token>> {
     }
 
     Ok(res)
+}
+
+pub fn build_str_while<'a>(
+    start: usize,
+    input: &'a str,
+    chars: &mut Peekable<CharIndices<'a>>,
+) -> Result<&'a str> {
+    let mut end = start;
+
+    while let Some((i, c)) = chars.next_if(|(_, c)| *c != '"') {
+        end = i + c.len_utf8();
+    }
+
+    if !matches!(chars.next(), Some((_, '"'))) {
+        return Err(Error::ExpectedQuote(None));
+    }
+
+    Ok(&input[start..end])
 }
 
 #[cfg(test)]
