@@ -3,7 +3,7 @@
 - [x] primitive values
   - [x] string values
     - [ ] escapes
-    - [ ] bug where does not check for termination properly
+    - [x] bug where does not check for termination properly
   - [ ] numbers
     - [ ] positive/negative (+/-)
     - [ ] powers (e/E)

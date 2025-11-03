@@ -32,7 +32,7 @@ pub fn str_to_tokens(s: &str) -> Result<Vec<Token>> {
             '}' => Token::ClosedCurlyBrace,
             ':' => Token::Colon,
             ',' => Token::Comma,
-            '"' => Token::String(build_str_while(i + 1, s, &mut chars).into()),
+            '"' => Token::String(build_str_while(i + 1, s, &mut chars)?.into()),
             'n' | 't' | 'f' => {
                 let expected = match c {
                     'n' => NULL,
@@ -112,9 +112,11 @@ mod tests {
         )
     }
 
-    #[test]
-    fn should_not_parse_invalid_syntax() {
-        assert_eq!(str_to_tokens(r#"a"#), Err(Error::UnexpectedCharacter('a')));
+    #[rstest::rstest]
+    #[case(r#"a"#, Error::UnexpectedCharacter('a'))]
+    #[case(r#""hi"#, Error::ExpectedQuote(None))]
+    fn should_not_parse_invalid_syntax(#[case] json: &str, #[case] error: Error) {
+        assert_eq!(str_to_tokens(json), Err(error));
     }
 
     #[test]

@@ -10,21 +10,25 @@ use crate::{
 };
 
 mod string {
+    use crate::error::{Error, Result};
     use core::{iter::Peekable, str::CharIndices};
 
     pub fn build_str_while<'a>(
         start: usize,
         input: &'a str,
         chars: &mut Peekable<CharIndices<'a>>,
-    ) -> &'a str {
+    ) -> Result<&'a str> {
         let mut end = start;
 
         while let Some((i, c)) = chars.next_if(|(_, c)| *c != '"') {
             end = i + c.len_utf8();
         }
-        chars.next();
 
-        &input[start..end]
+        if !matches!(chars.next(), Some((_, '"'))) {
+            return Err(Error::ExpectedQuote(None));
+        }
+
+        Ok(&input[start..end])
     }
 }
 
