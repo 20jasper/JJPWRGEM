@@ -25,6 +25,8 @@ pub enum Error {
     ExpectedCommaOrClosedCurlyBrace(Option<Token>),
     /// expected open curly curly brace, found {0:?}
     ExpectedOpenCurlyBrace(Option<Token>),
+    /// expected quote, found {0:?}
+    ExpectedQuote(Option<char>),
     /// {0}
     Custom(String),
 }
