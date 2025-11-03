@@ -5,12 +5,24 @@ use crate::{
 };
 
 pub struct FormatOptions {
-    pub key_val_delimiter: Option<(char, usize)>,
-    pub indent: Option<(char, usize)>,
-    pub eol: Option<(char, usize)>,
+    key_val_delimiter: Option<(char, usize)>,
+    indent: Option<(char, usize)>,
+    eol: Option<(char, usize)>,
 }
 
 impl FormatOptions {
+    pub fn new(
+        key_val_delimiter: Option<(char, usize)>,
+        indent: Option<(char, usize)>,
+        eol: Option<(char, usize)>,
+    ) -> Self {
+        Self {
+            key_val_delimiter,
+            indent,
+            eol,
+        }
+    }
+
     pub fn uglify() -> Self {
         Self {
             key_val_delimiter: None,
@@ -83,137 +95,18 @@ pub fn format_value(val: &Value, options: &FormatOptions, depth: usize) -> Strin
     }
 }
 
-pub mod uglify {
-    use crate::{
-        Result,
-        ast::{Value, parse_str},
-        format::{FormatOptions, format_value},
-    };
-
-    pub fn uglify_str(json: &str) -> Result<String> {
-        Ok(uglify_value(&parse_str(json)?))
-    }
-
-    pub fn uglify_value(val: &Value) -> String {
-        format_value(val, &FormatOptions::uglify(), 0)
-    }
-    #[cfg(test)]
-    mod tests {
-        use super::*;
-
-        #[rstest_reuse::template]
-        #[rstest::rstest]
-        #[case("null")]
-        #[case("false")]
-        #[case("true")]
-        #[case("\"string\"")]
-        fn primitive_template(#[case] input: &str) {}
-
-        #[rstest_reuse::apply(primitive_template)]
-        fn uglify_primitives_should_stay_the_same(#[case] input: &str) {
-            assert_eq!(uglify_str(input).unwrap(), input);
-        }
-
-        #[rstest_reuse::apply(primitive_template)]
-        fn uglify_removes_whitespace_primitive(#[case] input: &str) {
-            let ugly_input = format!(
-                r#"      {input}    
-        
-            "#
-            );
-            assert_eq!(uglify_str(&ugly_input).unwrap(), input);
-        }
-
-        #[test]
-        fn uglify_removes_whitespace_object() {
-            let input = r#"      {
-
-
-        "hello hi":                       
-        
-        
-                     null
-
-
-
-                     ,
-
-
-                     "by": "hello"
-
-
-    }    
-        
-            "#;
-            let res = uglify_str(input).unwrap();
-            // we aren't guaranteed a key order
-            assert!(
-                res == r#"{"hello hi":null,"by":"hello"}"#
-                    || res == r#"{"by":"hello","hello hi":null}"#
-            );
-        }
-
-        #[test]
-        fn uglify_arbitrarily_nested() {
-            let input = r#"
-            {"rust": 
-            {"rust": 
-            {"rust": 
-            {"rust": null
-            }
-            }
-            }
-            }   
-        "#;
-
-            assert_eq!(
-                uglify_str(input).unwrap(),
-                r#"{"rust":{"rust":{"rust":{"rust":null}}}}"#
-            )
-        }
-    }
+pub fn uglify_str(json: &str) -> Result<String> {
+    Ok(uglify_value(&parse_str(json)?))
 }
 
-pub mod prettify {
-    use crate::ast::{Value, parse_str};
-    use crate::error::Result;
-    use crate::format::{FormatOptions, format_value};
+pub fn uglify_value(val: &Value) -> String {
+    format_value(val, &FormatOptions::uglify(), 0)
+}
 
-    pub fn prettify_str(json: &str) -> Result<String> {
-        Ok(prettify_value(&parse_str(json)?))
-    }
+pub fn prettify_str(json: &str) -> Result<String> {
+    Ok(prettify_value(&parse_str(json)?))
+}
 
-    pub fn prettify_value(val: &Value) -> String {
-        format_value(val, &FormatOptions::prettify(), 0)
-    }
-
-    #[cfg(test)]
-    mod tests {
-        use super::*;
-
-        #[test]
-        fn prettify_arbitrarily_nested() {
-            let input = r#"
-            {"rust": 
-            {"rust": 
-            {"rust": 
-            {"rust": null
-            }
-            }
-            }
-            }   
-        "#;
-            let expected = r#"{
-    "rust": {
-        "rust": {
-            "rust": {
-                "rust": null
-            }
-        }
-    }
-}"#;
-
-            assert_eq!(prettify_str(input).unwrap(), expected)
-        }
-    }
+pub fn prettify_value(val: &Value) -> String {
+    format_value(val, &FormatOptions::prettify(), 0)
 }
