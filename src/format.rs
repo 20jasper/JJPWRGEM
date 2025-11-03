@@ -6,34 +6,69 @@ use crate::{
     tokens::NULL,
 };
 
-struct FormatOptions {
+pub struct FormatOptions {
     key_val_delimiter: Option<(char, usize)>,
     indent: Option<(char, usize)>,
+    eol: Option<(char, usize)>,
 }
 
-pub fn format_str(json: &str) -> Result<String> {
-    Ok(format_value(&parse_str(json)?, 0))
+impl FormatOptions {
+    fn uglify() -> Self {
+        Self {
+            key_val_delimiter: None,
+            indent: None,
+            eol: None,
+        }
+    }
+
+    fn prettify() -> Self {
+        Self {
+            key_val_delimiter: Some((' ', 1)),
+            indent: Some((' ', 4)),
+            eol: Some(('\n', 1)),
+        }
+    }
+
+    fn get_key_val_delimiter(&self) -> String {
+        if let Some((c, size)) = self.key_val_delimiter {
+            [c].repeat(size).into_iter().collect()
+        } else {
+            "".into()
+        }
+    }
+
+    fn get_indent(&self, level: usize) -> String {
+        if let Some((c, size)) = self.indent {
+            [c].repeat(size * level).into_iter().collect()
+        } else {
+            "".into()
+        }
+    }
 }
 
-pub fn format_value(val: &Value, depth: usize) -> String {
-    const SPACES_PER_INDENT: usize = 4;
-    let spaces = depth * SPACES_PER_INDENT;
+pub fn format_str(json: &str, options: &FormatOptions) -> Result<String> {
+    Ok(format_value(&parse_str(json)?, options, 0))
+}
+
+pub fn format_value(val: &Value, options: &FormatOptions, depth: usize) -> String {
+    let kv_delim = options.get_key_val_delimiter();
+
     match val {
         Value::Null => NULL.to_owned(),
         Value::String(s) => format!("\"{s}\""),
         Value::Object(hash_map) => {
             let mut pairs = vec![];
             for (k, val) in hash_map {
+                let indent = options.get_indent(depth + 1);
                 pairs.push(format!(
-                    "{}{}: {}",
-                    " ".repeat(spaces + SPACES_PER_INDENT),
-                    format_value(&Value::String(k.clone()), 0),
-                    format_value(val, depth + 1)
+                    "{indent}{}:{kv_delim}{}",
+                    format_value(&Value::String(k.clone()), options, 0),
+                    format_value(val, options, depth + 1)
                 ));
             }
             let lines = iter::once("{".into())
                 .chain(iter::once(pairs.join(",\n")))
-                .chain(iter::once(format!("{}}}", " ".repeat(spaces))));
+                .chain(iter::once(format!("{}}}", options.get_indent(depth))));
             let lines = lines.collect::<Vec<_>>();
             lines.join("\n")
         }
@@ -150,14 +185,14 @@ pub mod uglify {
 pub mod prettify {
     use crate::ast::{Value, parse_str};
     use crate::error::Result;
-    use crate::format::format_value;
+    use crate::format::{FormatOptions, format_value};
 
     pub fn prettify_str(json: &str) -> Result<String> {
         Ok(prettify_value(&parse_str(json)?, 0))
     }
 
     pub fn prettify_value(val: &Value, depth: usize) -> String {
-        format_value(val, depth)
+        format_value(val, &FormatOptions::prettify(), depth)
     }
 
     #[cfg(test)]
