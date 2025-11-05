@@ -1,5 +1,5 @@
 use crate::error::{ErrorKind, Result};
-use crate::tokens::{Token, str_to_tokens};
+use crate::tokens::{Token, TokenWithContext, str_to_tokens};
 use core::iter::Peekable;
 use std::collections::HashMap;
 
@@ -26,7 +26,13 @@ impl TryFrom<Token> for Value {
 
 pub fn parse_str(json: &str) -> Result<Value> {
     let tokens = str_to_tokens(json)?;
-    parse_tokens(&mut tokens.into_iter().peekable(), true)
+    parse_tokens(
+        &mut tokens
+            .into_iter()
+            .map(|TokenWithContext { token, .. }| token)
+            .peekable(),
+        true,
+    )
 }
 
 pub fn parse_tokens(

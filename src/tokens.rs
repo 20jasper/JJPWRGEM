@@ -1,6 +1,7 @@
 use crate::error::Error;
 use crate::{ErrorKind, Result};
 use core::iter;
+use core::ops::Range;
 use core::{iter::Peekable, str::CharIndices};
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -14,11 +15,17 @@ pub enum Token {
     Boolean(bool),
 }
 
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub struct TokenWithContext {
+    pub token: Token,
+    pub range: Range<usize>,
+}
+
 pub const NULL: &str = "null";
 pub const FALSE: &str = "false";
 pub const TRUE: &str = "true";
 
-pub fn str_to_tokens(s: &str) -> Result<Vec<Token>> {
+pub fn str_to_tokens(s: &str) -> Result<Vec<TokenWithContext>> {
     let mut chars = s.char_indices().peekable();
 
     let mut res = vec![];
@@ -27,7 +34,7 @@ pub fn str_to_tokens(s: &str) -> Result<Vec<Token>> {
         if c.is_whitespace() {
             continue;
         }
-        let val = match c {
+        let token = match c {
             '{' => Token::OpenCurlyBrace,
             '}' => Token::ClosedCurlyBrace,
             ':' => Token::Colon,
@@ -66,7 +73,12 @@ pub fn str_to_tokens(s: &str) -> Result<Vec<Token>> {
                 ));
             }
         };
-        res.push(val);
+        let start = i;
+        let end = *chars.peek().map(|(i, _)| i).unwrap_or(&s.len());
+        res.push(TokenWithContext {
+            token,
+            range: start..end,
+        });
     }
 
     Ok(res)
@@ -90,6 +102,15 @@ pub fn build_str_while<'a>(
     Ok(&input[start..end])
 }
 
+impl<I> From<I> for Token
+where
+    I: Into<String>,
+{
+    fn from(value: I) -> Self {
+        Token::String(value.into())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -99,11 +120,26 @@ mod tests {
         assert_eq!(
             str_to_tokens(r#"{"rust": "is a must"}"#).unwrap(),
             [
-                Token::OpenCurlyBrace,
-                Token::String("rust".into()),
-                Token::Colon,
-                Token::String("is a must".into()),
-                Token::ClosedCurlyBrace,
+                TokenWithContext {
+                    token: Token::OpenCurlyBrace,
+                    range: 0..1
+                },
+                TokenWithContext {
+                    token: "rust".into(),
+                    range: 1..7
+                },
+                TokenWithContext {
+                    token: Token::Colon,
+                    range: 7..8
+                },
+                TokenWithContext {
+                    token: "is a must".into(),
+                    range: 9..20
+                },
+                TokenWithContext {
+                    token: Token::ClosedCurlyBrace,
+                    range: 20..21
+                }
             ]
         )
     }
@@ -118,24 +154,45 @@ mod tests {
 
     #[rstest_reuse::apply(primitive_template)]
     fn primitives(#[case] json: &str, #[case] expected: Token) {
-        assert_eq!(str_to_tokens(json), Ok(vec![expected]));
+        assert_eq!(
+            str_to_tokens(json),
+            Ok(vec![TokenWithContext {
+                token: expected,
+                range: 0..json.len()
+            }])
+        );
     }
 
     #[rstest_reuse::apply(primitive_template)]
     fn primitive_object_value(#[case] primitive: &str, #[case] expected: Token) {
-        assert_eq!(
-            str_to_tokens(&format!(
-                r#"{{
+        let json = format!(
+            r#"{{
                 "rust": {primitive}
             }}"#
-            ))
-            .unwrap(),
+        );
+        assert_eq!(
+            str_to_tokens(&json).unwrap(),
             [
-                Token::OpenCurlyBrace,
-                Token::String("rust".into()),
-                Token::Colon,
-                expected,
-                Token::ClosedCurlyBrace,
+                TokenWithContext {
+                    token: Token::OpenCurlyBrace,
+                    range: 0..1
+                },
+                TokenWithContext {
+                    token: "rust".into(),
+                    range: 18..24
+                },
+                TokenWithContext {
+                    token: Token::Colon,
+                    range: 24..25
+                },
+                TokenWithContext {
+                    token: expected,
+                    range: 26..(26 + primitive.len())
+                },
+                TokenWithContext {
+                    token: Token::ClosedCurlyBrace,
+                    range: (json.len() - 1)..json.len()
+                }
             ]
         )
     }
@@ -154,20 +211,47 @@ mod tests {
             str_to_tokens(
                 r#"{
                 "rust": "is a must",
-                "name": "ferris" 
+                "name": "ferris"
             }"#
             )
             .unwrap(),
             [
-                Token::OpenCurlyBrace,
-                Token::String("rust".into()),
-                Token::Colon,
-                Token::String("is a must".into()),
-                Token::Comma,
-                Token::String("name".into()),
-                Token::Colon,
-                Token::String("ferris".into()),
-                Token::ClosedCurlyBrace,
+                TokenWithContext {
+                    token: Token::OpenCurlyBrace,
+                    range: 0..1
+                },
+                TokenWithContext {
+                    token: "rust".into(),
+                    range: 18..24
+                },
+                TokenWithContext {
+                    token: Token::Colon,
+                    range: 24..25
+                },
+                TokenWithContext {
+                    token: "is a must".into(),
+                    range: 26..37
+                },
+                TokenWithContext {
+                    token: Token::Comma,
+                    range: 37..38
+                },
+                TokenWithContext {
+                    token: "name".into(),
+                    range: 55..61
+                },
+                TokenWithContext {
+                    token: Token::Colon,
+                    range: 61..62
+                },
+                TokenWithContext {
+                    token: "ferris".into(),
+                    range: 63..71
+                },
+                TokenWithContext {
+                    token: Token::ClosedCurlyBrace,
+                    range: 84..85
+                }
             ]
         );
     }
