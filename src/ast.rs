@@ -1,3 +1,4 @@
+use crate::Error;
 use crate::error::{ErrorKind, Result};
 use crate::tokens::{Token, TokenWithContext, str_to_tokens};
 use core::iter::Peekable;
@@ -26,17 +27,12 @@ impl TryFrom<Token> for Value {
 
 pub fn parse_str(json: &str) -> Result<Value> {
     let tokens = str_to_tokens(json)?;
-    parse_tokens(
-        &mut tokens
-            .into_iter()
-            .map(|TokenWithContext { token, .. }| token)
-            .peekable(),
-        true,
-    )
+    parse_tokens(&mut tokens.into_iter().peekable(), json, true)
 }
 
 pub fn parse_tokens(
-    tokens: &mut Peekable<impl Iterator<Item = Token>>,
+    tokens: &mut Peekable<impl Iterator<Item = TokenWithContext>>,
+    text: &str,
     fail_on_multiple_value: bool,
 ) -> Result<Value> {
     let peeked = if let Some(peeked) = tokens.peek() {
@@ -44,17 +40,27 @@ pub fn parse_tokens(
     } else {
         return Err(ErrorKind::Empty.into());
     };
-    let val = match peeked {
-        Token::OpenCurlyBrace => parse_object(tokens, fail_on_multiple_value)?,
+    let val = match &peeked.token {
+        Token::OpenCurlyBrace => parse_object(tokens, text, fail_on_multiple_value)?,
         Token::Null | Token::String(_) | Token::Boolean(_) => {
-            let token = tokens.next().unwrap();
+            let TokenWithContext { token, .. } = tokens.next().unwrap();
             token.try_into().expect("token should be valid json value")
         }
-        invalid => return Err(ErrorKind::ExpectedValue(Some(invalid.clone())).into()),
+        invalid => {
+            return Err(Error::new(
+                ErrorKind::ExpectedValue(Some(invalid.clone())),
+                peeked.range.clone(),
+                text,
+            ));
+        }
     };
 
-    if fail_on_multiple_value && let Some(token) = tokens.peek() {
-        return Err(ErrorKind::TokenAfterEnd(token.clone()).into());
+    if fail_on_multiple_value && let Some(TokenWithContext { token, range }) = tokens.peek() {
+        return Err(Error::new(
+            ErrorKind::TokenAfterEnd(token.clone()),
+            range.clone(),
+            text,
+        ));
     }
     Ok(val)
 }
@@ -76,50 +82,72 @@ enum ObjectState {
     End(HashMap<String, Value>),
 }
 
+// TODO rename
+fn error_maker(
+    f: impl Fn(Option<Token>) -> ErrorKind,
+    maybe_token: Option<TokenWithContext>,
+    text: &str,
+) -> Error {
+    if let Some(TokenWithContext { token, range }) = maybe_token {
+        Error::new(f(Some(token)), range, text)
+    } else {
+        // TODO will everything explode with this range
+        Error::new(f(None), text.len()..text.len() + 1, text)
+    }
+}
+
+fn next_token(tokens: &mut Peekable<impl Iterator<Item = TokenWithContext>>) -> Option<Token> {
+    tokens.next().map(|TokenWithContext { token, range }| token)
+}
+fn peek_token(tokens: &mut Peekable<impl Iterator<Item = TokenWithContext>>) -> Option<&Token> {
+    tokens.peek().map(|TokenWithContext { token, range }| token)
+}
+
 impl ObjectState {
     fn process(
         self,
-        tokens: &mut Peekable<impl Iterator<Item = Token>>,
+        tokens: &mut Peekable<impl Iterator<Item = TokenWithContext>>,
+        text: &str,
         fail_on_multiple_value: bool,
     ) -> Result<Self> {
         let res = match self {
-            ObjectState::Open => match tokens.next() {
+            ObjectState::Open => match next_token(tokens) {
                 Some(Token::OpenCurlyBrace) => ObjectState::KeyOrEnd(HashMap::new()),
                 invalid => return Err(ErrorKind::ExpectedOpenCurlyBrace(invalid).into()),
             },
-            ObjectState::KeyOrEnd(map) => match tokens.next() {
+            ObjectState::KeyOrEnd(map) => match next_token(tokens) {
                 Some(Token::ClosedCurlyBrace) => ObjectState::End(map),
                 Some(Token::String(key)) => ObjectState::Colon { key, map },
                 invalid => return Err(ErrorKind::ExpectedKeyOrClosedCurlyBrace(invalid).into()),
             },
-            ObjectState::Colon { map, key } => match tokens.next() {
+            ObjectState::Colon { map, key } => match next_token(tokens) {
                 Some(Token::Colon) => ObjectState::Value { map, key },
                 invalid => return Err(ErrorKind::ExpectedColon(invalid).into()),
             },
             ObjectState::Value { mut map, key } => {
-                let json_value = match tokens.peek() {
+                let json_value = match peek_token(tokens) {
                     Some(
                         Token::OpenCurlyBrace | Token::String(_) | Token::Null | Token::Boolean(_),
-                    ) => parse_tokens(tokens, false)?,
+                    ) => parse_tokens(tokens, text, false)?,
                     invalid => return Err(ErrorKind::ExpectedValue(invalid.cloned()).into()),
                 };
 
                 map.insert(key, json_value);
                 ObjectState::NextKeyOrEnd(map)
             }
-            ObjectState::NextKeyOrEnd(map) => match tokens.next() {
+            ObjectState::NextKeyOrEnd(map) => match next_token(tokens) {
                 Some(Token::ClosedCurlyBrace) => ObjectState::End(map),
                 Some(Token::Comma) => ObjectState::Key(map),
                 invalid => {
                     return Err(ErrorKind::ExpectedCommaOrClosedCurlyBrace(invalid.clone()).into());
                 }
             },
-            ObjectState::Key(map) => match tokens.next() {
+            ObjectState::Key(map) => match next_token(tokens) {
                 Some(Token::String(key)) => ObjectState::Colon { key, map },
                 invalid => return Err(ErrorKind::ExpectedKey(invalid).into()),
             },
             ObjectState::End(map) => {
-                if fail_on_multiple_value && let Some(peeked) = tokens.peek() {
+                if fail_on_multiple_value && let Some(peeked) = peek_token(tokens) {
                     return Err(ErrorKind::TokenAfterEnd(peeked.clone()).into());
                 }
                 ObjectState::End(map)
@@ -131,20 +159,21 @@ impl ObjectState {
 }
 
 fn parse_object(
-    tokens: &mut Peekable<impl Iterator<Item = Token>>,
+    tokens: &mut Peekable<impl Iterator<Item = TokenWithContext>>,
+    text: &str,
     fail_on_multiple_value: bool,
 ) -> Result<Value> {
     let mut state = ObjectState::Open;
 
     while tokens.peek().is_some() {
-        state = state.process(tokens, fail_on_multiple_value)?;
+        state = state.process(tokens, text, fail_on_multiple_value)?;
 
         if !fail_on_multiple_value && let ObjectState::End(map) = state {
             return Ok(Value::Object(map));
         }
     }
 
-    match state.process(tokens, fail_on_multiple_value) {
+    match state.process(tokens, text, fail_on_multiple_value) {
         Ok(ObjectState::End(map)) => Ok(Value::Object(map)),
         Err(e) => Err(e),
         _ => unreachable!("object state will always be end or error"),
@@ -241,7 +270,7 @@ mod tests {
     #[case(r#"{"hi""#, ErrorKind::ExpectedColon(None))]
     #[case(r#"{"hi": , "#, ErrorKind::ExpectedValue(Some(Token::Comma)))]
     #[case(r#"{"hi":"#, ErrorKind::ExpectedValue(None))]
-    #[case(r#"}"#, ErrorKind::ExpectedValue(Some(Token::ClosedCurlyBrace)))]
+    #[case(r#"}"#, Error::new(ErrorKind::ExpectedValue(Some(Token::ClosedCurlyBrace)), 0..1, "}"))]
     #[case(r#""#, ErrorKind::Empty)]
     #[case(
         r#"{{"#,
@@ -261,7 +290,7 @@ mod tests {
         ErrorKind::ExpectedKey(Some(Token::ClosedCurlyBrace))
     )]
     #[case(r#"{"hi": null, "#, ErrorKind::ExpectedKey(None))]
-    fn expected_error(#[case] json: &str, #[case] expected: ErrorKind) {
+    fn expected_error(#[case] json: &str, #[case] expected: impl Into<Error>) {
         assert_eq!(parse_str(json), Err(expected.into()));
     }
 
