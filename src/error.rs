@@ -3,7 +3,7 @@ use core::ops::Range;
 use displaydoc::Display;
 use thiserror::Error;
 
-use crate::tokens::Token;
+use crate::tokens::{Token, TokenWithContext};
 
 pub type Result<T> = std::result::Result<T, Error>;
 
@@ -60,6 +60,18 @@ impl Error {
             range,
             line,
             column,
+        }
+    }
+
+    pub fn from_maybe_token_with_context(
+        f: impl Fn(Option<Token>) -> ErrorKind,
+        maybe_token: Option<TokenWithContext>,
+        text: &str,
+    ) -> Self {
+        if let Some(TokenWithContext { token, range }) = maybe_token {
+            Error::new(f(Some(token)), range, text)
+        } else {
+            Error::new(f(None), text.len()..text.len() + 1, text)
         }
     }
 }
