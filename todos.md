@@ -16,8 +16,10 @@
 - [x] nested object
   - [x] arbitrarily nested
 - [ ] validate whitespace to skip
-- [ ] make uglifier
-- [ ] make prettifier
+- [x] formatting
+  - [x] make uglifier
+  - [x] make prettifier
+  - [x] general options
 - [ ] error handling
   - [ ] line/column
   - [x] describe expected token
