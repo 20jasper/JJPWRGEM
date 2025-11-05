@@ -38,7 +38,11 @@ pub fn parse_tokens(
     let peeked = if let Some(peeked) = tokens.peek() {
         peeked
     } else {
-        return Err(ErrorKind::Empty.into());
+        return Err(Error::new(
+            ErrorKind::ExpectedValue(None),
+            text.len().saturating_sub(1)..text.len(),
+            text,
+        ));
     };
     let val = match &peeked.token {
         Token::OpenCurlyBrace => parse_object(tokens, text, fail_on_multiple_value)?,
@@ -193,11 +197,6 @@ mod tests {
     }
 
     #[test]
-    fn empty() {
-        assert_eq!(parse_str("").unwrap_err(), ErrorKind::Empty.into());
-    }
-
-    #[test]
     fn empty_object() {
         assert_eq!(parse_str("{}").unwrap(), kv_to_map(&[]));
     }
@@ -271,7 +270,7 @@ mod tests {
     #[case(r#"{"hi": , "#, ErrorKind::ExpectedValue(Some(Token::Comma)))]
     #[case(r#"{"hi":"#, ErrorKind::ExpectedValue(None))]
     #[case(r#"}"#, Error::new(ErrorKind::ExpectedValue(Some(Token::ClosedCurlyBrace)), 0..1, "}"))]
-    #[case(r#""#, ErrorKind::Empty)]
+    #[case(r#""#, Error::new(ErrorKind::ExpectedValue(None), 0..0, ""))]
     #[case(
         r#"{{"#,
         ErrorKind::ExpectedKeyOrClosedCurlyBrace(Some(Token::OpenCurlyBrace))

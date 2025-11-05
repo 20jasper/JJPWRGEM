@@ -9,8 +9,6 @@ pub type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Debug, PartialEq, Eq, Display)]
 pub enum ErrorKind {
-    /// Json may not be empty
-    Empty,
     /// Unexpected character {0:?}
     UnexpectedCharacter(char),
     /// unexpected token {0:?} after json finished
@@ -79,15 +77,17 @@ impl From<ErrorKind> for Error {
 }
 
 fn get_line_and_column(text: &str, range: Range<usize>) -> (usize, usize) {
-    let to_search = &text[..=range.start];
-    // TODO, should I use an option for this?????
-    assert!(!to_search.is_empty());
+    let to_search = if let Some(to_search) = text.get(..=range.start) {
+        to_search
+    } else {
+        return (1, 1);
+    };
 
     let lines = to_search.lines().count();
     let column = to_search
         .lines()
         .last()
-        .expect("should have a line")
+        .expect("to_search will never be empty")
         .chars()
         .count();
     (lines, column)
@@ -98,6 +98,7 @@ mod tests {
     use super::*;
 
     #[rstest::rstest]
+    #[case("", 0..0, (1,1))]
     #[case("1\n2\n3", 0..1, (1,1))]
     #[case("1\n2\n3", 2..3, (2,1))]
     #[case("1\n234", 3..4, (2,2))]
