@@ -1,4 +1,4 @@
-use crate::{Error, Result};
+use crate::{ErrorKind, Result};
 use core::iter;
 use core::{iter::Peekable, str::CharIndices};
 
@@ -50,10 +50,10 @@ pub fn str_to_tokens(s: &str) -> Result<Vec<Token>> {
                         _ => unreachable!("{c} is not able to be reached"),
                     }
                 } else {
-                    return Err(Error::UnexpectedCharacter(c));
+                    return Err(ErrorKind::UnexpectedCharacter(c).into());
                 }
             }
-            invalid => return Err(Error::UnexpectedCharacter(invalid)),
+            invalid => return Err(ErrorKind::UnexpectedCharacter(invalid).into()),
         };
         res.push(val);
     }
@@ -73,7 +73,7 @@ pub fn build_str_while<'a>(
     }
 
     if !matches!(chars.next(), Some((_, '"'))) {
-        return Err(Error::ExpectedQuote(None));
+        return Err(ErrorKind::ExpectedQuote(None).into());
     }
 
     Ok(&input[start..end])
@@ -130,10 +130,10 @@ mod tests {
     }
 
     #[rstest::rstest]
-    #[case(r#"a"#, Error::UnexpectedCharacter('a'))]
-    #[case(r#""hi"#, Error::ExpectedQuote(None))]
-    fn should_not_parse_invalid_syntax(#[case] json: &str, #[case] error: Error) {
-        assert_eq!(str_to_tokens(json), Err(error));
+    #[case(r#"a"#, ErrorKind::UnexpectedCharacter('a'))]
+    #[case(r#""hi"#, ErrorKind::ExpectedQuote(None))]
+    fn should_not_parse_invalid_syntax(#[case] json: &str, #[case] error: ErrorKind) {
+        assert_eq!(str_to_tokens(json), Err(error.into()));
     }
 
     #[test]

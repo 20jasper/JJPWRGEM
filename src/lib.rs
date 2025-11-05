@@ -4,4 +4,4 @@ mod tokens;
 
 pub mod format;
 
-pub use crate::error::{Error, Result};
+pub use crate::error::{ErrorKind, Result};
