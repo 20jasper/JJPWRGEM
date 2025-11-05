@@ -115,14 +115,35 @@ impl ObjectState {
         fail_on_multiple_value: bool,
     ) -> Result<Self> {
         let res = match self {
-            ObjectState::Open => match next_token(tokens) {
-                Some(Token::OpenCurlyBrace) => ObjectState::KeyOrEnd(HashMap::new()),
-                invalid => return Err(ErrorKind::ExpectedOpenCurlyBrace(invalid).into()),
+            ObjectState::Open => match tokens.next() {
+                Some(TokenWithContext {
+                    token: Token::OpenCurlyBrace,
+                    ..
+                }) => ObjectState::KeyOrEnd(HashMap::new()),
+                maybe_token => {
+                    return Err(error_maker(
+                        ErrorKind::ExpectedOpenCurlyBrace,
+                        maybe_token,
+                        text,
+                    ));
+                }
             },
-            ObjectState::KeyOrEnd(map) => match next_token(tokens) {
-                Some(Token::ClosedCurlyBrace) => ObjectState::End(map),
-                Some(Token::String(key)) => ObjectState::Colon { key, map },
-                invalid => return Err(ErrorKind::ExpectedKeyOrClosedCurlyBrace(invalid).into()),
+            ObjectState::KeyOrEnd(map) => match tokens.next() {
+                Some(TokenWithContext {
+                    token: Token::ClosedCurlyBrace,
+                    ..
+                }) => ObjectState::End(map),
+                Some(TokenWithContext {
+                    token: Token::String(key),
+                    ..
+                }) => ObjectState::Colon { key, map },
+                maybe_token => {
+                    return Err(error_maker(
+                        ErrorKind::ExpectedKeyOrClosedCurlyBrace,
+                        maybe_token,
+                        text,
+                    ));
+                }
             },
             ObjectState::Colon { map, key } => match next_token(tokens) {
                 Some(Token::Colon) => ObjectState::Value { map, key },
@@ -271,11 +292,8 @@ mod tests {
     #[case(r#"{"hi":"#, ErrorKind::ExpectedValue(None))]
     #[case(r#"}"#, Error::new(ErrorKind::ExpectedValue(Some(Token::ClosedCurlyBrace)), 0..1, "}"))]
     #[case(r#""#, Error::new(ErrorKind::ExpectedValue(None), 0..0, ""))]
-    #[case(
-        r#"{{"#,
-        ErrorKind::ExpectedKeyOrClosedCurlyBrace(Some(Token::OpenCurlyBrace))
-    )]
-    #[case(r#"{"#, ErrorKind::ExpectedKeyOrClosedCurlyBrace(None))]
+    #[case(r#"{{"#,Error::new(ErrorKind::ExpectedKeyOrClosedCurlyBrace(Some(Token::OpenCurlyBrace)), 1..2, "{{" ))]
+    #[case( r#"{"#, Error::new(ErrorKind::ExpectedKeyOrClosedCurlyBrace(None), 1..2, "{" ))]
     #[case(
         r#"{"hi": null null"#,
         ErrorKind::ExpectedCommaOrClosedCurlyBrace(Some(Token::Null))
