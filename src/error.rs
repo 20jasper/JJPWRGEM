@@ -25,8 +25,8 @@ pub enum ErrorKind {
     ExpectedCommaOrClosedCurlyBrace(Option<Token>),
     /// expected open curly curly brace, found {0:?}
     ExpectedOpenCurlyBrace(Option<Token>),
-    /// expected quote, found {0:?}
-    ExpectedQuote(Option<char>),
+    /// expected quote
+    ExpectedQuote,
     /// {0}
     Custom(String),
 }
@@ -62,6 +62,12 @@ impl Error {
         }
     }
 
+    pub fn from_unterminated(kind: ErrorKind, text: &str) -> Self {
+        // TODO handle multibyte characters properly
+        // text.char_indices().rev()
+        Self::new(kind, text.len().saturating_sub(1)..text.len(), text)
+    }
+
     pub fn from_maybe_token_with_context(
         f: impl Fn(Option<Token>) -> ErrorKind,
         maybe_token: Option<TokenWithContext>,
@@ -70,19 +76,7 @@ impl Error {
         if let Some(TokenWithContext { token, range }) = maybe_token {
             Error::new(f(Some(token)), range, text)
         } else {
-            Error::new(f(None), text.len().saturating_sub(1)..text.len(), text)
-        }
-    }
-}
-
-// TODO temp for migration
-impl From<ErrorKind> for Error {
-    fn from(kind: ErrorKind) -> Self {
-        Self {
-            kind,
-            range: 0..0,
-            line: 0,
-            column: 0,
+            Error::from_unterminated(f(None), text)
         }
     }
 }

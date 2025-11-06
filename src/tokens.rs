@@ -96,8 +96,8 @@ pub fn build_str_while<'a>(
         end = i + c.len_utf8();
     }
 
-    if !matches!(chars.next(), Some((_, '"'))) {
-        return Err(ErrorKind::ExpectedQuote(None).into());
+    if chars.next().is_none() {
+        return Err(Error::from_unterminated(ErrorKind::ExpectedQuote, input));
     }
 
     Ok(&input[start..end])
@@ -201,7 +201,7 @@ mod tests {
     #[rstest::rstest]
     #[case(r#"a"#, Error::new(ErrorKind::UnexpectedCharacter('a'), 0..1, "a"))]
     #[case(r#"n"#, Error::new(ErrorKind::UnexpectedCharacter('n'), 0..1, "n"))]
-    #[case(r#""hi"#, ErrorKind::ExpectedQuote(None).into())]
+    #[case(r#""hi"#, Error::from_unterminated(ErrorKind::ExpectedQuote, r#""hi"#))]
     fn should_not_parse_invalid_syntax(#[case] json: &str, #[case] error: Error) {
         assert_eq!(str_to_tokens(json), Err(error));
     }

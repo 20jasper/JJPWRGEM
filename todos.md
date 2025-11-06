@@ -23,6 +23,7 @@
 - [ ] error handling
   - [ ] display implementation for each token
   - [ ] line/column
+  - [ ] proper handling for multibyte characters
   - [x] describe expected token
     - [ ] line/column of reason why expected (expected closing curly due to umatched open curly at xyz spot)
   - [x] Unterminated
