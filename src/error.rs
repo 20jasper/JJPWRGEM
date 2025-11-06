@@ -44,7 +44,6 @@ where
 /// {kind} at line {line} column {column}
 pub struct Error {
     kind: ErrorKind,
-    // TODO temp for migration
     range: Range<usize>,
     /// 1 indexed line number
     line: usize,

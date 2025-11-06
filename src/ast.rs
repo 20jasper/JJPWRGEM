@@ -108,14 +108,6 @@ mod tests {
     }
 
     #[test]
-    fn finished_object_then_another_char() {
-        assert_eq!(
-            parse_str("{}{").unwrap_err(),
-            ErrorKind::TokenAfterEnd(Token::OpenCurlyBrace).into()
-        );
-    }
-
-    #[test]
     fn multiple_keys() {
         assert_eq!(
             parse_str(
@@ -160,8 +152,8 @@ mod tests {
     #[case(r#"{"hi":"#, Error::new(ErrorKind::ExpectedValue(None), 5..6, r#"{"hi":"#))]
     #[case(r#"}"#, Error::new(ErrorKind::ExpectedValue(Some(Token::ClosedCurlyBrace)), 0..1, "}"))]
     #[case(r#""#, Error::new(ErrorKind::ExpectedValue(None), 0..0, ""))]
-    #[case(r#"{{"#,Error::new(ErrorKind::ExpectedKeyOrClosedCurlyBrace(Some(Token::OpenCurlyBrace)), 1..2, "{{" ))]
-    #[case( r#"{"#, Error::new(ErrorKind::ExpectedKeyOrClosedCurlyBrace(None), 0..1, "{" ))]
+    #[case(r#"{{"#, Error::new(ErrorKind::ExpectedKeyOrClosedCurlyBrace(Some(Token::OpenCurlyBrace)), 1..2, "{{" ))]
+    #[case(r#"{"#, Error::new(ErrorKind::ExpectedKeyOrClosedCurlyBrace(None), 0..1, "{" ))]
     #[case(
         r#"{"hi": null null"#,
         Error::new(
@@ -175,14 +167,33 @@ mod tests {
         Error::new(
             ErrorKind::ExpectedCommaOrClosedCurlyBrace(None),
             10..11,
-            r#"{"hi": null"#,
+            r#"{"hi": null     "#,
         )
     )]
     #[case(
         r#"{"hi": null, }"#,
-        ErrorKind::ExpectedKey(Some(Token::ClosedCurlyBrace))
+        Error::new(
+            ErrorKind::ExpectedKey(Some(Token::ClosedCurlyBrace)),
+            13..14,
+            r#"{"hi": null, }"#,
+        )
     )]
-    #[case(r#"{"hi": null, "#, ErrorKind::ExpectedKey(None))]
+    #[case(
+        r#"{"hi": null, "#,
+        Error::new(
+            ErrorKind::ExpectedKey(None),
+            11..12,
+            r#"{"hi": null, "#,
+        )
+    )]
+    #[case(
+        r#"{}{"#,
+        Error::new(
+            ErrorKind::TokenAfterEnd(Token::OpenCurlyBrace),
+            2..3,
+            r#"{}{"#,
+        )
+    )]
     fn expected_error(#[case] json: &str, #[case] expected: impl Into<Error>) {
         assert_eq!(parse_str(json), Err(expected.into()));
     }

@@ -24,13 +24,6 @@ enum ObjectState {
     End(HashMap<String, Value>),
 }
 
-fn next_token(tokens: &mut Peekable<impl Iterator<Item = TokenWithContext>>) -> Option<Token> {
-    tokens.next().map(|TokenWithContext { token, .. }| token)
-}
-fn peek_token(tokens: &mut Peekable<impl Iterator<Item = TokenWithContext>>) -> Option<&Token> {
-    tokens.peek().map(|TokenWithContext { token, .. }| token)
-}
-
 impl ObjectState {
     fn process(
         self,
@@ -118,13 +111,24 @@ impl ObjectState {
                     ));
                 }
             },
-            ObjectState::Key(map) => match next_token(tokens) {
-                Some(Token::String(key)) => ObjectState::Colon { key, map },
-                invalid => return Err(ErrorKind::ExpectedKey(invalid).into()),
+            ObjectState::Key(map) => match tokens.next() {
+                Some(TokenWithContext {
+                    token: Token::String(key),
+                    ..
+                }) => ObjectState::Colon { key, map },
+                maybe_token => {
+                    return Err(Error::from_maybe_token_with_context(
+                        ErrorKind::ExpectedKey,
+                        maybe_token,
+                        text,
+                    ));
+                }
             },
             ObjectState::End(map) => {
-                if fail_on_multiple_value && let Some(peeked) = peek_token(tokens) {
-                    return Err(ErrorKind::TokenAfterEnd(peeked.clone()).into());
+                if fail_on_multiple_value
+                    && let Some(TokenWithContext { token, range }) = tokens.peek().cloned()
+                {
+                    return Err(Error::new(ErrorKind::TokenAfterEnd(token), range, text));
                 }
                 ObjectState::End(map)
             }
