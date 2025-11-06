@@ -147,20 +147,65 @@ mod tests {
     }
 
     #[rstest::rstest]
-    #[case(r#"{"hi", "#, Error::new(ErrorKind::ExpectedColon(Some(Token::Comma)), 5..6, r#"{"hi", "#))]
-    #[case(r#"{"hi"    "#, Error::new(ErrorKind::ExpectedColon(None), 4..5, r#"{"hi"    "#))]
-    #[case(r#"{"hi":"#, Error::new(ErrorKind::ExpectedValue(None), 5..6, r#"{"hi":"#))]
-    #[case(r#"}"#, Error::new(ErrorKind::ExpectedValue(Some(Token::ClosedCurlyBrace)), 0..1, "}"))]
-    #[case(r#""#, Error::new(ErrorKind::ExpectedValue(None), 0..0, ""))]
-    #[case(r#"{{"#, Error::new(ErrorKind::ExpectedKeyOrClosedCurlyBrace(Some(Token::OpenCurlyBrace)), 1..2, "{{" ))]
-    #[case(r#"{"#, Error::new(ErrorKind::ExpectedKeyOrClosedCurlyBrace(None), 0..1, "{" ))]
+    #[case(
+        r#"{"hi", "#,
+        Error::new(
+            ErrorKind::ExpectedColon(Some(Token::Comma)),
+            5..6,
+            r#"{"hi", "#,
+        ),
+    )]
+    #[case(
+        r#"{"hi"    "#,
+        Error::new(
+            ErrorKind::ExpectedColon(None),
+            4..5,
+            r#"{"hi"    "#,
+        ),
+    )]
+    #[case(
+        r#"{"hi":"#,
+        Error::new(
+            ErrorKind::ExpectedValue(None),
+            5..6,
+            r#"{"hi":"#,
+        ),
+    )]
+    #[case(
+        r#"}"#,
+        Error::new(
+            ErrorKind::ExpectedValue(Some(Token::ClosedCurlyBrace)),
+            0..1,
+            r#"}"#,
+        ),
+    )]
+    #[case(
+        r#""#,
+        Error::new(ErrorKind::ExpectedValue(None), 0..0, r#""#),
+    )]
+    #[case(
+        r#"{{"#,
+        Error::new(
+            ErrorKind::ExpectedKeyOrClosedCurlyBrace(Some(Token::OpenCurlyBrace)),
+            1..2,
+            r#"{{"#,
+        ),
+    )]
+    #[case(
+        r#"{"#,
+        Error::new(
+            ErrorKind::ExpectedKeyOrClosedCurlyBrace(None),
+            0..1,
+            r#"{"#,
+        ),
+    )]
     #[case(
         r#"{"hi": null null"#,
         Error::new(
             ErrorKind::ExpectedCommaOrClosedCurlyBrace(Some(Token::Null)),
             12..16,
             r#"{"hi": null null"#,
-        )
+        ),
     )]
     #[case(
         r#"{"hi": null     "#,
@@ -168,7 +213,7 @@ mod tests {
             ErrorKind::ExpectedCommaOrClosedCurlyBrace(None),
             10..11,
             r#"{"hi": null     "#,
-        )
+        ),
     )]
     #[case(
         r#"{"hi": null, }"#,
@@ -176,7 +221,7 @@ mod tests {
             ErrorKind::ExpectedKey(Some(Token::ClosedCurlyBrace)),
             13..14,
             r#"{"hi": null, }"#,
-        )
+        ),
     )]
     #[case(
         r#"{"hi": null, "#,
@@ -184,7 +229,7 @@ mod tests {
             ErrorKind::ExpectedKey(None),
             11..12,
             r#"{"hi": null, "#,
-        )
+        ),
     )]
     #[case(
         r#"{}{"#,
@@ -192,7 +237,7 @@ mod tests {
             ErrorKind::TokenAfterEnd(Token::OpenCurlyBrace),
             2..3,
             r#"{}{"#,
-        )
+        ),
     )]
     fn expected_error(#[case] json: &str, #[case] expected: impl Into<Error>) {
         assert_eq!(parse_str(json), Err(expected.into()));
