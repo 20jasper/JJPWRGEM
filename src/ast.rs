@@ -164,11 +164,19 @@ mod tests {
     #[case( r#"{"#, Error::new(ErrorKind::ExpectedKeyOrClosedCurlyBrace(None), 0..1, "{" ))]
     #[case(
         r#"{"hi": null null"#,
-        ErrorKind::ExpectedCommaOrClosedCurlyBrace(Some(Token::Null))
+        Error::new(
+            ErrorKind::ExpectedCommaOrClosedCurlyBrace(Some(Token::Null)),
+            12..16,
+            r#"{"hi": null null"#,
+        )
     )]
     #[case(
         r#"{"hi": null     "#,
-        ErrorKind::ExpectedCommaOrClosedCurlyBrace(None)
+        Error::new(
+            ErrorKind::ExpectedCommaOrClosedCurlyBrace(None),
+            10..11,
+            r#"{"hi": null"#,
+        )
     )]
     #[case(
         r#"{"hi": null, }"#,

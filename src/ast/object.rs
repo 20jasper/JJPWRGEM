@@ -101,11 +101,21 @@ impl ObjectState {
                 map.insert(key, json_value);
                 ObjectState::NextKeyOrEnd(map)
             }
-            ObjectState::NextKeyOrEnd(map) => match next_token(tokens) {
-                Some(Token::ClosedCurlyBrace) => ObjectState::End(map),
-                Some(Token::Comma) => ObjectState::Key(map),
-                invalid => {
-                    return Err(ErrorKind::ExpectedCommaOrClosedCurlyBrace(invalid.clone()).into());
+            ObjectState::NextKeyOrEnd(map) => match tokens.next() {
+                Some(TokenWithContext {
+                    token: Token::ClosedCurlyBrace,
+                    ..
+                }) => ObjectState::End(map),
+                Some(TokenWithContext {
+                    token: Token::Comma,
+                    ..
+                }) => ObjectState::Key(map),
+                maybe_token => {
+                    return Err(Error::from_maybe_token_with_context(
+                        ErrorKind::ExpectedCommaOrClosedCurlyBrace,
+                        maybe_token,
+                        text,
+                    ));
                 }
             },
             ObjectState::Key(map) => match next_token(tokens) {
