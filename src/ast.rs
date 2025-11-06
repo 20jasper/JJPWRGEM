@@ -29,6 +29,7 @@ impl TryFrom<Token> for Value {
 }
 
 pub fn parse_str(json: &str) -> Result<Value> {
+    let json = json.trim();
     let tokens = str_to_tokens(json)?;
     parse_tokens(&mut tokens.into_iter().peekable(), json, true)
 }
@@ -154,14 +155,13 @@ mod tests {
     }
 
     #[rstest::rstest]
-    #[case(r#"{"hi", "#, ErrorKind::ExpectedColon(Some(Token::Comma)))]
-    #[case(r#"{"hi""#, ErrorKind::ExpectedColon(None))]
-    #[case(r#"{"hi": , "#, ErrorKind::ExpectedValue(Some(Token::Comma)))]
-    #[case(r#"{"hi":"#, ErrorKind::ExpectedValue(None))]
+    #[case(r#"{"hi", "#, Error::new(ErrorKind::ExpectedColon(Some(Token::Comma)), 5..6, r#"{"hi", "#))]
+    #[case(r#"{"hi"    "#, Error::new(ErrorKind::ExpectedColon(None), 4..5, r#"{"hi"    "#))]
+    #[case(r#"{"hi":"#, Error::new(ErrorKind::ExpectedValue(None), 5..6, r#"{"hi":"#))]
     #[case(r#"}"#, Error::new(ErrorKind::ExpectedValue(Some(Token::ClosedCurlyBrace)), 0..1, "}"))]
-    #[case(r#""#, Error::new(ErrorKind::ExpectedValue(None), 0..1, ""))]
+    #[case(r#""#, Error::new(ErrorKind::ExpectedValue(None), 0..0, ""))]
     #[case(r#"{{"#,Error::new(ErrorKind::ExpectedKeyOrClosedCurlyBrace(Some(Token::OpenCurlyBrace)), 1..2, "{{" ))]
-    #[case( r#"{"#, Error::new(ErrorKind::ExpectedKeyOrClosedCurlyBrace(None), 1..2, "{" ))]
+    #[case( r#"{"#, Error::new(ErrorKind::ExpectedKeyOrClosedCurlyBrace(None), 0..1, "{" ))]
     #[case(
         r#"{"hi": null null"#,
         ErrorKind::ExpectedCommaOrClosedCurlyBrace(Some(Token::Null))

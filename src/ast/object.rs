@@ -69,16 +69,33 @@ impl ObjectState {
                     ));
                 }
             },
-            ObjectState::Colon { map, key } => match next_token(tokens) {
-                Some(Token::Colon) => ObjectState::Value { map, key },
-                invalid => return Err(ErrorKind::ExpectedColon(invalid).into()),
+            ObjectState::Colon { map, key } => match tokens.next() {
+                Some(TokenWithContext {
+                    token: Token::Colon,
+                    ..
+                }) => ObjectState::Value { map, key },
+                maybe_token => {
+                    return Err(Error::from_maybe_token_with_context(
+                        ErrorKind::ExpectedColon,
+                        maybe_token,
+                        text,
+                    ));
+                }
             },
             ObjectState::Value { mut map, key } => {
-                let json_value = match peek_token(tokens) {
-                    Some(
-                        Token::OpenCurlyBrace | Token::String(_) | Token::Null | Token::Boolean(_),
-                    ) => parse_tokens(tokens, text, false)?,
-                    invalid => return Err(ErrorKind::ExpectedValue(invalid.cloned()).into()),
+                let json_value = match tokens.peek() {
+                    Some(TokenWithContext {
+                        token:
+                            Token::OpenCurlyBrace | Token::String(_) | Token::Null | Token::Boolean(_),
+                        ..
+                    }) => parse_tokens(tokens, text, false)?,
+                    maybe_token => {
+                        return Err(Error::from_maybe_token_with_context(
+                            ErrorKind::ExpectedValue,
+                            maybe_token.cloned(),
+                            text,
+                        ));
+                    }
                 };
 
                 map.insert(key, json_value);

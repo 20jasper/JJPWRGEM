@@ -26,6 +26,7 @@ pub const FALSE: &str = "false";
 pub const TRUE: &str = "true";
 
 pub fn str_to_tokens(s: &str) -> Result<Vec<TokenWithContext>> {
+    let s = s.trim();
     let mut chars = s.char_indices().peekable();
 
     let mut res = vec![];

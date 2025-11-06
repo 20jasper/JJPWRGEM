@@ -71,7 +71,7 @@ impl Error {
         if let Some(TokenWithContext { token, range }) = maybe_token {
             Error::new(f(Some(token)), range, text)
         } else {
-            Error::new(f(None), text.len()..text.len() + 1, text)
+            Error::new(f(None), text.len().saturating_sub(1)..text.len(), text)
         }
     }
 }
