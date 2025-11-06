@@ -16,10 +16,14 @@
 - [x] nested object
   - [x] arbitrarily nested
 - [ ] validate whitespace to skip
-- [ ] make uglifier
-- [ ] make prettifier
+- [x] formatting
+  - [x] make uglifier
+  - [x] make prettifier
+  - [x] general options
 - [ ] error handling
+  - [ ] display implementation for each token
   - [ ] line/column
+  - [ ] proper handling for multibyte characters
   - [x] describe expected token
     - [ ] line/column of reason why expected (expected closing curly due to umatched open curly at xyz spot)
   - [x] Unterminated
