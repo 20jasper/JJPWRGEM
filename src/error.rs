@@ -11,6 +11,8 @@ pub type Result<T> = std::result::Result<T, Error>;
 pub enum ErrorKind {
     /// Unexpected character {0:?}
     UnexpectedCharacter(char),
+    /// Unexpected unescaped control character {0:?} in string literal
+    UnexpectedControlCharacterInString(char),
     /// unexpected token {0:?} after json finished
     TokenAfterEnd(Token),
     /// expected key after comma, found {0:?}
