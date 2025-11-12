@@ -90,17 +90,16 @@ pub fn build_str_while<'a>(
     input: &'a str,
     chars: &mut Peekable<CharIndices<'a>>,
 ) -> Result<&'a str> {
-    let mut end = start;
-
-    while let Some((i, c)) = chars.next_if(|(_, c)| *c != '"') {
-        end = i + c.len_utf8();
+    let mut escape = false;
+    while let Some((_, c)) = chars.next_if(|(_, c)| *c != '"' || escape) {
+        escape = c == '\\' && !escape;
     }
 
-    if chars.next().is_none() {
-        return Err(Error::from_unterminated(ErrorKind::ExpectedQuote, input));
+    if let Some((end, _)) = chars.next() {
+        Ok(&input[start..end])
+    } else {
+        Err(Error::from_unterminated(ErrorKind::ExpectedQuote, input))
     }
-
-    Ok(&input[start..end])
 }
 
 impl<I> From<I> for Token
@@ -150,7 +149,8 @@ mod tests {
     #[case("null", Token::Null)]
     #[case("true", Token::Boolean(true))]
     #[case("false", Token::Boolean(false))]
-    #[case("\"burger\"", Token::String("burger".into()))]
+    #[case("\"burger\"", "burger".into())]
+    #[case(r#""\"burger\"""#, r#"\"burger\""#.into())]
     fn primitive_template(#[case] json: &str, #[case] expected: Token) {}
 
     #[rstest_reuse::apply(primitive_template)]
