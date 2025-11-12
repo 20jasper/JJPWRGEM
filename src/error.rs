@@ -3,7 +3,7 @@ use core::ops::Range;
 use displaydoc::Display;
 use thiserror::Error;
 
-use crate::tokens::{Token, TokenWithContext};
+use crate::tokens::{Token, TokenWithContext, trim_end_whitespace};
 
 pub type Result<T> = std::result::Result<T, Error>;
 
@@ -63,9 +63,10 @@ impl Error {
     }
 
     pub fn from_unterminated(kind: ErrorKind, text: &str) -> Self {
+        let trimmed = trim_end_whitespace(text);
         // TODO handle multibyte characters properly
         // text.char_indices().rev()
-        Self::new(kind, text.len().saturating_sub(1)..text.len(), text)
+        Self::new(kind, trimmed.len().saturating_sub(1)..trimmed.len(), text)
     }
 
     pub fn from_maybe_token_with_context(

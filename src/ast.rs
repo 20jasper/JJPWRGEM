@@ -29,7 +29,6 @@ impl TryFrom<Token> for Value {
 }
 
 pub fn parse_str(json: &str) -> Result<Value> {
-    let json = json.trim();
     let tokens = str_to_tokens(json)?;
     parse_tokens(&mut tokens.into_iter().peekable(), json, true)
 }
@@ -146,101 +145,82 @@ mod tests {
         );
     }
 
+    fn json_to_json_and_error(
+        json: &'static str,
+        kind: ErrorKind,
+        range: std::ops::Range<usize>,
+    ) -> (&'static str, Error) {
+        (json, Error::new(kind, range, json))
+    }
+
     #[rstest::rstest]
-    #[case(
+    #[case(json_to_json_and_error(
         r#"{"hi", "#,
-        Error::new(
-            ErrorKind::ExpectedColon(Some(Token::Comma)),
-            5..6,
-            r#"{"hi", "#,
-        ),
-    )]
-    #[case(
+        ErrorKind::ExpectedColon(Some(Token::Comma)),
+        5..6,
+    ))]
+    #[case(json_to_json_and_error(
+        r#"  {"hi"    "#,
+        ErrorKind::ExpectedColon(None),
+        6..7,
+    ))]
+    #[case(json_to_json_and_error(
         r#"{"hi"    "#,
-        Error::new(
-            ErrorKind::ExpectedColon(None),
-            4..5,
-            r#"{"hi"    "#,
-        ),
-    )]
-    #[case(
+        ErrorKind::ExpectedColon(None),
+        4..5,
+    ))]
+    #[case(json_to_json_and_error(
         r#"{"hi":"#,
-        Error::new(
-            ErrorKind::ExpectedValue(None),
-            5..6,
-            r#"{"hi":"#,
-        ),
-    )]
-    #[case(
+        ErrorKind::ExpectedValue(None),
+        5..6,
+    ))]
+    #[case(json_to_json_and_error(
         r#"}"#,
-        Error::new(
-            ErrorKind::ExpectedValue(Some(Token::ClosedCurlyBrace)),
-            0..1,
-            r#"}"#,
-        ),
-    )]
-    #[case(
+        ErrorKind::ExpectedValue(Some(Token::ClosedCurlyBrace)),
+        0..1,
+    ))]
+    #[case(json_to_json_and_error(
         r#""#,
-        Error::new(ErrorKind::ExpectedValue(None), 0..0, r#""#),
-    )]
-    #[case(
+        ErrorKind::ExpectedValue(None),
+        0..0,
+    ))]
+    #[case(json_to_json_and_error(
         r#"{{"#,
-        Error::new(
-            ErrorKind::ExpectedKeyOrClosedCurlyBrace(Some(Token::OpenCurlyBrace)),
-            1..2,
-            r#"{{"#,
-        ),
-    )]
-    #[case(
+        ErrorKind::ExpectedKeyOrClosedCurlyBrace(Some(Token::OpenCurlyBrace)),
+        1..2,
+    ))]
+    #[case(json_to_json_and_error(
         r#"{"#,
-        Error::new(
-            ErrorKind::ExpectedKeyOrClosedCurlyBrace(None),
-            0..1,
-            r#"{"#,
-        ),
-    )]
-    #[case(
+        ErrorKind::ExpectedKeyOrClosedCurlyBrace(None),
+        0..1,
+    ))]
+    #[case(json_to_json_and_error(
         r#"{"hi": null null"#,
-        Error::new(
-            ErrorKind::ExpectedCommaOrClosedCurlyBrace(Some(Token::Null)),
-            12..16,
-            r#"{"hi": null null"#,
-        ),
-    )]
-    #[case(
+        ErrorKind::ExpectedCommaOrClosedCurlyBrace(Some(Token::Null)),
+        12..16,
+    ))]
+    #[case(json_to_json_and_error(
         r#"{"hi": null     "#,
-        Error::new(
-            ErrorKind::ExpectedCommaOrClosedCurlyBrace(None),
-            10..11,
-            r#"{"hi": null     "#,
-        ),
-    )]
-    #[case(
+        ErrorKind::ExpectedCommaOrClosedCurlyBrace(None),
+        10..11,
+    ))]
+    #[case(json_to_json_and_error(
         r#"{"hi": null, }"#,
-        Error::new(
-            ErrorKind::ExpectedKey(Some(Token::ClosedCurlyBrace)),
-            13..14,
-            r#"{"hi": null, }"#,
-        ),
-    )]
-    #[case(
+        ErrorKind::ExpectedKey(Some(Token::ClosedCurlyBrace)),
+        13..14,
+    ))]
+    #[case(json_to_json_and_error(
         r#"{"hi": null, "#,
-        Error::new(
-            ErrorKind::ExpectedKey(None),
-            11..12,
-            r#"{"hi": null, "#,
-        ),
-    )]
-    #[case(
+        ErrorKind::ExpectedKey(None),
+        11..12,
+    ))]
+    #[case(json_to_json_and_error(
         r#"{}{"#,
-        Error::new(
-            ErrorKind::TokenAfterEnd(Token::OpenCurlyBrace),
-            2..3,
-            r#"{}{"#,
-        ),
-    )]
-    fn expected_error(#[case] json: &str, #[case] expected: impl Into<Error>) {
-        assert_eq!(parse_str(json), Err(expected.into()));
+        ErrorKind::TokenAfterEnd(Token::OpenCurlyBrace),
+        2..3,
+    ))]
+    fn expected_error(#[case] (json, expected): (&str, Error)) {
+        assert_eq!(parse_str(json), Err(expected));
     }
 
     #[rstest_reuse::template]
