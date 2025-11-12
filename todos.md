@@ -2,8 +2,10 @@
 
 - [x] primitive values
   - [x] string values
-    - [ ] escapes
+    - [x] escapes
     - [x] bug where does not check for termination properly
+    - [ ] quotes must be on same line
+    - [ ] check rfc
   - [ ] numbers
     - [ ] positive/negative (+/-)
     - [ ] powers (e/E)
@@ -15,7 +17,7 @@
 - [ ] arrays
 - [x] nested object
   - [x] arbitrarily nested
-- [ ] validate whitespace to skip
+- [x] validate whitespace to skip
 - [x] formatting
   - [x] make uglifier
   - [x] make prettifier
@@ -28,3 +30,4 @@
     - [ ] line/column of reason why expected (expected closing curly due to umatched open curly at xyz spot)
   - [x] Unterminated
   - [x] make naming more specific regarding Object and arrays (curly/square braces, open/opening/close/closing)
+- [ ] fix up From impls for Tokens. From<String> should not be on token, but boolean makes sense

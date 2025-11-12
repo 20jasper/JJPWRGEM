@@ -25,14 +25,37 @@ pub const NULL: &str = "null";
 pub const FALSE: &str = "false";
 pub const TRUE: &str = "true";
 
+/// See [RFC 8259, Section 2](https://datatracker.ietf.org/doc/html/rfc8259#section-2):
+///
+///```abnf
+/// ws = *(
+///         %x20 /              ; Space
+///         %x09 /              ; Horizontal tab
+///         %x0A /              ; Line feed or New line
+///         %x0D )              ; Carriage return
+/// ```
+fn is_whitespace(c: char) -> bool {
+    matches!(c, ' ' | '\t' | '\n' | '\r')
+}
+
+pub fn trim_end_whitespace(s: &str) -> &str {
+    let end = s
+        .char_indices()
+        .rev()
+        .find(|(_, c)| !is_whitespace(*c))
+        .map(|(i, c)| i + c.len_utf8())
+        .unwrap_or_default();
+
+    &s[..end]
+}
+
 pub fn str_to_tokens(s: &str) -> Result<Vec<TokenWithContext>> {
-    let s = s.trim();
     let mut chars = s.char_indices().peekable();
 
     let mut res = vec![];
 
     while let Some((i, c)) = chars.next() {
-        if c.is_whitespace() {
+        if is_whitespace(c) {
             continue;
         }
         let token = match c {
@@ -255,5 +278,13 @@ mod tests {
                 }
             ]
         );
+    }
+
+    #[rstest::rstest]
+    #[case("h \t\n\r", "h")]
+    #[case("\u{000B} h ", "\u{000B} h")]
+    #[case("rust", "rust")]
+    fn trims_whitespace(#[case] input: &str, #[case] output: &str) {
+        assert_eq!(trim_end_whitespace(input), output);
     }
 }
