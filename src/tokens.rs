@@ -77,8 +77,8 @@ pub fn str_to_tokens(s: &str) -> Result<Vec<TokenWithContext>> {
                 if actual.eq(expected.chars()) {
                     match c {
                         'n' => Token::Null,
-                        't' => Token::Boolean(true),
-                        'f' => Token::Boolean(false),
+                        't' => true.into(),
+                        'f' => false.into(),
                         _ => unreachable!("{c} is not able to be reached"),
                     }
                 } else {
@@ -125,12 +125,9 @@ pub fn build_str_while<'a>(
     }
 }
 
-impl<I> From<I> for Token
-where
-    I: Into<String>,
-{
-    fn from(value: I) -> Self {
-        Token::String(value.into())
+impl From<bool> for Token {
+    fn from(value: bool) -> Self {
+        Token::Boolean(value)
     }
 }
 
@@ -148,7 +145,7 @@ mod tests {
                     range: 0..1
                 },
                 TokenWithContext {
-                    token: "rust".into(),
+                    token: Token::String("rust".into()),
                     range: 1..7
                 },
                 TokenWithContext {
@@ -156,7 +153,7 @@ mod tests {
                     range: 7..8
                 },
                 TokenWithContext {
-                    token: "is a must".into(),
+                    token: Token::String("is a must".into()),
                     range: 9..20
                 },
                 TokenWithContext {
@@ -172,8 +169,8 @@ mod tests {
     #[case("null", Token::Null)]
     #[case("true", Token::Boolean(true))]
     #[case("false", Token::Boolean(false))]
-    #[case("\"burger\"", "burger".into())]
-    #[case(r#""\"burger\"""#, r#"\"burger\""#.into())]
+    #[case("\"burger\"", Token::String("burger".into()))]
+    #[case(r#""\"burger\"""#, Token::String(r#"\"burger\""#.into()))]
     fn primitive_template(#[case] json: &str, #[case] expected: Token) {}
 
     #[rstest_reuse::apply(primitive_template)]
@@ -202,7 +199,7 @@ mod tests {
                     range: 0..1
                 },
                 TokenWithContext {
-                    token: "rust".into(),
+                    token: Token::String("rust".into()),
                     range: 18..24
                 },
                 TokenWithContext {
@@ -245,7 +242,7 @@ mod tests {
                     range: 0..1
                 },
                 TokenWithContext {
-                    token: "rust".into(),
+                    token: Token::String("rust".into()),
                     range: 18..24
                 },
                 TokenWithContext {
@@ -253,7 +250,7 @@ mod tests {
                     range: 24..25
                 },
                 TokenWithContext {
-                    token: "is a must".into(),
+                    token: Token::String("is a must".into()),
                     range: 26..37
                 },
                 TokenWithContext {
@@ -261,7 +258,7 @@ mod tests {
                     range: 37..38
                 },
                 TokenWithContext {
-                    token: "name".into(),
+                    token: Token::String("name".into()),
                     range: 55..61
                 },
                 TokenWithContext {
@@ -269,7 +266,7 @@ mod tests {
                     range: 61..62
                 },
                 TokenWithContext {
-                    token: "ferris".into(),
+                    token: Token::String("ferris".into()),
                     range: 63..71
                 },
                 TokenWithContext {
