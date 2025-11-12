@@ -10,5 +10,5 @@ fn main() {
 
     // println!("{:?}", "".lines().last(),);
 
-    println!("{}", prettify_str("\u{000B}{}").unwrap_err());
+    println!("{}", prettify_str("\"\u{000B}{}").unwrap_err());
 }

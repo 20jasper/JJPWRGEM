@@ -49,6 +49,11 @@ pub fn trim_end_whitespace(s: &str) -> &str {
     &s[..end]
 }
 
+/// See [RFC 8259, Section 7](https://datatracker.ietf.org/doc/html/rfc8259#section-7)
+pub fn is_control(c: char) -> bool {
+    ('\u{0000}'..='\u{001F}').contains(&c)
+}
+
 pub fn str_to_tokens(s: &str) -> Result<Vec<TokenWithContext>> {
     let mut chars = s.char_indices().peekable();
 
@@ -114,12 +119,20 @@ pub fn build_str_while<'a>(
     chars: &mut Peekable<CharIndices<'a>>,
 ) -> Result<&'a str> {
     let mut escape = false;
-    while let Some((_, c)) = chars.next_if(|(_, c)| *c != '"' || escape) {
+    while let Some((_, c)) = chars.next_if(|(_, c)| (*c != '"' && !is_control(*c)) || escape) {
         escape = c == '\\' && !escape;
     }
 
-    if let Some((end, _)) = chars.next() {
-        Ok(&input[start..end])
+    if let Some((end, c)) = chars.next() {
+        if !is_control(c) {
+            Ok(&input[start..end])
+        } else {
+            Err(Error::new(
+                ErrorKind::UnexpectedControlCharacterInString(c),
+                end..end + c.len_utf8(),
+                input,
+            ))
+        }
     } else {
         Err(Error::from_unterminated(ErrorKind::ExpectedQuote, input))
     }
@@ -218,11 +231,38 @@ mod tests {
         )
     }
 
+    fn json_to_json_and_error(
+        json: &'static str,
+        kind: ErrorKind,
+        range: Option<Range<usize>>,
+    ) -> (&'static str, Error) {
+        let error = match range {
+            Some(range) => Error::new(kind, range, json),
+            None => Error::from_unterminated(kind, json),
+        };
+        (json, error)
+    }
+
     #[rstest::rstest]
-    #[case(r#"a"#, Error::new(ErrorKind::UnexpectedCharacter('a'), 0..1, "a"))]
-    #[case(r#"n"#, Error::new(ErrorKind::UnexpectedCharacter('n'), 0..1, "n"))]
-    #[case(r#""hi"#, Error::from_unterminated(ErrorKind::ExpectedQuote, r#""hi"#))]
-    fn should_not_parse_invalid_syntax(#[case] json: &str, #[case] error: Error) {
+    #[case(json_to_json_and_error(
+        "a",
+        ErrorKind::UnexpectedCharacter('a'),
+        Some(0..1)
+    ))]
+    #[case(json_to_json_and_error(
+        "n",
+        ErrorKind::UnexpectedCharacter('n'),
+        Some(0..1)
+    ))]
+    #[case(json_to_json_and_error(r#""hi"#, ErrorKind::ExpectedQuote, None))]
+    #[case(json_to_json_and_error(
+        r#""
+    
+    ""#,
+        ErrorKind::UnexpectedControlCharacterInString('\n'),
+        Some(1..2)
+    ))]
+    fn should_not_parse_invalid_syntax(#[case] (json, error): (&str, Error)) {
         assert_eq!(str_to_tokens(json), Err(error));
     }
 

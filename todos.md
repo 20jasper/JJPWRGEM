@@ -4,7 +4,7 @@
   - [x] string values
     - [x] escapes
     - [x] bug where does not check for termination properly
-    - [ ] quotes must be on same line
+    - [x] no unescaped control characters
     - [ ] check rfc
   - [ ] numbers
     - [ ] positive/negative (+/-)
@@ -24,7 +24,7 @@
   - [x] general options
 - [ ] error handling
   - [ ] display implementation for each token
-  - [ ] line/column
+  - [x] line/column
   - [ ] proper handling for multibyte characters
   - [x] describe expected token
     - [ ] line/column of reason why expected (expected closing curly due to umatched open curly at xyz spot)
