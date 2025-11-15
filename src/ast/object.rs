@@ -15,7 +15,6 @@ enum ObjectState {
     Key(HashMap<String, Value>, TokenWithContext),
     Colon {
         key_ctx: TokenWithContext,
-        key: String,
         map: HashMap<String, Value>,
     },
     Value {
@@ -59,10 +58,10 @@ impl ObjectState {
                     range: key_range,
                 }) => {
                     let key_ctx = TokenWithContext {
-                        token: Token::String(key.clone()),
+                        token: Token::String(key),
                         range: key_range,
                     };
-                    ObjectState::Colon { key_ctx, key, map }
+                    ObjectState::Colon { key_ctx, map }
                 }
                 maybe_token => {
                     return Err(Error::from_maybe_token_with_context(
@@ -74,17 +73,22 @@ impl ObjectState {
                     ));
                 }
             },
-            ObjectState::Colon { map, key, key_ctx } => match tokens.next() {
+            ObjectState::Colon { map, key_ctx } => match tokens.next() {
                 Some(
                     colon_ctx @ TokenWithContext {
                         token: Token::Colon,
                         ..
                     },
-                ) => ObjectState::Value {
-                    map,
-                    key,
-                    colon_ctx,
-                },
+                ) => {
+                    let Token::String(key) = key_ctx.token else {
+                        unreachable!("Colon state must have a String token in key_ctx")
+                    };
+                    ObjectState::Value {
+                        map,
+                        key,
+                        colon_ctx,
+                    }
+                }
                 maybe_token => {
                     return Err(Error::from_maybe_token_with_context(
                         |tok| ErrorKind::ExpectedColon(key_ctx.clone(), tok),
@@ -141,10 +145,10 @@ impl ObjectState {
                     range: key_range,
                 }) => {
                     let key_ctx = TokenWithContext {
-                        token: Token::String(key.clone()),
+                        token: Token::String(key),
                         range: key_range,
                     };
-                    ObjectState::Colon { key_ctx, key, map }
+                    ObjectState::Colon { key_ctx, map }
                 }
                 maybe_token => {
                     return Err(Error::from_maybe_token_with_context(
