@@ -1,5 +1,6 @@
 [package]
-name = "json-parser"
+name = "jjpwrgem"
+description = "jjpwrgem json parser with really good error messages"
 version = "0.1.0"
 edition = "2024"
 
@@ -14,3 +15,7 @@ rstest = "0.26.1"
 rstest_reuse = "0.7.0"
 
 [lints.clippy]
+
+[[bin]]
+name = "jjp"
+path = "src/main.rs"

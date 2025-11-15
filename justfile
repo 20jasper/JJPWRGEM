@@ -14,3 +14,6 @@ lint:
 
 test-cov:
     cargo llvm-cov
+
+watch:
+    cargo watch -q -c -x "install --path ."

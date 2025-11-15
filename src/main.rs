@@ -1,7 +1,7 @@
 use std::io::Read;
 
 use annotate_snippets::{Renderer, renderer::DecorStyle};
-use json_parser::format::prettify_str;
+use jjpwrgem::format::prettify_str;
 
 fn main() {
     let mut buf = String::new();

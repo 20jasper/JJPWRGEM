@@ -1,4 +1,4 @@
-use json_parser::format::{prettify_str, uglify_str};
+use jjpwrgem::format::{prettify_str, uglify_str};
 
 #[test]
 fn prettify_arbitrarily_nested() {

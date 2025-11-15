@@ -41,6 +41,6 @@
   - [ ] files
   - [ ] help screen
 - [ ] rebrand
-  - [ ] jjpwrgem crate name
-  - [ ] jjp bin name
+  - [x] jjpwrgem crate name
+  - [x] jjp bin name
   - [ ] axolotl skateboard
