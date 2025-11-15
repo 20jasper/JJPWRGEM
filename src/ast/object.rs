@@ -55,18 +55,15 @@ impl ObjectState {
                     ..
                 }) => ObjectState::End(map),
                 Some(
-                    key_ctx @ TokenWithContext {
-                        token: Token::String(_),
+                    ref key_ctx @ TokenWithContext {
+                        token: Token::String(ref key),
                         ..
                     },
-                ) => {
-                    let key = match &key_ctx.token {
-                        Token::String(key) => key.clone(),
-                        _ => unreachable!("token already matched as string"),
-                    };
-
-                    ObjectState::Colon { key_ctx, key, map }
-                }
+                ) => ObjectState::Colon { 
+                    key_ctx: key_ctx.clone(), 
+                    key: key.clone(), 
+                    map 
+                },
                 maybe_token => {
                     return Err(Error::from_maybe_token_with_context(
                         |tok: TokenOption| {
@@ -140,18 +137,15 @@ impl ObjectState {
             },
             ObjectState::Key(map, ctx) => match tokens.next() {
                 Some(
-                    key_ctx @ TokenWithContext {
-                        token: Token::String(_),
+                    ref key_ctx @ TokenWithContext {
+                        token: Token::String(ref key),
                         ..
                     },
-                ) => {
-                    let key = match &key_ctx.token {
-                        Token::String(key) => key.clone(),
-                        _ => unreachable!("token already matched as string"),
-                    };
-
-                    ObjectState::Colon { key_ctx, key, map }
-                }
+                ) => ObjectState::Colon { 
+                    key_ctx: key_ctx.clone(), 
+                    key: key.clone(), 
+                    map 
+                },
                 maybe_token => {
                     return Err(Error::from_maybe_token_with_context(
                         |tok: TokenOption| ErrorKind::ExpectedKey(ctx.clone(), tok),
