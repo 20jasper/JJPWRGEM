@@ -10,7 +10,10 @@ use std::collections::HashMap;
 #[derive(Debug, PartialEq, Eq, Clone)]
 enum ObjectState {
     Open,
-    KeyOrEnd(HashMap<String, Value>, TokenWithContext),
+    KeyOrEnd {
+        map: HashMap<String, Value>,
+        open_ctx: TokenWithContext,
+    },
     NextKeyOrEnd {
         map: HashMap<String, Value>,
         colon_range: Range<usize>,
@@ -43,7 +46,10 @@ impl ObjectState {
                         token: Token::OpenCurlyBrace,
                         ..
                     },
-                ) => ObjectState::KeyOrEnd(HashMap::new(), ctx),
+                ) => ObjectState::KeyOrEnd {
+                    map: HashMap::new(),
+                    open_ctx: ctx,
+                },
                 maybe_token => {
                     return Err(Error::from_maybe_token_with_context(
                         |tok| ErrorKind::ExpectedOpenCurlyBrace(None, tok),
@@ -52,7 +58,7 @@ impl ObjectState {
                     ));
                 }
             },
-            ObjectState::KeyOrEnd(map, ctx) => match tokens.next() {
+            ObjectState::KeyOrEnd { map, open_ctx } => match tokens.next() {
                 Some(TokenWithContext {
                     token: Token::ClosedCurlyBrace,
                     ..
@@ -66,7 +72,7 @@ impl ObjectState {
                 maybe_token => {
                     return Err(Error::from_maybe_token_with_context(
                         |tok: TokenOption| {
-                            ErrorKind::ExpectedKeyOrClosedCurlyBrace(ctx.clone(), tok)
+                            ErrorKind::ExpectedKeyOrClosedCurlyBrace(open_ctx.clone(), tok)
                         },
                         maybe_token,
                         text,
