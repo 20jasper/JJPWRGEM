@@ -3,30 +3,30 @@ use core::ops::Range;
 use displaydoc::Display;
 use thiserror::Error;
 
-use crate::tokens::{Token, TokenWithContext, trim_end_whitespace};
+use crate::tokens::{Token, TokenOption, TokenWithContext, trim_end_whitespace};
 
 pub type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Debug, PartialEq, Eq, Display, Clone)]
 pub enum ErrorKind {
-    /// Unexpected character {0:?}. Expected start of a JSON value
+    /// unexpected character `{0:?}`. expected start of a json value
     UnexpectedCharacter(char),
-    /// Unexpected unescaped control character {0:?} in string literal
+    /// unexpected unescaped control character `{0:?}` in string literal
     UnexpectedControlCharacterInString(char),
-    /// unexpected token {0:?} after json finished
+    /// unexpected token {0} after json finished
     TokenAfterEnd(Token),
-    /// expected key, found {1:?}
-    ExpectedKey(TokenWithContext, Option<Token>),
-    /// expected colon after key, found {0:?}
-    ExpectedColon(Option<Token>),
-    /// expected json value, found {0:?}
-    ExpectedValue(Option<Token>),
-    /// expected key or closed curly brace, found {1:?}
-    ExpectedKeyOrClosedCurlyBrace(TokenWithContext, Option<Token>),
-    /// expected comma or closed curly brace, found {0:?}
-    ExpectedCommaOrClosedCurlyBrace(Option<Token>),
-    /// expected open curly curly brace, found {0:?}
-    ExpectedOpenCurlyBrace(Option<Token>),
+    /// expected key, found {1}
+    ExpectedKey(TokenWithContext, TokenOption),
+    /// expected colon after key, found {0}
+    ExpectedColon(TokenOption),
+    /// expected json value, found {0}
+    ExpectedValue(TokenOption),
+    /// expected key or closed curly brace, found {1}
+    ExpectedKeyOrClosedCurlyBrace(TokenWithContext, TokenOption),
+    /// expected comma or closed curly brace, found {0}
+    ExpectedCommaOrClosedCurlyBrace(TokenOption),
+    /// expected open curly curly brace, found {0}
+    ExpectedOpenCurlyBrace(TokenOption),
     /// expected quote before end of input
     ExpectedQuote,
     /// {0}
@@ -78,14 +78,14 @@ impl Error {
     }
 
     pub fn from_maybe_token_with_context(
-        f: impl Fn(Option<Token>) -> ErrorKind,
+        f: impl Fn(TokenOption) -> ErrorKind,
         maybe_token: Option<TokenWithContext>,
         text: &str,
     ) -> Self {
         if let Some(TokenWithContext { token, range }) = maybe_token {
-            Error::new(f(Some(token)), range, text)
+            Error::new(f(Some(token).into()), range, text)
         } else {
-            Error::from_unterminated(f(None), text)
+            Error::from_unterminated(f(None.into()), text)
         }
     }
 
@@ -115,32 +115,18 @@ impl Error {
     fn report_ctx(&'_ self) -> Option<Annotation<'_>> {
         let ctx = match &*self.kind {
             ErrorKind::ExpectedKey(ctx, _) => {
-                let item = if let Token::Comma = ctx.token {
-                    "dangling comma"
-                } else {
-                    "this"
-                };
                 let msg = format!(
-                    "
-                        Expected due to {item}
-                        help: remove the dangling comma or add a key
-                    "
+                    "Expected due to {}\nhelp: remove the dangling comma or add a key",
+                    ctx.token
                 )
                 .trim()
                 .to_string();
 
                 AnnotationKind::Context.span(ctx.range.clone()).label(msg)
             }
-            ErrorKind::ExpectedKeyOrClosedCurlyBrace(ctx, _) => {
-                let item = if let Token::OpenCurlyBrace = ctx.token {
-                    "open curly brace"
-                } else {
-                    "this"
-                };
-                let msg = format!("Expected due to {item}");
-
-                AnnotationKind::Context.span(ctx.range.clone()).label(msg)
-            }
+            ErrorKind::ExpectedKeyOrClosedCurlyBrace(ctx, _) => AnnotationKind::Context
+                .span(ctx.range.clone())
+                .label(format!("expected due to {}", ctx.token)),
             _ => return None,
         };
 

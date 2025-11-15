@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use crate::{
     Error, ErrorKind, Result,
     ast::{Value, parse_tokens},
-    tokens::{Token, TokenWithContext},
+    tokens::{Token, TokenOption, TokenWithContext},
 };
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -58,7 +58,7 @@ impl ObjectState {
                 }) => ObjectState::Colon { key, map },
                 maybe_token => {
                     return Err(Error::from_maybe_token_with_context(
-                        |tok: Option<Token>| {
+                        |tok: TokenOption| {
                             ErrorKind::ExpectedKeyOrClosedCurlyBrace(ctx.clone(), tok)
                         },
                         maybe_token,
@@ -124,7 +124,7 @@ impl ObjectState {
                 }) => ObjectState::Colon { key, map },
                 maybe_token => {
                     return Err(Error::from_maybe_token_with_context(
-                        |tok: Option<Token>| ErrorKind::ExpectedKey(ctx.clone(), tok),
+                        |tok: TokenOption| ErrorKind::ExpectedKey(ctx.clone(), tok),
                         maybe_token,
                         text,
                     ));
