@@ -5,7 +5,9 @@ use json_parser::format::prettify_str;
 
 fn main() {
     let mut buf = String::new();
-    std::io::stdin().read_to_string(&mut buf).expect("Failed to read from stdin");
+    std::io::stdin()
+        .read_to_string(&mut buf)
+        .expect("Failed to read from stdin");
 
     let s = annotate(&buf);
     anstream::println!("{s}");

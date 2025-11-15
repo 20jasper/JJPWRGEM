@@ -129,7 +129,7 @@ impl Error {
                 .trim()
                 .to_string();
 
-                AnnotationKind::Context.span(ctx.range).label(msg)
+                AnnotationKind::Context.span(ctx.range.clone()).label(msg)
             }
             ErrorKind::ExpectedKeyOrClosedCurlyBrace(ctx, _) => {
                 let item = if let Token::OpenCurlyBrace = ctx.token {
@@ -139,7 +139,7 @@ impl Error {
                 };
                 let msg = format!("Expected due to {item}");
 
-                AnnotationKind::Context.span(ctx.range).label(msg)
+                AnnotationKind::Context.span(ctx.range.clone()).label(msg)
             }
             _ => return None,
         };
