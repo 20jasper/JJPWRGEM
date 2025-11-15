@@ -5,6 +5,7 @@ use crate::ast::object::parse_object;
 use crate::error::{ErrorKind, Result};
 use crate::tokens::{Token, TokenWithContext, str_to_tokens};
 use core::iter::Peekable;
+use core::ops::Range;
 use std::collections::HashMap;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -28,18 +29,30 @@ impl TryFrom<Token> for Value {
     }
 }
 
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub struct ValueWithContext {
+    value: Value,
+    ctx: Range<usize>,
+}
+
+impl ValueWithContext {
+    pub fn new(value: Value, ctx: Range<usize>) -> Self {
+        Self { value, ctx }
+    }
+}
+
 pub fn parse_str(json: &str) -> Result<Value> {
     let tokens = str_to_tokens(json)?;
-    parse_tokens(&mut tokens.into_iter().peekable(), json, true)
+    Ok(parse_tokens(&mut tokens.into_iter().peekable(), json, true)?.value)
 }
 
 pub fn parse_tokens(
     tokens: &mut Peekable<impl Iterator<Item = TokenWithContext>>,
     text: &str,
     fail_on_multiple_value: bool,
-) -> Result<Value> {
+) -> Result<ValueWithContext> {
     let peeked = if let Some(peeked) = tokens.peek() {
-        peeked
+        peeked.clone()
     } else {
         return Err(Error::from_maybe_token_with_context(
             |tok| ErrorKind::ExpectedValue(None, tok),
@@ -69,7 +82,12 @@ pub fn parse_tokens(
             text,
         ));
     }
-    Ok(val)
+
+    let end = tokens
+        .peek()
+        .map(|TokenWithContext { range, .. }| range.end)
+        .unwrap_or(text.len());
+    Ok(ValueWithContext::new(val, peeked.range.start..end))
 }
 
 #[cfg(test)]
@@ -221,7 +239,7 @@ mod tests {
     #[case(json_to_json_and_error(
         r#"{"hi": null null"#,
         ErrorKind::ExpectedCommaOrClosedCurlyBrace {
-            range: 5..12,
+            range: 5..16,
             open_ctx: TokenWithContext { token: Token::OpenCurlyBrace, range: 0..1 },
             found: Some(Token::Null).into(),
         },

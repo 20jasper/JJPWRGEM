@@ -1,6 +1,6 @@
 use crate::{
     Error, ErrorKind, Result,
-    ast::{Value, parse_tokens},
+    ast::{Value, ValueWithContext, parse_tokens},
     tokens::{Token, TokenOption, TokenWithContext},
 };
 use core::iter::Peekable;
@@ -176,40 +176,36 @@ impl ObjectState {
                 colon_ctx,
                 open_ctx,
             } => {
-                let maybe_token = tokens.peek();
+                let peeked = tokens.peek().cloned();
                 if !matches!(
-                    maybe_token,
-                    Some(TokenWithContext {
-                        token: Token::OpenCurlyBrace
-                            | Token::String(_)
-                            | Token::Null
-                            | Token::Boolean(_),
-                        ..
-                    })
+                    peeked.as_ref().map(|ctx| &ctx.token),
+                    Some(
+                        Token::OpenCurlyBrace | Token::String(_) | Token::Null | Token::Boolean(_)
+                    )
                 ) {
                     return Err(Error::from_maybe_token_with_context(
                         |tok| ErrorKind::ExpectedValue(Some(colon_ctx.clone()), tok),
-                        maybe_token.cloned(),
+                        peeked,
                         text,
                     ));
                 }
 
-                let json_value = parse_tokens(tokens, text, false)?;
-
-                if let Token::String(key) = &key_ctx.token {
-                    map.insert(key.clone(), json_value);
+                let key = if let Token::String(key) = key_ctx.token {
+                    key
                 } else {
                     unreachable!("key context should always be a string");
-                }
-                let value_end = tokens
-                    .peek()
-                    .map(|next| next.range.start)
-                    .unwrap_or_else(|| text.len());
+                };
+
+                let ValueWithContext {
+                    value: json_value,
+                    ctx: json_ctx,
+                } = parse_tokens(tokens, text, false)?;
+                map.insert(key, json_value);
 
                 ObjectState::KeyOrEnd {
                     map,
                     open_ctx,
-                    last_pair: Some(key_ctx.range.start..value_end),
+                    last_pair: Some(colon_ctx.range.start..json_ctx.end),
                 }
             }
             ObjectState::End(map) => {
