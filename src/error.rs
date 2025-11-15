@@ -137,7 +137,7 @@ impl Error {
                 } else {
                     "this"
                 };
-                let msg = format!("Expected due to {item}").trim().to_string();
+                let msg = format!("Expected due to {item}");
 
                 AnnotationKind::Context.span(ctx.range).label(msg)
             }
