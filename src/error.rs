@@ -96,20 +96,32 @@ impl Error {
         Snippet::source(&self.source_text).path(&self.source_name)
     }
 
-    fn report_patches(&'_ self) -> Vec<Group<'_>> {
-        let (title, patches) = match *self.kind {
-            ErrorKind::ExpectedKeyOrClosedCurlyBrace(_, _) => {
-                let patch = Patch::new(self.range.end..self.range.end, "}");
-                ("consider closing the unclosed curly brace", vec![patch])
-            }
-            _ => return vec![],
-        };
+    fn help_group<'a>(&'a self, title: &'static str, patch: Patch<'a>) -> Group<'a> {
+        Level::HELP
+            .primary_title(title)
+            .element(self.snippet().patches(vec![patch]))
+    }
 
-        vec![
-            Level::HELP
-                .primary_title(title)
-                .element(self.snippet().patches(patches)),
-        ]
+    fn report_patches(&'_ self) -> Vec<Group<'_>> {
+        match &*self.kind {
+            ErrorKind::ExpectedKey(ctx, _) => vec![self.help_group(
+                "consider removing the trailing comma",
+                Patch::new(ctx.range.clone(), ""),
+            )],
+            ErrorKind::ExpectedColon(ctx, _) => vec![self.help_group(
+                "insert the missing colon",
+                Patch::new(ctx.range.end..ctx.range.end, ": "),
+            )],
+            ErrorKind::ExpectedKeyOrClosedCurlyBrace(_, _) => vec![self.help_group(
+                "consider closing the unclosed curly brace",
+                Patch::new(self.range.end..self.range.end, "}"),
+            )],
+            ErrorKind::ExpectedValue(Some(ctx), _) => vec![self.help_group(
+                "insert a placeholder value",
+                Patch::new(ctx.range.end..ctx.range.end, " \"rust is a must\""),
+            )],
+            _ => Vec::new(),
+        }
     }
 
     fn report_ctx(&'_ self) -> Option<Annotation<'_>> {
