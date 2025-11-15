@@ -42,7 +42,7 @@ pub fn parse_tokens(
         peeked
     } else {
         return Err(Error::from_maybe_token_with_context(
-            ErrorKind::ExpectedValue,
+            |tok| ErrorKind::ExpectedValue(None, tok),
             None,
             text,
         ));
@@ -55,7 +55,7 @@ pub fn parse_tokens(
         }
         invalid => {
             return Err(Error::new(
-                ErrorKind::ExpectedValue(Some(invalid.clone()).into()),
+                ErrorKind::ExpectedValue(None, Some(invalid.clone()).into()),
                 peeked.range.clone(),
                 text,
             ));
@@ -75,6 +75,7 @@ pub fn parse_tokens(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::tokens::{Token, TokenWithContext};
 
     fn kv_to_map(tuples: &[(&str, Value)]) -> Value {
         Value::Object(
@@ -156,32 +157,56 @@ mod tests {
     #[rstest::rstest]
     #[case(json_to_json_and_error(
         r#"{"hi", "#,
-        ErrorKind::ExpectedColon(Some(Token::Comma).into()),
+        ErrorKind::ExpectedColon(
+            TokenWithContext {
+                token: Token::String("hi".into()),
+                range: 1..5,
+            },
+            Some(Token::Comma).into(),
+        ),
         5..6,
     ))]
     #[case(json_to_json_and_error(
         r#"  {"hi"    "#,
-        ErrorKind::ExpectedColon(None.into()),
+        ErrorKind::ExpectedColon(
+            TokenWithContext {
+                token: Token::String("hi".into()),
+                range: 3..7,
+            },
+            None.into(),
+        ),
         6..7,
     ))]
     #[case(json_to_json_and_error(
         r#"{"hi"    "#,
-        ErrorKind::ExpectedColon(None.into()),
+        ErrorKind::ExpectedColon(
+            TokenWithContext {
+                token: Token::String("hi".into()),
+                range: 1..5,
+            },
+            None.into(),
+        ),
         4..5,
     ))]
     #[case(json_to_json_and_error(
         r#"{"hi":"#,
-        ErrorKind::ExpectedValue(None.into()),
+        ErrorKind::ExpectedValue(
+            Some(TokenWithContext {
+                token: Token::Colon,
+                range: 5..6,
+            }),
+            None.into(),
+        ),
         5..6,
     ))]
     #[case(json_to_json_and_error(
         r#"}"#,
-        ErrorKind::ExpectedValue(Some(Token::ClosedCurlyBrace).into()),
+        ErrorKind::ExpectedValue(None, Some(Token::ClosedCurlyBrace).into()),
         0..1,
     ))]
     #[case(json_to_json_and_error(
         r#""#,
-        ErrorKind::ExpectedValue(None.into()),
+        ErrorKind::ExpectedValue(None, None.into()),
         0..0,
     ))]
     #[case(json_to_json_and_error(

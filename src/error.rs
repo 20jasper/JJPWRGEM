@@ -17,10 +17,10 @@ pub enum ErrorKind {
     TokenAfterEnd(Token),
     /// expected key, found {1}
     ExpectedKey(TokenWithContext, TokenOption),
-    /// expected colon after key, found {0}
-    ExpectedColon(TokenOption),
-    /// expected json value, found {0}
-    ExpectedValue(TokenOption),
+    /// expected colon after key, found {1}
+    ExpectedColon(TokenWithContext, TokenOption),
+    /// expected json value, found {1}
+    ExpectedValue(Option<TokenWithContext>, TokenOption),
     /// expected key or closed curly brace, found {1}
     ExpectedKeyOrClosedCurlyBrace(TokenWithContext, TokenOption),
     /// expected comma or closed curly brace, found {0}
@@ -114,23 +114,15 @@ impl Error {
 
     fn report_ctx(&'_ self) -> Option<Annotation<'_>> {
         let ctx = match &*self.kind {
-            ErrorKind::ExpectedKey(ctx, _) => {
-                let msg = format!(
-                    "Expected due to {}\nhelp: remove the dangling comma or add a key",
-                    ctx.token
-                )
-                .trim()
-                .to_string();
-
-                AnnotationKind::Context.span(ctx.range.clone()).label(msg)
-            }
-            ErrorKind::ExpectedKeyOrClosedCurlyBrace(ctx, _) => AnnotationKind::Context
-                .span(ctx.range.clone())
-                .label(format!("expected due to {}", ctx.token)),
+            ErrorKind::ExpectedKey(ctx, _)
+            | ErrorKind::ExpectedColon(ctx, _)
+            | ErrorKind::ExpectedKeyOrClosedCurlyBrace(ctx, _)
+            | ErrorKind::ExpectedValue(Some(ctx), _) => ctx,
             _ => return None,
         };
 
-        Some(ctx)
+        let (range, label) = (ctx.range.clone(), format!("expected due to {}", ctx.token));
+        Some(AnnotationKind::Context.span(range).label(label))
     }
 
     fn report_error(&'_ self) -> Group<'_> {

@@ -14,10 +14,12 @@ enum ObjectState {
     NextKeyOrEnd(HashMap<String, Value>),
     Key(HashMap<String, Value>, TokenWithContext),
     Colon {
+        key_ctx: TokenWithContext,
         key: String,
         map: HashMap<String, Value>,
     },
     Value {
+        colon_ctx: TokenWithContext,
         key: String,
         map: HashMap<String, Value>,
     },
@@ -52,10 +54,19 @@ impl ObjectState {
                     token: Token::ClosedCurlyBrace,
                     ..
                 }) => ObjectState::End(map),
-                Some(TokenWithContext {
-                    token: Token::String(key),
-                    ..
-                }) => ObjectState::Colon { key, map },
+                Some(
+                    key_ctx @ TokenWithContext {
+                        token: Token::String(_),
+                        ..
+                    },
+                ) => {
+                    let key = match &key_ctx.token {
+                        Token::String(key) => key.clone(),
+                        _ => unreachable!("token already matched as string"),
+                    };
+
+                    ObjectState::Colon { key_ctx, key, map }
+                }
                 maybe_token => {
                     return Err(Error::from_maybe_token_with_context(
                         |tok: TokenOption| {
@@ -66,20 +77,30 @@ impl ObjectState {
                     ));
                 }
             },
-            ObjectState::Colon { map, key } => match tokens.next() {
-                Some(TokenWithContext {
-                    token: Token::Colon,
-                    ..
-                }) => ObjectState::Value { map, key },
+            ObjectState::Colon { map, key, key_ctx } => match tokens.next() {
+                Some(
+                    colon_ctx @ TokenWithContext {
+                        token: Token::Colon,
+                        ..
+                    },
+                ) => ObjectState::Value {
+                    map,
+                    key,
+                    colon_ctx,
+                },
                 maybe_token => {
                     return Err(Error::from_maybe_token_with_context(
-                        ErrorKind::ExpectedColon,
+                        |tok| ErrorKind::ExpectedColon(key_ctx.clone(), tok),
                         maybe_token,
                         text,
                     ));
                 }
             },
-            ObjectState::Value { mut map, key } => {
+            ObjectState::Value {
+                mut map,
+                key,
+                colon_ctx,
+            } => {
                 let json_value = match tokens.peek() {
                     Some(TokenWithContext {
                         token:
@@ -88,7 +109,7 @@ impl ObjectState {
                     }) => parse_tokens(tokens, text, false)?,
                     maybe_token => {
                         return Err(Error::from_maybe_token_with_context(
-                            ErrorKind::ExpectedValue,
+                            |tok| ErrorKind::ExpectedValue(Some(colon_ctx.clone()), tok),
                             maybe_token.cloned(),
                             text,
                         ));
@@ -118,10 +139,19 @@ impl ObjectState {
                 }
             },
             ObjectState::Key(map, ctx) => match tokens.next() {
-                Some(TokenWithContext {
-                    token: Token::String(key),
-                    ..
-                }) => ObjectState::Colon { key, map },
+                Some(
+                    key_ctx @ TokenWithContext {
+                        token: Token::String(_),
+                        ..
+                    },
+                ) => {
+                    let key = match &key_ctx.token {
+                        Token::String(key) => key.clone(),
+                        _ => unreachable!("token already matched as string"),
+                    };
+
+                    ObjectState::Colon { key_ctx, key, map }
+                }
                 maybe_token => {
                     return Err(Error::from_maybe_token_with_context(
                         |tok: TokenOption| ErrorKind::ExpectedKey(ctx.clone(), tok),
