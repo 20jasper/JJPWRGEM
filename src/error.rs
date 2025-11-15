@@ -17,10 +17,10 @@ pub enum ErrorKind {
     TokenAfterEnd(Token),
     /// expected key, found {1}
     ExpectedKey(TokenWithContext, TokenOption),
-    /// expected colon after key, found {0}
-    ExpectedColon(TokenOption),
-    /// expected json value, found {0}
-    ExpectedValue(TokenOption),
+    /// expected colon after key, found {1}
+    ExpectedColon(TokenWithContext, TokenOption),
+    /// expected json value, found {1}
+    ExpectedValue(Option<TokenWithContext>, TokenOption),
     /// expected key or closed curly brace, found {1}
     ExpectedKeyOrClosedCurlyBrace(TokenWithContext, TokenOption),
     /// expected comma or closed curly brace, found {0}
@@ -96,41 +96,45 @@ impl Error {
         Snippet::source(&self.source_text).path(&self.source_name)
     }
 
-    fn report_patches(&'_ self) -> Vec<Group<'_>> {
-        let (title, patches) = match *self.kind {
-            ErrorKind::ExpectedKeyOrClosedCurlyBrace(_, _) => {
-                let patch = Patch::new(self.range.end..self.range.end, "}");
-                ("consider closing the unclosed curly brace", vec![patch])
-            }
-            _ => return vec![],
-        };
+    fn help_group<'a>(&'a self, title: &'static str, patch: Patch<'a>) -> Group<'a> {
+        Level::HELP
+            .primary_title(title)
+            .element(self.snippet().patches(vec![patch]))
+    }
 
-        vec![
-            Level::HELP
-                .primary_title(title)
-                .element(self.snippet().patches(patches)),
-        ]
+    fn report_patches(&'_ self) -> Vec<Group<'_>> {
+        match &*self.kind {
+            ErrorKind::ExpectedKey(ctx, _) => vec![self.help_group(
+                "consider removing the trailing comma",
+                Patch::new(ctx.range.clone(), ""),
+            )],
+            ErrorKind::ExpectedColon(ctx, _) => vec![self.help_group(
+                "insert the missing colon",
+                Patch::new(ctx.range.end..ctx.range.end, ": "),
+            )],
+            ErrorKind::ExpectedKeyOrClosedCurlyBrace(_, _) => vec![self.help_group(
+                "consider closing the unclosed curly brace",
+                Patch::new(self.range.end..self.range.end, "}"),
+            )],
+            ErrorKind::ExpectedValue(Some(ctx), _) => vec![self.help_group(
+                "insert a placeholder value",
+                Patch::new(ctx.range.end..ctx.range.end, " \"rust is a must\""),
+            )],
+            _ => Vec::new(),
+        }
     }
 
     fn report_ctx(&'_ self) -> Option<Annotation<'_>> {
         let ctx = match &*self.kind {
-            ErrorKind::ExpectedKey(ctx, _) => {
-                let msg = format!(
-                    "Expected due to {}\nhelp: remove the dangling comma or add a key",
-                    ctx.token
-                )
-                .trim()
-                .to_string();
-
-                AnnotationKind::Context.span(ctx.range.clone()).label(msg)
-            }
-            ErrorKind::ExpectedKeyOrClosedCurlyBrace(ctx, _) => AnnotationKind::Context
-                .span(ctx.range.clone())
-                .label(format!("expected due to {}", ctx.token)),
+            ErrorKind::ExpectedKey(ctx, _)
+            | ErrorKind::ExpectedColon(ctx, _)
+            | ErrorKind::ExpectedKeyOrClosedCurlyBrace(ctx, _)
+            | ErrorKind::ExpectedValue(Some(ctx), _) => ctx,
             _ => return None,
         };
 
-        Some(ctx)
+        let (range, label) = (ctx.range.clone(), format!("expected due to {}", ctx.token));
+        Some(AnnotationKind::Context.span(range).label(label))
     }
 
     fn report_error(&'_ self) -> Group<'_> {
