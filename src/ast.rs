@@ -75,7 +75,6 @@ pub fn parse_tokens(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::tokens::{Token, TokenWithContext};
 
     fn kv_to_map(tuples: &[(&str, Value)]) -> Value {
         Value::Object(
@@ -221,12 +220,18 @@ mod tests {
     ))]
     #[case(json_to_json_and_error(
         r#"{"hi": null null"#,
-        ErrorKind::ExpectedCommaOrClosedCurlyBrace(Some(Token::Null).into()),
+        ErrorKind::ExpectedCommaOrClosedCurlyBrace(
+            5..11,
+            Some(Token::Null).into(),
+        ),
         12..16,
     ))]
     #[case(json_to_json_and_error(
         r#"{"hi": null     "#,
-        ErrorKind::ExpectedCommaOrClosedCurlyBrace(None.into()),
+        ErrorKind::ExpectedCommaOrClosedCurlyBrace(
+            5..11,
+            None.into(),
+        ),
         10..11,
     ))]
     #[case(json_to_json_and_error(

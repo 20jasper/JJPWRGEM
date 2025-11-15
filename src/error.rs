@@ -7,6 +7,9 @@ use crate::tokens::{Token, TokenOption, TokenWithContext, trim_end_whitespace};
 
 pub type Result<T> = std::result::Result<T, Error>;
 
+pub const EXPECTED_COMMA_OR_CLOSED_CURLY_MESSAGE: &str = "the preceding key/value pair";
+pub const INSERT_MISSING_CURLY_HELP: &str = "insert the missing curly brace";
+
 #[derive(Debug, PartialEq, Eq, Display, Clone)]
 pub enum ErrorKind {
     /// unexpected character `{0:?}`. expected start of a json value
@@ -23,10 +26,10 @@ pub enum ErrorKind {
     ExpectedValue(Option<TokenWithContext>, TokenOption),
     /// expected key or closed curly brace, found {1}
     ExpectedKeyOrClosedCurlyBrace(TokenWithContext, TokenOption),
-    /// expected comma or closed curly brace, found {0}
-    ExpectedCommaOrClosedCurlyBrace(TokenOption),
-    /// expected open curly curly brace, found {0}
-    ExpectedOpenCurlyBrace(TokenOption),
+    /// expected comma or closed curly brace, found {1}
+    ExpectedCommaOrClosedCurlyBrace(Range<usize>, TokenOption),
+    /// expected open curly curly brace, found {1}
+    ExpectedOpenCurlyBrace(Option<TokenWithContext>, TokenOption),
     /// expected quote before end of input
     ExpectedQuote,
     /// {0}
@@ -113,9 +116,15 @@ impl Error {
                 Patch::new(ctx.range.end..ctx.range.end, ": "),
             )],
             ErrorKind::ExpectedKeyOrClosedCurlyBrace(_, _) => vec![self.help_group(
-                "consider closing the unclosed curly brace",
+                INSERT_MISSING_CURLY_HELP,
                 Patch::new(self.range.end..self.range.end, "}"),
             )],
+            ErrorKind::ExpectedCommaOrClosedCurlyBrace(range, _) => {
+                vec![self.help_group(
+                    INSERT_MISSING_CURLY_HELP,
+                    Patch::new(range.end..range.end, "}"),
+                )]
+            }
             ErrorKind::ExpectedValue(Some(ctx), _) => vec![self.help_group(
                 "insert a placeholder value",
                 Patch::new(ctx.range.end..ctx.range.end, " \"rust is a must\""),
@@ -125,16 +134,23 @@ impl Error {
     }
 
     fn report_ctx(&'_ self) -> Option<Annotation<'_>> {
-        let ctx = match &*self.kind {
+        match &*self.kind {
             ErrorKind::ExpectedKey(ctx, _)
             | ErrorKind::ExpectedColon(ctx, _)
             | ErrorKind::ExpectedKeyOrClosedCurlyBrace(ctx, _)
-            | ErrorKind::ExpectedValue(Some(ctx), _) => ctx,
-            _ => return None,
-        };
-
-        let (range, label) = (ctx.range.clone(), format!("expected due to {}", ctx.token));
-        Some(AnnotationKind::Context.span(range).label(label))
+            | ErrorKind::ExpectedValue(Some(ctx), _)
+            | ErrorKind::ExpectedOpenCurlyBrace(Some(ctx), _) => Some(
+                AnnotationKind::Context
+                    .span(ctx.range.clone())
+                    .label(format!("expected due to {}", ctx.token)),
+            ),
+            ErrorKind::ExpectedCommaOrClosedCurlyBrace(range, _) => {
+                Some(AnnotationKind::Context.span(range.clone()).label(format!(
+                    "expected due to {EXPECTED_COMMA_OR_CLOSED_CURLY_MESSAGE}"
+                )))
+            }
+            _ => None,
+        }
     }
 
     fn report_error(&'_ self) -> Group<'_> {
