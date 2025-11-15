@@ -113,7 +113,7 @@ impl Error {
     }
 
     fn report_ctx(&'_ self) -> Option<Annotation<'_>> {
-        let ctx = match *self.kind.clone() {
+        let ctx = match &*self.kind {
             ErrorKind::ExpectedKey(ctx, _) => {
                 let item = if let Token::Comma = ctx.token {
                     "dangling comma"
