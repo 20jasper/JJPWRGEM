@@ -13,21 +13,23 @@ enum ObjectState {
     KeyOrEnd {
         map: HashMap<String, Value>,
         open_ctx: TokenWithContext,
+        last_pair: Option<Range<usize>>,
     },
-    NextKeyOrEnd {
+    Key {
         map: HashMap<String, Value>,
-        colon_range: Range<usize>,
-        value_end: usize,
+        comma_ctx: TokenWithContext,
+        open_ctx: TokenWithContext,
     },
-    Key(HashMap<String, Value>, TokenWithContext),
     Colon {
         key_ctx: TokenWithContext,
         map: HashMap<String, Value>,
+        open_ctx: TokenWithContext,
     },
     Value {
         key_ctx: TokenWithContext,
         colon_ctx: TokenWithContext,
         map: HashMap<String, Value>,
+        open_ctx: TokenWithContext,
     },
     End(HashMap<String, Value>),
 }
@@ -49,6 +51,7 @@ impl ObjectState {
                 ) => ObjectState::KeyOrEnd {
                     map: HashMap::new(),
                     open_ctx: ctx,
+                    last_pair: None,
                 },
                 maybe_token => {
                     return Err(Error::from_maybe_token_with_context(
@@ -58,18 +61,57 @@ impl ObjectState {
                     ));
                 }
             },
-            ObjectState::KeyOrEnd { map, open_ctx } => match tokens.next() {
-                Some(TokenWithContext {
-                    token: Token::ClosedCurlyBrace,
-                    ..
-                }) => ObjectState::End(map),
-                Some(
-                    key_ctx @ TokenWithContext {
-                        token: Token::String(_),
+
+            ObjectState::KeyOrEnd {
+                map,
+                open_ctx,
+                last_pair,
+            } => match (last_pair, tokens.next()) {
+                (
+                    _,
+                    Some(TokenWithContext {
+                        token: Token::ClosedCurlyBrace,
                         ..
-                    },
-                ) => ObjectState::Colon { key_ctx, map },
-                maybe_token => {
+                    }),
+                ) => ObjectState::End(map),
+                (
+                    Some(_),
+                    Some(
+                        comma_ctx @ TokenWithContext {
+                            token: Token::Comma,
+                            ..
+                        },
+                    ),
+                ) => ObjectState::Key {
+                    map,
+                    comma_ctx,
+                    open_ctx,
+                },
+                (
+                    None,
+                    Some(
+                        key_ctx @ TokenWithContext {
+                            token: Token::String(_),
+                            ..
+                        },
+                    ),
+                ) => ObjectState::Colon {
+                    key_ctx,
+                    map,
+                    open_ctx,
+                },
+                (Some(pair_span), maybe_token) => {
+                    return Err(Error::from_maybe_token_with_context(
+                        |tok| ErrorKind::ExpectedCommaOrClosedCurlyBrace {
+                            range: pair_span.clone(),
+                            open_ctx: open_ctx.clone(),
+                            found: tok,
+                        },
+                        maybe_token,
+                        text,
+                    ));
+                }
+                (None, maybe_token) => {
                     return Err(Error::from_maybe_token_with_context(
                         |tok: TokenOption| {
                             ErrorKind::ExpectedKeyOrClosedCurlyBrace(open_ctx.clone(), tok)
@@ -79,7 +121,35 @@ impl ObjectState {
                     ));
                 }
             },
-            ObjectState::Colon { map, key_ctx } => match tokens.next() {
+
+            ObjectState::Key {
+                map,
+                comma_ctx,
+                open_ctx,
+            } => match tokens.next() {
+                Some(
+                    key_ctx @ TokenWithContext {
+                        token: Token::String(_),
+                        ..
+                    },
+                ) => ObjectState::Colon {
+                    key_ctx,
+                    map,
+                    open_ctx,
+                },
+                maybe_token => {
+                    return Err(Error::from_maybe_token_with_context(
+                        |tok: TokenOption| ErrorKind::ExpectedKey(comma_ctx.clone(), tok),
+                        maybe_token,
+                        text,
+                    ));
+                }
+            },
+            ObjectState::Colon {
+                map,
+                key_ctx,
+                open_ctx,
+            } => match tokens.next() {
                 Some(
                     colon_ctx @ TokenWithContext {
                         token: Token::Colon,
@@ -89,6 +159,7 @@ impl ObjectState {
                     map,
                     key_ctx,
                     colon_ctx,
+                    open_ctx,
                 },
                 maybe_token => {
                     return Err(Error::from_maybe_token_with_context(
@@ -98,89 +169,49 @@ impl ObjectState {
                     ));
                 }
             },
+
             ObjectState::Value {
                 mut map,
                 key_ctx,
                 colon_ctx,
+                open_ctx,
             } => {
-                let value_ctx = match tokens.peek() {
-                    Some(
-                        ctx @ TokenWithContext {
-                            token:
-                                Token::OpenCurlyBrace
-                                | Token::String(_)
-                                | Token::Null
-                                | Token::Boolean(_),
-                            ..
-                        },
-                    ) => ctx.clone(),
-                    maybe_token => {
-                        return Err(Error::from_maybe_token_with_context(
-                            |tok| ErrorKind::ExpectedValue(Some(colon_ctx.clone()), tok),
-                            maybe_token.cloned(),
-                            text,
-                        ));
-                    }
-                };
+                let maybe_token = tokens.peek();
+                if !matches!(
+                    maybe_token,
+                    Some(TokenWithContext {
+                        token: Token::OpenCurlyBrace
+                            | Token::String(_)
+                            | Token::Null
+                            | Token::Boolean(_),
+                        ..
+                    })
+                ) {
+                    return Err(Error::from_maybe_token_with_context(
+                        |tok| ErrorKind::ExpectedValue(Some(colon_ctx.clone()), tok),
+                        maybe_token.cloned(),
+                        text,
+                    ));
+                }
 
                 let json_value = parse_tokens(tokens, text, false)?;
 
                 if let Token::String(key) = &key_ctx.token {
                     map.insert(key.clone(), json_value);
                 } else {
-                    unreachable!("token already matched as string");
+                    unreachable!("key context should always be a string");
                 }
-                let value_end = value_ctx.range.end;
+                let value_end = tokens
+                    .peek()
+                    .map(|next| next.range.start)
+                    .unwrap_or_else(|| text.len());
 
-                ObjectState::NextKeyOrEnd {
+                ObjectState::KeyOrEnd {
                     map,
-                    colon_range: colon_ctx.range.clone(),
-                    value_end,
+                    open_ctx,
+                    last_pair: Some(key_ctx.range.start..value_end),
                 }
             }
-            ObjectState::NextKeyOrEnd {
-                map,
-                colon_range,
-                value_end,
-            } => match tokens.next() {
-                Some(TokenWithContext {
-                    token: Token::ClosedCurlyBrace,
-                    ..
-                }) => ObjectState::End(map),
-                Some(
-                    ctx @ TokenWithContext {
-                        token: Token::Comma,
-                        ..
-                    },
-                ) => ObjectState::Key(map, ctx),
-                maybe_token => {
-                    return Err(Error::from_maybe_token_with_context(
-                        |tok| {
-                            ErrorKind::ExpectedCommaOrClosedCurlyBrace(
-                                colon_range.start..value_end,
-                                tok,
-                            )
-                        },
-                        maybe_token,
-                        text,
-                    ));
-                }
-            },
-            ObjectState::Key(map, ctx) => match tokens.next() {
-                Some(
-                    key_ctx @ TokenWithContext {
-                        token: Token::String(_),
-                        ..
-                    },
-                ) => ObjectState::Colon { key_ctx, map },
-                maybe_token => {
-                    return Err(Error::from_maybe_token_with_context(
-                        |tok: TokenOption| ErrorKind::ExpectedKey(ctx.clone(), tok),
-                        maybe_token,
-                        text,
-                    ));
-                }
-            },
             ObjectState::End(map) => {
                 if fail_on_multiple_value
                     && let Some(TokenWithContext { token, range }) = tokens.peek().cloned()

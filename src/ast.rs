@@ -220,18 +220,20 @@ mod tests {
     ))]
     #[case(json_to_json_and_error(
         r#"{"hi": null null"#,
-        ErrorKind::ExpectedCommaOrClosedCurlyBrace(
-            5..11,
-            Some(Token::Null).into(),
-        ),
+        ErrorKind::ExpectedCommaOrClosedCurlyBrace {
+            range: 5..12,
+            open_ctx: TokenWithContext { token: Token::OpenCurlyBrace, range: 0..1 },
+            found: Some(Token::Null).into(),
+        },
         12..16,
     ))]
     #[case(json_to_json_and_error(
         r#"{"hi": null     "#,
-        ErrorKind::ExpectedCommaOrClosedCurlyBrace(
-            5..11,
-            None.into(),
-        ),
+        ErrorKind::ExpectedCommaOrClosedCurlyBrace {
+            range: 5..16,
+            open_ctx: TokenWithContext { token: Token::OpenCurlyBrace, range: 0..1 },
+            found: None.into(),
+        },
         10..11,
     ))]
     #[case(json_to_json_and_error(
