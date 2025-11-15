@@ -190,9 +190,7 @@ impl ObjectState {
                     ));
                 }
 
-                let key = if let Token::String(key) = key_ctx.token {
-                    key
-                } else {
+                let Token::String(key) = key_ctx.token else {
                     unreachable!("key context should always be a string");
                 };
 
