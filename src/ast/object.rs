@@ -54,17 +54,14 @@ impl ObjectState {
                     token: Token::ClosedCurlyBrace,
                     ..
                 }) => ObjectState::End(map),
-                Some(
-                    key_ctx @ TokenWithContext {
-                        token: Token::String(_),
-                        ..
-                    },
-                ) => {
-                    let key = match &key_ctx.token {
-                        Token::String(key) => key.clone(),
-                        _ => unreachable!("token already matched as string"),
+                Some(TokenWithContext {
+                    token: Token::String(key),
+                    range: key_range,
+                }) => {
+                    let key_ctx = TokenWithContext {
+                        token: Token::String(key.clone()),
+                        range: key_range,
                     };
-
                     ObjectState::Colon { key_ctx, key, map }
                 }
                 maybe_token => {
@@ -139,17 +136,14 @@ impl ObjectState {
                 }
             },
             ObjectState::Key(map, ctx) => match tokens.next() {
-                Some(
-                    key_ctx @ TokenWithContext {
-                        token: Token::String(_),
-                        ..
-                    },
-                ) => {
-                    let key = match &key_ctx.token {
-                        Token::String(key) => key.clone(),
-                        _ => unreachable!("token already matched as string"),
+                Some(TokenWithContext {
+                    token: Token::String(key),
+                    range: key_range,
+                }) => {
+                    let key_ctx = TokenWithContext {
+                        token: Token::String(key.clone()),
+                        range: key_range,
                     };
-
                     ObjectState::Colon { key_ctx, key, map }
                 }
                 maybe_token => {
