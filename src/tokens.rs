@@ -1,5 +1,6 @@
 use crate::error::Error;
 use crate::{ErrorKind, Result};
+use core::fmt::Display;
 use core::iter;
 use core::ops::Range;
 use core::{iter::Peekable, str::CharIndices};
@@ -13,6 +14,40 @@ pub enum Token {
     String(String),
     Null,
     Boolean(bool),
+}
+
+impl Display for Token {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let val = match self {
+            Token::OpenCurlyBrace => "{",
+            Token::ClosedCurlyBrace => "}",
+            Token::Colon => ":",
+            Token::Comma => ",",
+            Token::String(x) => &format!("{x:?}"),
+            Token::Boolean(x) => &format!("{x:?}"),
+            Token::Null => NULL,
+        };
+        write!(f, "`{val}`")
+    }
+}
+
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub struct TokenOption(Option<Token>);
+
+impl Display for TokenOption {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let val = match &self.0 {
+            Some(x) => x.to_string(),
+            None => "no significant characters".to_owned(),
+        };
+        write!(f, "{val}")
+    }
+}
+
+impl From<Option<Token>> for TokenOption {
+    fn from(value: Option<Token>) -> Self {
+        Self(value)
+    }
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]

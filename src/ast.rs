@@ -55,7 +55,7 @@ pub fn parse_tokens(
         }
         invalid => {
             return Err(Error::new(
-                ErrorKind::ExpectedValue(Some(invalid.clone())),
+                ErrorKind::ExpectedValue(Some(invalid.clone()).into()),
                 peeked.range.clone(),
                 text,
             ));
@@ -156,62 +156,62 @@ mod tests {
     #[rstest::rstest]
     #[case(json_to_json_and_error(
         r#"{"hi", "#,
-        ErrorKind::ExpectedColon(Some(Token::Comma)),
+        ErrorKind::ExpectedColon(Some(Token::Comma).into()),
         5..6,
     ))]
     #[case(json_to_json_and_error(
         r#"  {"hi"    "#,
-        ErrorKind::ExpectedColon(None),
+        ErrorKind::ExpectedColon(None.into()),
         6..7,
     ))]
     #[case(json_to_json_and_error(
         r#"{"hi"    "#,
-        ErrorKind::ExpectedColon(None),
+        ErrorKind::ExpectedColon(None.into()),
         4..5,
     ))]
     #[case(json_to_json_and_error(
         r#"{"hi":"#,
-        ErrorKind::ExpectedValue(None),
+        ErrorKind::ExpectedValue(None.into()),
         5..6,
     ))]
     #[case(json_to_json_and_error(
         r#"}"#,
-        ErrorKind::ExpectedValue(Some(Token::ClosedCurlyBrace)),
+        ErrorKind::ExpectedValue(Some(Token::ClosedCurlyBrace).into()),
         0..1,
     ))]
     #[case(json_to_json_and_error(
         r#""#,
-        ErrorKind::ExpectedValue(None),
+        ErrorKind::ExpectedValue(None.into()),
         0..0,
     ))]
     #[case(json_to_json_and_error(
         r#"{{"#,
-        ErrorKind::ExpectedKeyOrClosedCurlyBrace(TokenWithContext{token: Token::OpenCurlyBrace, range: 0..1}, Some(Token::OpenCurlyBrace)),
+        ErrorKind::ExpectedKeyOrClosedCurlyBrace(TokenWithContext{token: Token::OpenCurlyBrace, range: 0..1}, Some(Token::OpenCurlyBrace).into()),
         1..2,
     ))]
     #[case(json_to_json_and_error(
         r#"{"#,
-        ErrorKind::ExpectedKeyOrClosedCurlyBrace(TokenWithContext{token: Token::OpenCurlyBrace, range: 0..1}, None),
+        ErrorKind::ExpectedKeyOrClosedCurlyBrace(TokenWithContext{token: Token::OpenCurlyBrace, range: 0..1}, None.into()),
         0..1,
     ))]
     #[case(json_to_json_and_error(
         r#"{"hi": null null"#,
-        ErrorKind::ExpectedCommaOrClosedCurlyBrace(Some(Token::Null)),
+        ErrorKind::ExpectedCommaOrClosedCurlyBrace(Some(Token::Null).into()),
         12..16,
     ))]
     #[case(json_to_json_and_error(
         r#"{"hi": null     "#,
-        ErrorKind::ExpectedCommaOrClosedCurlyBrace(None),
+        ErrorKind::ExpectedCommaOrClosedCurlyBrace(None.into()),
         10..11,
     ))]
     #[case(json_to_json_and_error(
         r#"{"hi": null, }"#,
-        ErrorKind::ExpectedKey(TokenWithContext {token: Token::Comma, range: 11..12}, Some(Token::ClosedCurlyBrace)),
+        ErrorKind::ExpectedKey(TokenWithContext {token: Token::Comma, range: 11..12}, Some(Token::ClosedCurlyBrace).into()),
         13..14,
     ))]
     #[case(json_to_json_and_error(
         r#"{"hi": null, "#,
-        ErrorKind::ExpectedKey(TokenWithContext {token: Token::Comma, range: 11..12}, None),
+        ErrorKind::ExpectedKey(TokenWithContext {token: Token::Comma, range: 11..12}, None.into()),
         11..12,
     ))]
     #[case(json_to_json_and_error(
