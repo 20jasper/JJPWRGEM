@@ -1,5 +1,5 @@
+use annotate_snippets::{Annotation, AnnotationKind, Group, Level, Patch, Snippet};
 use core::ops::Range;
-
 use displaydoc::Display;
 use thiserror::Error;
 
@@ -9,7 +9,7 @@ pub type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Debug, PartialEq, Eq, Display, Clone)]
 pub enum ErrorKind {
-    /// Unexpected character {0:?}. Expected start of a json value
+    /// Unexpected character {0:?}. Expected start of a JSON value
     UnexpectedCharacter(char),
     /// Unexpected unescaped control character {0:?} in string literal
     UnexpectedControlCharacterInString(char),
@@ -27,7 +27,7 @@ pub enum ErrorKind {
     ExpectedCommaOrClosedCurlyBrace(Option<Token>),
     /// expected open curly curly brace, found {0:?}
     ExpectedOpenCurlyBrace(Option<Token>),
-    /// expected quote
+    /// expected quote before end of input
     ExpectedQuote,
     /// {0}
     Custom(String),
@@ -45,22 +45,28 @@ where
 #[derive(Debug, PartialEq, Eq, Display, Error)]
 /// {kind} at line {line} column {column}
 pub struct Error {
-    kind: ErrorKind,
+    kind: Box<ErrorKind>,
     range: Range<usize>,
     /// 1 indexed line number
     line: usize,
     /// 1 indexed column number
     column: usize,
+    source_text: String,
+    source_name: String,
 }
 
 impl Error {
     pub fn new(kind: ErrorKind, range: Range<usize>, text: &str) -> Self {
+        // TODO take this as a param or have some sort of context
+        let source_name = "stdin".into();
         let (line, column) = get_line_and_column(text, range.clone());
         Self {
-            kind,
+            kind: kind.into(),
             range,
             line,
             column,
+            source_text: text.into(),
+            source_name,
         }
     }
 
@@ -81,6 +87,83 @@ impl Error {
         } else {
             Error::from_unterminated(f(None), text)
         }
+    }
+
+    fn snippet<T>(&'_ self) -> Snippet<'_, T>
+    where
+        T: Clone,
+    {
+        Snippet::source(&self.source_text).path(&self.source_name)
+    }
+
+    fn report_patches(&'_ self) -> Vec<Group<'_>> {
+        let (title, patches) = match *self.kind {
+            ErrorKind::ExpectedKeyOrClosedCurlyBrace(_, _) => {
+                let patch = Patch::new(self.range.end..self.range.end, "}");
+                ("consider closing the unclosed curly brace", vec![patch])
+            }
+            _ => return vec![],
+        };
+
+        vec![
+            Level::HELP
+                .primary_title(title)
+                .element(self.snippet().patches(patches)),
+        ]
+    }
+
+    fn report_ctx(&'_ self) -> Option<Annotation<'_>> {
+        let ctx = match *self.kind.clone() {
+            ErrorKind::ExpectedKey(ctx, _) => {
+                let item = if let Token::Comma = ctx.token {
+                    "dangling comma"
+                } else {
+                    "this"
+                };
+                let msg = format!(
+                    "
+                        Expected due to {item}
+                        help: remove the dangling comma or add a key
+                    "
+                )
+                .trim()
+                .to_string();
+
+                AnnotationKind::Context.span(ctx.range).label(msg)
+            }
+            ErrorKind::ExpectedKeyOrClosedCurlyBrace(ctx, _) => {
+                let item = if let Token::OpenCurlyBrace = ctx.token {
+                    "open curly brace"
+                } else {
+                    "this"
+                };
+                let msg = format!("Expected due to {item}").trim().to_string();
+
+                AnnotationKind::Context.span(ctx.range).label(msg)
+            }
+            _ => return None,
+        };
+
+        Some(ctx)
+    }
+
+    fn report_error(&'_ self) -> Group<'_> {
+        let annotations = [
+            Some(AnnotationKind::Primary.span(self.range.clone())),
+            self.report_ctx(),
+        ]
+        .into_iter()
+        .flatten();
+
+        Level::ERROR
+            .primary_title(self.kind.to_string())
+            .element(self.snippet().annotations(annotations))
+    }
+
+    pub fn report<'a>(&'a self) -> Vec<Group<'a>> {
+        std::iter::once(self.report_error())
+            .chain(self.report_patches())
+            .collect()
     }
 }
 

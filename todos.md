@@ -5,6 +5,8 @@
     - [x] escapes
     - [x] bug where does not check for termination properly
     - [x] no unescaped control characters
+    - [ ] parse unicode escapes
+    - [ ] helpful message for backticks and single quotes
     - [ ] check rfc
   - [ ] numbers
     - [ ] positive/negative (+/-)
@@ -30,4 +32,15 @@
     - [ ] line/column of reason why expected (expected closing curly due to umatched open curly at xyz spot)
   - [x] Unterminated
   - [x] make naming more specific regarding Object and arrays (curly/square braces, open/opening/close/closing)
+  - [x] point to character like in rust's errors
+  - [ ] patches for each error type
+  - [ ] snapshot testing
 - [x] fix up From impls for Tokens. From<String> should not be on token, but boolean makes sense
+- [ ] cli
+  - [ ] stdin
+  - [ ] files
+  - [ ] help screen
+- [ ] rebrand
+  - [ ] jjpwrgem crate name
+  - [ ] jjp bin name
+  - [ ] axolotl skateboard
