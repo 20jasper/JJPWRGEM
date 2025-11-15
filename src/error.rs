@@ -7,22 +7,22 @@ use crate::tokens::{Token, TokenWithContext, trim_end_whitespace};
 
 pub type Result<T> = std::result::Result<T, Error>;
 
-#[derive(Debug, PartialEq, Eq, Display)]
+#[derive(Debug, PartialEq, Eq, Display, Clone)]
 pub enum ErrorKind {
-    /// Unexpected character {0:?}
+    /// Unexpected character {0:?}. Expected start of a json value
     UnexpectedCharacter(char),
     /// Unexpected unescaped control character {0:?} in string literal
     UnexpectedControlCharacterInString(char),
     /// unexpected token {0:?} after json finished
     TokenAfterEnd(Token),
-    /// expected key after comma, found {0:?}
-    ExpectedKey(Option<Token>),
+    /// expected key, found {1:?}
+    ExpectedKey(TokenWithContext, Option<Token>),
     /// expected colon after key, found {0:?}
     ExpectedColon(Option<Token>),
     /// expected json value, found {0:?}
     ExpectedValue(Option<Token>),
-    /// expected key or closed curly brace, found {0:?}
-    ExpectedKeyOrClosedCurlyBrace(Option<Token>),
+    /// expected key or closed curly brace, found {1:?}
+    ExpectedKeyOrClosedCurlyBrace(TokenWithContext, Option<Token>),
     /// expected comma or closed curly brace, found {0:?}
     ExpectedCommaOrClosedCurlyBrace(Option<Token>),
     /// expected open curly curly brace, found {0:?}
