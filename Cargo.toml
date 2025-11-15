@@ -4,9 +4,13 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+annotate-snippets = "0.12.8"
+anstream = "0.6.21"
 displaydoc = "0.2.5"
 thiserror = "1.0.64"
 
 [dev-dependencies]
 rstest = "0.26.1"
 rstest_reuse = "0.7.0"
+
+[lints.clippy]

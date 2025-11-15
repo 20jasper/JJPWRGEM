@@ -1,14 +1,24 @@
+use std::io::Read;
+
+use annotate_snippets::{Renderer, renderer::DecorStyle};
 use json_parser::format::prettify_str;
-// use json_parser::tokens::Token;
-// use json_parser::{Error, ErrorKind};
 
 fn main() {
-    // println!(
-    //     "{}",
-    //     Error::new(ErrorKind::ExpectedKey(Some(Token::Null)), 0..1, "1\n")
-    // );
+    let mut buf = String::new();
+    std::io::stdin()
+        .read_to_string(&mut buf)
+        .expect("Failed to read from stdin");
 
-    // println!("{:?}", "".lines().last(),);
+    let s = annotate(&buf);
+    anstream::println!("{s}");
+}
 
-    println!("{}", prettify_str("\"\u{000B}{}").unwrap_err());
+fn annotate(json: &str) -> String {
+    match prettify_str(json) {
+        Ok(s) => s,
+        Err(e) => {
+            let renderer = Renderer::styled().decor_style(DecorStyle::Unicode);
+            renderer.render(&e.report())
+        }
+    }
 }
