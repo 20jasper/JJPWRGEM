@@ -186,12 +186,12 @@ mod tests {
     ))]
     #[case(json_to_json_and_error(
         r#"{{"#,
-        ErrorKind::ExpectedKeyOrClosedCurlyBrace(Some(Token::OpenCurlyBrace)),
+        ErrorKind::ExpectedKeyOrClosedCurlyBrace(TokenWithContext{token: Token::OpenCurlyBrace, range: 0..1}, Some(Token::OpenCurlyBrace)),
         1..2,
     ))]
     #[case(json_to_json_and_error(
         r#"{"#,
-        ErrorKind::ExpectedKeyOrClosedCurlyBrace(None),
+        ErrorKind::ExpectedKeyOrClosedCurlyBrace(TokenWithContext{token: Token::OpenCurlyBrace, range: 0..1}, None),
         0..1,
     ))]
     #[case(json_to_json_and_error(
@@ -206,12 +206,12 @@ mod tests {
     ))]
     #[case(json_to_json_and_error(
         r#"{"hi": null, }"#,
-        ErrorKind::ExpectedKey(Some(Token::ClosedCurlyBrace)),
+        ErrorKind::ExpectedKey(TokenWithContext {token: Token::Comma, range: 11..12}, Some(Token::ClosedCurlyBrace)),
         13..14,
     ))]
     #[case(json_to_json_and_error(
         r#"{"hi": null, "#,
-        ErrorKind::ExpectedKey(None),
+        ErrorKind::ExpectedKey(TokenWithContext {token: Token::Comma, range: 11..12}, None),
         11..12,
     ))]
     #[case(json_to_json_and_error(

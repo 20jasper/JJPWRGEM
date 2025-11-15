@@ -10,9 +10,9 @@ use crate::{
 #[derive(Debug, PartialEq, Eq, Clone)]
 enum ObjectState {
     Open,
-    KeyOrEnd(HashMap<String, Value>),
+    KeyOrEnd(HashMap<String, Value>, TokenWithContext),
     NextKeyOrEnd(HashMap<String, Value>),
-    Key(HashMap<String, Value>),
+    Key(HashMap<String, Value>, TokenWithContext),
     Colon {
         key: String,
         map: HashMap<String, Value>,
@@ -33,10 +33,12 @@ impl ObjectState {
     ) -> Result<Self> {
         let res = match self {
             ObjectState::Open => match tokens.next() {
-                Some(TokenWithContext {
-                    token: Token::OpenCurlyBrace,
-                    ..
-                }) => ObjectState::KeyOrEnd(HashMap::new()),
+                Some(
+                    ctx @ TokenWithContext {
+                        token: Token::OpenCurlyBrace,
+                        ..
+                    },
+                ) => ObjectState::KeyOrEnd(HashMap::new(), ctx),
                 maybe_token => {
                     return Err(Error::from_maybe_token_with_context(
                         ErrorKind::ExpectedOpenCurlyBrace,
@@ -45,7 +47,7 @@ impl ObjectState {
                     ));
                 }
             },
-            ObjectState::KeyOrEnd(map) => match tokens.next() {
+            ObjectState::KeyOrEnd(map, ctx) => match tokens.next() {
                 Some(TokenWithContext {
                     token: Token::ClosedCurlyBrace,
                     ..
@@ -56,7 +58,9 @@ impl ObjectState {
                 }) => ObjectState::Colon { key, map },
                 maybe_token => {
                     return Err(Error::from_maybe_token_with_context(
-                        ErrorKind::ExpectedKeyOrClosedCurlyBrace,
+                        |tok: Option<Token>| {
+                            ErrorKind::ExpectedKeyOrClosedCurlyBrace(ctx.clone(), tok)
+                        },
                         maybe_token,
                         text,
                     ));
@@ -99,10 +103,12 @@ impl ObjectState {
                     token: Token::ClosedCurlyBrace,
                     ..
                 }) => ObjectState::End(map),
-                Some(TokenWithContext {
-                    token: Token::Comma,
-                    ..
-                }) => ObjectState::Key(map),
+                Some(
+                    ctx @ TokenWithContext {
+                        token: Token::Comma,
+                        ..
+                    },
+                ) => ObjectState::Key(map, ctx),
                 maybe_token => {
                     return Err(Error::from_maybe_token_with_context(
                         ErrorKind::ExpectedCommaOrClosedCurlyBrace,
@@ -111,14 +117,14 @@ impl ObjectState {
                     ));
                 }
             },
-            ObjectState::Key(map) => match tokens.next() {
+            ObjectState::Key(map, ctx) => match tokens.next() {
                 Some(TokenWithContext {
                     token: Token::String(key),
                     ..
                 }) => ObjectState::Colon { key, map },
                 maybe_token => {
                     return Err(Error::from_maybe_token_with_context(
-                        ErrorKind::ExpectedKey,
+                        |tok: Option<Token>| ErrorKind::ExpectedKey(ctx.clone(), tok),
                         maybe_token,
                         text,
                     ));
