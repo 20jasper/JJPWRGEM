@@ -244,10 +244,12 @@ mod tests {
     use core::ops::Range;
     use rstest::rstest;
 
-    fn context_case<M, I>(
-        json: &'static str,
-        contexts: I,
-    ) -> (&'static str, Vec<(Range<usize>, String)>)
+    type ContextExpectation = (Range<usize>, String);
+    type ContextExpectations = Vec<ContextExpectation>;
+    type PatchExpectation = (Range<usize>, String, &'static str);
+    type PatchExpectations = Vec<PatchExpectation>;
+
+    fn context_case<M, I>(json: &'static str, contexts: I) -> (&'static str, ContextExpectations)
     where
         I: IntoIterator<Item = (Range<usize>, M)>,
         M: ToString,
@@ -257,6 +259,20 @@ mod tests {
             contexts
                 .into_iter()
                 .map(|(range, message)| (range, message.to_string()))
+                .collect(),
+        )
+    }
+
+    fn patch_case<M, I>(json: &'static str, patches: I) -> (&'static str, PatchExpectations)
+    where
+        I: IntoIterator<Item = (Range<usize>, M, &'static str)>,
+        M: Into<String>,
+    {
+        (
+            json,
+            patches
+                .into_iter()
+                .map(|(range, message, replacement)| (range, message.into(), replacement))
                 .collect(),
         )
     }
@@ -278,8 +294,8 @@ mod tests {
         r#"{"hi":"#,
         vec![(5..6, Token::Colon)],
     ))]
-    #[case(context_case(r#"}"#, Vec::<(Range<usize>, &str)>::new()))]
-    #[case(context_case(r#"""#, Vec::<(Range<usize>, &str)>::new()))]
+    #[case(context_case::<&str, Vec<(Range<usize>, &str)>>(r#"}"#, vec![]))]
+    #[case(context_case::<&str, Vec<(Range<usize>, &str)>>(r#"""#, vec![]))]
     #[case(context_case(
         r#"{{"#,
         vec![(0..1, Token::OpenCurlyBrace)],
@@ -316,9 +332,9 @@ mod tests {
         r#"{"hi": null, "#,
         vec![(11..12, Token::Comma)],
     ))]
-    #[case(context_case(r#"{}{"#, Vec::<(Range<usize>, &str)>::new()))]
+    #[case(context_case::<&str, Vec<(Range<usize>, &str)>>(r#"{}{"#, vec![]))]
     fn diagnostic_contexts_match_reported(
-        #[case] (json, expected_ctx): (&'static str, Vec<(Range<usize>, String)>),
+        #[case] (json, expected_ctx): (&'static str, ContextExpectations),
     ) {
         let error = parse_str(json).expect_err("expected parse error");
         let contexts = context_from_error(&error);
@@ -335,5 +351,40 @@ mod tests {
         }
 
         assert_eq!(contexts.len(), expected_ctx.len(),);
+    }
+
+    #[rstest]
+    #[case(patch_case(r#"{"hi", "#, vec![(5..5, "missing colon", ": ")]))]
+    #[case(patch_case(r#"  {"hi"    "#, vec![(7..7, "missing colon", ": ")]))]
+    #[case(patch_case(r#"{"hi"    "#, vec![(5..5, "missing colon", ": ")]))]
+    #[case(patch_case(r#"{"hi": null, }"#, vec![(11..12, "trailing comma", "")] ))]
+    #[case(patch_case(r#"{"hi": null, "#, vec![(11..12, "trailing comma", "")] ))]
+    #[case(patch_case(r#"{"hi": null     "#, vec![(11..11, INSERT_MISSING_CURLY_HELP, "}")]))]
+    #[case(patch_case(r#"{{"#, vec![(2..2, INSERT_MISSING_CURLY_HELP, "}")]))]
+    #[case(patch_case(r#"{"#, vec![(1..1, INSERT_MISSING_CURLY_HELP, "}")]))]
+    #[case(patch_case(r#"{"hi":"#, vec![(6..6, "placeholder value", " \"rust is a must\"")]))]
+    #[case(patch_case(r#"{"hi": "bye" "ferris": null"#, vec![(12..12, "\"ferris\"", ",")]))]
+    #[case(patch_case::<&str, Vec<(Range<usize>, &str, &str)>>(r#"{"hi": null null"#, vec![]))]
+    #[case(patch_case::<&str, Vec<(Range<usize>, &str, &str)>>(r#"""#, vec![]))]
+    #[case(patch_case::<&str, Vec<(Range<usize>, &str, &str)>>(r#"}"#, vec![]))]
+    fn diagnostic_patches_match_reported(
+        #[case] (json, expected_patches): (&'static str, PatchExpectations),
+    ) {
+        let error = parse_str(json).expect_err("expected parse error");
+        let patches = patches_from_error(&error);
+
+        for ((expected_span, expected_message_fragment, expected_replacement), patch) in
+            expected_patches.iter().zip(patches.iter())
+        {
+            assert_eq!(&patch.span, expected_span);
+            let message = patch.message.as_ref();
+            assert!(
+                message.contains(expected_message_fragment.as_str()),
+                "message `{message}` did not contain `{expected_message_fragment}`",
+            );
+            assert_eq!(patch.replacement, *expected_replacement);
+        }
+
+        assert_eq!(patches.len(), expected_patches.len());
     }
 }
