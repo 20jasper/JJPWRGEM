@@ -150,14 +150,15 @@ pub fn patches_from_error<'a>(error: &'a Error) -> Vec<Patch<'a>> {
             )],
             _ => Vec::new(),
         },
-        ErrorKind::ExpectedValue(Some(ctx), _) => vec![Patch::new(
+        ErrorKind::ExpectedValue(ctx_opt, _) => vec![Patch::new(
             "insert a placeholder value",
-            ctx.range.end..ctx.range.end,
+            ctx_opt
+                .as_ref()
+                .map_or(0..0, |ctx| ctx.range.end..ctx.range.end),
             source,
             " \"rust is a must\"",
         )],
-        ErrorKind::ExpectedValue(None, _)
-        | ErrorKind::UnexpectedCharacter(_)
+        ErrorKind::UnexpectedCharacter(_)
         | ErrorKind::UnexpectedControlCharacterInString(_)
         | ErrorKind::TokenAfterEnd(_)
         | ErrorKind::ExpectedOpenCurlyBrace(_, _)
@@ -350,7 +351,11 @@ mod tests {
             );
         }
 
-        assert_eq!(contexts.len(), expected_ctx.len(),);
+        assert_eq!(
+            contexts.len(),
+            expected_ctx.len(),
+            "wrong amount of contexts"
+        );
     }
 
     #[rstest]
@@ -363,10 +368,10 @@ mod tests {
     #[case(patch_case(r#"{{"#, vec![(2..2, INSERT_MISSING_CURLY_HELP, "}")]))]
     #[case(patch_case(r#"{"#, vec![(1..1, INSERT_MISSING_CURLY_HELP, "}")]))]
     #[case(patch_case(r#"{"hi":"#, vec![(6..6, "placeholder value", " \"rust is a must\"")]))]
+    #[case(patch_case(r#"}"#, vec![(0..0, "placeholder value", " \"rust is a must\"")]))]
     #[case(patch_case(r#"{"hi": "bye" "ferris": null"#, vec![(12..12, "\"ferris\"", ",")]))]
     #[case(patch_case::<&str, Vec<(Range<usize>, &str, &str)>>(r#"{"hi": null null"#, vec![]))]
     #[case(patch_case::<&str, Vec<(Range<usize>, &str, &str)>>(r#"""#, vec![]))]
-    #[case(patch_case::<&str, Vec<(Range<usize>, &str, &str)>>(r#"}"#, vec![]))]
     fn diagnostic_patches_match_reported(
         #[case] (json, expected_patches): (&'static str, PatchExpectations),
     ) {
@@ -385,6 +390,10 @@ mod tests {
             assert_eq!(patch.replacement, *expected_replacement);
         }
 
-        assert_eq!(patches.len(), expected_patches.len());
+        assert_eq!(
+            patches.len(),
+            expected_patches.len(),
+            "wrong amount of patches"
+        );
     }
 }
