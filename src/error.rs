@@ -102,7 +102,7 @@ mod diagnostics {
     pub const INSERT_MISSING_CURLY_HELP: &str = "insert the missing curly brace";
 
     #[derive(Debug, PartialEq, Eq, Clone)]
-    struct Context<'a> {
+    pub struct Context<'a> {
         message: Cow<'a, str>,
         span: Range<usize>,
         source: Source<'a>,
@@ -224,6 +224,42 @@ mod diagnostics {
         }
     }
 
+    pub(crate) fn context_from_error<'a>(error: &'a Error) -> Vec<Context<'a>> {
+        let source = error_source(error);
+        match &*error.kind {
+            ErrorKind::ExpectedKey(ctx, _)
+            | ErrorKind::ExpectedColon(ctx, _)
+            | ErrorKind::ExpectedKeyOrClosedCurlyBrace(ctx, _)
+            | ErrorKind::ExpectedValue(Some(ctx), _)
+            | ErrorKind::ExpectedOpenCurlyBrace(Some(ctx), _) => vec![Context::new(
+                format!("expected due to {}", ctx.token),
+                ctx.range.clone(),
+                source,
+            )],
+            ErrorKind::ExpectedCommaOrClosedCurlyBrace {
+                range, open_ctx, ..
+            } => vec![
+                Context::new(
+                    format!("expected due to {EXPECTED_COMMA_OR_CLOSED_CURLY_MESSAGE}"),
+                    range.clone(),
+                    source,
+                ),
+                Context::new(
+                    format!("object opened here by {}", open_ctx.token),
+                    open_ctx.range.clone(),
+                    source,
+                ),
+            ],
+            ErrorKind::ExpectedValue(None, _)
+            | ErrorKind::UnexpectedCharacter(_)
+            | ErrorKind::UnexpectedControlCharacterInString(_)
+            | ErrorKind::TokenAfterEnd(_)
+            | ErrorKind::ExpectedQuote
+            | ErrorKind::Custom(_)
+            | ErrorKind::ExpectedOpenCurlyBrace(None, _) => Vec::new(),
+        }
+    }
+
     impl Error {
         fn snippet<T>(&'_ self) -> Snippet<'_, T>
         where
@@ -255,34 +291,14 @@ mod diagnostics {
         }
 
         fn report_ctx(&'_ self) -> Vec<Annotation<'_>> {
-            match &*self.kind {
-                ErrorKind::ExpectedKey(ctx, _)
-                | ErrorKind::ExpectedColon(ctx, _)
-                | ErrorKind::ExpectedKeyOrClosedCurlyBrace(ctx, _)
-                | ErrorKind::ExpectedValue(Some(ctx), _)
-                | ErrorKind::ExpectedOpenCurlyBrace(Some(ctx), _) => vec![
+            context_from_error(self)
+                .into_iter()
+                .map(|ctx| {
                     AnnotationKind::Context
-                        .span(ctx.range.clone())
-                        .label(format!("expected due to {}", ctx.token)),
-                ],
-                ErrorKind::ExpectedCommaOrClosedCurlyBrace {
-                    range, open_ctx, ..
-                } => vec![
-                    AnnotationKind::Context.span(range.clone()).label(format!(
-                        "expected due to {EXPECTED_COMMA_OR_CLOSED_CURLY_MESSAGE}"
-                    )),
-                    AnnotationKind::Context
-                        .span(open_ctx.range.clone())
-                        .label(format!("object opened here by {}", open_ctx.token)),
-                ],
-                ErrorKind::ExpectedValue(None, _)
-                | ErrorKind::UnexpectedCharacter(_)
-                | ErrorKind::UnexpectedControlCharacterInString(_)
-                | ErrorKind::TokenAfterEnd(_)
-                | ErrorKind::ExpectedQuote
-                | ErrorKind::Custom(_)
-                | ErrorKind::ExpectedOpenCurlyBrace(None, _) => Vec::new(),
-            }
+                        .span(ctx.span)
+                        .label(ctx.message.clone())
+                })
+                .collect()
         }
 
         fn report_error(&'_ self) -> Group<'_> {
