@@ -31,7 +31,7 @@ enum ObjectState {
         map: HashMap<String, Value>,
         open_ctx: TokenWithContext,
     },
-    End(HashMap<String, Value>),
+    End(HashMap<String, Value>, Range<usize>),
 }
 
 impl ObjectState {
@@ -71,9 +71,9 @@ impl ObjectState {
                     _,
                     Some(TokenWithContext {
                         token: Token::ClosedCurlyBrace,
-                        ..
+                        range: closed_range,
                     }),
-                ) => ObjectState::End(map),
+                ) => ObjectState::End(map, open_ctx.range.start..closed_range.end),
                 (
                     Some(_),
                     Some(
@@ -206,13 +206,13 @@ impl ObjectState {
                     last_pair: Some(colon_ctx.range.start..json_ctx.end),
                 }
             }
-            ObjectState::End(map) => {
+            ObjectState::End(map, range) => {
                 if fail_on_multiple_value
                     && let Some(TokenWithContext { token, range }) = tokens.peek().cloned()
                 {
                     return Err(Error::new(ErrorKind::TokenAfterEnd(token), range, text));
                 }
-                ObjectState::End(map)
+                ObjectState::End(map, range)
             }
         };
 
@@ -224,19 +224,19 @@ pub fn parse_object(
     tokens: &mut Peekable<impl Iterator<Item = TokenWithContext>>,
     text: &str,
     fail_on_multiple_value: bool,
-) -> Result<Value> {
+) -> Result<ValueWithContext> {
     let mut state = ObjectState::Open;
 
     while tokens.peek().is_some() {
         state = state.process(tokens, text, fail_on_multiple_value)?;
 
-        if !fail_on_multiple_value && let ObjectState::End(map) = state {
-            return Ok(Value::Object(map));
+        if !fail_on_multiple_value && let ObjectState::End(map, range) = state {
+            return Ok(ValueWithContext::new(Value::Object(map), range));
         }
     }
 
     match state.process(tokens, text, fail_on_multiple_value) {
-        Ok(ObjectState::End(map)) => Ok(Value::Object(map)),
+        Ok(ObjectState::End(map, range)) => Ok(ValueWithContext::new(Value::Object(map), range)),
         Err(e) => Err(e),
         _ => unreachable!("object state will always be end or error"),
     }

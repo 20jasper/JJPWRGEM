@@ -63,8 +63,11 @@ pub fn parse_tokens(
     let val = match &peeked.token {
         Token::OpenCurlyBrace => parse_object(tokens, text, fail_on_multiple_value)?,
         Token::Null | Token::String(_) | Token::Boolean(_) => {
-            let TokenWithContext { token, .. } = tokens.next().unwrap();
-            token.try_into().expect("token should be valid json value")
+            let TokenWithContext { token, range } = tokens.next().unwrap();
+            ValueWithContext {
+                value: token.try_into().expect("token should be valid json value"),
+                ctx: range,
+            }
         }
         invalid => {
             return Err(Error::new(
@@ -83,11 +86,7 @@ pub fn parse_tokens(
         ));
     }
 
-    let end = tokens
-        .peek()
-        .map(|TokenWithContext { range, .. }| range.end)
-        .unwrap_or(text.len());
-    Ok(ValueWithContext::new(val, peeked.range.start..end))
+    Ok(val)
 }
 
 #[cfg(test)]
@@ -239,7 +238,7 @@ mod tests {
     #[case(json_to_json_and_error(
         r#"{"hi": null null"#,
         ErrorKind::ExpectedCommaOrClosedCurlyBrace {
-            range: 5..16,
+            range: 5..11,
             open_ctx: TokenWithContext { token: Token::OpenCurlyBrace, range: 0..1 },
             found: Some(Token::Null).into(),
         },
@@ -248,7 +247,7 @@ mod tests {
     #[case(json_to_json_and_error(
         r#"{"hi": null     "#,
         ErrorKind::ExpectedCommaOrClosedCurlyBrace {
-            range: 5..16,
+            range: 5..11,
             open_ctx: TokenWithContext { token: Token::OpenCurlyBrace, range: 0..1 },
             found: None.into(),
         },

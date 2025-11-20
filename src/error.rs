@@ -1,6 +1,7 @@
 use annotate_snippets::{Annotation, AnnotationKind, Group, Level, Patch, Snippet};
 use core::ops::Range;
 use displaydoc::Display;
+use std::borrow::Cow;
 use thiserror::Error;
 
 use crate::tokens::{Token, TokenOption, TokenWithContext, trim_end_whitespace};
@@ -103,13 +104,13 @@ impl Error {
         Snippet::source(&self.source_text).path(&self.source_name)
     }
 
-    fn help_group<'a>(&'a self, title: &'static str, patch: Patch<'a>) -> Group<'a> {
+    fn help_group<'a>(&'a self, title: impl Into<Cow<'a, str>>, patch: Patch<'a>) -> Group<'a> {
         Level::HELP
             .primary_title(title)
             .element(self.snippet().patches(vec![patch]))
     }
 
-    fn report_patches(&'_ self) -> Vec<Group<'_>> {
+    pub fn report_patches(&'_ self) -> Vec<Group<'_>> {
         match &*self.kind {
             ErrorKind::ExpectedKey(ctx, _) => vec![self.help_group(
                 "consider removing the trailing comma",
@@ -123,11 +124,18 @@ impl Error {
                 INSERT_MISSING_CURLY_HELP,
                 Patch::new(self.range.end..self.range.end, "}"),
             )],
-            ErrorKind::ExpectedCommaOrClosedCurlyBrace { range, .. } => {
-                vec![self.help_group(
-                    INSERT_MISSING_CURLY_HELP,
-                    Patch::new(range.end..range.end, "}"),
-                )]
+            ErrorKind::ExpectedCommaOrClosedCurlyBrace { range, found, .. } => {
+                match found.0.as_ref() {
+                    Some(Token::String(s)) => vec![self.help_group(
+                        format!("is {s:?} a key? consider adding a comma"),
+                        Patch::new(range.end..range.end, ","),
+                    )],
+                    None => vec![self.help_group(
+                        INSERT_MISSING_CURLY_HELP,
+                        Patch::new(range.end..range.end, "}"),
+                    )],
+                    _ => Vec::new(),
+                }
             }
             ErrorKind::ExpectedValue(Some(ctx), _) => vec![self.help_group(
                 "insert a placeholder value",
