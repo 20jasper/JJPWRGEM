@@ -32,7 +32,7 @@ impl Display for Token {
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
-pub struct TokenOption(Option<Token>);
+pub struct TokenOption(pub(crate) Option<Token>);
 
 impl Display for TokenOption {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
