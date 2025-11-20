@@ -135,23 +135,21 @@ pub fn patches_from_error<'a>(error: &'a Error) -> Vec<Patch<'a>> {
             source,
             "}",
         )],
-        ErrorKind::ExpectedCommaOrClosedCurlyBrace { range, found, .. } => {
-            match found.0.as_ref() {
-                Some(Token::String(s)) => vec![Patch::new(
-                    Cow::Owned(format!("is {s:?} a key? consider adding a comma")),
-                    range.end..range.end,
-                    source,
-                    ",",
-                )],
-                None => vec![Patch::new(
-                    INSERT_MISSING_CURLY_HELP,
-                    range.end..range.end,
-                    source,
-                    "}",
-                )],
-                _ => Vec::new(),
-            }
-        }
+        ErrorKind::ExpectedCommaOrClosedCurlyBrace { range, found, .. } => match found.0.as_ref() {
+            Some(Token::String(s)) => vec![Patch::new(
+                Cow::Owned(format!("is {s:?} a key? consider adding a comma")),
+                range.end..range.end,
+                source,
+                ",",
+            )],
+            None => vec![Patch::new(
+                INSERT_MISSING_CURLY_HELP,
+                range.end..range.end,
+                source,
+                "}",
+            )],
+            _ => Vec::new(),
+        },
         ErrorKind::ExpectedValue(Some(ctx), _) => vec![Patch::new(
             "insert a placeholder value",
             ctx.range.end..ctx.range.end,
@@ -235,5 +233,107 @@ impl Error {
         });
 
         std::iter::once(error_group).chain(patch_group).collect()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::ast::parse_str;
+    use crate::tokens::Token;
+    use core::ops::Range;
+    use rstest::rstest;
+
+    fn context_case<M, I>(
+        json: &'static str,
+        contexts: I,
+    ) -> (&'static str, Vec<(Range<usize>, String)>)
+    where
+        I: IntoIterator<Item = (Range<usize>, M)>,
+        M: ToString,
+    {
+        (
+            json,
+            contexts
+                .into_iter()
+                .map(|(range, message)| (range, message.to_string()))
+                .collect(),
+        )
+    }
+
+    #[rstest]
+    #[case(context_case(
+        r#"{"hi", "#,
+        vec![(1..5, Token::String("hi".into()))],
+    ))]
+    #[case(context_case(
+        r#"  {"hi"    "#,
+        vec![(3..7, Token::String("hi".into()))],
+    ))]
+    #[case(context_case(
+        r#"{"hi"    "#,
+        vec![(1..5, Token::String("hi".into()))],
+    ))]
+    #[case(context_case(
+        r#"{"hi":"#,
+        vec![(5..6, Token::Colon)],
+    ))]
+    #[case(context_case(r#"}"#, Vec::<(Range<usize>, &str)>::new()))]
+    #[case(context_case(r#"""#, Vec::<(Range<usize>, &str)>::new()))]
+    #[case(context_case(
+        r#"{{"#,
+        vec![(0..1, Token::OpenCurlyBrace)],
+    ))]
+    #[case(context_case(
+        r#"{"#,
+        vec![(0..1, Token::OpenCurlyBrace)],
+    ))]
+    #[case(context_case(
+        r#"{"hi": null null"#,
+        vec![
+            (
+                5..11,
+                EXPECTED_COMMA_OR_CLOSED_CURLY_MESSAGE,
+            ),
+            (0..1, "object opened here"),
+        ],
+    ))]
+    #[case(context_case(
+        r#"{"hi": null     "#,
+        vec![
+            (
+                5..11,
+                EXPECTED_COMMA_OR_CLOSED_CURLY_MESSAGE,
+            ),
+            (0..1, "object opened here"),
+        ],
+    ))]
+    #[case(context_case(
+        r#"{"hi": null, }"#,
+        vec![(11..12, Token::Comma)],
+    ))]
+    #[case(context_case(
+        r#"{"hi": null, "#,
+        vec![(11..12, Token::Comma)],
+    ))]
+    #[case(context_case(r#"{}{"#, Vec::<(Range<usize>, &str)>::new()))]
+    fn diagnostic_contexts_match_reported(
+        #[case] (json, expected_ctx): (&'static str, Vec<(Range<usize>, String)>),
+    ) {
+        let error = parse_str(json).expect_err("expected parse error");
+        let contexts = context_from_error(&error);
+
+        for ((expected_span, expected_message_fragment), context) in
+            expected_ctx.iter().zip(contexts.iter())
+        {
+            assert_eq!(&context.span, expected_span,);
+            let message = context.message.as_ref();
+            assert!(
+                message.contains(expected_message_fragment.as_str()),
+                "message `{message}` did not contain `{expected_message_fragment}`",
+            );
+        }
+
+        assert_eq!(contexts.len(), expected_ctx.len(),);
     }
 }
