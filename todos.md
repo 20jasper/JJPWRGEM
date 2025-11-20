@@ -25,11 +25,11 @@
   - [x] make prettifier
   - [x] general options
 - [ ] error handling
-  - [ ] display implementation for each token
+  - [x] display implementation for each token
   - [x] line/column
   - [ ] proper handling for multibyte characters
   - [x] describe expected token
-    - [ ] line/column of reason why expected (expected closing curly due to umatched open curly at xyz spot)
+    - [x] line/column of reason why expected (expected closing curly due to umatched open curly at xyz spot)
   - [x] Unterminated
   - [x] make naming more specific regarding Object and arrays (curly/square braces, open/opening/close/closing)
   - [x] point to character like in rust's errors
@@ -37,9 +37,10 @@
   - [ ] snapshot testing
 - [x] fix up From impls for Tokens. From<String> should not be on token, but boolean makes sense
 - [ ] cli
-  - [ ] stdin
+  - [x] stdin
   - [ ] files
   - [ ] help screen
+  - [ ] --fix option
 - [ ] rebrand
   - [x] jjpwrgem crate name
   - [x] jjp bin name
