@@ -97,35 +97,131 @@ mod diagnostics {
     use crate::{Error, ErrorKind, tokens::Token};
     use annotate_snippets::{Annotation, AnnotationKind, Group, Level, Snippet};
     use core::ops::Range;
-    use std::{borrow::Cow, path::PathBuf};
+    use std::{borrow::Cow, path::Path};
     pub const EXPECTED_COMMA_OR_CLOSED_CURLY_MESSAGE: &str = "the preceding key/value pair";
     pub const INSERT_MISSING_CURLY_HELP: &str = "insert the missing curly brace";
 
-    struct Context {
-        message: String,
+    #[derive(Debug, PartialEq, Eq, Clone)]
+    struct Context<'a> {
+        message: Cow<'a, str>,
         span: Range<usize>,
+        source: Source<'a>,
     }
-    struct Patch {
-        message: String,
-        span: Range<usize>,
-        replacement: String,
-    }
-    enum Source {
-        Stdin(String),
-        File { source: String, path: PathBuf },
-    }
-    impl Source {
-        fn text(&self) -> &str {
-            match self {
-                Source::Stdin(s) | Source::File { source: s, .. } => s.as_str(),
+
+    impl<'a> Context<'a> {
+        fn new(message: impl Into<Cow<'a, str>>, span: Range<usize>, source: Source<'a>) -> Self {
+            Self {
+                message: message.into(),
+                span,
+                source,
             }
         }
     }
-    struct Diagnostic {
+    #[derive(Debug, PartialEq, Eq, Clone)]
+    pub struct Patch<'a> {
+        message: Cow<'a, str>,
+        span: Range<usize>,
+        source: Source<'a>,
+        replacement: &'a str,
+    }
+
+    impl<'a> Patch<'a> {
+        fn new(
+            message: impl Into<Cow<'a, str>>,
+            span: Range<usize>,
+            source: Source<'a>,
+            replacement: &'a str,
+        ) -> Self {
+            Self {
+                message: message.into(),
+                span,
+                source,
+                replacement,
+            }
+        }
+    }
+    #[derive(Debug, PartialEq, Eq, Clone, Copy)]
+    enum Source<'a> {
+        Stdin(&'a str),
+        File { source: &'a str, path: &'a Path },
+    }
+    impl<'a> Source<'a> {
+        fn text(&self) -> &str {
+            match self {
+                Source::Stdin(s) | Source::File { source: s, .. } => s,
+            }
+        }
+    }
+    struct Diagnostic<'a> {
         message: String,
-        source: Source,
-        context: Vec<Context>,
-        patches: Vec<()>,
+        source: Source<'a>,
+        context: Vec<Context<'a>>,
+        patches: Vec<Patch<'a>>,
+    }
+
+    fn error_source<'a>(error: &'a Error) -> Source<'a> {
+        if error.source_name == "stdin" {
+            Source::Stdin(error.source_text.as_str())
+        } else {
+            Source::File {
+                source: error.source_text.as_str(),
+                path: Path::new(error.source_name.as_str()),
+            }
+        }
+    }
+
+    pub fn patches_from_error<'a>(error: &'a Error) -> Vec<Patch<'a>> {
+        let source = error_source(error);
+        match &*error.kind {
+            ErrorKind::ExpectedKey(ctx, _) => vec![Patch::new(
+                "consider removing the trailing comma",
+                ctx.range.clone(),
+                source,
+                "",
+            )],
+            ErrorKind::ExpectedColon(ctx, _) => vec![Patch::new(
+                "insert the missing colon",
+                ctx.range.end..ctx.range.end,
+                source,
+                ": ",
+            )],
+            ErrorKind::ExpectedKeyOrClosedCurlyBrace(_, _) => vec![Patch::new(
+                INSERT_MISSING_CURLY_HELP,
+                error.range.end..error.range.end,
+                source,
+                "}",
+            )],
+            ErrorKind::ExpectedCommaOrClosedCurlyBrace { range, found, .. } => {
+                match found.0.as_ref() {
+                    Some(Token::String(s)) => vec![Patch::new(
+                        Cow::Owned(format!("is {s:?} a key? consider adding a comma")),
+                        range.end..range.end,
+                        source,
+                        ",",
+                    )],
+                    None => vec![Patch::new(
+                        INSERT_MISSING_CURLY_HELP,
+                        range.end..range.end,
+                        source,
+                        "}",
+                    )],
+                    _ => Vec::new(),
+                }
+            }
+            ErrorKind::ExpectedValue(Some(ctx), _) => vec![Patch::new(
+                "insert a placeholder value",
+                ctx.range.end..ctx.range.end,
+                source,
+                " \"rust is a must\"",
+            )],
+            ErrorKind::ExpectedValue(None, _)
+            | ErrorKind::UnexpectedCharacter(_)
+            | ErrorKind::UnexpectedControlCharacterInString(_)
+            | ErrorKind::TokenAfterEnd(_)
+            | ErrorKind::ExpectedOpenCurlyBrace(_, _)
+            | ErrorKind::ExpectedQuote
+            | ErrorKind::Custom(_) => Vec::new(),
+        }
     }
 
     impl Error {
@@ -146,48 +242,16 @@ mod diagnostics {
                 .element(self.snippet().patches(vec![patch]))
         }
 
-        pub fn report_patches(&'_ self) -> Vec<Group<'_>> {
-            match &*self.kind {
-                ErrorKind::ExpectedKey(ctx, _) => vec![self.help_group(
-                    "consider removing the trailing comma",
-                    annotate_snippets::Patch::new(ctx.range.clone(), ""),
-                )],
-                ErrorKind::ExpectedColon(ctx, _) => vec![self.help_group(
-                    "insert the missing colon",
-                    annotate_snippets::Patch::new(ctx.range.end..ctx.range.end, ": "),
-                )],
-                ErrorKind::ExpectedKeyOrClosedCurlyBrace(_, _) => vec![self.help_group(
-                    INSERT_MISSING_CURLY_HELP,
-                    annotate_snippets::Patch::new(self.range.end..self.range.end, "}"),
-                )],
-                ErrorKind::ExpectedCommaOrClosedCurlyBrace { range, found, .. } => {
-                    match found.0.as_ref() {
-                        Some(Token::String(s)) => vec![self.help_group(
-                            format!("is {s:?} a key? consider adding a comma"),
-                            annotate_snippets::Patch::new(range.end..range.end, ","),
-                        )],
-                        None => vec![self.help_group(
-                            INSERT_MISSING_CURLY_HELP,
-                            annotate_snippets::Patch::new(range.end..range.end, "}"),
-                        )],
-                        _ => Vec::new(),
-                    }
-                }
-                ErrorKind::ExpectedValue(Some(ctx), _) => vec![self.help_group(
-                    "insert a placeholder value",
-                    annotate_snippets::Patch::new(
-                        ctx.range.end..ctx.range.end,
-                        " \"rust is a must\"",
-                    ),
-                )],
-                ErrorKind::ExpectedValue(None, _)
-                | ErrorKind::UnexpectedCharacter(_)
-                | ErrorKind::UnexpectedControlCharacterInString(_)
-                | ErrorKind::TokenAfterEnd(_)
-                | ErrorKind::ExpectedOpenCurlyBrace(_, _)
-                | ErrorKind::ExpectedQuote
-                | ErrorKind::Custom(_) => Vec::new(),
-            }
+        fn report_patches(&'_ self) -> Vec<Group<'_>> {
+            patches_from_error(self)
+                .into_iter()
+                .map(|patch| {
+                    self.help_group(
+                        patch.message.clone(),
+                        annotate_snippets::Patch::new(patch.span.clone(), patch.replacement),
+                    )
+                })
+                .collect()
         }
 
         fn report_ctx(&'_ self) -> Vec<Annotation<'_>> {
