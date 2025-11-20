@@ -141,7 +141,13 @@ impl Error {
                 "insert a placeholder value",
                 Patch::new(ctx.range.end..ctx.range.end, " \"rust is a must\""),
             )],
-            _ => Vec::new(),
+            ErrorKind::ExpectedValue(None, _)
+            | ErrorKind::UnexpectedCharacter(_)
+            | ErrorKind::UnexpectedControlCharacterInString(_)
+            | ErrorKind::TokenAfterEnd(_)
+            | ErrorKind::ExpectedOpenCurlyBrace(_, _)
+            | ErrorKind::ExpectedQuote
+            | ErrorKind::Custom(_) => Vec::new(),
         }
     }
 
@@ -166,7 +172,13 @@ impl Error {
                     .span(open_ctx.range.clone())
                     .label(format!("object opened here by {}", open_ctx.token)),
             ],
-            _ => Vec::new(),
+            ErrorKind::ExpectedValue(None, _)
+            | ErrorKind::UnexpectedCharacter(_)
+            | ErrorKind::UnexpectedControlCharacterInString(_)
+            | ErrorKind::TokenAfterEnd(_)
+            | ErrorKind::ExpectedQuote
+            | ErrorKind::Custom(_)
+            | ErrorKind::ExpectedOpenCurlyBrace(None, _) => Vec::new(),
         }
     }
 
