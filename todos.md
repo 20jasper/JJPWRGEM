@@ -5,6 +5,7 @@
     - [x] escapes
     - [x] bug where does not check for termination properly
     - [x] no unescaped control characters
+    - [x] char to unicode escape
     - [ ] parse unicode escapes
     - [ ] helpful message for backticks and single quotes
     - [ ] check rfc
@@ -34,6 +35,7 @@
   - [x] make naming more specific regarding Object and arrays (curly/square braces, open/opening/close/closing)
   - [x] point to character like in rust's errors
   - [ ] patches for each error type
+  - [ ] patch applicability (how confident am I that this is right?)
   - [ ] snapshot testing
 - [x] fix up From impls for Tokens. From<String> should not be on token, but boolean makes sense
 - [ ] cli
