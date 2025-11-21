@@ -1,4 +1,7 @@
-use crate::{Error, ErrorKind, tokens::Token};
+use crate::{
+    Error, ErrorKind,
+    tokens::{Token, TokenOption},
+};
 use annotate_snippets::{Annotation, AnnotationKind, Group, Level, Snippet};
 use core::ops::Range;
 use std::{borrow::Cow, path::Path};
@@ -130,7 +133,7 @@ pub fn patches_from_error<'a>(error: &'a Error) -> Vec<Patch<'a>> {
             source,
             ": ",
         )],
-        ErrorKind::ExpectedKeyOrClosedCurlyBrace(_, _) => vec![Patch::new(
+        ErrorKind::ExpectedKeyOrClosedCurlyBrace(_, TokenOption(None)) => vec![Patch::new(
             INSERT_MISSING_CURLY_HELP,
             error.range.end..error.range.end,
             source,
@@ -188,7 +191,8 @@ pub fn patches_from_error<'a>(error: &'a Error) -> Vec<Patch<'a>> {
                 )]
             }
         }
-        ErrorKind::UnexpectedCharacter(_)
+        ErrorKind::ExpectedKeyOrClosedCurlyBrace(_, TokenOption(Some(_)))
+        | ErrorKind::UnexpectedCharacter(_)
         | ErrorKind::ExpectedOpenCurlyBrace(_, _)
         | ErrorKind::ExpectedQuote
         | ErrorKind::Custom(_) => Vec::new(),
