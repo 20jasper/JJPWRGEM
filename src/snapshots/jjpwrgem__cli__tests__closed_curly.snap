@@ -1,0 +1,14 @@
+---
+source: src/cli.rs
+expression: annotated
+---
+error: expected json value, found `}`
+ --> stdin:1:1
+  |
+1 | }
+  | ^
+  |
+help: consider adding the missing open curly brace
+  |
+1 | {}
+  | +

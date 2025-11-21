@@ -6,6 +6,7 @@
     - [x] bug where does not check for termination properly
     - [x] no unescaped control characters
     - [x] char to unicode escape
+      - [ ] domain struct JSONChar
     - [ ] parse unicode escapes
     - [ ] helpful message for backticks and single quotes
     - [ ] check rfc
@@ -43,6 +44,9 @@
   - [ ] files
   - [ ] help screen
   - [ ] --fix option
+  - [ ] colors (support-color)
+  - [ ] look into insta snapshot docs
+  - [ ]
 - [ ] rebrand
   - [x] jjpwrgem crate name
   - [x] jjp bin name
