@@ -1,0 +1,16 @@
+pub const OBJECT_MISSING_COLON_WITH_COMMA: &str = r#"{"hi", "#;
+pub const OBJECT_MISSING_COLON_WITH_LEADING_WHITESPACE: &str = r#"  {"hi"    "#;
+pub const OBJECT_MISSING_COLON: &str = r#"{"hi"    "#;
+pub const OBJECT_MISSING_VALUE: &str = r#"{"hi":"#;
+pub const OBJECT_MISSING_COMMA_BETWEEN_VALUES: &str = r#"{"hi": null null"#;
+pub const OBJECT_MISSING_COMMA_OR_CLOSING_WITH_WHITESPACE: &str = r#"{"hi": null     "#;
+pub const OBJECT_TRAILING_COMMA_WITH_CLOSED: &str = r#"{"hi": null, }"#;
+pub const OBJECT_TRAILING_COMMA: &str = r#"{"hi": null, "#;
+pub const OBJECT_DOUBLE_OPEN_CURLY: &str = r#"{{"#;
+pub const OBJECT_OPEN_CURLY: &str = r#"{"#;
+pub const CLOSED_CURLY: &str = r#"}"#;
+pub const EMPTY_INPUT: &str = r#""#;
+pub const DOUBLE_QUOTE: &str = r#"""#;
+pub const OBJECT_WITH_LINE_BREAK_VALUE: &str = "{\"hi\": \"line\nbreak\"}";
+pub const OBJECT_WITH_ADJACENT_STRINGS: &str = r#"{"hi": "bye" "ferris": null"#;
+pub const OBJECT_EMPTY_THEN_OPEN: &str = r#"{}{"#;
