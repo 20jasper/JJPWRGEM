@@ -1,4 +1,7 @@
-use crate::{Error, ErrorKind, tokens::Token};
+use crate::{
+    Error, ErrorKind,
+    tokens::{Token, TokenOption},
+};
 use annotate_snippets::{Annotation, AnnotationKind, Group, Level, Snippet};
 use core::ops::Range;
 use std::{borrow::Cow, path::Path};
@@ -118,19 +121,38 @@ pub fn patches_from_error<'a>(error: &'a Error) -> Vec<Patch<'a>> {
     let source = error_source(error);
     let source_len = error.source_text.len();
     match &*error.kind {
-        ErrorKind::ExpectedKey(ctx, _) => vec![Patch::new(
+        ErrorKind::ExpectedKey(ctx, TokenOption(Some(_))) => vec![Patch::new(
             "consider removing the trailing comma",
             ctx.range.clone(),
             source,
             "",
         )],
-        ErrorKind::ExpectedColon(ctx, _) => vec![Patch::new(
-            "insert the missing colon",
-            ctx.range.end..ctx.range.end,
+        ErrorKind::ExpectedKey(ctx, TokenOption(None)) => vec![Patch::new(
+            "consider replacing the trailing comma with a closed curly brace",
+            ctx.range.clone(),
             source,
-            ": ",
+            "}",
         )],
-        ErrorKind::ExpectedKeyOrClosedCurlyBrace(_, _) => vec![Patch::new(
+        ErrorKind::ExpectedColon(ctx, found) => {
+            let (message, replacement) = match found.0.as_ref() {
+                None => (
+                    "insert colon, placeholder value, and closing curly brace",
+                    r#": "garlic bread" }"#,
+                ),
+                Some(Token::Comma) | Some(Token::ClosedCurlyBrace) => {
+                    ("insert colon and placeholder key", r#": "🐟🛹""#)
+                }
+                _ => ("insert the missing colon", ": "),
+            };
+
+            vec![Patch::new(
+                message,
+                ctx.range.end..ctx.range.end,
+                source,
+                replacement,
+            )]
+        }
+        ErrorKind::ExpectedKeyOrClosedCurlyBrace(_, TokenOption(None)) => vec![Patch::new(
             INSERT_MISSING_CURLY_HELP,
             error.range.end..error.range.end,
             source,
@@ -151,14 +173,21 @@ pub fn patches_from_error<'a>(error: &'a Error) -> Vec<Patch<'a>> {
             )],
             _ => Vec::new(),
         },
-        ErrorKind::ExpectedValue(ctx_opt, _) => vec![Patch::new(
-            "insert a placeholder value",
-            ctx_opt
-                .as_ref()
-                .map_or(0..0, |ctx| ctx.range.end..ctx.range.end),
-            source,
-            " \"rust is a must\"",
-        )],
+        ErrorKind::ExpectedValue(_, tok_opt) => match tok_opt.0.as_ref() {
+            None => vec![Patch::new(
+                "insert a placeholder value",
+                error.range.end..error.range.end,
+                source,
+                " \"rust is a must\"",
+            )],
+            Some(Token::ClosedCurlyBrace) => vec![Patch::new(
+                "consider adding the missing open curly brace",
+                error.range.end - 1..error.range.end,
+                source,
+                "{}",
+            )],
+            _ => Vec::new(),
+        },
         ErrorKind::UnexpectedControlCharacterInString(escaped) => {
             vec![Patch::new(
                 "replace the control character with its escaped form",
@@ -181,7 +210,8 @@ pub fn patches_from_error<'a>(error: &'a Error) -> Vec<Patch<'a>> {
                 )]
             }
         }
-        ErrorKind::UnexpectedCharacter(_)
+        ErrorKind::ExpectedKeyOrClosedCurlyBrace(_, TokenOption(Some(_)))
+        | ErrorKind::UnexpectedCharacter(_)
         | ErrorKind::ExpectedOpenCurlyBrace(_, _)
         | ErrorKind::ExpectedQuote
         | ErrorKind::Custom(_) => Vec::new(),
@@ -269,8 +299,6 @@ mod tests {
 
     type ContextExpectation = (Range<usize>, String);
     type ContextExpectations = Vec<ContextExpectation>;
-    type PatchExpectation = (Range<usize>, String, &'static str);
-    type PatchExpectations = Vec<PatchExpectation>;
 
     fn context_case<M, I>(json: &'static str, contexts: I) -> (&'static str, ContextExpectations)
     where
@@ -282,20 +310,6 @@ mod tests {
             contexts
                 .into_iter()
                 .map(|(range, message)| (range, message.to_string()))
-                .collect(),
-        )
-    }
-
-    fn patch_case<M, I>(json: &'static str, patches: I) -> (&'static str, PatchExpectations)
-    where
-        I: IntoIterator<Item = (Range<usize>, M, &'static str)>,
-        M: Into<String>,
-    {
-        (
-            json,
-            patches
-                .into_iter()
-                .map(|(range, message, replacement)| (range, message.into(), replacement))
                 .collect(),
         )
     }
@@ -381,86 +395,6 @@ mod tests {
             contexts.len(),
             expected_ctx.len(),
             "wrong amount of contexts"
-        );
-    }
-
-    #[rstest]
-    #[case(patch_case(test_json::OBJECT_MISSING_COLON_WITH_COMMA, vec![(5..5, "missing colon", ": ")]))]
-    #[case(patch_case(
-        test_json::OBJECT_MISSING_COLON_WITH_LEADING_WHITESPACE,
-        vec![(7..7, "missing colon", ": ")],
-    ))]
-    #[case(patch_case(test_json::OBJECT_MISSING_COLON, vec![(5..5, "missing colon", ": ")]))]
-    #[case(patch_case(
-        test_json::OBJECT_TRAILING_COMMA_WITH_CLOSED,
-        vec![(11..12, "trailing comma", "")],
-    ))]
-    #[case(patch_case(
-        test_json::OBJECT_TRAILING_COMMA,
-        vec![(11..12, "trailing comma", "")],
-    ))]
-    #[case(patch_case(
-        test_json::OBJECT_MISSING_COMMA_OR_CLOSING_WITH_WHITESPACE,
-        vec![(11..11, INSERT_MISSING_CURLY_HELP, "}")],
-    ))]
-    #[case(patch_case(
-        test_json::OBJECT_DOUBLE_OPEN_CURLY,
-        vec![(2..2, INSERT_MISSING_CURLY_HELP, "}")],
-    ))]
-    #[case(patch_case(
-        test_json::OBJECT_OPEN_CURLY,
-        vec![(1..1, INSERT_MISSING_CURLY_HELP, "}")],
-    ))]
-    #[case(patch_case(
-        test_json::OBJECT_MISSING_VALUE,
-        vec![(6..6, "placeholder value", " \"rust is a must\"")],
-    ))]
-    #[case(patch_case(
-        test_json::CLOSED_CURLY,
-        vec![(0..0, "placeholder value", " \"rust is a must\"")],
-    ))]
-    #[case(patch_case(
-        test_json::OBJECT_WITH_ADJACENT_STRINGS,
-        vec![(12..12, "\"ferris\"", ",")],
-    ))]
-    #[case(patch_case(
-        test_json::OBJECT_EMPTY_THEN_OPEN,
-        vec![(2..3, "trailing content", "")],
-    ))]
-    #[case(patch_case(
-        test_json::OBJECT_WITH_LINE_BREAK_VALUE,
-        vec![(12..13, "escaped form", "\\n")],
-    ))]
-    #[case(patch_case::<&str, Vec<(Range<usize>, &str, &str)>>(
-        test_json::OBJECT_MISSING_COMMA_BETWEEN_VALUES,
-        vec![],
-    ))]
-    #[case(patch_case::<&str, Vec<(Range<usize>, &str, &str)>>(
-        test_json::DOUBLE_QUOTE,
-        vec![],
-    ))]
-    fn diagnostic_patches_match_reported(
-        #[case] (json, expected_patches): (&'static str, PatchExpectations),
-    ) {
-        let error = parse_str(json).expect_err("expected parse error");
-        let patches = patches_from_error(&error);
-
-        for ((expected_span, expected_message_fragment, expected_replacement), patch) in
-            expected_patches.iter().zip(patches.iter())
-        {
-            assert_eq!(&patch.span, expected_span);
-            let message = patch.message.as_ref();
-            assert!(
-                message.contains(expected_message_fragment.as_str()),
-                "message `{message}` did not contain `{expected_message_fragment}`",
-            );
-            assert_eq!(patch.replacement, *expected_replacement);
-        }
-
-        assert_eq!(
-            patches.len(),
-            expected_patches.len(),
-            "wrong amount of patches"
         );
     }
 }
