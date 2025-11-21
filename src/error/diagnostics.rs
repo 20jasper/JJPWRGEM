@@ -151,14 +151,21 @@ pub fn patches_from_error<'a>(error: &'a Error) -> Vec<Patch<'a>> {
             )],
             _ => Vec::new(),
         },
-        ErrorKind::ExpectedValue(ctx_opt, _) => vec![Patch::new(
-            "insert a placeholder value",
-            ctx_opt
-                .as_ref()
-                .map_or(0..0, |ctx| ctx.range.end..ctx.range.end),
-            source,
-            " \"rust is a must\"",
-        )],
+        ErrorKind::ExpectedValue(_, tok_opt) => match tok_opt.0.as_ref() {
+            None => vec![Patch::new(
+                "insert a placeholder value",
+                error.range.end..error.range.end,
+                source,
+                " \"rust is a must\"",
+            )],
+            Some(Token::ClosedCurlyBrace) => vec![Patch::new(
+                "consider adding the missing open curly brace",
+                error.range.end - 1..error.range.end,
+                source,
+                "{}",
+            )],
+            _ => Vec::new(),
+        },
         ErrorKind::UnexpectedControlCharacterInString(escaped) => {
             vec![Patch::new(
                 "replace the control character with its escaped form",
@@ -415,9 +422,9 @@ mod tests {
         test_json::OBJECT_MISSING_VALUE,
         vec![(6..6, "placeholder value", " \"rust is a must\"")],
     ))]
-    #[case(patch_case(
+    #[case(patch_case::<&str, Vec<(Range<usize>, &str, &str)>>(
         test_json::CLOSED_CURLY,
-        vec![(0..0, "placeholder value", " \"rust is a must\"")],
+        vec![(0..1, "missing open curly", "{")],
     ))]
     #[case(patch_case(
         test_json::OBJECT_WITH_ADJACENT_STRINGS,
