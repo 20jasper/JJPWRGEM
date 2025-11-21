@@ -1,9 +1,10 @@
-use crate::error::Error;
-use crate::{ErrorKind, Result};
+pub mod string;
+
+use crate::tokens::string::build_str_while;
+use crate::{Error, ErrorKind, Result};
 use core::fmt::Display;
 use core::iter;
 use core::ops::Range;
-use core::{iter::Peekable, str::CharIndices};
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Token {
@@ -85,9 +86,7 @@ pub fn trim_end_whitespace(s: &str) -> &str {
 }
 
 /// See [RFC 8259, Section 7](https://datatracker.ietf.org/doc/html/rfc8259#section-7)
-pub fn is_control(c: char) -> bool {
-    ('\u{0000}'..='\u{001F}').contains(&c)
-}
+pub const CONTROL_RANGE: std::ops::RangeInclusive<char> = '\u{0000}'..='\u{001F}';
 
 pub fn str_to_tokens(s: &str) -> Result<Vec<TokenWithContext>> {
     let mut chars = s.char_indices().peekable();
@@ -146,31 +145,6 @@ pub fn str_to_tokens(s: &str) -> Result<Vec<TokenWithContext>> {
     }
 
     Ok(res)
-}
-
-pub fn build_str_while<'a>(
-    start: usize,
-    input: &'a str,
-    chars: &mut Peekable<CharIndices<'a>>,
-) -> Result<&'a str> {
-    let mut escape = false;
-    while let Some((_, c)) = chars.next_if(|(_, c)| (*c != '"' && !is_control(*c)) || escape) {
-        escape = c == '\\' && !escape;
-    }
-
-    if let Some((end, c)) = chars.next() {
-        if !is_control(c) {
-            Ok(&input[start..end])
-        } else {
-            Err(Error::new(
-                ErrorKind::UnexpectedControlCharacterInString(c),
-                end..end + c.len_utf8(),
-                input,
-            ))
-        }
-    } else {
-        Err(Error::from_unterminated(ErrorKind::ExpectedQuote, input))
-    }
 }
 
 impl From<bool> for Token {
@@ -294,7 +268,7 @@ mod tests {
         r#""
     
     ""#,
-        ErrorKind::UnexpectedControlCharacterInString('\n'),
+        ErrorKind::UnexpectedControlCharacterInString("\\n".to_string()),
         Some(1..2)
     ))]
     fn should_not_parse_invalid_syntax(#[case] (json, error): (&str, Error)) {

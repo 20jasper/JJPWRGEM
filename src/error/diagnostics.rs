@@ -26,7 +26,7 @@ pub struct Patch<'a> {
     message: Cow<'a, str>,
     span: Range<usize>,
     source: Source<'a>,
-    replacement: &'a str,
+    replacement: Cow<'a, str>,
 }
 
 impl<'a> Patch<'a> {
@@ -34,13 +34,13 @@ impl<'a> Patch<'a> {
         message: impl Into<Cow<'a, str>>,
         span: Range<usize>,
         source: Source<'a>,
-        replacement: &'a str,
+        replacement: impl Into<Cow<'a, str>>,
     ) -> Self {
         Self {
             message: message.into(),
             span,
             source,
-            replacement,
+            replacement: replacement.into(),
         }
     }
 }
@@ -159,11 +159,14 @@ pub fn patches_from_error<'a>(error: &'a Error) -> Vec<Patch<'a>> {
             source,
             " \"rust is a must\"",
         )],
-        ErrorKind::UnexpectedCharacter(_)
-        | ErrorKind::UnexpectedControlCharacterInString(_)
-        | ErrorKind::ExpectedOpenCurlyBrace(_, _)
-        | ErrorKind::ExpectedQuote
-        | ErrorKind::Custom(_) => Vec::new(),
+        ErrorKind::UnexpectedControlCharacterInString(escaped) => {
+            vec![Patch::new(
+                "replace the control character with its escaped form",
+                error.range.clone(),
+                source,
+                escaped,
+            )]
+        }
         ErrorKind::TokenAfterEnd(token) => {
             let start = error.range.start.min(source_len);
             let end = source_len;
@@ -178,6 +181,10 @@ pub fn patches_from_error<'a>(error: &'a Error) -> Vec<Patch<'a>> {
                 )]
             }
         }
+        ErrorKind::UnexpectedCharacter(_)
+        | ErrorKind::ExpectedOpenCurlyBrace(_, _)
+        | ErrorKind::ExpectedQuote
+        | ErrorKind::Custom(_) => Vec::new(),
     }
 }
 
@@ -311,6 +318,10 @@ mod tests {
     ))]
     #[case(context_case::<&str, Vec<(Range<usize>, &str)>>(r#"}"#, vec![]))]
     #[case(context_case::<&str, Vec<(Range<usize>, &str)>>(r#"""#, vec![]))]
+    #[case(context_case::<&str, Vec<(Range<usize>, &str)>>(
+        "{\"hi\": \"line\nbreak\"}",
+        vec![],
+    ))]
     #[case(context_case(
         r#"{{"#,
         vec![(0..1, Token::OpenCurlyBrace)],
@@ -385,6 +396,10 @@ mod tests {
     #[case(patch_case(r#"}"#, vec![(0..0, "placeholder value", " \"rust is a must\"")]))]
     #[case(patch_case(r#"{"hi": "bye" "ferris": null"#, vec![(12..12, "\"ferris\"", ",")]))]
     #[case(patch_case(r#"{}{"#, vec![(2..3, "trailing content", "")]))]
+    #[case(patch_case(
+        "{\"hi\": \"line\nbreak\"}",
+        vec![(12..13, "escaped form", "\\n")],
+    ))]
     #[case(patch_case::<&str, Vec<(Range<usize>, &str, &str)>>(r#"{"hi": null null"#, vec![]))]
     #[case(patch_case::<&str, Vec<(Range<usize>, &str, &str)>>(r#"""#, vec![]))]
     fn diagnostic_patches_match_reported(
