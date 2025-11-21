@@ -116,6 +116,7 @@ fn error_source<'a>(error: &'a Error) -> Source<'a> {
 
 pub fn patches_from_error<'a>(error: &'a Error) -> Vec<Patch<'a>> {
     let source = error_source(error);
+    let source_len = error.source_text.len();
     match &*error.kind {
         ErrorKind::ExpectedKey(ctx, _) => vec![Patch::new(
             "consider removing the trailing comma",
@@ -150,19 +151,33 @@ pub fn patches_from_error<'a>(error: &'a Error) -> Vec<Patch<'a>> {
             )],
             _ => Vec::new(),
         },
-        ErrorKind::ExpectedValue(Some(ctx), _) => vec![Patch::new(
+        ErrorKind::ExpectedValue(ctx_opt, _) => vec![Patch::new(
             "insert a placeholder value",
-            ctx.range.end..ctx.range.end,
+            ctx_opt
+                .as_ref()
+                .map_or(0..0, |ctx| ctx.range.end..ctx.range.end),
             source,
             " \"rust is a must\"",
         )],
-        ErrorKind::ExpectedValue(None, _)
-        | ErrorKind::UnexpectedCharacter(_)
+        ErrorKind::UnexpectedCharacter(_)
         | ErrorKind::UnexpectedControlCharacterInString(_)
-        | ErrorKind::TokenAfterEnd(_)
         | ErrorKind::ExpectedOpenCurlyBrace(_, _)
         | ErrorKind::ExpectedQuote
         | ErrorKind::Custom(_) => Vec::new(),
+        ErrorKind::TokenAfterEnd(token) => {
+            let start = error.range.start.min(source_len);
+            let end = source_len;
+            if start >= end {
+                Vec::new()
+            } else {
+                vec![Patch::new(
+                    format!("consider removing the trailing content (starting with {token})"),
+                    start..end,
+                    source,
+                    "",
+                )]
+            }
+        }
     }
 }
 
@@ -350,7 +365,11 @@ mod tests {
             );
         }
 
-        assert_eq!(contexts.len(), expected_ctx.len(),);
+        assert_eq!(
+            contexts.len(),
+            expected_ctx.len(),
+            "wrong amount of contexts"
+        );
     }
 
     #[rstest]
@@ -363,10 +382,11 @@ mod tests {
     #[case(patch_case(r#"{{"#, vec![(2..2, INSERT_MISSING_CURLY_HELP, "}")]))]
     #[case(patch_case(r#"{"#, vec![(1..1, INSERT_MISSING_CURLY_HELP, "}")]))]
     #[case(patch_case(r#"{"hi":"#, vec![(6..6, "placeholder value", " \"rust is a must\"")]))]
+    #[case(patch_case(r#"}"#, vec![(0..0, "placeholder value", " \"rust is a must\"")]))]
     #[case(patch_case(r#"{"hi": "bye" "ferris": null"#, vec![(12..12, "\"ferris\"", ",")]))]
+    #[case(patch_case(r#"{}{"#, vec![(2..3, "trailing content", "")]))]
     #[case(patch_case::<&str, Vec<(Range<usize>, &str, &str)>>(r#"{"hi": null null"#, vec![]))]
     #[case(patch_case::<&str, Vec<(Range<usize>, &str, &str)>>(r#"""#, vec![]))]
-    #[case(patch_case::<&str, Vec<(Range<usize>, &str, &str)>>(r#"}"#, vec![]))]
     fn diagnostic_patches_match_reported(
         #[case] (json, expected_patches): (&'static str, PatchExpectations),
     ) {
@@ -385,6 +405,10 @@ mod tests {
             assert_eq!(patch.replacement, *expected_replacement);
         }
 
-        assert_eq!(patches.len(), expected_patches.len());
+        assert_eq!(
+            patches.len(),
+            expected_patches.len(),
+            "wrong amount of patches"
+        );
     }
 }
