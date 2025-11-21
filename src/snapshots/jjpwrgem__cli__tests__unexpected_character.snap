@@ -1,0 +1,9 @@
+---
+source: src/cli.rs
+expression: annotated
+---
+error: unexpected character `🦀`. expected start of a json value
+ --> stdin:1:1
+  |
+1 | 🦀
+  | ^^

@@ -1,0 +1,16 @@
+---
+source: src/cli.rs
+expression: annotated
+---
+error: unexpected unescaped control character `\n` in string literal
+ --> stdin:1:13
+  |
+1 |   {"hi": "line
+  |  _____________^
+2 | | break"}
+  | |_^
+  |
+help: replace the control character with its escaped form
+  |
+1 | {"hi": "line\nbreak"}
+  |             ++

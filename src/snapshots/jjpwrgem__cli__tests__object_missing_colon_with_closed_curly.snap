@@ -1,0 +1,16 @@
+---
+source: src/cli.rs
+expression: annotated
+---
+error: expected colon after key, found `}`
+ --> stdin:1:7
+  |
+1 | {"hi" }
+  |  ---- ^
+  |  |
+  |  expected due to `"hi"`
+  |
+help: insert colon and placeholder key
+  |
+1 | {"hi": "🐟🛹" }
+  |      ++++++++

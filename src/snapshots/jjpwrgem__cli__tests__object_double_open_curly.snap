@@ -1,0 +1,11 @@
+---
+source: src/cli.rs
+expression: annotated
+---
+error: expected key or closed curly brace, found `{`
+ --> stdin:1:2
+  |
+1 | {{
+  | -^
+  | |
+  | expected due to `{`

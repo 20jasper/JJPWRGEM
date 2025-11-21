@@ -1,0 +1,17 @@
+---
+source: src/cli.rs
+expression: annotated
+---
+error: expected comma or closed curly brace, found no significant characters
+ --> stdin:1:11
+  |
+1 | {"hi": null     
+  | -    -----^
+  | |    |
+  | |    expected due to the preceding key/value pair
+  | object opened here by `{`
+  |
+help: insert the missing curly brace
+  |
+1 | {"hi": null}     
+  |            +
