@@ -92,6 +92,7 @@ pub fn parse_tokens(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::test_json;
 
     fn kv_to_map(tuples: &[(&str, Value)]) -> Value {
         Value::Object(
@@ -172,7 +173,7 @@ mod tests {
 
     #[rstest::rstest]
     #[case(json_to_json_and_error(
-        r#"{"hi", "#,
+        test_json::OBJECT_MISSING_COLON_WITH_COMMA,
         ErrorKind::ExpectedColon(
             TokenWithContext {
                 token: Token::String("hi".into()),
@@ -183,7 +184,7 @@ mod tests {
         5..6,
     ))]
     #[case(json_to_json_and_error(
-        r#"  {"hi"    "#,
+        test_json::OBJECT_MISSING_COLON_WITH_LEADING_WHITESPACE,
         ErrorKind::ExpectedColon(
             TokenWithContext {
                 token: Token::String("hi".into()),
@@ -194,7 +195,7 @@ mod tests {
         6..7,
     ))]
     #[case(json_to_json_and_error(
-        r#"{"hi"    "#,
+        test_json::OBJECT_MISSING_COLON,
         ErrorKind::ExpectedColon(
             TokenWithContext {
                 token: Token::String("hi".into()),
@@ -205,7 +206,7 @@ mod tests {
         4..5,
     ))]
     #[case(json_to_json_and_error(
-        r#"{"hi":"#,
+        test_json::OBJECT_MISSING_VALUE,
         ErrorKind::ExpectedValue(
             Some(TokenWithContext {
                 token: Token::Colon,
@@ -216,27 +217,27 @@ mod tests {
         5..6,
     ))]
     #[case(json_to_json_and_error(
-        r#"}"#,
+        test_json::CLOSED_CURLY,
         ErrorKind::ExpectedValue(None, Some(Token::ClosedCurlyBrace).into()),
         0..1,
     ))]
     #[case(json_to_json_and_error(
-        r#""#,
+        test_json::EMPTY_INPUT,
         ErrorKind::ExpectedValue(None, None.into()),
         0..0,
     ))]
     #[case(json_to_json_and_error(
-        r#"{{"#,
+        test_json::OBJECT_DOUBLE_OPEN_CURLY,
         ErrorKind::ExpectedKeyOrClosedCurlyBrace(TokenWithContext{token: Token::OpenCurlyBrace, range: 0..1}, Some(Token::OpenCurlyBrace).into()),
         1..2,
     ))]
     #[case(json_to_json_and_error(
-        r#"{"#,
+        test_json::OBJECT_OPEN_CURLY,
         ErrorKind::ExpectedKeyOrClosedCurlyBrace(TokenWithContext{token: Token::OpenCurlyBrace, range: 0..1}, None.into()),
         0..1,
     ))]
     #[case(json_to_json_and_error(
-        r#"{"hi": null null"#,
+        test_json::OBJECT_MISSING_COMMA_BETWEEN_VALUES,
         ErrorKind::ExpectedCommaOrClosedCurlyBrace {
             range: 5..11,
             open_ctx: TokenWithContext { token: Token::OpenCurlyBrace, range: 0..1 },
@@ -245,7 +246,7 @@ mod tests {
         12..16,
     ))]
     #[case(json_to_json_and_error(
-        r#"{"hi": null     "#,
+        test_json::OBJECT_MISSING_COMMA_OR_CLOSING_WITH_WHITESPACE,
         ErrorKind::ExpectedCommaOrClosedCurlyBrace {
             range: 5..11,
             open_ctx: TokenWithContext { token: Token::OpenCurlyBrace, range: 0..1 },
@@ -254,17 +255,17 @@ mod tests {
         10..11,
     ))]
     #[case(json_to_json_and_error(
-        r#"{"hi": null, }"#,
+        test_json::OBJECT_TRAILING_COMMA_WITH_CLOSED,
         ErrorKind::ExpectedKey(TokenWithContext {token: Token::Comma, range: 11..12}, Some(Token::ClosedCurlyBrace).into()),
         13..14,
     ))]
     #[case(json_to_json_and_error(
-        r#"{"hi": null, "#,
+        test_json::OBJECT_TRAILING_COMMA,
         ErrorKind::ExpectedKey(TokenWithContext {token: Token::Comma, range: 11..12}, None.into()),
         11..12,
     ))]
     #[case(json_to_json_and_error(
-        r#"{}{"#,
+        test_json::OBJECT_EMPTY_THEN_OPEN,
         ErrorKind::TokenAfterEnd(Token::OpenCurlyBrace),
         2..3,
     ))]

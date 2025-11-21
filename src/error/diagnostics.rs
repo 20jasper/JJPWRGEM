@@ -262,6 +262,7 @@ impl Error {
 mod tests {
     use super::*;
     use crate::ast::parse_str;
+    use crate::test_json;
     use crate::tokens::Token;
     use core::ops::Range;
     use rstest::rstest;
@@ -301,37 +302,37 @@ mod tests {
 
     #[rstest]
     #[case(context_case(
-        r#"{"hi", "#,
+        test_json::OBJECT_MISSING_COLON_WITH_COMMA,
         vec![(1..5, Token::String("hi".into()))],
     ))]
     #[case(context_case(
-        r#"  {"hi"    "#,
+        test_json::OBJECT_MISSING_COLON_WITH_LEADING_WHITESPACE,
         vec![(3..7, Token::String("hi".into()))],
     ))]
     #[case(context_case(
-        r#"{"hi"    "#,
+        test_json::OBJECT_MISSING_COLON,
         vec![(1..5, Token::String("hi".into()))],
     ))]
     #[case(context_case(
-        r#"{"hi":"#,
+        test_json::OBJECT_MISSING_VALUE,
         vec![(5..6, Token::Colon)],
     ))]
-    #[case(context_case::<&str, Vec<(Range<usize>, &str)>>(r#"}"#, vec![]))]
-    #[case(context_case::<&str, Vec<(Range<usize>, &str)>>(r#"""#, vec![]))]
+    #[case(context_case::<&str, Vec<(Range<usize>, &str)>>(test_json::CLOSED_CURLY, vec![]))]
+    #[case(context_case::<&str, Vec<(Range<usize>, &str)>>(test_json::DOUBLE_QUOTE, vec![]))]
     #[case(context_case::<&str, Vec<(Range<usize>, &str)>>(
-        "{\"hi\": \"line\nbreak\"}",
+        test_json::OBJECT_WITH_LINE_BREAK_VALUE,
         vec![],
     ))]
     #[case(context_case(
-        r#"{{"#,
+        test_json::OBJECT_DOUBLE_OPEN_CURLY,
         vec![(0..1, Token::OpenCurlyBrace)],
     ))]
     #[case(context_case(
-        r#"{"#,
+        test_json::OBJECT_OPEN_CURLY,
         vec![(0..1, Token::OpenCurlyBrace)],
     ))]
     #[case(context_case(
-        r#"{"hi": null null"#,
+        test_json::OBJECT_MISSING_COMMA_BETWEEN_VALUES,
         vec![
             (
                 5..11,
@@ -341,7 +342,7 @@ mod tests {
         ],
     ))]
     #[case(context_case(
-        r#"{"hi": null     "#,
+        test_json::OBJECT_MISSING_COMMA_OR_CLOSING_WITH_WHITESPACE,
         vec![
             (
                 5..11,
@@ -351,14 +352,14 @@ mod tests {
         ],
     ))]
     #[case(context_case(
-        r#"{"hi": null, }"#,
+        test_json::OBJECT_TRAILING_COMMA_WITH_CLOSED,
         vec![(11..12, Token::Comma)],
     ))]
     #[case(context_case(
-        r#"{"hi": null, "#,
+        test_json::OBJECT_TRAILING_COMMA,
         vec![(11..12, Token::Comma)],
     ))]
-    #[case(context_case::<&str, Vec<(Range<usize>, &str)>>(r#"{}{"#, vec![]))]
+    #[case(context_case::<&str, Vec<(Range<usize>, &str)>>(test_json::OBJECT_EMPTY_THEN_OPEN, vec![]))]
     fn diagnostic_contexts_match_reported(
         #[case] (json, expected_ctx): (&'static str, ContextExpectations),
     ) {
@@ -384,24 +385,60 @@ mod tests {
     }
 
     #[rstest]
-    #[case(patch_case(r#"{"hi", "#, vec![(5..5, "missing colon", ": ")]))]
-    #[case(patch_case(r#"  {"hi"    "#, vec![(7..7, "missing colon", ": ")]))]
-    #[case(patch_case(r#"{"hi"    "#, vec![(5..5, "missing colon", ": ")]))]
-    #[case(patch_case(r#"{"hi": null, }"#, vec![(11..12, "trailing comma", "")] ))]
-    #[case(patch_case(r#"{"hi": null, "#, vec![(11..12, "trailing comma", "")] ))]
-    #[case(patch_case(r#"{"hi": null     "#, vec![(11..11, INSERT_MISSING_CURLY_HELP, "}")]))]
-    #[case(patch_case(r#"{{"#, vec![(2..2, INSERT_MISSING_CURLY_HELP, "}")]))]
-    #[case(patch_case(r#"{"#, vec![(1..1, INSERT_MISSING_CURLY_HELP, "}")]))]
-    #[case(patch_case(r#"{"hi":"#, vec![(6..6, "placeholder value", " \"rust is a must\"")]))]
-    #[case(patch_case(r#"}"#, vec![(0..0, "placeholder value", " \"rust is a must\"")]))]
-    #[case(patch_case(r#"{"hi": "bye" "ferris": null"#, vec![(12..12, "\"ferris\"", ",")]))]
-    #[case(patch_case(r#"{}{"#, vec![(2..3, "trailing content", "")]))]
+    #[case(patch_case(test_json::OBJECT_MISSING_COLON_WITH_COMMA, vec![(5..5, "missing colon", ": ")]))]
     #[case(patch_case(
-        "{\"hi\": \"line\nbreak\"}",
+        test_json::OBJECT_MISSING_COLON_WITH_LEADING_WHITESPACE,
+        vec![(7..7, "missing colon", ": ")],
+    ))]
+    #[case(patch_case(test_json::OBJECT_MISSING_COLON, vec![(5..5, "missing colon", ": ")]))]
+    #[case(patch_case(
+        test_json::OBJECT_TRAILING_COMMA_WITH_CLOSED,
+        vec![(11..12, "trailing comma", "")],
+    ))]
+    #[case(patch_case(
+        test_json::OBJECT_TRAILING_COMMA,
+        vec![(11..12, "trailing comma", "")],
+    ))]
+    #[case(patch_case(
+        test_json::OBJECT_MISSING_COMMA_OR_CLOSING_WITH_WHITESPACE,
+        vec![(11..11, INSERT_MISSING_CURLY_HELP, "}")],
+    ))]
+    #[case(patch_case(
+        test_json::OBJECT_DOUBLE_OPEN_CURLY,
+        vec![(2..2, INSERT_MISSING_CURLY_HELP, "}")],
+    ))]
+    #[case(patch_case(
+        test_json::OBJECT_OPEN_CURLY,
+        vec![(1..1, INSERT_MISSING_CURLY_HELP, "}")],
+    ))]
+    #[case(patch_case(
+        test_json::OBJECT_MISSING_VALUE,
+        vec![(6..6, "placeholder value", " \"rust is a must\"")],
+    ))]
+    #[case(patch_case(
+        test_json::CLOSED_CURLY,
+        vec![(0..0, "placeholder value", " \"rust is a must\"")],
+    ))]
+    #[case(patch_case(
+        test_json::OBJECT_WITH_ADJACENT_STRINGS,
+        vec![(12..12, "\"ferris\"", ",")],
+    ))]
+    #[case(patch_case(
+        test_json::OBJECT_EMPTY_THEN_OPEN,
+        vec![(2..3, "trailing content", "")],
+    ))]
+    #[case(patch_case(
+        test_json::OBJECT_WITH_LINE_BREAK_VALUE,
         vec![(12..13, "escaped form", "\\n")],
     ))]
-    #[case(patch_case::<&str, Vec<(Range<usize>, &str, &str)>>(r#"{"hi": null null"#, vec![]))]
-    #[case(patch_case::<&str, Vec<(Range<usize>, &str, &str)>>(r#"""#, vec![]))]
+    #[case(patch_case::<&str, Vec<(Range<usize>, &str, &str)>>(
+        test_json::OBJECT_MISSING_COMMA_BETWEEN_VALUES,
+        vec![],
+    ))]
+    #[case(patch_case::<&str, Vec<(Range<usize>, &str, &str)>>(
+        test_json::DOUBLE_QUOTE,
+        vec![],
+    ))]
     fn diagnostic_patches_match_reported(
         #[case] (json, expected_patches): (&'static str, PatchExpectations),
     ) {
