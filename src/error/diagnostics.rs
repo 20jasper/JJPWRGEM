@@ -121,11 +121,17 @@ pub fn patches_from_error<'a>(error: &'a Error) -> Vec<Patch<'a>> {
     let source = error_source(error);
     let source_len = error.source_text.len();
     match &*error.kind {
-        ErrorKind::ExpectedKey(ctx, _) => vec![Patch::new(
+        ErrorKind::ExpectedKey(ctx, TokenOption(Some(_))) => vec![Patch::new(
             "consider removing the trailing comma",
             ctx.range.clone(),
             source,
             "",
+        )],
+        ErrorKind::ExpectedKey(ctx, TokenOption(None)) => vec![Patch::new(
+            "consider replacing the trailing comma with a closed curly brace",
+            ctx.range.clone(),
+            source,
+            "}",
         )],
         ErrorKind::ExpectedColon(ctx, found) => {
             let (message, replacement) = match found.0.as_ref() {
