@@ -9,8 +9,8 @@ pub type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Debug, PartialEq, Eq, Display, Clone)]
 pub enum ErrorKind {
-    /// unexpected character `{0:?}`. expected start of a json value
-    UnexpectedCharacter(char),
+    /// unexpected character `{0}`. expected start of a json value
+    UnexpectedCharacter(String),
     /// unexpected unescaped control character `{0}` in string literal
     UnexpectedControlCharacterInString(String),
     /// unexpected token {0} after json finished

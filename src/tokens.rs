@@ -97,7 +97,7 @@ pub fn str_to_tokens(s: &str) -> Result<Vec<TokenWithContext>> {
                     }
                 } else {
                     return Err(Error::new(
-                        ErrorKind::UnexpectedCharacter(c),
+                        ErrorKind::UnexpectedCharacter(escape_char_for_json_string(c)),
                         i..(i + c.len_utf8()),
                         s,
                     ));
@@ -105,7 +105,7 @@ pub fn str_to_tokens(s: &str) -> Result<Vec<TokenWithContext>> {
             }
             _ => {
                 return Err(Error::new(
-                    ErrorKind::UnexpectedCharacter(c),
+                    ErrorKind::UnexpectedCharacter(escape_char_for_json_string(c)),
                     i..(i + c.len_utf8()),
                     s,
                 ));
@@ -257,12 +257,12 @@ mod tests {
     #[rstest::rstest]
     #[case(json_to_json_and_error(
         "a",
-        ErrorKind::UnexpectedCharacter('a'),
+        ErrorKind::UnexpectedCharacter('a'.to_string()),
         Some(0..1)
     ))]
     #[case(json_to_json_and_error(
         "n",
-        ErrorKind::UnexpectedCharacter('n'),
+        ErrorKind::UnexpectedCharacter('n'.to_string()),
         Some(0..1)
     ))]
     #[case(json_to_json_and_error(r#""hi"#, ErrorKind::ExpectedQuote, None))]
