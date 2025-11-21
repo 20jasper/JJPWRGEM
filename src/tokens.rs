@@ -1,6 +1,8 @@
-pub mod string;
+pub mod lexical;
 
-use crate::tokens::string::build_str_while;
+pub use lexical::{CONTROL_RANGE, trim_end_whitespace};
+
+use self::lexical::{escape_char_for_json_string, is_whitespace};
 use crate::{Error, ErrorKind, Result};
 use core::fmt::Display;
 use core::iter;
@@ -61,33 +63,6 @@ pub const NULL: &str = "null";
 pub const FALSE: &str = "false";
 pub const TRUE: &str = "true";
 
-/// See [RFC 8259, Section 2](https://datatracker.ietf.org/doc/html/rfc8259#section-2):
-///
-///```abnf
-/// ws = *(
-///         %x20 /              ; Space
-///         %x09 /              ; Horizontal tab
-///         %x0A /              ; Line feed or New line
-///         %x0D )              ; Carriage return
-/// ```
-fn is_whitespace(c: char) -> bool {
-    matches!(c, ' ' | '\t' | '\n' | '\r')
-}
-
-pub fn trim_end_whitespace(s: &str) -> &str {
-    let end = s
-        .char_indices()
-        .rev()
-        .find(|(_, c)| !is_whitespace(*c))
-        .map(|(i, c)| i + c.len_utf8())
-        .unwrap_or_default();
-
-    &s[..end]
-}
-
-/// See [RFC 8259, Section 7](https://datatracker.ietf.org/doc/html/rfc8259#section-7)
-pub const CONTROL_RANGE: std::ops::RangeInclusive<char> = '\u{0000}'..='\u{001F}';
-
 pub fn str_to_tokens(s: &str) -> Result<Vec<TokenWithContext>> {
     let mut chars = s.char_indices().peekable();
 
@@ -145,6 +120,33 @@ pub fn str_to_tokens(s: &str) -> Result<Vec<TokenWithContext>> {
     }
 
     Ok(res)
+}
+
+fn build_str_while<'a>(
+    start: usize,
+    input: &'a str,
+    chars: &mut core::iter::Peekable<core::str::CharIndices<'a>>,
+) -> Result<&'a str> {
+    let mut escape = false;
+    while let Some((_, c)) =
+        chars.next_if(|(_, c)| (*c != '"' && !CONTROL_RANGE.contains(c)) || escape)
+    {
+        escape = c == '\\' && !escape;
+    }
+
+    if let Some((end, c)) = chars.next() {
+        if !CONTROL_RANGE.contains(&c) {
+            Ok(&input[start..end])
+        } else {
+            Err(Error::new(
+                ErrorKind::UnexpectedControlCharacterInString(escape_char_for_json_string(c)),
+                end..end + c.len_utf8(),
+                input,
+            ))
+        }
+    } else {
+        Err(Error::from_unterminated(ErrorKind::ExpectedQuote, input))
+    }
 }
 
 impl From<bool> for Token {
@@ -324,13 +326,5 @@ mod tests {
                 }
             ]
         );
-    }
-
-    #[rstest::rstest]
-    #[case("h \t\n\r", "h")]
-    #[case("\u{000B} h ", "\u{000B} h")]
-    #[case("rust", "rust")]
-    fn trims_whitespace(#[case] input: &str, #[case] output: &str) {
-        assert_eq!(trim_end_whitespace(input), output);
     }
 }
