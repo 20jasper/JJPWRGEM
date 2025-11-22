@@ -1,9 +1,0 @@
----
-source: src/cli.rs
-expression: annotated
----
-error: unexpected character `\u000B`. expected start of a json value
- --> stdin:1:1
-  |
-1 | ␋
-  | ^

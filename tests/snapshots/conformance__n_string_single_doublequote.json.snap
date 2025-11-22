@@ -1,0 +1,14 @@
+---
+source: tests/conformance.rs
+expression: "format_output_snapshot(&case.text, &annotated)"
+---
+case --- 
+"
+stdout --- 
+<empty>
+stderr --- 
+error: expected quote before end of input
+ --> stdin:1:1
+  |
+1 | "
+  | ^

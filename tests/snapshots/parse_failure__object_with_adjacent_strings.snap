@@ -1,0 +1,22 @@
+---
+source: tests/parse_failure.rs
+expression: "format_output_snapshot(json, &annotated)"
+---
+case --- 
+{"hi": "bye" "ferris": null
+stdout --- 
+<empty>
+stderr --- 
+error: expected comma or closed curly brace, found `"ferris"`
+ --> stdin:1:14
+  |
+1 | {"hi": "bye" "ferris": null
+  | -    ------- ^^^^^^^^
+  | |    |
+  | |    expected due to the preceding key/value pair
+  | object opened here by `{`
+  |
+help: is "ferris" a key? consider adding a comma
+  |
+1 | {"hi": "bye", "ferris": null
+  |             +

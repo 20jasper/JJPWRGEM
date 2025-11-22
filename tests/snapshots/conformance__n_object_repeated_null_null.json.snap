@@ -1,0 +1,16 @@
+---
+source: tests/conformance.rs
+expression: "format_output_snapshot(&case.text, &annotated)"
+---
+case --- 
+{null:null,null:null}
+stdout --- 
+<empty>
+stderr --- 
+error: expected key or closed curly brace, found `null`
+ --> stdin:1:2
+  |
+1 | {null:null,null:null}
+  | -^^^^
+  | |
+  | expected due to `{`

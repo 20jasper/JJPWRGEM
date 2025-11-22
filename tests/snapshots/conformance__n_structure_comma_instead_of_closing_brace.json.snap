@@ -1,0 +1,22 @@
+---
+source: tests/conformance.rs
+expression: "format_output_snapshot(&case.text, &annotated)"
+---
+case --- 
+{"x": true,
+stdout --- 
+<empty>
+stderr --- 
+error: expected key, found no significant characters
+ --> stdin:1:11
+  |
+1 | {"x": true,
+  |           ^
+  |           |
+  |           expected due to `,`
+  |
+help: consider replacing the trailing comma with a closed curly brace
+  |
+1 - {"x": true,
+1 + {"x": true}
+  |
