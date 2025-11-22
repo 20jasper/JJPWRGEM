@@ -7,6 +7,9 @@ updates:
       interval: "weekly"
     open-pull-requests-limit: 10
     versioning-strategy: increase
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-patch"]
 
   # Enable version updates for GitHub Actions
   - package-ecosystem: "github-actions"
@@ -14,3 +17,6 @@ updates:
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 10
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-patch"]
