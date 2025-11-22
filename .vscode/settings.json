@@ -1,0 +1,9 @@
+{
+  "files.associations": {
+    // hack to ignore errors in the submodule
+    "tests/conformance/JSONTestSuite/**/*": "plaintext"
+  },
+  "files.watcherExclude": {
+    "tests/conformance/JSONTestSuite": true
+  }
+}
