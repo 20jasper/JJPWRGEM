@@ -1,0 +1,12 @@
+---
+source: tests/conformance.rs
+expression: "format_output_snapshot(&case.text, &annotated)"
+---
+case --- 
+{"a":"b","a":"c"}
+stdout --- 
+{
+    "a": "c"
+}
+stderr --- 
+<empty>

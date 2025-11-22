@@ -1,3 +1,5 @@
+use crate::cli::Output;
+
 pub const OBJECT_MISSING_COLON_WITH_COMMA: &str = r#"{"hi", "#;
 pub const OBJECT_MISSING_COLON_WITH_NULL: &str = r#"{"hi" null "#;
 pub const OBJECT_MISSING_COLON_WITH_CLOSED_CURLY: &str = r#"{"hi" }"#;
@@ -18,3 +20,7 @@ pub const DOUBLE_QUOTE: &str = r#"""#;
 pub const OBJECT_WITH_LINE_BREAK_VALUE: &str = "{\"hi\": \"line\nbreak\"}";
 pub const OBJECT_WITH_ADJACENT_STRINGS: &str = r#"{"hi": "bye" "ferris": null"#;
 pub const OBJECT_EMPTY_THEN_OPEN: &str = r#"{}{"#;
+
+pub fn format_output_snapshot(input: &str, output: &Output) -> String {
+    format!("case --- \n{input}\n{output:?}")
+}

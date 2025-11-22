@@ -1,0 +1,22 @@
+---
+source: tests/conformance.rs
+expression: "format_output_snapshot(&case.text, &annotated)"
+---
+case --- 
+{"a":"b",,"c":"d"}
+stdout --- 
+<empty>
+stderr --- 
+error: expected key, found `,`
+ --> stdin:1:10
+  |
+1 | {"a":"b",,"c":"d"}
+  |         -^
+  |         |
+  |         expected due to `,`
+  |
+help: consider removing the trailing comma
+  |
+1 - {"a":"b",,"c":"d"}
+1 + {"a":"b","c":"d"}
+  |

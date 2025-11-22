@@ -18,6 +18,7 @@
 - [x] objects
   - [x] multi keys
   - [ ] validate duplicate keys
+    - [ ] what if key and val are both same?
 - [ ] arrays
 - [x] nested object
   - [x] arbitrarily nested
@@ -26,6 +27,7 @@
   - [x] make uglifier
   - [x] make prettifier
   - [x] general options
+  - [ ] If object is empty, should be "{}"
 - [ ] error handling
   - [x] display implementation for each token
   - [x] line/column
@@ -51,3 +53,31 @@
   - [x] jjpwrgem crate name
   - [x] jjp bin name
   - [ ] axolotl skateboard
+
+### dev tooling
+
+- [ ] hook to format on commit
+- [ ] just script to install all tools
+- [ ] submodule installation
+
+### Testing
+
+- [x] conformance testing
+  - [x] [JSONTestSuite](https://github.com/nst/JSONTestSuite) — Pure JSON
+
+### bugs
+
+- [ ] Tokenizer errors shouldn't report "expected start of JSON value" when parsing may be incomplete
+- [ ] When the prior token is `{`, provide help suggesting the next token should be quoted or flag an unidentified token
+  - [ ] Investigate `n_object_emoji`
+  - [ ] Investigate `n_object_key_with_single_quotes`
+  - [ ] Investigate `n_object_missing_colon.json`
+- [ ] Handle inappropriately escaped forward slash in `n_object_trailing_comment.json`
+- [ ] Provide a hint to insert a value and closing curly when no significant characters remain
+  - [ ] Investigate `n_object_missing_value.json`
+- [ ] Fix error message to state that a quote is expected after the opening quote
+  - [ ] Investigate `n_object_unterminated-value.json`
+- [ ] Add helper messaging explaining that comments aren't allowed
+- [ ] expected key but found , should add key val beforehand
+  - [ ] n_structure_open_object_comma
+- multichar emojis are not properly handled, see n_object_emoji.json

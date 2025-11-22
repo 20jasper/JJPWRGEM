@@ -1,0 +1,22 @@
+---
+source: tests/parse_failure.rs
+expression: "format_output_snapshot(json, &annotated)"
+---
+case --- 
+{"hi": null, }
+stdout --- 
+<empty>
+stderr --- 
+error: expected key, found `}`
+ --> stdin:1:14
+  |
+1 | {"hi": null, }
+  |            - ^
+  |            |
+  |            expected due to `,`
+  |
+help: consider removing the trailing comma
+  |
+1 - {"hi": null, }
+1 + {"hi": null }
+  |

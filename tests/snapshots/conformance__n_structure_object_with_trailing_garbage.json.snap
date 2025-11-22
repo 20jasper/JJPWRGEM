@@ -1,0 +1,20 @@
+---
+source: tests/conformance.rs
+expression: "format_output_snapshot(&case.text, &annotated)"
+---
+case --- 
+{"a": true} "x"
+stdout --- 
+<empty>
+stderr --- 
+error: unexpected token `"x"` after json finished
+ --> stdin:1:13
+  |
+1 | {"a": true} "x"
+  |             ^^^
+  |
+help: consider removing the trailing content (starting with `"x"`)
+  |
+1 - {"a": true} "x"
+1 + {"a": true} 
+  |

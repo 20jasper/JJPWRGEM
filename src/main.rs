@@ -1,7 +1,7 @@
 use std::io::Read;
 
 use annotate_snippets::{Renderer, renderer::DecorStyle};
-use jjpwrgem::cli::run;
+use jjpwrgem::cli::{Output, run};
 
 fn main() {
     let mut buf = String::new();
@@ -10,6 +10,15 @@ fn main() {
         .expect("Failed to read from stdin");
 
     let renderer = Renderer::styled().decor_style(DecorStyle::Unicode);
-    let s = run(&buf, &renderer);
-    anstream::println!("{s}");
+    let output = run(&buf, &renderer);
+    print_output(&output);
+}
+
+fn print_output(output: &Output) {
+    if let Some(stdout) = &output.stdout {
+        anstream::println!("{stdout}");
+    }
+    if let Some(stderr) = &output.stderr {
+        anstream::eprintln!("{stderr}");
+    }
 }

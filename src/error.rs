@@ -1,4 +1,4 @@
-mod diagnostics;
+pub mod diagnostics;
 
 use crate::tokens::{Token, TokenOption, TokenWithContext, trim_end_whitespace};
 use core::ops::Range;

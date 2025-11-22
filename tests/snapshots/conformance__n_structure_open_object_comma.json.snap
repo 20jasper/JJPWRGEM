@@ -1,0 +1,16 @@
+---
+source: tests/conformance.rs
+expression: "format_output_snapshot(&case.text, &annotated)"
+---
+case --- 
+{,
+stdout --- 
+<empty>
+stderr --- 
+error: expected key or closed curly brace, found `,`
+ --> stdin:1:2
+  |
+1 | {,
+  | -^
+  | |
+  | expected due to `{`
