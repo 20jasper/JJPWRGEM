@@ -80,3 +80,4 @@
 - [ ] Add helper messaging explaining that comments aren't allowed
 - [ ] expected key but found , should add key val beforehand
   - [ ] n_structure_open_object_comma
+- multichar emojis are not properly handled, see n_object_emoji.json
