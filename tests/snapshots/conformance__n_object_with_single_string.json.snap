@@ -15,7 +15,7 @@ error: expected colon after key, found `}`
   |                  |
   |                  expected due to `"a"`
   |
-help: insert colon and placeholder key
+help: insert colon and placeholder value
   |
 1 | { "foo" : "bar", "a": "🐟🛹" }
   |                     ++++++++

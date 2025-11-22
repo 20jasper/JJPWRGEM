@@ -16,7 +16,7 @@ error: expected colon after key, found `}`
   │  │
   │  expected due to `"coolKey"`
   ╰╴
-help: insert colon and placeholder key
+help: insert colon and placeholder value
   ╭╴
 1 │ {"coolKey": "🐟🛹"}
   ╰╴          ++++++++
