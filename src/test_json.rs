@@ -20,6 +20,11 @@ pub const DOUBLE_QUOTE: &str = r#"""#;
 pub const OBJECT_WITH_LINE_BREAK_VALUE: &str = "{\"hi\": \"line\nbreak\"}";
 pub const OBJECT_WITH_ADJACENT_STRINGS: &str = r#"{"hi": "bye" "ferris": null"#;
 pub const OBJECT_EMPTY_THEN_OPEN: &str = r#"{}{"#;
+pub const MINUS_SIGN: &str = "-";
+pub const LEADING_ZERO_MINUS_SIGN: &str = "-00";
+pub const LEADING_ZERO: &str = "00";
+pub const UNEXPECTED_LETTER_IN_NEGATIVE: &str = "-a";
+pub const UNEXPECTED_LETTER_IN_NUMBER: &str = "1a";
 
 pub fn format_output_snapshot(input: &str, output: &Output) -> String {
     format!("case --- \n{input}\n{output:?}")
