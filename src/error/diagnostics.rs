@@ -210,6 +210,25 @@ pub fn patches_from_error<'a>(error: &'a Error) -> Vec<Patch<'a>> {
                 )]
             }
         }
+        ErrorKind::ExpectedDigitFollowingMinus(range, found) => {
+            let patch_info = match found {
+                None => ("insert placeholder digits after the minus sign", "194"),
+                Some('.') => (
+                    "did you mean to add a fraction? consider adding a 0 before the period",
+                    "0",
+                ),
+                _ => return vec![],
+            };
+            let (message, replacement) = patch_info;
+            {
+                vec![Patch::new(
+                    message,
+                    range.end..range.end,
+                    source,
+                    replacement,
+                )]
+            }
+        }
         ErrorKind::ExpectedKeyOrClosedCurlyBrace(_, TokenOption(Some(_)))
         | ErrorKind::UnexpectedCharacter(_)
         | ErrorKind::ExpectedOpenCurlyBrace(_, _)
@@ -244,6 +263,9 @@ pub fn context_from_error<'a>(error: &'a Error) -> Vec<Context<'a>> {
                 source,
             ),
         ],
+        ErrorKind::ExpectedDigitFollowingMinus(range, _) => {
+            vec![Context::new("minus sign found here", range.clone(), source)]
+        }
         ErrorKind::ExpectedValue(None, _)
         | ErrorKind::UnexpectedCharacter(_)
         | ErrorKind::UnexpectedControlCharacterInString(_)

@@ -33,6 +33,12 @@ pub enum ErrorKind {
     ExpectedOpenCurlyBrace(Option<TokenWithContext>, TokenOption),
     /// expected quote before end of input
     ExpectedQuote,
+
+    // number
+    // TODO handle escaping via JsonChar and maybe make generic TDisplayOption?
+    /// expected digit following minus sign, found `{1:?}`
+    ExpectedDigitFollowingMinus(Range<usize>, Option<char>),
+
     /// {0}
     Custom(String),
 }

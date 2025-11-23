@@ -149,7 +149,7 @@ mod number {
     use std::os::unix::process;
 
     use crate::{
-        Result,
+        Error, ErrorKind, Result,
         tokens::{Token, TokenWithContext, lexical::is_whitespace},
     };
 
@@ -189,7 +189,17 @@ mod number {
                         leading: Some(digit),
                         ctx: range.start..i + digit.len_utf8(),
                     },
-                    Some(_) | None => todo!("err, must be a digit following - sign"),
+                    c @ (Some(_) | None) => {
+                        return Err(Error::new(
+                            ErrorKind::ExpectedDigitFollowingMinus(
+                                range.clone(),
+                                c.map(|(_, c)| c),
+                            ),
+                            range.clone().start
+                                ..c.map(|(i, c)| i + c.len_utf8()).unwrap_or(input.len()),
+                            input,
+                        ));
+                    }
                 },
                 NumberState::IntegerOrDecimalOrExponentOrEnd { leading, ctx } => match chars.next()
                 {

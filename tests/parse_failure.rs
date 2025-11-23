@@ -32,9 +32,11 @@ macro_rules! fixture_tuple {
 #[case(fixture_tuple!(UNEXPECTED_ESCAPED_CHARACTER))]
 // #[case(fixture_tuple!(LEADING_ZERO))]
 // #[case(fixture_tuple!(LEADING_ZERO_MINUS_SIGN))]
-// #[case(fixture_tuple!(MINUS_SIGN))]
-// #[case(fixture_tuple!(UNEXPECTED_LETTER_IN_NEGATIVE))]
+#[case(fixture_tuple!(MINUS_SIGN))]
+#[case(fixture_tuple!(UNEXPECTED_LETTER_IN_NEGATIVE))]
 // #[case(fixture_tuple!(UNEXPECTED_LETTER_IN_NUMBER))]
+// #[case(fixture_tuple!(FRACTION_MISSING_INTEGER))]
+#[case(fixture_tuple!(NEGATIVE_FRACTION_MISSING_INTEGER))]
 fn annotate_test_json_fixtures_snapshots(#[case] (name, json): (&str, &str)) {
     use jjpwrgem::cli::run;
 
