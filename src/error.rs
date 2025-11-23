@@ -1,6 +1,6 @@
 pub mod diagnostics;
 
-use crate::tokens::{Token, TokenOption, TokenWithContext, trim_end_whitespace};
+use crate::tokens::{Token, TokenOption, TokenWithContext, lexical::JsonChar, trim_end_whitespace};
 use core::ops::Range;
 use displaydoc::Display;
 use thiserror::Error;
@@ -10,9 +10,9 @@ pub type Result<T> = std::result::Result<T, Error>;
 #[derive(Debug, PartialEq, Eq, Display, Clone)]
 pub enum ErrorKind {
     /// unexpected character `{0}`. expected start of a json value
-    UnexpectedCharacter(String),
+    UnexpectedCharacter(JsonChar),
     /// unexpected unescaped control character `{0}` in string literal
-    UnexpectedControlCharacterInString(String),
+    UnexpectedControlCharacterInString(JsonChar),
     /// unexpected token {0} after json finished
     TokenAfterEnd(Token),
     /// expected key, found {1}
@@ -37,7 +37,7 @@ pub enum ErrorKind {
     // number
     // TODO handle escaping via JsonChar and maybe make generic TDisplayOption?
     /// expected digit following minus sign, found `{1:?}`
-    ExpectedDigitFollowingMinus(Range<usize>, Option<char>),
+    ExpectedDigitFollowingMinus(Range<usize>, Option<JsonChar>),
 
     /// {0}
     Custom(String),

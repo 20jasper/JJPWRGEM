@@ -36,6 +36,7 @@ impl Display for Token {
     }
 }
 
+const NO_SIGNIFICANT_CHARACTERS: &str = "no significant characters";
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct TokenOption(pub(crate) Option<Token>);
 
@@ -43,7 +44,7 @@ impl Display for TokenOption {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let val = match &self.0 {
             Some(x) => x.to_string(),
-            None => "no significant characters".to_owned(),
+            None => NO_SIGNIFICANT_CHARACTERS.to_owned(),
         };
         write!(f, "{val}")
     }
@@ -119,7 +120,7 @@ pub fn str_to_tokens(s: &str) -> Result<Vec<TokenWithContext>> {
                     }
                 } else {
                     return Err(Error::new(
-                        ErrorKind::UnexpectedCharacter(escape_char_for_json_string(c)),
+                        ErrorKind::UnexpectedCharacter(c.into()),
                         i..(i + c.len_utf8()),
                         s,
                     ));
@@ -127,7 +128,7 @@ pub fn str_to_tokens(s: &str) -> Result<Vec<TokenWithContext>> {
             }
             _ => {
                 return Err(Error::new(
-                    ErrorKind::UnexpectedCharacter(escape_char_for_json_string(c)),
+                    ErrorKind::UnexpectedCharacter(c.into()),
                     i..(i + c.len_utf8()),
                     s,
                 ));
@@ -146,7 +147,6 @@ pub fn str_to_tokens(s: &str) -> Result<Vec<TokenWithContext>> {
 
 mod number {
     use core::{iter::Peekable, ops::Range, str::CharIndices};
-    use std::os::unix::process;
 
     use crate::{
         Error, ErrorKind, Result,
@@ -193,7 +193,7 @@ mod number {
                         return Err(Error::new(
                             ErrorKind::ExpectedDigitFollowingMinus(
                                 range.clone(),
-                                c.map(|(_, c)| c),
+                                c.map(|(_, c)| c.into()),
                             ),
                             range.clone().start
                                 ..c.map(|(i, c)| i + c.len_utf8()).unwrap_or(input.len()),
@@ -287,7 +287,7 @@ fn parse_str<'a>(
             Ok(&input[start..end])
         } else {
             Err(Error::new(
-                ErrorKind::UnexpectedControlCharacterInString(escape_char_for_json_string(c)),
+                ErrorKind::UnexpectedControlCharacterInString(c.into()),
                 end..end + c.len_utf8(),
                 input,
             ))
@@ -428,12 +428,12 @@ mod tests {
     #[rstest::rstest]
     #[case(json_to_json_and_error(
         "a",
-        ErrorKind::UnexpectedCharacter('a'.to_string()),
+        ErrorKind::UnexpectedCharacter('a'.into()),
         Some(0..1)
     ))]
     #[case(json_to_json_and_error(
         "n",
-        ErrorKind::UnexpectedCharacter('n'.to_string()),
+        ErrorKind::UnexpectedCharacter('n'.into()),
         Some(0..1)
     ))]
     #[case(json_to_json_and_error(r#""hi"#, ErrorKind::ExpectedQuote, None))]
@@ -441,7 +441,7 @@ mod tests {
         r#""
     
     ""#,
-        ErrorKind::UnexpectedControlCharacterInString("\\n".to_string()),
+        ErrorKind::UnexpectedControlCharacterInString('\n'.into()),
         Some(1..2)
     ))]
     fn should_not_parse_invalid_syntax(#[case] (json, error): (&str, Error)) {

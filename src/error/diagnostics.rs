@@ -1,6 +1,6 @@
 use crate::{
     Error, ErrorKind,
-    tokens::{Token, TokenOption},
+    tokens::{Token, TokenOption, lexical::JsonChar},
 };
 use annotate_snippets::{Annotation, AnnotationKind, Group, Level, Snippet};
 use core::ops::Range;
@@ -193,7 +193,7 @@ pub fn patches_from_error<'a>(error: &'a Error) -> Vec<Patch<'a>> {
                 "replace the control character with its escaped form",
                 error.range.clone(),
                 source,
-                escaped,
+                escaped.to_string(),
             )]
         }
         ErrorKind::TokenAfterEnd(token) => {
@@ -213,7 +213,7 @@ pub fn patches_from_error<'a>(error: &'a Error) -> Vec<Patch<'a>> {
         ErrorKind::ExpectedDigitFollowingMinus(range, found) => {
             let patch_info = match found {
                 None => ("insert placeholder digits after the minus sign", "194"),
-                Some('.') => (
+                Some(JsonChar('.')) => (
                     "did you mean to add a fraction? consider adding a 0 before the period",
                     "0",
                 ),

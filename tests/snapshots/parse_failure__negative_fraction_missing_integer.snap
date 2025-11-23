@@ -7,7 +7,7 @@ case ---
 stdout --- 
 <empty>
 stderr --- 
-error: expected digit following minus sign, found `Some('.')`
+error: expected digit following minus sign, found `Some(JsonChar('.'))`
  --> stdin:1:1
   |
 1 | -.29

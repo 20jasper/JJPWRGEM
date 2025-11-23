@@ -1,4 +1,4 @@
-use core::ops::RangeInclusive;
+use core::{fmt::Display, ops::RangeInclusive};
 
 pub const CONTROL_RANGE: RangeInclusive<char> = '\u{0000}'..='\u{001F}';
 
@@ -33,6 +33,21 @@ pub fn escape_char_for_json_string(c: char) -> String {
         '/' => r"\/".into(),
         ch if CONTROL_RANGE.contains(&ch) => escape_char_for_json(ch),
         ch => ch.to_string(),
+    }
+}
+
+#[derive(Debug, PartialEq, Eq, Clone, Copy, PartialOrd, Ord)]
+pub struct JsonChar(pub char);
+
+impl Display for JsonChar {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", escape_char_for_json_string(self.0))
+    }
+}
+
+impl From<char> for JsonChar {
+    fn from(value: char) -> Self {
+        Self(value)
     }
 }
 
