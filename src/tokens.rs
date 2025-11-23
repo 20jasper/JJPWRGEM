@@ -1,11 +1,13 @@
 pub mod lexical;
 
-pub use lexical::{CONTROL_RANGE, trim_end_whitespace};
-
-use self::lexical::{escape_char_for_json_string, is_whitespace};
-use crate::{Error, ErrorKind, Result};
+use crate::{
+    Error, ErrorKind, Result,
+    tokens::{
+        lexical::{CONTROL_RANGE, JsonChar, is_whitespace},
+        number::parse_num,
+    },
+};
 use core::fmt::Display;
-use core::iter;
 use core::ops::Range;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -15,6 +17,7 @@ pub enum Token {
     Colon,
     Comma,
     String(String),
+    Number(String),
     Null,
     Boolean(bool),
 }
@@ -27,6 +30,7 @@ impl Display for Token {
             Token::Colon => ":",
             Token::Comma => ",",
             Token::String(x) => &format!("{x:?}"),
+            Token::Number(x) => &x.to_string(),
             Token::Boolean(x) => &format!("{x:?}"),
             Token::Null => NULL,
         };
@@ -34,6 +38,7 @@ impl Display for Token {
     }
 }
 
+const NO_SIGNIFICANT_CHARACTERS: &str = "no significant characters";
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct TokenOption(pub(crate) Option<Token>);
 
@@ -41,7 +46,7 @@ impl Display for TokenOption {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let val = match &self.0 {
             Some(x) => x.to_string(),
-            None => "no significant characters".to_owned(),
+            None => NO_SIGNIFICANT_CHARACTERS.to_owned(),
         };
         write!(f, "{val}")
     }
@@ -53,6 +58,24 @@ impl From<Option<Token>> for TokenOption {
     }
 }
 
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub struct JsonCharOption(pub Option<JsonChar>);
+
+impl Display for JsonCharOption {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let val = match &self.0 {
+            Some(x) => format!("`{x}`"),
+            None => NO_SIGNIFICANT_CHARACTERS.to_owned(),
+        };
+        write!(f, "{val}")
+    }
+}
+
+impl From<Option<JsonChar>> for JsonCharOption {
+    fn from(value: Option<JsonChar>) -> Self {
+        Self(value)
+    }
+}
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct TokenWithContext {
     pub token: Token,
@@ -68,16 +91,37 @@ pub fn str_to_tokens(s: &str) -> Result<Vec<TokenWithContext>> {
 
     let mut res = vec![];
 
-    while let Some((i, c)) = chars.next() {
+    while let Some(&(i, c)) = chars.peek() {
         if is_whitespace(c) {
+            chars.next();
             continue;
         }
         let token = match c {
-            '{' => Token::OpenCurlyBrace,
-            '}' => Token::ClosedCurlyBrace,
-            ':' => Token::Colon,
-            ',' => Token::Comma,
-            '"' => Token::String(build_str_while(i + 1, s, &mut chars)?.into()),
+            '{' => {
+                chars.next();
+                Token::OpenCurlyBrace
+            }
+            '}' => {
+                chars.next();
+                Token::ClosedCurlyBrace
+            }
+            ':' => {
+                chars.next();
+                Token::Colon
+            }
+            ',' => {
+                chars.next();
+                Token::Comma
+            }
+            '"' => {
+                chars.next();
+                // TODO to parse and handle it's own start
+                Token::String(parse_str(i + 1, s, &mut chars)?.into())
+            }
+            '0'..='9' | '-' => {
+                res.push(parse_num(s, &mut chars)?);
+                continue;
+            }
             'n' | 't' | 'f' => {
                 let expected = match c {
                     'n' => NULL,
@@ -85,8 +129,7 @@ pub fn str_to_tokens(s: &str) -> Result<Vec<TokenWithContext>> {
                     'f' => FALSE,
                     _ => unreachable!("{c} is not able to be reached"),
                 };
-                let actual =
-                    iter::once(c).chain(chars.by_ref().take(expected.len() - 1).map(|(_, c)| c));
+                let actual = chars.by_ref().take(expected.len()).map(|(_, c)| c);
 
                 if actual.eq(expected.chars()) {
                     match c {
@@ -97,7 +140,7 @@ pub fn str_to_tokens(s: &str) -> Result<Vec<TokenWithContext>> {
                     }
                 } else {
                     return Err(Error::new(
-                        ErrorKind::UnexpectedCharacter(escape_char_for_json_string(c)),
+                        ErrorKind::UnexpectedCharacter(c.into()),
                         i..(i + c.len_utf8()),
                         s,
                     ));
@@ -105,7 +148,7 @@ pub fn str_to_tokens(s: &str) -> Result<Vec<TokenWithContext>> {
             }
             _ => {
                 return Err(Error::new(
-                    ErrorKind::UnexpectedCharacter(escape_char_for_json_string(c)),
+                    ErrorKind::UnexpectedCharacter(c.into()),
                     i..(i + c.len_utf8()),
                     s,
                 ));
@@ -122,7 +165,152 @@ pub fn str_to_tokens(s: &str) -> Result<Vec<TokenWithContext>> {
     Ok(res)
 }
 
-fn build_str_while<'a>(
+mod number {
+    use core::{iter::Peekable, ops::Range, str::CharIndices};
+
+    use crate::{
+        Error, ErrorKind, Result,
+        tokens::{Token, TokenWithContext, lexical::is_whitespace},
+    };
+
+    #[derive(Debug, PartialEq, Eq, Clone)]
+    enum NumberState {
+        MinusOrInteger,
+        Leading(Range<usize>), // TODO char with context type??
+        IntegerOrDecimalOrExponentOrEnd {
+            leading: Option<char>,
+            leading_ctx: Range<usize>,
+            number_ctx: Range<usize>,
+        },
+        #[allow(dead_code)]
+        Fraction(Range<usize>),
+        #[allow(dead_code)]
+        FractionOrExponentOrEnd(Range<usize>),
+        #[allow(dead_code)]
+        ExponentOrEnd(Range<usize>),
+        End(TokenWithContext),
+    }
+
+    impl NumberState {
+        fn process(
+            self,
+            chars: &mut Peekable<impl Iterator<Item = (usize, char)>>,
+            input: &str,
+        ) -> Result<Self> {
+            let res = match self {
+                NumberState::MinusOrInteger => match chars.next() {
+                    Some((i, c @ '-')) => NumberState::Leading(i..i + c.len_utf8()),
+                    Some((i, leading @ '0'..='9')) => {
+                        NumberState::IntegerOrDecimalOrExponentOrEnd {
+                            leading: Some(leading),
+                            leading_ctx: i..i + leading.len_utf8(),
+                            number_ctx: i..i + leading.len_utf8(),
+                        }
+                    }
+                    _ => todo!("err, number must start with `-` or digit"),
+                },
+                NumberState::Leading(range) => match chars.next() {
+                    Some((i, digit @ '0'..='9')) => NumberState::IntegerOrDecimalOrExponentOrEnd {
+                        leading: Some(digit),
+                        leading_ctx: i..i + digit.len_utf8(),
+                        number_ctx: range.start..i + digit.len_utf8(),
+                    },
+                    c @ (Some(_) | None) => {
+                        return Err(Error::new(
+                            ErrorKind::ExpectedDigitFollowingMinus(
+                                range.clone(),
+                                c.map(|(_, c)| c.into()).into(),
+                            ),
+                            range.clone().start
+                                ..c.map(|(i, c)| i + c.len_utf8()).unwrap_or(input.len()),
+                            input,
+                        ));
+                    }
+                },
+                NumberState::IntegerOrDecimalOrExponentOrEnd {
+                    leading,
+                    leading_ctx,
+                    number_ctx,
+                } => match chars.next() {
+                    Some((_, '0')) if matches!(leading, Some('0')) => {
+                        while chars.next_if(|(_, c)| *c == '0').is_some() {}
+                        let end = chars.peek().map(|&(i, _)| i).unwrap_or(input.len());
+
+                        return Err(Error::new(
+                            ErrorKind::UnexpectedLeadingZero {
+                                initial: leading_ctx.clone(),
+                                extra: leading_ctx.end..end,
+                            },
+                            number_ctx.start..end,
+                            input,
+                        ));
+                    }
+                    Some((i, c @ '0'..='9')) => NumberState::IntegerOrDecimalOrExponentOrEnd {
+                        leading: None,
+                        leading_ctx,
+                        number_ctx: number_ctx.start..i + c.len_utf8(),
+                    },
+                    Some((_, '.')) => {
+                        todo!("handle frac")
+                    }
+                    Some((_, 'e' | 'E')) => {
+                        todo!("handle exp")
+                    }
+                    Some((_, ws)) if is_whitespace(ws) => NumberState::End(TokenWithContext {
+                        token: Token::Number(input[number_ctx.clone()].into()),
+                        range: number_ctx,
+                    }),
+                    None => NumberState::End(TokenWithContext {
+                        token: Token::Number(input[number_ctx.clone()].into()),
+                        range: number_ctx,
+                    }),
+                    _ => todo!("invalid"),
+                },
+                NumberState::Fraction(_) => todo!(),
+                NumberState::FractionOrExponentOrEnd(_) => todo!(),
+                NumberState::ExponentOrEnd(_) => todo!(),
+                NumberState::End(_) => self,
+            };
+
+            Ok(res)
+        }
+    }
+
+    /// ```abnf
+    /// number        = [ minus ] int [ frac ] [ exp ]
+    /// decimal-point = %x2E              ; .
+    /// digit1-9      = %x31-39           ; 1-9
+    /// e             = %x65 / %x45       ; e E
+    /// exp           = e [ minus / plus ] 1*DIGIT
+    /// frac          = decimal-point 1*DIGIT
+    /// int           = zero / ( digit1-9 *DIGIT )
+    /// minus         = %x2D              ; -
+    /// plus          = %x2B              ; +
+    /// zero          = %x30              ; 0
+    /// ```
+    /// See [RFC 8259 Section 6](https://datatracker.ietf.org/doc/html/rfc8259#section-6)
+    pub fn parse_num<'a>(
+        input: &'a str,
+        chars: &mut Peekable<CharIndices<'a>>,
+    ) -> Result<TokenWithContext> {
+        let mut state = NumberState::MinusOrInteger;
+
+        loop {
+            state = state.process(chars, input)?;
+            if let NumberState::End(tok) = state {
+                break Ok(tok);
+            }
+        }
+
+        // Does the RFC require whitespace after nums?
+        // can start with - optionally
+        // can't start with extra leading 0
+
+        // exponent E or e
+    }
+}
+
+fn parse_str<'a>(
     start: usize,
     input: &'a str,
     chars: &mut core::iter::Peekable<core::str::CharIndices<'a>>,
@@ -139,7 +327,7 @@ fn build_str_while<'a>(
             Ok(&input[start..end])
         } else {
             Err(Error::new(
-                ErrorKind::UnexpectedControlCharacterInString(escape_char_for_json_string(c)),
+                ErrorKind::UnexpectedControlCharacterInString(c.into()),
                 end..end + c.len_utf8(),
                 input,
             ))
@@ -152,6 +340,22 @@ fn build_str_while<'a>(
 impl From<bool> for Token {
     fn from(value: bool) -> Self {
         Token::Boolean(value)
+    }
+}
+// TODO macro for every num type
+impl From<usize> for Token {
+    fn from(value: usize) -> Self {
+        Token::Number(value.to_string())
+    }
+}
+impl From<i32> for Token {
+    fn from(value: i32) -> Self {
+        Token::Number(value.to_string())
+    }
+}
+impl From<f64> for Token {
+    fn from(value: f64) -> Self {
+        Token::Number(value.to_string())
     }
 }
 
@@ -195,6 +399,13 @@ mod tests {
     #[case("false", Token::Boolean(false))]
     #[case("\"burger\"", Token::String("burger".into()))]
     #[case(r#""\"burger\"""#, Token::String(r#"\"burger\""#.into()))]
+    #[case(r#"0"#, 0.into())]
+    #[case(r#"12389"#, 12389.into())]
+    #[case(r#"-12389"#, (-12389).into())]
+    // #[case(r#"5.8888"#, 5.888.into())]
+    #[case(r#"-0"#, Token::Number("-0".into()))]
+    // #[case(r#"-1e5"#, Token::Number("-1e5".into()))]
+    // #[case(r#"-1.48e50"#, Token::Number("-1.48e50".into()))]
     fn primitive_template(#[case] json: &str, #[case] expected: Token) {}
 
     #[rstest_reuse::apply(primitive_template)]
@@ -257,12 +468,12 @@ mod tests {
     #[rstest::rstest]
     #[case(json_to_json_and_error(
         "a",
-        ErrorKind::UnexpectedCharacter('a'.to_string()),
+        ErrorKind::UnexpectedCharacter('a'.into()),
         Some(0..1)
     ))]
     #[case(json_to_json_and_error(
         "n",
-        ErrorKind::UnexpectedCharacter('n'.to_string()),
+        ErrorKind::UnexpectedCharacter('n'.into()),
         Some(0..1)
     ))]
     #[case(json_to_json_and_error(r#""hi"#, ErrorKind::ExpectedQuote, None))]
@@ -270,7 +481,7 @@ mod tests {
         r#""
     
     ""#,
-        ErrorKind::UnexpectedControlCharacterInString("\\n".to_string()),
+        ErrorKind::UnexpectedControlCharacterInString('\n'.into()),
         Some(1..2)
     ))]
     fn should_not_parse_invalid_syntax(#[case] (json, error): (&str, Error)) {

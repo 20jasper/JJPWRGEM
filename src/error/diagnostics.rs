@@ -1,6 +1,6 @@
 use crate::{
     Error, ErrorKind,
-    tokens::{Token, TokenOption},
+    tokens::{Token, TokenOption, lexical::JsonChar},
 };
 use annotate_snippets::{Annotation, AnnotationKind, Group, Level, Snippet};
 use core::ops::Range;
@@ -193,7 +193,7 @@ pub fn patches_from_error<'a>(error: &'a Error) -> Vec<Patch<'a>> {
                 "replace the control character with its escaped form",
                 error.range.clone(),
                 source,
-                escaped,
+                escaped.to_string(),
             )]
         }
         ErrorKind::TokenAfterEnd(token) => {
@@ -209,6 +209,33 @@ pub fn patches_from_error<'a>(error: &'a Error) -> Vec<Patch<'a>> {
                     "",
                 )]
             }
+        }
+        ErrorKind::ExpectedDigitFollowingMinus(range, found) => {
+            let patch_info = match found.0 {
+                None => ("insert placeholder digits after the minus sign", "194"),
+                Some(JsonChar('.')) => (
+                    "did you mean to add a fraction? consider adding a 0 before the period",
+                    "0",
+                ),
+                _ => return vec![],
+            };
+            let (message, replacement) = patch_info;
+            {
+                vec![Patch::new(
+                    message,
+                    range.end..range.end,
+                    source,
+                    replacement,
+                )]
+            }
+        }
+        ErrorKind::UnexpectedLeadingZero { extra, .. } => {
+            vec![Patch::new(
+                "remove the leading zeros",
+                extra.clone(),
+                source,
+                "",
+            )]
         }
         ErrorKind::ExpectedKeyOrClosedCurlyBrace(_, TokenOption(Some(_)))
         | ErrorKind::UnexpectedCharacter(_)
@@ -244,6 +271,16 @@ pub fn context_from_error<'a>(error: &'a Error) -> Vec<Context<'a>> {
                 source,
             ),
         ],
+        ErrorKind::ExpectedDigitFollowingMinus(range, _) => {
+            vec![Context::new("minus sign found here", range.clone(), source)]
+        }
+        ErrorKind::UnexpectedLeadingZero { initial, .. } => {
+            vec![Context::new(
+                "first zero found here",
+                initial.clone(),
+                source,
+            )]
+        }
         ErrorKind::ExpectedValue(None, _)
         | ErrorKind::UnexpectedCharacter(_)
         | ErrorKind::UnexpectedControlCharacterInString(_)

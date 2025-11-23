@@ -12,6 +12,7 @@ use std::collections::HashMap;
 pub enum Value {
     Null,
     String(String),
+    Number(String),
     Object(HashMap<String, Value>),
     Boolean(bool),
 }
@@ -24,6 +25,7 @@ impl TryFrom<Token> for Value {
             Token::String(s) => Value::String(s),
             Token::Null => Value::Null,
             Token::Boolean(b) => Value::Boolean(b),
+            Token::Number(n) => Value::Number(n),
             _ => return Err(ErrorKind::Custom("token is not a valid value".to_owned())),
         })
     }
@@ -62,7 +64,7 @@ pub fn parse_tokens(
     };
     let val = match &peeked.token {
         Token::OpenCurlyBrace => parse_object(tokens, text, fail_on_multiple_value)?,
-        Token::Null | Token::String(_) | Token::Boolean(_) => {
+        Token::Null | Token::String(_) | Token::Boolean(_) | Token::Number(_) => {
             let TokenWithContext { token, range } = tokens.next().unwrap();
             ValueWithContext {
                 value: token.try_into().expect("token should be valid json value"),

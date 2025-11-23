@@ -68,6 +68,7 @@ pub fn format_value(val: &Value, options: &FormatOptions, depth: usize) -> Strin
     match val {
         Value::Null => NULL.to_owned(),
         Value::String(s) => format!("\"{s}\""),
+        Value::Number(s) => s.to_string(),
         Value::Object(hash_map) => {
             let kv_delim = options.get_key_val_delimiter();
             let key_indent = options.get_indent(depth + 1);
