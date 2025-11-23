@@ -211,7 +211,7 @@ pub fn patches_from_error<'a>(error: &'a Error) -> Vec<Patch<'a>> {
             }
         }
         ErrorKind::ExpectedDigitFollowingMinus(range, found) => {
-            let patch_info = match found {
+            let patch_info = match found.0 {
                 None => ("insert placeholder digits after the minus sign", "194"),
                 Some(JsonChar('.')) => (
                     "did you mean to add a fraction? consider adding a 0 before the period",

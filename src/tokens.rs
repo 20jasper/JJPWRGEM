@@ -1,10 +1,12 @@
 pub mod lexical;
 
-pub use lexical::{CONTROL_RANGE, trim_end_whitespace};
-
-use self::lexical::{escape_char_for_json_string, is_whitespace};
-use crate::tokens::number::parse_num;
-use crate::{Error, ErrorKind, Result};
+use crate::{
+    Error, ErrorKind, Result,
+    tokens::{
+        lexical::{CONTROL_RANGE, JsonChar, is_whitespace},
+        number::parse_num,
+    },
+};
 use core::fmt::Display;
 use core::ops::Range;
 
@@ -56,6 +58,24 @@ impl From<Option<Token>> for TokenOption {
     }
 }
 
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub struct JsonCharOption(pub Option<JsonChar>);
+
+impl Display for JsonCharOption {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let val = match &self.0 {
+            Some(x) => format!("`{x}`"),
+            None => NO_SIGNIFICANT_CHARACTERS.to_owned(),
+        };
+        write!(f, "{val}")
+    }
+}
+
+impl From<Option<JsonChar>> for JsonCharOption {
+    fn from(value: Option<JsonChar>) -> Self {
+        Self(value)
+    }
+}
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct TokenWithContext {
     pub token: Token,
@@ -161,8 +181,11 @@ mod number {
             leading: Option<char>,
             ctx: Range<usize>,
         },
+        #[allow(dead_code)]
         Fraction(Range<usize>),
+        #[allow(dead_code)]
         FractionOrExponentOrEnd(Range<usize>),
+        #[allow(dead_code)]
         ExponentOrEnd(Range<usize>),
         End(TokenWithContext),
     }
@@ -193,7 +216,7 @@ mod number {
                         return Err(Error::new(
                             ErrorKind::ExpectedDigitFollowingMinus(
                                 range.clone(),
-                                c.map(|(_, c)| c.into()),
+                                c.map(|(_, c)| c.into()).into(),
                             ),
                             range.clone().start
                                 ..c.map(|(i, c)| i + c.len_utf8()).unwrap_or(input.len()),
@@ -226,9 +249,9 @@ mod number {
                     }),
                     _ => todo!("invalid"),
                 },
-                NumberState::Fraction(range) => todo!(),
-                NumberState::FractionOrExponentOrEnd(range) => todo!(),
-                NumberState::ExponentOrEnd(range) => todo!(),
+                NumberState::Fraction(_) => todo!(),
+                NumberState::FractionOrExponentOrEnd(_) => todo!(),
+                NumberState::ExponentOrEnd(_) => todo!(),
                 NumberState::End(_) => self,
             };
 

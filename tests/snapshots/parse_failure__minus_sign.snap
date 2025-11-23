@@ -7,7 +7,7 @@ case ---
 stdout --- 
 <empty>
 stderr --- 
-error: expected digit following minus sign, found `None`
+error: expected digit following minus sign, found no significant characters
  --> stdin:1:1
   |
 1 | -

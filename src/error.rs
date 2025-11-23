@@ -1,6 +1,7 @@
 pub mod diagnostics;
 
-use crate::tokens::{Token, TokenOption, TokenWithContext, lexical::JsonChar, trim_end_whitespace};
+use crate::tokens::lexical::trim_end_whitespace;
+use crate::tokens::{JsonCharOption, Token, TokenOption, TokenWithContext, lexical::JsonChar};
 use core::ops::Range;
 use displaydoc::Display;
 use thiserror::Error;
@@ -36,8 +37,8 @@ pub enum ErrorKind {
 
     // number
     // TODO handle escaping via JsonChar and maybe make generic TDisplayOption?
-    /// expected digit following minus sign, found `{1:?}`
-    ExpectedDigitFollowingMinus(Range<usize>, Option<JsonChar>),
+    /// expected digit following minus sign, found {1}
+    ExpectedDigitFollowingMinus(Range<usize>, JsonCharOption),
 
     /// {0}
     Custom(String),
