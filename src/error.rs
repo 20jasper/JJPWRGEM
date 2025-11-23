@@ -36,9 +36,13 @@ pub enum ErrorKind {
     ExpectedQuote,
 
     // number
-    // TODO handle escaping via JsonChar and maybe make generic TDisplayOption?
     /// expected digit following minus sign, found {1}
     ExpectedDigitFollowingMinus(Range<usize>, JsonCharOption),
+    /// unexpected leading zero
+    UnexpectedLeadingZero {
+        initial: Range<usize>,
+        extra: Range<usize>,
+    },
 
     /// {0}
     Custom(String),

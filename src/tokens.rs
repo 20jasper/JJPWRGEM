@@ -179,7 +179,8 @@ mod number {
         Leading(Range<usize>), // TODO char with context type??
         IntegerOrDecimalOrExponentOrEnd {
             leading: Option<char>,
-            ctx: Range<usize>,
+            leading_ctx: Range<usize>,
+            number_ctx: Range<usize>,
         },
         #[allow(dead_code)]
         Fraction(Range<usize>),
@@ -202,7 +203,8 @@ mod number {
                     Some((i, leading @ '0'..='9')) => {
                         NumberState::IntegerOrDecimalOrExponentOrEnd {
                             leading: Some(leading),
-                            ctx: i..i + leading.len_utf8(),
+                            leading_ctx: i..i + leading.len_utf8(),
+                            number_ctx: i..i + leading.len_utf8(),
                         }
                     }
                     _ => todo!("err, number must start with `-` or digit"),
@@ -210,7 +212,8 @@ mod number {
                 NumberState::Leading(range) => match chars.next() {
                     Some((i, digit @ '0'..='9')) => NumberState::IntegerOrDecimalOrExponentOrEnd {
                         leading: Some(digit),
-                        ctx: range.start..i + digit.len_utf8(),
+                        leading_ctx: i..i + digit.len_utf8(),
+                        number_ctx: range.start..i + digit.len_utf8(),
                     },
                     c @ (Some(_) | None) => {
                         return Err(Error::new(
@@ -224,14 +227,28 @@ mod number {
                         ));
                     }
                 },
-                NumberState::IntegerOrDecimalOrExponentOrEnd { leading, ctx } => match chars.next()
-                {
+                NumberState::IntegerOrDecimalOrExponentOrEnd {
+                    leading,
+                    leading_ctx,
+                    number_ctx,
+                } => match chars.next() {
                     Some((_, '0')) if matches!(leading, Some('0')) => {
-                        todo!("err, leading 0s are not allowed big nerd")
+                        let end = chars
+                            .find_map(|(i, c)| (c != '0').then_some(i))
+                            .unwrap_or(input.len());
+                        return Err(Error::new(
+                            ErrorKind::UnexpectedLeadingZero {
+                                initial: leading_ctx.clone(),
+                                extra: leading_ctx.end..end,
+                            },
+                            number_ctx.start..end,
+                            input,
+                        ));
                     }
                     Some((i, c @ '0'..='9')) => NumberState::IntegerOrDecimalOrExponentOrEnd {
                         leading: None,
-                        ctx: ctx.start..i + c.len_utf8(),
+                        leading_ctx,
+                        number_ctx: number_ctx.start..i + c.len_utf8(),
                     },
                     Some((_, '.')) => {
                         todo!("handle frac")
@@ -240,12 +257,12 @@ mod number {
                         todo!("handle exp")
                     }
                     Some((_, ws)) if is_whitespace(ws) => NumberState::End(TokenWithContext {
-                        token: Token::Number(input[ctx.clone()].into()),
-                        range: ctx,
+                        token: Token::Number(input[number_ctx.clone()].into()),
+                        range: number_ctx,
                     }),
                     None => NumberState::End(TokenWithContext {
-                        token: Token::Number(input[ctx.clone()].into()),
-                        range: ctx,
+                        token: Token::Number(input[number_ctx.clone()].into()),
+                        range: number_ctx,
                     }),
                     _ => todo!("invalid"),
                 },

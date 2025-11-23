@@ -229,6 +229,14 @@ pub fn patches_from_error<'a>(error: &'a Error) -> Vec<Patch<'a>> {
                 )]
             }
         }
+        ErrorKind::UnexpectedLeadingZero { extra, .. } => {
+            vec![Patch::new(
+                "remove the leading zeros",
+                extra.clone(),
+                source,
+                "",
+            )]
+        }
         ErrorKind::ExpectedKeyOrClosedCurlyBrace(_, TokenOption(Some(_)))
         | ErrorKind::UnexpectedCharacter(_)
         | ErrorKind::ExpectedOpenCurlyBrace(_, _)
@@ -265,6 +273,13 @@ pub fn context_from_error<'a>(error: &'a Error) -> Vec<Context<'a>> {
         ],
         ErrorKind::ExpectedDigitFollowingMinus(range, _) => {
             vec![Context::new("minus sign found here", range.clone(), source)]
+        }
+        ErrorKind::UnexpectedLeadingZero { initial, .. } => {
+            vec![Context::new(
+                "first zero found here",
+                initial.clone(),
+                source,
+            )]
         }
         ErrorKind::ExpectedValue(None, _)
         | ErrorKind::UnexpectedCharacter(_)
