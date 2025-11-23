@@ -233,9 +233,9 @@ mod number {
                     number_ctx,
                 } => match chars.next() {
                     Some((_, '0')) if matches!(leading, Some('0')) => {
-                        let end = chars
-                            .find_map(|(i, c)| (c != '0').then_some(i))
-                            .unwrap_or(input.len());
+                        while chars.next_if(|(_, c)| *c == '0').is_some() {}
+                        let end = chars.peek().map(|&(i, _)| i).unwrap_or(input.len());
+
                         return Err(Error::new(
                             ErrorKind::UnexpectedLeadingZero {
                                 initial: leading_ctx.clone(),
