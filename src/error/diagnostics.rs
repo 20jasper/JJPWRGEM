@@ -140,7 +140,7 @@ pub fn patches_from_error<'a>(error: &'a Error) -> Vec<Patch<'a>> {
                     r#": "garlic bread" }"#,
                 ),
                 Some(Token::Comma) | Some(Token::ClosedCurlyBrace) => {
-                    ("insert colon and placeholder key", r#": "🐟🛹""#)
+                    ("insert colon and placeholder value", r#": "🐟🛹""#)
                 }
                 _ => ("insert the missing colon", ": "),
             };
