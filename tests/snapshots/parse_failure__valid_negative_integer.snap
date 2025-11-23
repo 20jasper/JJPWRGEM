@@ -1,0 +1,10 @@
+---
+source: tests/parse_failure.rs
+expression: "format_output_snapshot(json, &annotated)"
+---
+case --- 
+-298
+stdout --- 
+-298
+stderr --- 
+<empty>

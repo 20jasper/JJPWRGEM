@@ -27,6 +27,8 @@ pub const UNEXPECTED_LETTER_IN_NEGATIVE: &str = "-abcd";
 pub const UNEXPECTED_LETTER_IN_NUMBER: &str = "1a";
 pub const FRACTION_MISSING_INTEGER: &str = ".29";
 pub const NEGATIVE_FRACTION_MISSING_INTEGER: &str = "-.29";
+pub const VALID_INTEGER: &str = "298";
+pub const VALID_NEGATIVE_INTEGER: &str = "-298";
 
 pub fn format_output_snapshot(input: &str, output: &Output) -> String {
     format!("case --- \n{input}\n{output:?}")
