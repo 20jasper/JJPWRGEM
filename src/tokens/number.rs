@@ -2,7 +2,7 @@ use core::{iter::Peekable, ops::Range, str::CharIndices};
 
 use crate::{
     Error, ErrorKind, Result,
-    tokens::{Token, TokenWithContext, lexical::is_whitespace},
+    tokens::{Token, TokenWithContext},
 };
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -32,13 +32,11 @@ impl NumberState {
         let res = match self {
             NumberState::MinusOrInteger => match chars.next() {
                 Some((i, c @ '-')) => NumberState::Leading(i..i + c.len_utf8()),
-                Some((i, leading @ '0'..='9')) => {
-                    NumberState::IntegerOrDecimalOrExponentOrEnd {
-                        leading: Some(leading),
-                        leading_ctx: i..i + leading.len_utf8(),
-                        number_ctx: i..i + leading.len_utf8(),
-                    }
-                }
+                Some((i, leading @ '0'..='9')) => NumberState::IntegerOrDecimalOrExponentOrEnd {
+                    leading: Some(leading),
+                    leading_ctx: i..i + leading.len_utf8(),
+                    number_ctx: i..i + leading.len_utf8(),
+                },
                 _ => todo!("err, number must start with `-` or digit"),
             },
             NumberState::Leading(range) => match chars.next() {
@@ -63,7 +61,7 @@ impl NumberState {
                 leading,
                 leading_ctx,
                 number_ctx,
-            } => match chars.next() {
+            } => match chars.peek() {
                 Some((_, '0')) if matches!(leading, Some('0')) => {
                     while chars.next_if(|(_, c)| *c == '0').is_some() {}
                     let end = chars.peek().map(|&(i, _)| i).unwrap_or(input.len());
@@ -77,26 +75,26 @@ impl NumberState {
                         input,
                     ));
                 }
-                Some((i, c @ '0'..='9')) => NumberState::IntegerOrDecimalOrExponentOrEnd {
-                    leading: None,
-                    leading_ctx,
-                    number_ctx: number_ctx.start..i + c.len_utf8(),
-                },
+                Some(&(i, c @ '0'..='9')) => {
+                    chars.next();
+                    NumberState::IntegerOrDecimalOrExponentOrEnd {
+                        leading: None,
+                        leading_ctx,
+                        number_ctx: number_ctx.start..i + c.len_utf8(),
+                    }
+                }
                 Some((_, '.')) => {
+                    chars.next();
                     todo!("handle frac")
                 }
                 Some((_, 'e' | 'E')) => {
+                    chars.next();
                     todo!("handle exp")
                 }
-                Some((_, ws)) if is_whitespace(ws) => NumberState::End(TokenWithContext {
+                _ => NumberState::End(TokenWithContext {
                     token: Token::Number(input[number_ctx.clone()].into()),
                     range: number_ctx,
                 }),
-                None => NumberState::End(TokenWithContext {
-                    token: Token::Number(input[number_ctx.clone()].into()),
-                    range: number_ctx,
-                }),
-                _ => todo!("invalid"),
             },
             NumberState::Fraction(_) => todo!(),
             NumberState::FractionOrExponentOrEnd(_) => todo!(),

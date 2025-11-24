@@ -180,7 +180,11 @@ impl ObjectState {
                 if !matches!(
                     peeked.as_ref().map(|ctx| &ctx.token),
                     Some(
-                        Token::OpenCurlyBrace | Token::String(_) | Token::Null | Token::Boolean(_)
+                        Token::OpenCurlyBrace
+                            | Token::String(_)
+                            | Token::Null
+                            | Token::Boolean(_)
+                            | Token::Number(_)
                     )
                 ) {
                     return Err(Error::from_maybe_token_with_context(

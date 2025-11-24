@@ -22,13 +22,13 @@ struct Case {
 const CONFORMANCE_PATH: &str = "./tests/conformance/JSONTestSuite/test_parsing";
 const FILENAME_FILTER: [&str; 4] = [
     // not yet supported
-    "number",
     "array",
     "BOM",
+    "n_string_unicode_capitalu",
     // multi key is not consistent
     "y_object.json",
 ];
-const TEXT_FILTER: [&str; 12] = ["[", "]", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9"];
+const TEXT_FILTER: [&str; 5] = ["[", "]", ".", "e", "E"];
 
 fn get_tests() -> (Vec<Case>, usize, usize) {
     let entries = fs::read_dir(CONFORMANCE_PATH).unwrap();
@@ -91,7 +91,7 @@ fn get_tests() -> (Vec<Case>, usize, usize) {
 #[test]
 fn feature() {
     let (cases, total, rest) = get_tests();
-    assert_eq!(rest, 50);
+    assert_eq!(rest, 54);
     assert_eq!(total, 318);
 
     let renderer = Renderer::plain().decor_style(DecorStyle::Ascii);
