@@ -8,7 +8,6 @@
     - [x] char to unicode escape
       - [ ] domain struct JSONChar
     - [ ] parse unicode escapes
-    - [ ] helpful message for backticks and single quotes
     - [ ] check rfc
   - [ ] numbers
     - [ ] positive/negative (+/-)
@@ -81,3 +80,7 @@
 - [ ] expected key but found , should add key val beforehand
   - [ ] n_structure_open_object_comma
 - multichar emojis are not properly handled, see n_object_emoji.json
+- [ ] remove multiple trailing commas
+  - [ ] n_object_several_trailing_commas.json
+- [ ] should recommend changing single quotes and backticks to double
+  - [ ] n_object_single_quote

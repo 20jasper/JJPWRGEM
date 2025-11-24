@@ -4,7 +4,7 @@ JJPWRGEM JSON Parser With Really Good Error Messages
 
 An (eventually) RFC 8259 compliant JSON Parser
 
-Currently passes 51/319 tests from @nst's [JSONTestSuite](https://github.com/nst/JSONTestSuite)!
+Currently passes 54/319 tests from @nst's [JSONTestSuite](https://github.com/nst/JSONTestSuite)!
 
 ```
 echo -en '{"coolKey"}' | jjp
