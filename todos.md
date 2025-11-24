@@ -72,7 +72,7 @@
   - [ ] Investigate `n_object_emoji`
   - [ ] Investigate `n_object_key_with_single_quotes`
   - [ ] Investigate `n_object_missing_colon.json`
-- [ ] Handle inappropriately escaped forward slash in `n_object_trailing_comment.json`
+- [x] Handle inappropriately escaped forward slash in `n_object_trailing_comment.json`
 - [ ] Provide a hint to insert a value and closing curly when no significant characters remain
   - [ ] Investigate `n_object_missing_value.json`
 - [ ] Fix error message to state that a quote is expected after the opening quote
