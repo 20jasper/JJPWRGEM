@@ -1,11 +1,19 @@
 use core::{fmt::Display, ops::RangeInclusive};
 
-pub const CONTROL_RANGE: RangeInclusive<char> = '\u{0000}'..='\u{001F}';
-
+/// See [RFC 8259, Section 2](https://datatracker.ietf.org/doc/html/rfc8259#section-2):
+///
+///```abnf
+/// ws = *(
+///         %x20 /              ; Space
+///         %x09 /              ; Horizontal tab
+///         %x0A /              ; Line feed or New line
+///         %x0D )              ; Carriage return
+/// ```
 pub fn is_whitespace(c: char) -> bool {
     matches!(c, ' ' | '\t' | '\n' | '\r')
 }
 
+/// see [is_whitespace]
 pub fn trim_end_whitespace(s: &str) -> &str {
     let end = s
         .char_indices()
@@ -17,10 +25,28 @@ pub fn trim_end_whitespace(s: &str) -> &str {
     &s[..end]
 }
 
-pub fn escape_char_for_json(c: char) -> String {
-    format!("\\u{:04X}", u32::from(c))
-}
+/// See [RFC 8259, Section 7](https://datatracker.ietf.org/doc/html/rfc8259#section-7)
+pub const CONTROL_RANGE: RangeInclusive<char> = '\u{0000}'..='\u{001F}';
 
+///```abnf
+/// char = unescaped /
+///       escape (
+///           %x22 /          ; "    quotation mark  U+0022
+///           %x5C /          ; \    reverse solidus U+005C
+///           %x2F /          ; /    solidus         U+002F
+///           %x62 /          ; b    backspace       U+0008
+///           %x66 /          ; f    form feed       U+000C
+///           %x6E /          ; n    line feed       U+000A
+///           %x72 /          ; r    carriage return U+000D
+///           %x74 /          ; t    tab             U+0009
+///           %x75 4HEXDIG )  ; uXXXX                U+XXXX
+///       escape = %x5C              ; \
+///
+/// quotation-mark = %x22      ; "
+///
+/// unescaped = %x20-21 / %x23-5B / %x5D-10FFFF
+/// ```
+/// see [RFC 8249 section 7](https://datatracker.ietf.org/doc/html/rfc8259#section-7)
 pub fn escape_char_for_json_string(c: char) -> String {
     match c {
         '\u{0008}' => r"\b".into(),
@@ -31,7 +57,7 @@ pub fn escape_char_for_json_string(c: char) -> String {
         '"' => r#"\""#.into(),
         '\\' => r"\\".into(),
         '/' => r"\/".into(),
-        ch if CONTROL_RANGE.contains(&ch) => escape_char_for_json(ch),
+        ch if CONTROL_RANGE.contains(&ch) => format!("\\u{:04X}", u32::from(ch)),
         ch => ch.to_string(),
     }
 }
