@@ -103,6 +103,18 @@ impl Error {
             Error::from_unterminated(f(None.into()), text)
         }
     }
+    pub fn from_maybe_json_char_with_context(
+        f: impl Fn(JsonCharOption) -> ErrorKind,
+        start: usize,
+        maybe_c: Option<(usize, char)>,
+        text: &str,
+    ) -> Self {
+        if let Some((i, c)) = maybe_c {
+            Error::new(f(Some(c.into()).into()), start..i + c.len_utf8(), text)
+        } else {
+            Error::from_unterminated(f(None.into()), text)
+        }
+    }
 }
 
 fn get_line_and_column(text: &str, range: Range<usize>) -> (usize, usize) {

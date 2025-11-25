@@ -37,8 +37,13 @@ macro_rules! fixture_tuple {
 // #[case(fixture_tuple!(UNEXPECTED_LETTER_IN_NUMBER))]
 // #[case(fixture_tuple!(FRACTION_MISSING_INTEGER))]
 #[case(fixture_tuple!(NEGATIVE_FRACTION_MISSING_INTEGER))]
+// #[case(fixture_tuple!(MISSING_FRACTION))]
+#[case(fixture_tuple!(VALID_FRACTION))]
+#[case(fixture_tuple!(VALID_NEGATIVE_FRACTION))]
 #[case(fixture_tuple!(VALID_INTEGER))]
 #[case(fixture_tuple!(VALID_NEGATIVE_INTEGER))]
+#[case(fixture_tuple!(LONG_INTEGER))]
+#[case(fixture_tuple!(LONG_FRACTION))]
 fn annotate_test_json_fixtures_snapshots(#[case] (name, json): (&str, &str)) {
     use jjpwrgem::cli::run;
 
