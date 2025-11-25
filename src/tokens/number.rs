@@ -8,7 +8,7 @@ use crate::{
 #[derive(Debug, PartialEq, Eq, Clone)]
 enum NumberState {
     MinusOrInteger,
-    Leading(Range<usize>), // TODO char with context type??
+    Leading(Range<usize>),
     IntegerOrDecimalOrExponentOrEnd {
         leading: Option<char>,
         leading_ctx: Range<usize>,
@@ -51,7 +51,14 @@ impl NumberState {
                     leading_ctx: i..i + leading.len_utf8(),
                     number_ctx: i..i + leading.len_utf8(),
                 },
-                _ => todo!("err, number must start with `-` or digit"),
+                maybe_c => {
+                    return Err(Error::from_maybe_json_char_with_context(
+                        ErrorKind::ExpectedMinusOrDigit,
+                        0,
+                        maybe_c,
+                        input,
+                    ));
+                }
             },
             NumberState::Leading(range) => match chars.next() {
                 Some((i, digit @ '0'..='9')) => NumberState::IntegerOrDecimalOrExponentOrEnd {

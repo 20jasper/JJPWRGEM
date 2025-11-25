@@ -38,6 +38,8 @@ pub enum ErrorKind {
     // number
     /// expected digit following minus sign, found {1}
     ExpectedDigitFollowingMinus(Range<usize>, JsonCharOption),
+    /// expected '-' or digit to start number, found {0}
+    ExpectedMinusOrDigit(JsonCharOption),
     /// unexpected leading zero
     UnexpectedLeadingZero {
         initial: Range<usize>,
