@@ -25,7 +25,7 @@ enum NumberState {
     },
     ExponentDigit {
         number_ctx: Range<usize>,
-        exponent_ctx: Range<usize>,
+        e_ctx: Range<usize>,
     },
     ExponentDigitOrEnd(Range<usize>),
     End(TokenWithContext),
@@ -151,7 +151,7 @@ impl NumberState {
                     chars.next();
                     NumberState::ExponentDigit {
                         number_ctx: number_ctx.start..i + c.len_utf8(),
-                        exponent_ctx: i + i..c.len_utf8(),
+                        e_ctx,
                     }
                 }
                 Some(&(i, c @ '0'..='9')) => {
@@ -171,15 +171,23 @@ impl NumberState {
                     ));
                 }
             },
-            NumberState::ExponentDigit {
-                number_ctx,
-                exponent_ctx,
-            } => match chars.peek() {
+            NumberState::ExponentDigit { number_ctx, e_ctx } => match chars.peek() {
                 Some(&(i, c @ ('0'..='9'))) => {
                     chars.next();
                     NumberState::ExponentDigitOrEnd(number_ctx.start..i + c.len_utf8())
                 }
-                _ => todo!("expected at least one digit after +/- in exponent"),
+                maybe_c => {
+                    return Err(Error::from_maybe_json_char_with_context(
+                        |c| ErrorKind::ExpectedDigitAfterE {
+                            number_ctx: number_ctx.clone(),
+                            exponent_ctx: e_ctx.clone(),
+                            maybe_c: c,
+                        },
+                        e_ctx.start,
+                        maybe_c.copied(),
+                        input,
+                    ));
+                }
             },
             NumberState::ExponentDigitOrEnd(number_ctx) => match chars.peek() {
                 Some(&(i, c @ ('0'..='9'))) => {

@@ -44,6 +44,11 @@ macro_rules! fixture_tuple {
 #[case(fixture_tuple!(VALID_NEGATIVE_INTEGER))]
 #[case(fixture_tuple!(LONG_INTEGER))]
 #[case(fixture_tuple!(LONG_FRACTION))]
+#[case(fixture_tuple!(EXPONENT_WITH_PLUS_SIGN))]
+#[case(fixture_tuple!(EXPONENT_WITH_MINUS_SIGN))]
+#[case(fixture_tuple!(NEGATIVE_FLOAT_WITH_EXPONENT))]
+#[case(fixture_tuple!(EXPONENT_MISSING_TRAILING_DIGITS))]
+#[case(fixture_tuple!(EXPONENT_MISSING_DIGITS_AFTER_SIGN))]
 fn annotate_test_json_fixtures_snapshots(#[case] (name, json): (&str, &str)) {
     use jjpwrgem::cli::run;
 

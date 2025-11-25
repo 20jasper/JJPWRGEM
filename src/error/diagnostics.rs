@@ -251,20 +251,7 @@ pub fn patches_from_error<'a>(error: &'a Error) -> Vec<Patch<'a>> {
                 "0",
             )]
         }
-        ErrorKind::ExpectedDigitAfterDot {
-            maybe_c: JsonCharOption(Some(_)),
-            ..
-        }
-        | ErrorKind::ExpectedKeyOrClosedCurlyBrace(_, TokenOption(Some(_)))
-        | ErrorKind::UnexpectedCharacter(_)
-        | ErrorKind::ExpectedOpenCurlyBrace(_, _)
-        | ErrorKind::ExpectedQuote
-        | ErrorKind::Custom(_) => Vec::new(),
-        ErrorKind::ExpectedPlusOrMinusOrDigitAfterE {
-            number_ctx: _,
-            e_ctx,
-            maybe_c,
-        } => {
+        ErrorKind::ExpectedPlusOrMinusOrDigitAfterE { e_ctx, maybe_c, .. } => {
             let insertion = e_ctx.end..e_ctx.end;
             match maybe_c.0 {
                 None => vec![Patch::new(
@@ -276,6 +263,23 @@ pub fn patches_from_error<'a>(error: &'a Error) -> Vec<Patch<'a>> {
                 _ => Vec::new(),
             }
         }
+        ErrorKind::ExpectedDigitAfterE {
+            maybe_c: JsonCharOption(None),
+            number_ctx,
+            ..
+        } => vec![Patch::new(
+            "add a digit after the exponent sign",
+            number_ctx.end..number_ctx.end,
+            source,
+            "0",
+        )],
+        ErrorKind::ExpectedDigitAfterE { .. }
+        | ErrorKind::ExpectedDigitAfterDot { .. }
+        | ErrorKind::ExpectedKeyOrClosedCurlyBrace(_, TokenOption(Some(_)))
+        | ErrorKind::UnexpectedCharacter(_)
+        | ErrorKind::ExpectedOpenCurlyBrace(_, _)
+        | ErrorKind::ExpectedQuote
+        | ErrorKind::Custom(_) => Vec::new(),
     }
 }
 
@@ -323,9 +327,14 @@ pub fn context_from_error<'a>(error: &'a Error) -> Vec<Context<'a>> {
             Context::new("decimal point found here", dot_ctx.clone(), source),
             Context::new("number found here", number_ctx.clone(), source),
         ],
-        ErrorKind::ExpectedPlusOrMinusOrDigitAfterE {
+        ErrorKind::ExpectedDigitAfterE {
             number_ctx,
-            e_ctx,
+            exponent_ctx,
+            maybe_c: _,
+        }
+        | ErrorKind::ExpectedPlusOrMinusOrDigitAfterE {
+            number_ctx,
+            e_ctx: exponent_ctx,
             maybe_c: _,
         } => vec![
             Context::new(
@@ -333,7 +342,11 @@ pub fn context_from_error<'a>(error: &'a Error) -> Vec<Context<'a>> {
                 number_ctx.clone(),
                 source,
             ),
-            Context::new("exponent indicator found here", e_ctx.clone(), source),
+            Context::new(
+                "exponent indicator found here",
+                exponent_ctx.clone(),
+                source,
+            ),
         ],
         ErrorKind::ExpectedValue(None, _)
         | ErrorKind::UnexpectedCharacter(_)

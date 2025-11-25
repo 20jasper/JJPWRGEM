@@ -49,10 +49,16 @@ pub enum ErrorKind {
         dot_ctx: Range<usize>,
         maybe_c: JsonCharOption,
     },
-    /// expected +/- or digit after exponent, found {maybe_c}
+    /// expected +/- or digit after exponent indicator, found {maybe_c}
     ExpectedPlusOrMinusOrDigitAfterE {
         number_ctx: Range<usize>,
         e_ctx: Range<usize>,
+        maybe_c: JsonCharOption,
+    },
+    /// expected digit after exponent indicator, found {maybe_c}
+    ExpectedDigitAfterE {
+        number_ctx: Range<usize>,
+        exponent_ctx: Range<usize>,
         maybe_c: JsonCharOption,
     },
     /// {0}
