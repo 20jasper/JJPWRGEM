@@ -11,6 +11,6 @@ error: expected digit following minus sign, found `a`
  --> stdin:1:1
   |
 1 | -abcd
-  | -^
+  | ^
   | |
   | minus sign found here

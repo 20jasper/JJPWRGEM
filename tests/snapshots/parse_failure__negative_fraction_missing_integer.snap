@@ -11,7 +11,7 @@ error: expected digit following minus sign, found `.`
  --> stdin:1:1
   |
 1 | -.29
-  | -^
+  | ^
   | |
   | minus sign found here
   |

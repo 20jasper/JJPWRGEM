@@ -1,5 +1,6 @@
 pub mod diagnostics;
 
+use crate::tokens::CharWithContext;
 use crate::tokens::lexical::trim_end_whitespace;
 use crate::tokens::{JsonCharOption, Token, TokenOption, TokenWithContext, lexical::JsonChar};
 use core::ops::Range;
@@ -38,6 +39,8 @@ pub enum ErrorKind {
     // number
     /// expected digit following minus sign, found {1}
     ExpectedDigitFollowingMinus(Range<usize>, JsonCharOption),
+    /// expected '-' or digit to start number, found {0}
+    ExpectedMinusOrDigit(JsonCharOption),
     /// unexpected leading zero
     UnexpectedLeadingZero {
         initial: Range<usize>,
@@ -49,17 +52,18 @@ pub enum ErrorKind {
         dot_ctx: Range<usize>,
         maybe_c: JsonCharOption,
     },
-    /// {0}
-    Custom(String),
-}
-
-impl<S> From<S> for ErrorKind
-where
-    S: Into<String>,
-{
-    fn from(value: S) -> Self {
-        Self::Custom(value.into())
-    }
+    /// expected +/- or digit after exponent indicator, found {maybe_c}
+    ExpectedPlusOrMinusOrDigitAfterE {
+        number_ctx: Range<usize>,
+        e_ctx: Range<usize>,
+        maybe_c: JsonCharOption,
+    },
+    /// expected digit after exponent indicator, found {maybe_c}
+    ExpectedDigitAfterE {
+        number_ctx: Range<usize>,
+        exponent_ctx: Range<usize>,
+        maybe_c: JsonCharOption,
+    },
 }
 
 #[derive(Debug, PartialEq, Eq, Display, Error)]
@@ -110,12 +114,11 @@ impl Error {
     }
     pub fn from_maybe_json_char_with_context(
         f: impl Fn(JsonCharOption) -> ErrorKind,
-        start: usize,
-        maybe_c: Option<(usize, char)>,
+        maybe_c: Option<CharWithContext>,
         text: &str,
     ) -> Self {
-        if let Some((i, c)) = maybe_c {
-            Error::new(f(Some(c.into()).into()), start..i + c.len_utf8(), text)
+        if let Some(CharWithContext(r, c)) = maybe_c {
+            Error::new(f(Some(c).into()), r, text)
         } else {
             Error::from_unterminated(f(None.into()), text)
         }
