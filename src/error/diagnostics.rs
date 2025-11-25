@@ -119,7 +119,6 @@ fn error_source<'a>(error: &'a Error) -> Source<'a> {
 
 pub fn patches_from_error<'a>(error: &'a Error) -> Vec<Patch<'a>> {
     let source = error_source(error);
-    let source_len = error.source_text.len();
     match &*error.kind {
         ErrorKind::ExpectedKey(ctx, TokenOption(Some(_))) => vec![Patch::new(
             "consider removing the trailing comma",
@@ -188,28 +187,18 @@ pub fn patches_from_error<'a>(error: &'a Error) -> Vec<Patch<'a>> {
             )],
             _ => Vec::new(),
         },
-        ErrorKind::UnexpectedControlCharacterInString(escaped) => {
-            vec![Patch::new(
-                "replace the control character with its escaped form",
-                error.range.clone(),
-                source,
-                escaped.to_string(),
-            )]
-        }
-        ErrorKind::TokenAfterEnd(token) => {
-            let start = error.range.start.min(source_len);
-            let end = source_len;
-            if start >= end {
-                Vec::new()
-            } else {
-                vec![Patch::new(
-                    format!("consider removing the trailing content (starting with {token})"),
-                    start..end,
-                    source,
-                    "",
-                )]
-            }
-        }
+        ErrorKind::UnexpectedControlCharacterInString(escaped) => vec![Patch::new(
+            "replace the control character with its escaped form",
+            error.range.clone(),
+            source,
+            escaped.to_string(),
+        )],
+        ErrorKind::TokenAfterEnd(token) => vec![Patch::new(
+            format!("consider removing the trailing content (starting with {token})"),
+            error.range.start..error.source_text.len(),
+            source,
+            "",
+        )],
         ErrorKind::ExpectedDigitFollowingMinus(range, found) => {
             let patch_info = match found.0 {
                 None => ("insert placeholder digits after the minus sign", "194"),
@@ -229,40 +218,32 @@ pub fn patches_from_error<'a>(error: &'a Error) -> Vec<Patch<'a>> {
                 )]
             }
         }
-        ErrorKind::UnexpectedLeadingZero { extra, .. } => {
-            vec![Patch::new(
-                "remove the leading zeros",
-                extra.clone(),
-                source,
-                "",
-            )]
-        }
+        ErrorKind::UnexpectedLeadingZero { extra, .. } => vec![Patch::new(
+            "remove the leading zeros",
+            extra.clone(),
+            source,
+            "",
+        )],
         ErrorKind::ExpectedDigitAfterDot {
             maybe_c: JsonCharOption(None),
             number_ctx,
             ..
-        } => {
-            let patch_range = number_ctx.end..number_ctx.end;
-
-            vec![Patch::new(
-                "insert placeholder digit after the decimal point",
-                patch_range,
-                source,
-                "0",
-            )]
-        }
-        ErrorKind::ExpectedPlusOrMinusOrDigitAfterE { e_ctx, maybe_c, .. } => {
-            let insertion = e_ctx.end..e_ctx.end;
-            match maybe_c.0 {
-                None => vec![Patch::new(
-                    "add placeholder exponent digits",
-                    insertion,
-                    source,
-                    "+1",
-                )],
-                _ => Vec::new(),
-            }
-        }
+        } => vec![Patch::new(
+            "insert placeholder digit after the decimal point",
+            number_ctx.end..number_ctx.end,
+            source,
+            "0",
+        )],
+        ErrorKind::ExpectedPlusOrMinusOrDigitAfterE {
+            e_ctx,
+            maybe_c: JsonCharOption(None),
+            ..
+        } => vec![Patch::new(
+            "add placeholder exponent digits",
+            e_ctx.end..e_ctx.end,
+            source,
+            "+1",
+        )],
         ErrorKind::ExpectedDigitAfterE {
             maybe_c: JsonCharOption(None),
             number_ctx,
@@ -275,6 +256,7 @@ pub fn patches_from_error<'a>(error: &'a Error) -> Vec<Patch<'a>> {
         )],
         ErrorKind::ExpectedDigitAfterE { .. }
         | ErrorKind::ExpectedDigitAfterDot { .. }
+        | ErrorKind::ExpectedPlusOrMinusOrDigitAfterE { .. }
         | ErrorKind::ExpectedKeyOrClosedCurlyBrace(_, TokenOption(Some(_)))
         | ErrorKind::UnexpectedCharacter(_)
         | ErrorKind::ExpectedOpenCurlyBrace(_, _)
