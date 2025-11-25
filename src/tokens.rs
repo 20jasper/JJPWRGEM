@@ -17,6 +17,8 @@ pub enum Token {
     ClosedCurlyBrace,
     Colon,
     Comma,
+    OpenSquareBracket,
+    ClosedSquareBracket,
     String(String),
     Number(String),
     Null,
@@ -30,6 +32,8 @@ impl Display for Token {
             Token::ClosedCurlyBrace => "}",
             Token::Colon => ":",
             Token::Comma => ",",
+            Token::OpenSquareBracket => "[",
+            Token::ClosedSquareBracket => "]",
             Token::String(x) => &format!("{x:?}"),
             Token::Number(x) => &x.to_string(),
             Token::Boolean(x) => &format!("{x:?}"),
@@ -124,6 +128,14 @@ pub fn str_to_tokens(s: &str) -> Result<Vec<TokenWithContext>> {
             ',' => {
                 chars.next();
                 Token::Comma
+            }
+            '[' => {
+                chars.next();
+                Token::OpenSquareBracket
+            }
+            ']' => {
+                chars.next();
+                Token::ClosedSquareBracket
             }
             '"' => {
                 chars.next();
@@ -404,5 +416,22 @@ mod tests {
                 }
             ]
         );
+    }
+
+    #[test]
+    fn array_brackets() {
+        assert_eq!(
+            str_to_tokens("[]").unwrap(),
+            [
+                TokenWithContext {
+                    token: Token::OpenSquareBracket,
+                    range: 0..1
+                },
+                TokenWithContext {
+                    token: Token::ClosedSquareBracket,
+                    range: 1..2
+                }
+            ]
+        )
     }
 }
