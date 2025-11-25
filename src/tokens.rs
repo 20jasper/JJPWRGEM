@@ -8,8 +8,8 @@ use crate::{
         number::parse_num,
     },
 };
-use core::fmt::Display;
 use core::ops::Range;
+use core::{fmt::Display, iter::Peekable};
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Token {
@@ -87,12 +87,23 @@ pub const NULL: &str = "null";
 pub const FALSE: &str = "false";
 pub const TRUE: &str = "true";
 
+#[derive(Debug, Clone)]
+struct CharWithContext(pub Range<usize>, pub char);
+impl From<(usize, char)> for CharWithContext {
+    fn from((i, c): (usize, char)) -> Self {
+        Self(i..i + c.len_utf8(), c)
+    }
+}
+
 pub fn str_to_tokens(s: &str) -> Result<Vec<TokenWithContext>> {
-    let mut chars = s.char_indices().peekable();
+    let mut chars = s
+        .char_indices()
+        .map(Into::<CharWithContext>::into)
+        .peekable();
 
     let mut res = vec![];
 
-    while let Some(&(i, c)) = chars.peek() {
+    while let Some(CharWithContext(r, c)) = chars.peek().cloned() {
         if is_whitespace(c) {
             chars.next();
             continue;
@@ -117,7 +128,7 @@ pub fn str_to_tokens(s: &str) -> Result<Vec<TokenWithContext>> {
             '"' => {
                 chars.next();
                 // TODO to parse and handle it's own start
-                Token::String(parse_str(i + 1, s, &mut chars)?.into())
+                Token::String(parse_str(r.end, s, &mut chars)?.into())
             }
             '0'..='9' | '-' => {
                 res.push(parse_num(s, &mut chars)?);
@@ -130,7 +141,10 @@ pub fn str_to_tokens(s: &str) -> Result<Vec<TokenWithContext>> {
                     'f' => FALSE,
                     _ => unreachable!("{c} is not able to be reached"),
                 };
-                let actual = chars.by_ref().take(expected.len()).map(|(_, c)| c);
+                let actual = chars
+                    .by_ref()
+                    .take(expected.len())
+                    .map(|CharWithContext(_, c)| c);
 
                 if actual.eq(expected.chars()) {
                     match c {
@@ -140,23 +154,18 @@ pub fn str_to_tokens(s: &str) -> Result<Vec<TokenWithContext>> {
                         _ => unreachable!("{c} is not able to be reached"),
                     }
                 } else {
-                    return Err(Error::new(
-                        ErrorKind::UnexpectedCharacter(c.into()),
-                        i..(i + c.len_utf8()),
-                        s,
-                    ));
+                    return Err(Error::new(ErrorKind::UnexpectedCharacter(c.into()), r, s));
                 }
             }
             _ => {
-                return Err(Error::new(
-                    ErrorKind::UnexpectedCharacter(c.into()),
-                    i..(i + c.len_utf8()),
-                    s,
-                ));
+                return Err(Error::new(ErrorKind::UnexpectedCharacter(c.into()), r, s));
             }
         };
-        let start = i;
-        let end = *chars.peek().map(|(i, _)| i).unwrap_or(&s.len());
+        let start = r.start;
+        let end = *chars
+            .peek()
+            .map(|CharWithContext(r, _)| &r.start)
+            .unwrap_or(&s.len());
         res.push(TokenWithContext {
             token,
             range: start..end,
@@ -169,22 +178,22 @@ pub fn str_to_tokens(s: &str) -> Result<Vec<TokenWithContext>> {
 fn parse_str<'a>(
     start: usize,
     input: &'a str,
-    chars: &mut core::iter::Peekable<core::str::CharIndices<'a>>,
+    chars: &mut Peekable<impl Iterator<Item = CharWithContext>>,
 ) -> Result<&'a str> {
     let mut escape = false;
-    while let Some((_, c)) =
-        chars.next_if(|(_, c)| (*c != '"' && !CONTROL_RANGE.contains(c)) || escape)
+    while let Some(CharWithContext(_, c)) =
+        chars.next_if(|CharWithContext(_, c)| (*c != '"' && !CONTROL_RANGE.contains(c)) || escape)
     {
         escape = c == '\\' && !escape;
     }
 
-    if let Some((end, c)) = chars.next() {
+    if let Some(CharWithContext(r, c)) = chars.next() {
         if !CONTROL_RANGE.contains(&c) {
-            Ok(&input[start..end])
+            Ok(&input[start..r.start])
         } else {
             Err(Error::new(
                 ErrorKind::UnexpectedControlCharacterInString(c.into()),
-                end..end + c.len_utf8(),
+                r,
                 input,
             ))
         }

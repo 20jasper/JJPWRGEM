@@ -86,3 +86,4 @@
   - [ ] n_object_several_trailing_commas.json
 - [ ] should recommend changing single quotes and backticks to double
   - [ ] n_object_single_quote
+- [ ] error reporting for keywords, for example trbe marks t as error
