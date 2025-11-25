@@ -86,7 +86,7 @@ impl NumberState {
                 Some(&(i, c @ '.')) => {
                     chars.next();
                     NumberState::Fraction {
-                        number_ctx: number_ctx.start..c.len_utf8(),
+                        number_ctx: number_ctx.start..i + c.len_utf8(),
                         dot_ctx: i..c.len_utf8(),
                     }
                 }
@@ -107,7 +107,18 @@ impl NumberState {
                     chars.next();
                     NumberState::FractionOrExponentOrEnd(number_ctx.start..i + c.len_utf8())
                 }
-                _ => todo!("you gotta have digit after dot"),
+                maybe_c => {
+                    return Err(Error::from_maybe_json_char_with_context(
+                        |c| ErrorKind::ExpectedDigitAfterDot {
+                            number_ctx: number_ctx.clone(),
+                            dot_ctx: dot_ctx.clone(),
+                            maybe_c: c,
+                        },
+                        number_ctx.start,
+                        maybe_c.copied(),
+                        input,
+                    ));
+                }
             },
             NumberState::FractionOrExponentOrEnd(ctx) => match chars.peek() {
                 Some(&(i, c @ '0'..='9')) => {

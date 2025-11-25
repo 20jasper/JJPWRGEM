@@ -1,6 +1,6 @@
 use crate::{
     Error, ErrorKind,
-    tokens::{Token, TokenOption, lexical::JsonChar},
+    tokens::{JsonCharOption, Token, TokenOption, lexical::JsonChar},
 };
 use annotate_snippets::{Annotation, AnnotationKind, Group, Level, Snippet};
 use core::ops::Range;
@@ -237,7 +237,25 @@ pub fn patches_from_error<'a>(error: &'a Error) -> Vec<Patch<'a>> {
                 "",
             )]
         }
-        ErrorKind::ExpectedKeyOrClosedCurlyBrace(_, TokenOption(Some(_)))
+        ErrorKind::ExpectedDigitAfterDot {
+            maybe_c: JsonCharOption(None),
+            number_ctx,
+            ..
+        } => {
+            let patch_range = number_ctx.end..number_ctx.end;
+
+            vec![Patch::new(
+                "insert placeholder digit after the decimal point",
+                patch_range,
+                source,
+                "0",
+            )]
+        }
+        ErrorKind::ExpectedDigitAfterDot {
+            maybe_c: JsonCharOption(Some(_)),
+            ..
+        }
+        | ErrorKind::ExpectedKeyOrClosedCurlyBrace(_, TokenOption(Some(_)))
         | ErrorKind::UnexpectedCharacter(_)
         | ErrorKind::ExpectedOpenCurlyBrace(_, _)
         | ErrorKind::ExpectedQuote
@@ -281,6 +299,14 @@ pub fn context_from_error<'a>(error: &'a Error) -> Vec<Context<'a>> {
                 source,
             )]
         }
+        ErrorKind::ExpectedDigitAfterDot {
+            dot_ctx,
+            number_ctx,
+            ..
+        } => vec![
+            Context::new("decimal point found here", dot_ctx.clone(), source),
+            Context::new("number found here", number_ctx.clone(), source),
+        ],
         ErrorKind::ExpectedValue(None, _)
         | ErrorKind::UnexpectedCharacter(_)
         | ErrorKind::UnexpectedControlCharacterInString(_)

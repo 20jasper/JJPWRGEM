@@ -1,0 +1,14 @@
+---
+source: tests/parse_failure.rs
+expression: "format_output_snapshot(json, &annotated)"
+---
+case --- 
+1a
+stdout --- 
+<empty>
+stderr --- 
+error: unexpected character `a`. expected start of a json value
+ --> stdin:1:2
+  |
+1 | 1a
+  |  ^
