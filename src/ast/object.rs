@@ -39,7 +39,6 @@ impl ObjectState {
         self,
         tokens: &mut Peekable<impl Iterator<Item = TokenWithContext>>,
         text: &str,
-        fail_on_multiple_value: bool,
     ) -> Result<Self> {
         let res = match self {
             ObjectState::Open => match tokens.next() {
@@ -210,14 +209,7 @@ impl ObjectState {
                     last_pair: Some(colon_ctx.range.start..json_ctx.end),
                 }
             }
-            ObjectState::End(map, range) => {
-                if fail_on_multiple_value
-                    && let Some(TokenWithContext { token, range }) = tokens.peek().cloned()
-                {
-                    return Err(Error::new(ErrorKind::TokenAfterEnd(token), range, text));
-                }
-                ObjectState::End(map, range)
-            }
+            ObjectState::End(map, range) => ObjectState::End(map, range),
         };
 
         Ok(res)
@@ -227,21 +219,13 @@ impl ObjectState {
 pub fn parse_object(
     tokens: &mut Peekable<impl Iterator<Item = TokenWithContext>>,
     text: &str,
-    fail_on_multiple_value: bool,
 ) -> Result<ValueWithContext> {
     let mut state = ObjectState::Open;
 
-    while tokens.peek().is_some() {
-        state = state.process(tokens, text, fail_on_multiple_value)?;
-
-        if !fail_on_multiple_value && let ObjectState::End(map, range) = state {
-            return Ok(ValueWithContext::new(Value::Object(map), range));
+    loop {
+        state = state.process(tokens, text)?;
+        if let ObjectState::End(map, range) = state {
+            break Ok(ValueWithContext::new(Value::Object(map), range));
         }
-    }
-
-    match state.process(tokens, text, fail_on_multiple_value) {
-        Ok(ObjectState::End(map, range)) => Ok(ValueWithContext::new(Value::Object(map), range)),
-        Err(e) => Err(e),
-        _ => unreachable!("object state will always be end or error"),
     }
 }

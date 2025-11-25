@@ -59,7 +59,7 @@ pub fn parse_tokens(
         ));
     };
     let val = match &peeked.token {
-        Token::OpenCurlyBrace => parse_object(tokens, text, fail_on_multiple_value)?,
+        Token::OpenCurlyBrace => parse_object(tokens, text)?,
         Token::Null | Token::String(_) | Token::Boolean(_) | Token::Number(_) => {
             let TokenWithContext { token, range } = tokens.next().unwrap();
             ValueWithContext {

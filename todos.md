@@ -9,9 +9,9 @@
       - [ ] domain struct JSONChar
     - [ ] parse unicode escapes
     - [ ] check rfc
-  - [ ] numbers
-    - [ ] positive/negative (+/-)
-    - [ ] powers (e/E)
+  - [x] numbers
+    - [x] positive/negative (+/-)
+    - [x] powers (e/E)
   - [x] null
   - [x] boolean
 - [x] objects
