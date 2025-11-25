@@ -43,7 +43,12 @@ pub enum ErrorKind {
         initial: Range<usize>,
         extra: Range<usize>,
     },
-
+    /// expected fraction digit following dot, found {maybe_c}
+    ExpectedDigitAfterDot {
+        number_ctx: Range<usize>,
+        dot_ctx: Range<usize>,
+        maybe_c: JsonCharOption,
+    },
     /// {0}
     Custom(String),
 }
