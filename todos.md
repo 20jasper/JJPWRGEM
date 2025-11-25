@@ -27,6 +27,8 @@
   - [x] make prettifier
   - [x] general options
   - [ ] If object is empty, should be "{}"
+  - [ ] standardize exponents
+    - [ ] minifier should remove + and insignificant exponent 0s
 - [ ] error handling
   - [x] display implementation for each token
   - [x] line/column
