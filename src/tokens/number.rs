@@ -14,8 +14,10 @@ enum NumberState {
         leading_ctx: Range<usize>,
         number_ctx: Range<usize>,
     },
-    #[allow(dead_code)]
-    Fraction(Range<usize>),
+    Fraction {
+        number_ctx: Range<usize>,
+        dot_ctx: Range<usize>,
+    },
     #[allow(dead_code)]
     FractionOrExponentOrEnd(Range<usize>),
     #[allow(dead_code)]
@@ -46,13 +48,11 @@ impl NumberState {
                     number_ctx: range.start..i + digit.len_utf8(),
                 },
                 c @ (Some(_) | None) => {
-                    return Err(Error::new(
-                        ErrorKind::ExpectedDigitFollowingMinus(
-                            range.clone(),
-                            c.map(|(_, c)| c.into()).into(),
-                        ),
-                        range.clone().start
-                            ..c.map(|(i, c)| i + c.len_utf8()).unwrap_or(input.len()),
+                    let maybe_c = c;
+                    return Err(Error::from_maybe_json_char_with_context(
+                        |c| ErrorKind::ExpectedDigitFollowingMinus(range.clone(), c),
+                        range.start,
+                        maybe_c,
                         input,
                     ));
                 }
@@ -83,9 +83,12 @@ impl NumberState {
                         number_ctx: number_ctx.start..i + c.len_utf8(),
                     }
                 }
-                Some((_, '.')) => {
+                Some(&(i, c @ '.')) => {
                     chars.next();
-                    todo!("handle frac")
+                    NumberState::Fraction {
+                        number_ctx: number_ctx.start..c.len_utf8(),
+                        dot_ctx: i..c.len_utf8(),
+                    }
                 }
                 Some((_, 'e' | 'E')) => {
                     chars.next();
@@ -96,8 +99,30 @@ impl NumberState {
                     range: number_ctx,
                 }),
             },
-            NumberState::Fraction(_) => todo!(),
-            NumberState::FractionOrExponentOrEnd(_) => todo!(),
+            NumberState::Fraction {
+                number_ctx,
+                dot_ctx,
+            } => match chars.peek() {
+                Some(&(i, c @ '0'..='9')) => {
+                    chars.next();
+                    NumberState::FractionOrExponentOrEnd(number_ctx.start..i + c.len_utf8())
+                }
+                _ => todo!("you gotta have digit after dot"),
+            },
+            NumberState::FractionOrExponentOrEnd(ctx) => match chars.peek() {
+                Some(&(i, c @ '0'..='9')) => {
+                    chars.next();
+                    NumberState::FractionOrExponentOrEnd(ctx.start..i + c.len_utf8())
+                }
+                Some((_, 'e' | 'E')) => {
+                    chars.next();
+                    todo!("handle exp")
+                }
+                _ => NumberState::End(TokenWithContext {
+                    token: Token::Number(input[ctx.clone()].into()),
+                    range: ctx,
+                }),
+            },
             NumberState::ExponentOrEnd(_) => todo!(),
             NumberState::End(_) => self,
         };
