@@ -18,14 +18,26 @@ enum NumberState {
         number_ctx: Range<usize>,
         dot_ctx: Range<usize>,
     },
-    #[allow(dead_code)]
     FractionOrExponentOrEnd(Range<usize>),
-    #[allow(dead_code)]
-    ExponentOrEnd(Range<usize>),
+    MinusOrPlus {
+        number_ctx: Range<usize>,
+        e_ctx: Range<usize>,
+    },
+    ExponentDigit {
+        number_ctx: Range<usize>,
+        exponent_ctx: Range<usize>,
+    },
+    ExponentDigitOrEnd(Range<usize>),
     End(TokenWithContext),
 }
 
 impl NumberState {
+    fn make_end(s: &str, range: Range<usize>) -> Self {
+        NumberState::End(TokenWithContext {
+            token: Token::Number(s[range.clone()].into()),
+            range,
+        })
+    }
     fn process(
         self,
         chars: &mut Peekable<impl Iterator<Item = (usize, char)>>,
@@ -90,14 +102,14 @@ impl NumberState {
                         dot_ctx: i..c.len_utf8(),
                     }
                 }
-                Some((_, 'e' | 'E')) => {
+                Some(&(i, c @ ('e' | 'E'))) => {
                     chars.next();
-                    todo!("handle exp")
+                    NumberState::MinusOrPlus {
+                        number_ctx: number_ctx.start..i + c.len_utf8(),
+                        e_ctx: i..i + c.len_utf8(),
+                    }
                 }
-                _ => NumberState::End(TokenWithContext {
-                    token: Token::Number(input[number_ctx.clone()].into()),
-                    range: number_ctx,
-                }),
+                _ => Self::make_end(input, number_ctx),
             },
             NumberState::Fraction {
                 number_ctx,
@@ -125,16 +137,42 @@ impl NumberState {
                     chars.next();
                     NumberState::FractionOrExponentOrEnd(ctx.start..i + c.len_utf8())
                 }
-                Some((_, 'e' | 'E')) => {
+                Some(&(i, c @ ('e' | 'E'))) => {
                     chars.next();
-                    todo!("handle exp")
+                    NumberState::MinusOrPlus {
+                        number_ctx: ctx.start..i + c.len_utf8(),
+                        e_ctx: i..i + c.len_utf8(),
+                    }
                 }
-                _ => NumberState::End(TokenWithContext {
-                    token: Token::Number(input[ctx.clone()].into()),
-                    range: ctx,
-                }),
+                _ => Self::make_end(input, ctx),
             },
-            NumberState::ExponentOrEnd(_) => todo!(),
+            NumberState::MinusOrPlus { number_ctx, e_ctx } => match chars.peek() {
+                Some(&(i, c @ ('+' | '-'))) => {
+                    chars.next();
+                    NumberState::ExponentDigit {
+                        number_ctx: number_ctx.start..i + c.len_utf8(),
+                        exponent_ctx: i + i..c.len_utf8(),
+                    }
+                }
+                _ => todo!("expected + or - after e in exponent"),
+            },
+            NumberState::ExponentDigit {
+                number_ctx,
+                exponent_ctx,
+            } => match chars.peek() {
+                Some(&(i, c @ ('0'..='9'))) => {
+                    chars.next();
+                    NumberState::ExponentDigitOrEnd(number_ctx.start..i + c.len_utf8())
+                }
+                _ => todo!("expected at least one digit after +/- in exponent"),
+            },
+            NumberState::ExponentDigitOrEnd(number_ctx) => match chars.peek() {
+                Some(&(i, c @ ('0'..='9'))) => {
+                    chars.next();
+                    NumberState::ExponentDigitOrEnd(number_ctx.start..i + c.len_utf8())
+                }
+                _ => Self::make_end(input, number_ctx),
+            },
             NumberState::End(_) => self,
         };
 
