@@ -43,7 +43,12 @@ pub enum ErrorKind {
         initial: Range<usize>,
         extra: Range<usize>,
     },
-
+    /// expected fraction digit following dot, found {maybe_c}
+    ExpectedDigitAfterDot {
+        number_ctx: Range<usize>,
+        dot_ctx: Range<usize>,
+        maybe_c: JsonCharOption,
+    },
     /// {0}
     Custom(String),
 }
@@ -99,6 +104,18 @@ impl Error {
     ) -> Self {
         if let Some(TokenWithContext { token, range }) = maybe_token {
             Error::new(f(Some(token).into()), range, text)
+        } else {
+            Error::from_unterminated(f(None.into()), text)
+        }
+    }
+    pub fn from_maybe_json_char_with_context(
+        f: impl Fn(JsonCharOption) -> ErrorKind,
+        start: usize,
+        maybe_c: Option<(usize, char)>,
+        text: &str,
+    ) -> Self {
+        if let Some((i, c)) = maybe_c {
+            Error::new(f(Some(c.into()).into()), start..i + c.len_utf8(), text)
         } else {
             Error::from_unterminated(f(None.into()), text)
         }

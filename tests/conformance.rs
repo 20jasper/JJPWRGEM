@@ -28,7 +28,7 @@ const FILENAME_FILTER: [&str; 4] = [
     // multi key is not consistent
     "y_object.json",
 ];
-const TEXT_FILTER: [&str; 5] = ["[", "]", ".", "e", "E"];
+const TEXT_FILTER: [&str; 4] = ["[", "]", "e", "E"];
 
 fn get_tests() -> (Vec<Case>, usize, usize) {
     let entries = fs::read_dir(CONFORMANCE_PATH).unwrap();
@@ -91,7 +91,7 @@ fn get_tests() -> (Vec<Case>, usize, usize) {
 #[test]
 fn feature() {
     let (cases, total, rest) = get_tests();
-    assert_eq!(rest, 54);
+    assert_eq!(rest, 56);
     assert_eq!(total, 318);
 
     let renderer = Renderer::plain().decor_style(DecorStyle::Ascii);
