@@ -64,17 +64,6 @@ pub enum ErrorKind {
         exponent_ctx: Range<usize>,
         maybe_c: JsonCharOption,
     },
-    /// {0}
-    Custom(String),
-}
-
-impl<S> From<S> for ErrorKind
-where
-    S: Into<String>,
-{
-    fn from(value: S) -> Self {
-        Self::Custom(value.into())
-    }
 }
 
 #[derive(Debug, PartialEq, Eq, Display, Error)]

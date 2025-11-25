@@ -261,8 +261,7 @@ pub fn patches_from_error<'a>(error: &'a Error) -> Vec<Patch<'a>> {
         | ErrorKind::UnexpectedCharacter(_)
         | ErrorKind::ExpectedOpenCurlyBrace(_, _)
         | ErrorKind::ExpectedQuote
-        | ErrorKind::ExpectedMinusOrDigit(_)
-        | ErrorKind::Custom(_) => Vec::new(),
+        | ErrorKind::ExpectedMinusOrDigit(_) => Vec::new(),
     }
 }
 
@@ -337,7 +336,6 @@ pub fn context_from_error<'a>(error: &'a Error) -> Vec<Context<'a>> {
         | ErrorKind::TokenAfterEnd(_)
         | ErrorKind::ExpectedQuote
         | ErrorKind::ExpectedMinusOrDigit(_)
-        | ErrorKind::Custom(_)
         | ErrorKind::ExpectedOpenCurlyBrace(None, _) => Vec::new(),
     }
 }
