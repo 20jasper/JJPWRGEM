@@ -2,7 +2,7 @@ use core::{iter::Peekable, ops::Range};
 
 use crate::{
     Error, ErrorKind, Result,
-    tokens::{CharWithContext, Token, TokenWithContext},
+    tokens::{CharWithContext, Token, TokenWithContext, lexical::JsonChar},
 };
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -10,22 +10,21 @@ enum NumberState {
     MinusOrInteger,
     Leading(Range<usize>),
     IntegerOrDecimalOrExponentOrEnd {
-        leading: Option<char>,
-        leading_ctx: Range<usize>,
+        leading: Option<CharWithContext>,
         number_ctx: Range<usize>,
     },
     Fraction {
         number_ctx: Range<usize>,
-        dot_ctx: Range<usize>,
+        dot_ctx: CharWithContext,
     },
     FractionOrExponentOrEnd(Range<usize>),
     MinusOrPlusOrDigit {
         number_ctx: Range<usize>,
-        e_ctx: Range<usize>,
+        e_ctx: CharWithContext,
     },
     ExponentDigit {
         number_ctx: Range<usize>,
-        e_ctx: Range<usize>,
+        e_ctx: CharWithContext,
     },
     ExponentDigitOrEnd(Range<usize>),
     End(TokenWithContext),
@@ -45,54 +44,55 @@ impl NumberState {
     ) -> Result<Self> {
         let res = match self {
             NumberState::MinusOrInteger => match chars.next() {
-                Some(CharWithContext(range, '-')) => NumberState::Leading(range),
-                Some(CharWithContext(range, leading @ '0'..='9')) => {
+                Some(CharWithContext(range, JsonChar('-'))) => NumberState::Leading(range),
+                Some(CharWithContext(range, c @ JsonChar('0'..='9'))) => {
                     NumberState::IntegerOrDecimalOrExponentOrEnd {
-                        leading: Some(leading),
-                        leading_ctx: range.clone(),
+                        leading: Some(CharWithContext(range.clone(), c)),
                         number_ctx: range,
                     }
                 }
                 maybe_c => {
                     return Err(Error::from_maybe_json_char_with_context(
                         ErrorKind::ExpectedMinusOrDigit,
-                        0,
-                        maybe_c.map(|CharWithContext(range, c)| (range.start, c)),
+                        maybe_c,
                         input,
                     ));
                 }
             },
-            NumberState::Leading(leading_range) => match chars.next() {
-                Some(CharWithContext(digit_range, digit @ '0'..='9')) => {
+            NumberState::Leading(number_ctx) => match chars.next() {
+                Some(CharWithContext(leading_range, c @ JsonChar('0'..='9'))) => {
                     NumberState::IntegerOrDecimalOrExponentOrEnd {
-                        leading: Some(digit),
-                        leading_ctx: digit_range.clone(),
-                        number_ctx: leading_range.start..digit_range.end,
+                        leading: Some(CharWithContext(leading_range.clone(), c)),
+                        number_ctx: number_ctx.start..leading_range.end,
                     }
                 }
-                c @ (Some(_) | None) => {
-                    let maybe_c = c;
-                    return Err(Error::from_maybe_json_char_with_context(
-                        |c| ErrorKind::ExpectedDigitFollowingMinus(leading_range.clone(), c),
-                        leading_range.start,
-                        maybe_c.map(|CharWithContext(range, c)| (range.start, c)),
+                maybe_char @ (Some(_) | None) => {
+                    return Err(Error::new(
+                        ErrorKind::ExpectedDigitFollowingMinus(
+                            number_ctx.clone(),
+                            maybe_char.map(|CharWithContext(_, c)| c).into(),
+                        ),
+                        number_ctx,
                         input,
                     ));
                 }
             },
             NumberState::IntegerOrDecimalOrExponentOrEnd {
                 leading,
-                leading_ctx,
                 number_ctx,
-            } => match chars.peek().cloned() {
-                Some(CharWithContext(_, '0')) if matches!(leading, Some('0')) => {
-                    while chars.peek().is_some_and(|CharWithContext(_, c)| *c == '0') {
-                        chars.next();
-                    }
+            } => match (leading.as_ref(), chars.peek().cloned()) {
+                (
+                    Some(CharWithContext(initial_range, JsonChar('0'))),
+                    Some(CharWithContext(_, JsonChar('0'))),
+                ) => {
+                    while chars
+                        .next_if(|CharWithContext(_, JsonChar(c))| *c == '0')
+                        .is_some()
+                    {}
                     return Err(Error::new(
                         ErrorKind::UnexpectedLeadingZero {
-                            initial: leading_ctx.clone(),
-                            extra: leading_ctx.end
+                            initial: initial_range.clone(),
+                            extra: initial_range.end
                                 ..chars
                                     .peek()
                                     .map(|CharWithContext(range, _)| range.start)
@@ -106,26 +106,25 @@ impl NumberState {
                         input,
                     ));
                 }
-                Some(CharWithContext(range, '0'..='9')) => {
+                (_, Some(CharWithContext(range, JsonChar('0'..='9')))) => {
                     chars.next();
                     NumberState::IntegerOrDecimalOrExponentOrEnd {
                         leading: None,
-                        leading_ctx,
                         number_ctx: number_ctx.start..range.end,
                     }
                 }
-                Some(CharWithContext(range, '.')) => {
+                (_, Some(ref dot @ CharWithContext(ref range, JsonChar('.')))) => {
                     chars.next();
                     NumberState::Fraction {
                         number_ctx: number_ctx.start..range.end,
-                        dot_ctx: range.clone(),
+                        dot_ctx: dot.clone(),
                     }
                 }
-                Some(CharWithContext(range, 'e' | 'E')) => {
+                (_, Some(ref exponent @ CharWithContext(_, JsonChar('e' | 'E')))) => {
                     chars.next();
                     NumberState::MinusOrPlusOrDigit {
-                        number_ctx: number_ctx.start..range.end,
-                        e_ctx: range.clone(),
+                        number_ctx: number_ctx.start..exponent.0.end,
+                        e_ctx: exponent.clone(),
                     }
                 }
                 _ => Self::make_end(input, number_ctx),
@@ -134,7 +133,7 @@ impl NumberState {
                 number_ctx,
                 dot_ctx,
             } => match chars.peek().cloned() {
-                Some(CharWithContext(range, '0'..='9')) => {
+                Some(CharWithContext(range, JsonChar('0'..='9'))) => {
                     chars.next();
                     NumberState::FractionOrExponentOrEnd(number_ctx.start..range.end)
                 }
@@ -142,38 +141,37 @@ impl NumberState {
                     return Err(Error::from_maybe_json_char_with_context(
                         |c| ErrorKind::ExpectedDigitAfterDot {
                             number_ctx: number_ctx.clone(),
-                            dot_ctx: dot_ctx.clone(),
+                            dot_ctx: dot_ctx.0.clone(),
                             maybe_c: c,
                         },
-                        number_ctx.start,
-                        maybe_c.map(|CharWithContext(range, c)| (range.start, c)),
+                        maybe_c,
                         input,
                     ));
                 }
             },
             NumberState::FractionOrExponentOrEnd(ctx) => match chars.peek().cloned() {
-                Some(CharWithContext(range, '0'..='9')) => {
+                Some(CharWithContext(range, JsonChar('0'..='9'))) => {
                     chars.next();
                     NumberState::FractionOrExponentOrEnd(ctx.start..range.end)
                 }
-                Some(CharWithContext(range, 'e' | 'E')) => {
+                Some(ref exponent @ CharWithContext(ref range, JsonChar('e' | 'E'))) => {
                     chars.next();
                     NumberState::MinusOrPlusOrDigit {
                         number_ctx: ctx.start..range.end,
-                        e_ctx: range.clone(),
+                        e_ctx: exponent.clone(),
                     }
                 }
                 _ => Self::make_end(input, ctx),
             },
             NumberState::MinusOrPlusOrDigit { number_ctx, e_ctx } => match chars.peek().cloned() {
-                Some(CharWithContext(range, '+' | '-')) => {
+                Some(CharWithContext(range, JsonChar('+' | '-'))) => {
                     chars.next();
                     NumberState::ExponentDigit {
                         number_ctx: number_ctx.start..range.end,
                         e_ctx,
                     }
                 }
-                Some(CharWithContext(range, '0'..='9')) => {
+                Some(CharWithContext(range, JsonChar('0'..='9'))) => {
                     chars.next();
                     NumberState::ExponentDigitOrEnd(number_ctx.start..range.end)
                 }
@@ -181,17 +179,16 @@ impl NumberState {
                     return Err(Error::from_maybe_json_char_with_context(
                         |c| ErrorKind::ExpectedPlusOrMinusOrDigitAfterE {
                             number_ctx: number_ctx.clone(),
-                            e_ctx: e_ctx.clone(),
+                            e_ctx: e_ctx.0.clone(),
                             maybe_c: c,
                         },
-                        number_ctx.start,
-                        maybe_c.map(|CharWithContext(range, c)| (range.start, c)),
+                        maybe_c,
                         input,
                     ));
                 }
             },
             NumberState::ExponentDigit { number_ctx, e_ctx } => match chars.peek().cloned() {
-                Some(CharWithContext(range, '0'..='9')) => {
+                Some(CharWithContext(range, JsonChar('0'..='9'))) => {
                     chars.next();
                     NumberState::ExponentDigitOrEnd(number_ctx.start..range.end)
                 }
@@ -199,17 +196,16 @@ impl NumberState {
                     return Err(Error::from_maybe_json_char_with_context(
                         |c| ErrorKind::ExpectedDigitAfterE {
                             number_ctx: number_ctx.clone(),
-                            exponent_ctx: e_ctx.clone(),
+                            exponent_ctx: e_ctx.0.clone(),
                             maybe_c: c,
                         },
-                        e_ctx.start,
-                        maybe_c.map(|CharWithContext(range, c)| (range.start, c)),
+                        maybe_c,
                         input,
                     ));
                 }
             },
             NumberState::ExponentDigitOrEnd(number_ctx) => match chars.peek().cloned() {
-                Some(CharWithContext(range, '0'..='9')) => {
+                Some(CharWithContext(range, JsonChar('0'..='9'))) => {
                     chars.next();
                     NumberState::ExponentDigitOrEnd(number_ctx.start..range.end)
                 }

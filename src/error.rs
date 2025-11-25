@@ -1,5 +1,6 @@
 pub mod diagnostics;
 
+use crate::tokens::CharWithContext;
 use crate::tokens::lexical::trim_end_whitespace;
 use crate::tokens::{JsonCharOption, Token, TokenOption, TokenWithContext, lexical::JsonChar};
 use core::ops::Range;
@@ -124,12 +125,11 @@ impl Error {
     }
     pub fn from_maybe_json_char_with_context(
         f: impl Fn(JsonCharOption) -> ErrorKind,
-        start: usize,
-        maybe_c: Option<(usize, char)>,
+        maybe_c: Option<CharWithContext>,
         text: &str,
     ) -> Self {
-        if let Some((i, c)) = maybe_c {
-            Error::new(f(Some(c.into()).into()), start..i + c.len_utf8(), text)
+        if let Some(CharWithContext(r, c)) = maybe_c {
+            Error::new(f(Some(c).into()), r, text)
         } else {
             Error::from_unterminated(f(None.into()), text)
         }

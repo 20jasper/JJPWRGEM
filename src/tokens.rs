@@ -87,11 +87,11 @@ pub const NULL: &str = "null";
 pub const FALSE: &str = "false";
 pub const TRUE: &str = "true";
 
-#[derive(Debug, Clone)]
-struct CharWithContext(pub Range<usize>, pub char);
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CharWithContext(pub Range<usize>, pub JsonChar);
 impl From<(usize, char)> for CharWithContext {
     fn from((i, c): (usize, char)) -> Self {
-        Self(i..i + c.len_utf8(), c)
+        Self(i..i + c.len_utf8(), c.into())
     }
 }
 
@@ -103,7 +103,7 @@ pub fn str_to_tokens(s: &str) -> Result<Vec<TokenWithContext>> {
 
     let mut res = vec![];
 
-    while let Some(CharWithContext(r, c)) = chars.peek().cloned() {
+    while let Some(CharWithContext(r, JsonChar(c))) = chars.peek().cloned() {
         if is_whitespace(c) {
             chars.next();
             continue;
@@ -144,7 +144,7 @@ pub fn str_to_tokens(s: &str) -> Result<Vec<TokenWithContext>> {
                 let actual = chars
                     .by_ref()
                     .take(expected.len())
-                    .map(|CharWithContext(_, c)| c);
+                    .map(|CharWithContext(_, JsonChar(c))| c);
 
                 if actual.eq(expected.chars()) {
                     match c {
@@ -181,13 +181,15 @@ fn parse_str<'a>(
     chars: &mut Peekable<impl Iterator<Item = CharWithContext>>,
 ) -> Result<&'a str> {
     let mut escape = false;
-    while let Some(CharWithContext(_, c)) =
-        chars.next_if(|CharWithContext(_, c)| (*c != '"' && !CONTROL_RANGE.contains(c)) || escape)
+    while let Some(CharWithContext(_, JsonChar(c))) =
+        chars.next_if(|CharWithContext(_, JsonChar(c))| {
+            (*c != '"' && !CONTROL_RANGE.contains(c)) || escape
+        })
     {
         escape = c == '\\' && !escape;
     }
 
-    if let Some(CharWithContext(r, c)) = chars.next() {
+    if let Some(CharWithContext(r, JsonChar(c))) = chars.next() {
         if !CONTROL_RANGE.contains(&c) {
             Ok(&input[start..r.start])
         } else {
