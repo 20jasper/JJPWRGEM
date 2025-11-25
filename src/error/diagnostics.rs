@@ -260,6 +260,22 @@ pub fn patches_from_error<'a>(error: &'a Error) -> Vec<Patch<'a>> {
         | ErrorKind::ExpectedOpenCurlyBrace(_, _)
         | ErrorKind::ExpectedQuote
         | ErrorKind::Custom(_) => Vec::new(),
+        ErrorKind::ExpectedPlusOrMinusOrDigitAfterE {
+            number_ctx: _,
+            e_ctx,
+            maybe_c,
+        } => {
+            let insertion = e_ctx.end..e_ctx.end;
+            match maybe_c.0 {
+                None => vec![Patch::new(
+                    "add placeholder exponent digits",
+                    insertion,
+                    source,
+                    "+1",
+                )],
+                _ => Vec::new(),
+            }
+        }
     }
 }
 
@@ -306,6 +322,18 @@ pub fn context_from_error<'a>(error: &'a Error) -> Vec<Context<'a>> {
         } => vec![
             Context::new("decimal point found here", dot_ctx.clone(), source),
             Context::new("number found here", number_ctx.clone(), source),
+        ],
+        ErrorKind::ExpectedPlusOrMinusOrDigitAfterE {
+            number_ctx,
+            e_ctx,
+            maybe_c: _,
+        } => vec![
+            Context::new(
+                "number with exponent found here",
+                number_ctx.clone(),
+                source,
+            ),
+            Context::new("exponent indicator found here", e_ctx.clone(), source),
         ],
         ErrorKind::ExpectedValue(None, _)
         | ErrorKind::UnexpectedCharacter(_)

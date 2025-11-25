@@ -19,7 +19,7 @@ enum NumberState {
         dot_ctx: Range<usize>,
     },
     FractionOrExponentOrEnd(Range<usize>),
-    MinusOrPlus {
+    MinusOrPlusOrDigit {
         number_ctx: Range<usize>,
         e_ctx: Range<usize>,
     },
@@ -104,7 +104,7 @@ impl NumberState {
                 }
                 Some(&(i, c @ ('e' | 'E'))) => {
                     chars.next();
-                    NumberState::MinusOrPlus {
+                    NumberState::MinusOrPlusOrDigit {
                         number_ctx: number_ctx.start..i + c.len_utf8(),
                         e_ctx: i..i + c.len_utf8(),
                     }
@@ -139,14 +139,14 @@ impl NumberState {
                 }
                 Some(&(i, c @ ('e' | 'E'))) => {
                     chars.next();
-                    NumberState::MinusOrPlus {
+                    NumberState::MinusOrPlusOrDigit {
                         number_ctx: ctx.start..i + c.len_utf8(),
                         e_ctx: i..i + c.len_utf8(),
                     }
                 }
                 _ => Self::make_end(input, ctx),
             },
-            NumberState::MinusOrPlus { number_ctx, e_ctx } => match chars.peek() {
+            NumberState::MinusOrPlusOrDigit { number_ctx, e_ctx } => match chars.peek() {
                 Some(&(i, c @ ('+' | '-'))) => {
                     chars.next();
                     NumberState::ExponentDigit {
@@ -154,7 +154,22 @@ impl NumberState {
                         exponent_ctx: i + i..c.len_utf8(),
                     }
                 }
-                _ => todo!("expected + or - after e in exponent"),
+                Some(&(i, c @ '0'..='9')) => {
+                    chars.next();
+                    NumberState::ExponentDigitOrEnd(number_ctx.start..i + c.len_utf8())
+                }
+                maybe_c => {
+                    return Err(Error::from_maybe_json_char_with_context(
+                        |c| ErrorKind::ExpectedPlusOrMinusOrDigitAfterE {
+                            number_ctx: number_ctx.clone(),
+                            e_ctx: e_ctx.clone(),
+                            maybe_c: c,
+                        },
+                        number_ctx.start,
+                        maybe_c.copied(),
+                        input,
+                    ));
+                }
             },
             NumberState::ExponentDigit {
                 number_ctx,
