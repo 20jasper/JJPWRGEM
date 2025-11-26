@@ -6,6 +6,7 @@ use crate::{
 
 pub struct FormatOptions {
     key_val_delimiter: Option<(char, usize)>,
+    array_value_delimiter: Option<(char, usize)>,
     indent: Option<(char, usize)>,
     eol: Option<(char, usize)>,
 }
@@ -13,11 +14,13 @@ pub struct FormatOptions {
 impl FormatOptions {
     pub fn new(
         key_val_delimiter: Option<(char, usize)>,
+        array_value_delimiter: Option<(char, usize)>,
         indent: Option<(char, usize)>,
         eol: Option<(char, usize)>,
     ) -> Self {
         Self {
             key_val_delimiter,
+            array_value_delimiter,
             indent,
             eol,
         }
@@ -26,6 +29,7 @@ impl FormatOptions {
     pub fn uglify() -> Self {
         Self {
             key_val_delimiter: None,
+            array_value_delimiter: None,
             indent: None,
             eol: None,
         }
@@ -34,6 +38,7 @@ impl FormatOptions {
     pub fn prettify() -> Self {
         Self {
             key_val_delimiter: Some((' ', 1)),
+            array_value_delimiter: Some((' ', 1)),
             indent: Some((' ', 4)),
             eol: Some(('\n', 1)),
         }
@@ -49,6 +54,10 @@ impl FormatOptions {
 
     pub fn get_key_val_delimiter(&self) -> String {
         Self::get(self.key_val_delimiter)
+    }
+
+    pub fn get_array_value_delimiter(&self) -> String {
+        Self::get(self.array_value_delimiter)
     }
 
     pub fn get_eol(&self) -> String {
@@ -92,7 +101,16 @@ pub fn format_value(val: &Value, options: &FormatOptions, depth: usize) -> Strin
             ]
             .join(&eol)
         }
-        Value::Array(_) => todo!("format arrays"),
+        Value::Array(items) if items.is_empty() => "[]".into(),
+        Value::Array(items) => {
+            let formatted = items
+                .iter()
+                .map(|item| format_value(item, options, depth + 1))
+                .collect::<Vec<_>>();
+
+            let joiner = format!(",{}", options.get_array_value_delimiter());
+            format!("[{}]", formatted.join(&joiner))
+        }
         Value::Boolean(b) => b.to_string(),
     }
 }

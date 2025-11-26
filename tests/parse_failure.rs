@@ -49,10 +49,10 @@ macro_rules! fixture_tuple {
 #[case(fixture_tuple!(NEGATIVE_FLOAT_WITH_EXPONENT))]
 #[case(fixture_tuple!(EXPONENT_MISSING_TRAILING_DIGITS))]
 #[case(fixture_tuple!(EXPONENT_MISSING_DIGITS_AFTER_SIGN))]
-// #[case(fixture_tuple!(ARRAY_EMPTY))]
-// #[case(fixture_tuple!(ARRAY_SINGLE))]
-// #[case(fixture_tuple!(ARRAY_MANY))]
-// #[case(fixture_tuple!(ARRAY_SUBARRAYS))]
+#[case(fixture_tuple!(ARRAY_EMPTY))]
+#[case(fixture_tuple!(ARRAY_SINGLE))]
+#[case(fixture_tuple!(ARRAY_MANY))]
+#[case(fixture_tuple!(ARRAY_SUBARRAYS))]
 fn annotate_test_json_fixtures_snapshots(#[case] (name, json): (&str, &str)) {
     use jjpwrgem::cli::run;
 
