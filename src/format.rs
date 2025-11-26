@@ -92,6 +92,7 @@ pub fn format_value(val: &Value, options: &FormatOptions, depth: usize) -> Strin
             ]
             .join(&eol)
         }
+        Value::Array(_) => todo!("format arrays"),
         Value::Boolean(b) => b.to_string(),
     }
 }

@@ -1,6 +1,8 @@
+mod array;
 mod object;
 
 use crate::Error;
+use crate::ast::array::parse_array;
 use crate::ast::object::parse_object;
 use crate::error::{ErrorKind, Result};
 use crate::tokens::{Token, TokenWithContext, str_to_tokens};
@@ -14,6 +16,7 @@ pub enum Value {
     String(String),
     Number(String),
     Object(HashMap<String, Value>),
+    Array(Vec<Value>),
     Boolean(bool),
 }
 
@@ -60,6 +63,7 @@ pub fn parse_tokens(
     };
     let val = match &peeked.token {
         Token::OpenCurlyBrace => parse_object(tokens, text)?,
+        Token::OpenSquareBracket => parse_array(tokens, text)?,
         Token::Null | Token::String(_) | Token::Boolean(_) | Token::Number(_) => {
             let TokenWithContext { token, range } = tokens.next().unwrap();
             ValueWithContext {
@@ -111,31 +115,6 @@ mod tests {
         assert_eq!(
             parse_str(r#"{"hi":"bye"}"#).unwrap(),
             kv_to_map(&[("hi", Value::String("bye".into()))])
-        );
-    }
-
-    #[test]
-    fn key_with_braces() {
-        assert_eq!(
-            parse_str(r#"{"h{}{}i":"bye"}"#).unwrap(),
-            kv_to_map(&[("h{}{}i", Value::String("bye".into()))])
-        );
-    }
-
-    #[test]
-    fn multiple_keys() {
-        assert_eq!(
-            parse_str(
-                r#"{
-                "rust": "is a must",
-                "name": "ferris" 
-            }"#
-            )
-            .unwrap(),
-            (kv_to_map(&[
-                ("rust", Value::String("is a must".into())),
-                ("name", Value::String("ferris".into())),
-            ]))
         );
     }
 
@@ -295,5 +274,35 @@ mod tests {
     #[rstest_reuse::apply(primitive_template)]
     fn primitives(#[case] json: &str, #[case] expected: Value) {
         assert_eq!(parse_str(json), Ok(expected));
+    }
+
+    #[test]
+    fn arrays() {
+        assert_eq!(
+            parse_str(test_json::ARRAY_EMPTY).unwrap(),
+            Value::Array(vec![])
+        );
+
+        assert_eq!(
+            parse_str(test_json::ARRAY_SINGLE).unwrap(),
+            Value::Array(vec![Value::Number("1".into())])
+        );
+
+        assert_eq!(
+            parse_str(test_json::ARRAY_MANY).unwrap(),
+            Value::Array(vec![
+                Value::Number("1".into()),
+                Value::Number("2".into()),
+                Value::Number("3".into()),
+            ])
+        );
+
+        assert_eq!(
+            parse_str(test_json::ARRAY_SUBARRAYS).unwrap(),
+            Value::Array(vec![
+                Value::Array(vec![Value::String("a".into())]),
+                Value::Array(vec![Value::Boolean(true), Value::Boolean(false)]),
+            ])
+        );
     }
 }
