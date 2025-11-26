@@ -25,6 +25,20 @@ pub enum Token {
     Boolean(bool),
 }
 
+impl Token {
+    pub fn is_start_of_value(&self) -> bool {
+        matches!(
+            self,
+            Token::OpenCurlyBrace
+                | Token::OpenSquareBracket
+                | Token::String(_)
+                | Token::Null
+                | Token::Boolean(_)
+                | Token::Number(_)
+        )
+    }
+}
+
 impl Display for Token {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let val = match self {

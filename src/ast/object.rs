@@ -176,16 +176,10 @@ impl ObjectState {
                 open_ctx,
             } => {
                 let peeked = tokens.peek().cloned();
-                if !matches!(
-                    peeked.as_ref().map(|ctx| &ctx.token),
-                    Some(
-                        Token::OpenCurlyBrace
-                            | Token::String(_)
-                            | Token::Null
-                            | Token::Boolean(_)
-                            | Token::Number(_)
-                    )
-                ) {
+                if !peeked
+                    .as_ref()
+                    .is_some_and(|ctx| ctx.token.is_start_of_value())
+                {
                     return Err(Error::from_maybe_token_with_context(
                         |tok| ErrorKind::ExpectedValue(Some(colon_ctx.clone()), tok),
                         peeked,
