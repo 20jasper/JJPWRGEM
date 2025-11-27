@@ -166,16 +166,10 @@ pub fn parse_array(
 ) -> Result<ValueWithContext> {
     let mut state = ArrayState::Open;
 
-    while tokens.peek().is_some() {
+    loop {
         state = state.process(tokens, text)?;
         if let ArrayState::End(result) = state {
-            return Ok(result);
+            break Ok(result);
         }
-    }
-
-    match state.process(tokens, text) {
-        Ok(ArrayState::End(result)) => Ok(result),
-        Err(e) => Err(e),
-        _ => unreachable!("array state will always be end or error"),
     }
 }
