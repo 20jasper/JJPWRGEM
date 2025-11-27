@@ -54,7 +54,11 @@ impl ObjectState {
                 },
                 maybe_token => {
                     return Err(Error::from_maybe_token_with_context(
-                        |tok| ErrorKind::ExpectedOpenCurlyBrace(None, tok),
+                        |tok| ErrorKind::ExpectedOpenBrace {
+                            expected: '{'.into(),
+                            context: None,
+                            found: tok,
+                        },
                         maybe_token.clone(),
                         text,
                     ));

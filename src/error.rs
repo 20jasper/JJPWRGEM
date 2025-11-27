@@ -35,8 +35,12 @@ pub enum ErrorKind {
         open_ctx: TokenWithContext,
         found: TokenOption,
     },
-    /// expected open curly curly brace, found {1}
-    ExpectedOpenCurlyBrace(Option<TokenWithContext>, TokenOption),
+    /// expected open brace `{expected}`, found {found}
+    ExpectedOpenBrace {
+        expected: JsonChar,
+        context: Option<TokenWithContext>,
+        found: TokenOption,
+    },
     /// expected quote before end of input
     ExpectedQuote,
 

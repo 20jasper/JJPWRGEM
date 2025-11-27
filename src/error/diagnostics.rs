@@ -266,7 +266,7 @@ pub fn patches_from_error<'a>(error: &'a Error) -> Vec<Patch<'a>> {
             ..
         }
         | ErrorKind::UnexpectedCharacter(_)
-        | ErrorKind::ExpectedOpenCurlyBrace(_, _)
+        | ErrorKind::ExpectedOpenBrace { .. }
         | ErrorKind::ExpectedQuote
         | ErrorKind::ExpectedMinusOrDigit(_) => Vec::new(),
     }
@@ -279,7 +279,9 @@ pub fn context_from_error<'a>(error: &'a Error) -> Vec<Context<'a>> {
         | ErrorKind::ExpectedColon(ctx, _)
         | ErrorKind::ExpectedEntryOrClosedDelimiter { open_ctx: ctx, .. }
         | ErrorKind::ExpectedValue(Some(ctx), _)
-        | ErrorKind::ExpectedOpenCurlyBrace(Some(ctx), _) => vec![Context::new(
+        | ErrorKind::ExpectedOpenBrace {
+            context: Some(ctx), ..
+        } => vec![Context::new(
             format!("expected due to {}", ctx.token),
             ctx.range.clone(),
             source,
@@ -343,7 +345,7 @@ pub fn context_from_error<'a>(error: &'a Error) -> Vec<Context<'a>> {
         | ErrorKind::TokenAfterEnd(_)
         | ErrorKind::ExpectedQuote
         | ErrorKind::ExpectedMinusOrDigit(_)
-        | ErrorKind::ExpectedOpenCurlyBrace(None, _) => Vec::new(),
+        | ErrorKind::ExpectedOpenBrace { context: None, .. } => Vec::new(),
     }
 }
 

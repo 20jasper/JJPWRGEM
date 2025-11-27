@@ -42,7 +42,17 @@ impl ArrayState {
                     items: Vec::new(),
                     open_ctx,
                 },
-                _ => todo!("handle missing opening square bracket"),
+                maybe_token => {
+                    return Err(Error::from_maybe_token_with_context(
+                        |tok| ErrorKind::ExpectedOpenBrace {
+                            expected: '['.into(),
+                            context: None,
+                            found: tok,
+                        },
+                        maybe_token,
+                        text,
+                    ));
+                }
             },
 
             ArrayState::ValueOrEnd { items, open_ctx } => match tokens.peek() {
