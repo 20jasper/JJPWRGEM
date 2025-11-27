@@ -1,5 +1,5 @@
 use crate::{
-    ast::{Value, ValueWithContext, parse_tokens},
+    ast::{Value, ValueWithContext, parse_tokens, validate_start_of_value},
     error::{Error, ErrorKind, Result},
     tokens::{Token, TokenWithContext},
 };
@@ -16,6 +16,7 @@ pub enum ArrayState {
     Value {
         items: Vec<Value>,
         open_ctx: TokenWithContext,
+        expect_ctx: TokenWithContext,
     },
     CommaOrEnd {
         items: Vec<Value>,
@@ -55,22 +56,23 @@ impl ArrayState {
                 }
             },
 
-            ArrayState::ValueOrEnd { items, open_ctx } => match tokens.peek() {
+            ArrayState::ValueOrEnd { items, open_ctx } => match tokens.peek().cloned() {
                 Some(TokenWithContext {
                     token: Token::ClosedSquareBracket,
+                    range: closed_range,
                     ..
                 }) => {
-                    let closed_ctx = tokens
-                        .next()
-                        .expect("closing bracket context should exist after peek");
+                    tokens.next();
                     ArrayState::End(ValueWithContext::new(
                         Value::Array(items),
-                        open_ctx.range.start..closed_ctx.range.end,
+                        open_ctx.range.start..closed_range.end,
                     ))
                 }
-                Some(TokenWithContext { token, .. }) if token.is_start_of_value() => {
-                    ArrayState::Value { items, open_ctx }
-                }
+                Some(token_ctx) if token_ctx.token.is_start_of_value() => ArrayState::Value {
+                    items,
+                    open_ctx: open_ctx.clone(),
+                    expect_ctx: open_ctx.clone(),
+                },
                 Some(_) => {
                     let maybe_token = tokens.next();
                     return Err(Error::from_maybe_token_with_context(
@@ -97,12 +99,9 @@ impl ArrayState {
             ArrayState::Value {
                 mut items,
                 open_ctx,
+                expect_ctx,
             } => {
-                match tokens.peek() {
-                    Some(TokenWithContext { token, .. }) if token.is_start_of_value() => {}
-                    Some(_) => todo!("handle unexpected token when parsing array value"),
-                    None => todo!("handle unterminated array while parsing value"),
-                }
+                validate_start_of_value(text, expect_ctx, tokens.peek().cloned())?;
 
                 let ValueWithContext { value, ctx } = parse_tokens(tokens, text, false)?;
                 items.push(value);
@@ -114,9 +113,7 @@ impl ArrayState {
             }
 
             ArrayState::CommaOrEnd {
-                items,
-                open_ctx,
-                last_value_range,
+                items, open_ctx, ..
             } => match tokens.peek().cloned() {
                 Some(TokenWithContext {
                     token: Token::ClosedSquareBracket,
@@ -128,16 +125,29 @@ impl ArrayState {
                         open_ctx.range.start..closed_range.end,
                     ))
                 }
-                Some(TokenWithContext {
-                    token: Token::Comma,
-                    ..
-                }) => {
+                Some(
+                    comma_ctx @ TokenWithContext {
+                        token: Token::Comma,
+                        ..
+                    },
+                ) => {
                     tokens.next();
-                    ArrayState::Value { items, open_ctx }
+                    ArrayState::Value {
+                        items,
+                        open_ctx,
+                        expect_ctx: comma_ctx,
+                    }
                 }
                 _ => {
-                    let _ = last_value_range;
-                    todo!("handle unterminated array after value")
+                    let maybe_token = tokens.next();
+                    return Err(Error::from_maybe_token_with_context(
+                        |tok| {
+                            ErrorKind::expected_entry_or_closed_delimiter(open_ctx.clone(), tok)
+                                .expect("array should open with a square bracket")
+                        },
+                        maybe_token,
+                        text,
+                    ));
                 }
             },
 

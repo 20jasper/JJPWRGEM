@@ -1,6 +1,6 @@
 use crate::{
     Error, ErrorKind,
-    tokens::{JsonCharOption, Token, TokenOption, lexical::JsonChar},
+    tokens::{JsonCharOption, Token, TokenOption, TokenWithContext, lexical::JsonChar},
 };
 use annotate_snippets::{Annotation, AnnotationKind, Group, Level, Snippet};
 use core::ops::Range;
@@ -120,18 +120,34 @@ fn error_source<'a>(error: &'a Error) -> Source<'a> {
 pub fn patches_from_error<'a>(error: &'a Error) -> Vec<Patch<'a>> {
     let source = error_source(error);
     match &*error.kind {
-        ErrorKind::ExpectedKey(ctx, TokenOption(Some(_))) => vec![Patch::new(
-            "consider removing the trailing comma",
-            ctx.range.clone(),
-            source,
-            "",
-        )],
-        ErrorKind::ExpectedKey(ctx, TokenOption(None)) => vec![Patch::new(
-            "consider replacing the trailing comma with a closed curly brace",
-            ctx.range.clone(),
-            source,
-            "}",
-        )],
+        ErrorKind::ExpectedKey(
+            TokenWithContext {
+                token: Token::Comma,
+                range,
+            },
+            TokenOption(Some(_)),
+        ) => {
+            vec![Patch::new(
+                "consider removing the trailing comma",
+                range.clone(),
+                source,
+                "",
+            )]
+        }
+        ErrorKind::ExpectedKey(
+            TokenWithContext {
+                token: Token::Comma,
+                range,
+            },
+            TokenOption(None),
+        ) => {
+            vec![Patch::new(
+                "consider replacing the trailing comma with a closed curly brace",
+                range.clone(),
+                source,
+                "}",
+            )]
+        }
         ErrorKind::ExpectedColon(ctx, found) => {
             let (message, replacement) = match found.0.as_ref() {
                 None => (
@@ -176,14 +192,26 @@ pub fn patches_from_error<'a>(error: &'a Error) -> Vec<Patch<'a>> {
             )],
             _ => Vec::new(),
         },
-        ErrorKind::ExpectedValue(_, tok_opt) => match tok_opt.0.as_ref() {
-            None => vec![Patch::new(
+        ErrorKind::ExpectedValue(ctx, tok_opt) => match (ctx, tok_opt.0.as_ref()) {
+            (
+                Some(TokenWithContext {
+                    token: Token::Comma,
+                    range,
+                }),
+                Some(Token::ClosedSquareBracket),
+            ) => vec![Patch::new(
+                "consider removing the trailing comma",
+                range.clone(),
+                source,
+                "",
+            )],
+            (_, None) => vec![Patch::new(
                 "insert a placeholder value",
                 error.range.end..error.range.end,
                 source,
                 " \"rust is a must\"",
             )],
-            Some(Token::ClosedCurlyBrace) => vec![Patch::new(
+            (_, Some(Token::ClosedCurlyBrace)) => vec![Patch::new(
                 "consider adding the missing open curly brace",
                 error.range.end - 1..error.range.end,
                 source,
@@ -258,7 +286,10 @@ pub fn patches_from_error<'a>(error: &'a Error) -> Vec<Patch<'a>> {
             source,
             "0",
         )],
-        ErrorKind::ExpectedDigitAfterE { .. }
+        // unreachable?
+        | ErrorKind::ExpectedKey(_, _)
+        // reachable?
+        | ErrorKind::ExpectedDigitAfterE { .. }
         | ErrorKind::ExpectedDigitAfterDot { .. }
         | ErrorKind::ExpectedPlusOrMinusOrDigitAfterE { .. }
         | ErrorKind::ExpectedEntryOrClosedDelimiter {

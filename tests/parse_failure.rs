@@ -55,6 +55,7 @@ macro_rules! fixture_tuple {
 #[case(fixture_tuple!(ARRAY_SUBARRAYS))]
 #[case(fixture_tuple!(ARRAY_OPEN))]
 #[case(fixture_tuple!(ARRAY_OPEN_WITH_VALUE))]
+#[case(fixture_tuple!(ARRAY_MISSING_VALUE))]
 fn annotate_test_json_fixtures_snapshots(#[case] (name, json): (&str, &str)) {
     use jjpwrgem::cli::run;
 

@@ -45,6 +45,7 @@ pub const ARRAY_MANY: &str = "[1, 2, 3]";
 pub const ARRAY_SUBARRAYS: &str = "[[\"a\"], [true, false]]";
 pub const ARRAY_OPEN: &str = "[";
 pub const ARRAY_OPEN_WITH_VALUE: &str = "[1, [";
+pub const ARRAY_MISSING_VALUE: &str = "[1, ]";
 
 pub fn format_output_snapshot(input: &str, output: &Output) -> String {
     format!("case --- \n{input}\n{output:?}")

@@ -91,6 +91,24 @@ pub fn parse_tokens(
     Ok(val)
 }
 
+fn validate_start_of_value(
+    text: &str,
+    expect_ctx: TokenWithContext,
+    maybe_token: Option<TokenWithContext>,
+) -> Result<()> {
+    if !maybe_token
+        .as_ref()
+        .is_some_and(|ctx| ctx.token.is_start_of_value())
+    {
+        Err(Error::from_maybe_token_with_context(
+            |tok| ErrorKind::ExpectedValue(Some(expect_ctx.clone()), tok),
+            maybe_token,
+            text,
+        ))
+    } else {
+        Ok(())
+    }
+}
 #[cfg(test)]
 mod tests {
     use super::*;
