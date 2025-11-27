@@ -432,4 +432,15 @@ impl Error {
     pub fn report<'a>(&'a self) -> Vec<Group<'a>> {
         Diagnostic::from(self).report()
     }
+
+    pub fn report_invalid_encoding<'a>(source: Source<'a>) -> Vec<Group<'a>> {
+        Diagnostic {
+            message: ErrorKind::InvalidEncoding.to_string(),
+            source,
+            range: None,
+            patches: vec![],
+            context: vec![],
+        }
+        .report()
+    }
 }

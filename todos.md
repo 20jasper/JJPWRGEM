@@ -6,7 +6,7 @@
     - [x] bug where does not check for termination properly
     - [x] no unescaped control characters
     - [x] char to unicode escape
-      - [ ] domain struct JSONChar
+      - [x] domain struct JSONChar
     - [ ] parse unicode escapes
     - [ ] check rfc
   - [x] numbers
@@ -18,7 +18,7 @@
   - [x] multi keys
   - [ ] validate duplicate keys
     - [ ] what if key and val are both same?
-- [ ] arrays
+- [x] arrays
 - [x] nested object
   - [x] arbitrarily nested
 - [x] validate whitespace to skip
@@ -40,7 +40,6 @@
   - [x] point to character like in rust's errors
   - [ ] patches for each error type
   - [ ] patch applicability (how confident am I that this is right?)
-  - [ ] snapshot testing
 - [x] fix up From impls for Tokens. From<String> should not be on token, but boolean makes sense
 - [ ] cli
   - [x] stdin
@@ -49,7 +48,7 @@
   - [ ] --fix option
   - [ ] colors (support-color)
   - [ ] look into insta snapshot docs
-  - [ ]
+  - [ ] stdin gracefully handle failure to read to buffer
 - [ ] rebrand
   - [x] jjpwrgem crate name
   - [x] jjp bin name

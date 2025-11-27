@@ -14,15 +14,14 @@ enum JsonResult {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct Case {
-    text: String,
+    text: Vec<u8>,
     file_name: String,
     expected: JsonResult,
 }
 
 const CONFORMANCE_PATH: &str = "./tests/conformance/JSONTestSuite/test_parsing";
-const FILENAME_FILTER: [&str; 16] = [
+const FILENAME_FILTER: [&str; 15] = [
     // not yet supported
-    "BOM",
     "escape",
     // bug
     "n_string_unicode_capitalu",
@@ -42,7 +41,7 @@ const FILENAME_FILTER: [&str; 16] = [
     // multi key is not consistent
     "y_object.json",
     "y_object_extreme_numbers",
-    " y_object_long_strings",
+    "y_object_long_strings",
 ];
 
 fn get_tests() -> (Vec<Case>, usize, usize) {
@@ -84,8 +83,7 @@ fn get_tests() -> (Vec<Case>, usize, usize) {
             'n' => JsonResult::Fail,
             _ => continue,
         };
-        // TODO handle invalid UTF8
-        let Ok(text) = std::fs::read_to_string(&path) else {
+        let Ok(text) = std::fs::read(&path) else {
             continue;
         };
         cases.push(Case {
@@ -102,18 +100,18 @@ fn get_tests() -> (Vec<Case>, usize, usize) {
 #[test]
 fn feature() {
     let (mut cases, total, rest) = get_tests();
-    assert_eq!(rest, 230);
+    assert_eq!(rest, 252);
     assert_eq!(total, 318);
 
     cases.sort_by(|a, b| a.file_name.cmp(&b.file_name));
 
     let renderer = Renderer::plain().decor_style(DecorStyle::Ascii);
     for case in cases {
-        let annotated = run(&case.text, &renderer);
+        let annotated = run(case.text.clone(), &renderer);
 
         assert_snapshot!(
             case.file_name,
-            format_output_snapshot(&case.text, &annotated)
+            format_output_snapshot(case.text, &annotated)
         );
         assert!(case.expected != JsonResult::Fail || annotated.stderr.is_some());
         assert!(case.expected != JsonResult::Pass || annotated.stdout.is_some());

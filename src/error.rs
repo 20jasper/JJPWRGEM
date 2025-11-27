@@ -72,6 +72,8 @@ pub enum ErrorKind {
         exponent_ctx: Range<usize>,
         maybe_c: JsonCharOption,
     },
+    /// source did not contain valid utf8
+    InvalidEncoding,
 }
 
 impl ErrorKind {
