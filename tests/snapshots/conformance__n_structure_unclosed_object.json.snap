@@ -16,7 +16,7 @@ error: expected comma or closed curly brace, found no significant characters
   | |     expected due to the preceding key/value pair
   | object opened here by `{`
   |
-help: insert the missing curly brace
+help: insert the missing closed brace
   |
 1 | {"asd":"asd"}
   |             +

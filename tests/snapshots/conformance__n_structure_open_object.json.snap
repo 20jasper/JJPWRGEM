@@ -7,7 +7,7 @@ case ---
 stdout --- 
 <empty>
 stderr --- 
-error: expected key or closed curly brace, found no significant characters
+error: expected entry or closed delimiter `}`, found no significant characters
  --> stdin:1:1
   |
 1 | {
@@ -15,7 +15,7 @@ error: expected key or closed curly brace, found no significant characters
   | |
   | expected due to `{`
   |
-help: insert the missing curly brace
+help: insert the missing closed delimiter `}`
   |
 1 | {}
   |  +

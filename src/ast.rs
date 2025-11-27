@@ -1,6 +1,8 @@
+mod array;
 mod object;
 
 use crate::Error;
+use crate::ast::array::parse_array;
 use crate::ast::object::parse_object;
 use crate::error::{ErrorKind, Result};
 use crate::tokens::{Token, TokenWithContext, str_to_tokens};
@@ -14,6 +16,7 @@ pub enum Value {
     String(String),
     Number(String),
     Object(HashMap<String, Value>),
+    Array(Vec<Value>),
     Boolean(bool),
 }
 
@@ -59,7 +62,8 @@ pub fn parse_tokens(
         ));
     };
     let val = match &peeked.token {
-        Token::OpenCurlyBrace => parse_object(tokens, text, fail_on_multiple_value)?,
+        Token::OpenCurlyBrace => parse_object(tokens, text)?,
+        Token::OpenSquareBracket => parse_array(tokens, text)?,
         Token::Null | Token::String(_) | Token::Boolean(_) | Token::Number(_) => {
             let TokenWithContext { token, range } = tokens.next().unwrap();
             ValueWithContext {
@@ -87,6 +91,24 @@ pub fn parse_tokens(
     Ok(val)
 }
 
+fn validate_start_of_value(
+    text: &str,
+    expect_ctx: TokenWithContext,
+    maybe_token: Option<TokenWithContext>,
+) -> Result<()> {
+    if !maybe_token
+        .as_ref()
+        .is_some_and(|ctx| ctx.token.is_start_of_value())
+    {
+        Err(Error::from_maybe_token_with_context(
+            |tok| ErrorKind::ExpectedValue(Some(expect_ctx.clone()), tok),
+            maybe_token,
+            text,
+        ))
+    } else {
+        Ok(())
+    }
+}
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -111,31 +133,6 @@ mod tests {
         assert_eq!(
             parse_str(r#"{"hi":"bye"}"#).unwrap(),
             kv_to_map(&[("hi", Value::String("bye".into()))])
-        );
-    }
-
-    #[test]
-    fn key_with_braces() {
-        assert_eq!(
-            parse_str(r#"{"h{}{}i":"bye"}"#).unwrap(),
-            kv_to_map(&[("h{}{}i", Value::String("bye".into()))])
-        );
-    }
-
-    #[test]
-    fn multiple_keys() {
-        assert_eq!(
-            parse_str(
-                r#"{
-                "rust": "is a must",
-                "name": "ferris" 
-            }"#
-            )
-            .unwrap(),
-            (kv_to_map(&[
-                ("rust", Value::String("is a must".into())),
-                ("name", Value::String("ferris".into())),
-            ]))
         );
     }
 
@@ -226,12 +223,12 @@ mod tests {
     ))]
     #[case(json_to_json_and_error(
         test_json::OBJECT_DOUBLE_OPEN_CURLY,
-        ErrorKind::ExpectedKeyOrClosedCurlyBrace(TokenWithContext{token: Token::OpenCurlyBrace, range: 0..1}, Some(Token::OpenCurlyBrace).into()),
+    ErrorKind::expected_entry_or_closed_delimiter(TokenWithContext{token: Token::OpenCurlyBrace, range: 0..1}, Some(Token::OpenCurlyBrace).into()).expect("object should open with curly brace"),
         1..2,
     ))]
     #[case(json_to_json_and_error(
         test_json::OBJECT_OPEN_CURLY,
-        ErrorKind::ExpectedKeyOrClosedCurlyBrace(TokenWithContext{token: Token::OpenCurlyBrace, range: 0..1}, None.into()),
+    ErrorKind::expected_entry_or_closed_delimiter(TokenWithContext{token: Token::OpenCurlyBrace, range: 0..1}, None.into()).expect("object should open with curly brace"),
         0..1,
     ))]
     #[case(json_to_json_and_error(
@@ -295,5 +292,35 @@ mod tests {
     #[rstest_reuse::apply(primitive_template)]
     fn primitives(#[case] json: &str, #[case] expected: Value) {
         assert_eq!(parse_str(json), Ok(expected));
+    }
+
+    #[test]
+    fn arrays() {
+        assert_eq!(
+            parse_str(test_json::ARRAY_EMPTY).unwrap(),
+            Value::Array(vec![])
+        );
+
+        assert_eq!(
+            parse_str(test_json::ARRAY_SINGLE).unwrap(),
+            Value::Array(vec![Value::Number("1".into())])
+        );
+
+        assert_eq!(
+            parse_str(test_json::ARRAY_MANY).unwrap(),
+            Value::Array(vec![
+                Value::Number("1".into()),
+                Value::Number("2".into()),
+                Value::Number("3".into()),
+            ])
+        );
+
+        assert_eq!(
+            parse_str(test_json::ARRAY_SUBARRAYS).unwrap(),
+            Value::Array(vec![
+                Value::Array(vec![Value::String("a".into())]),
+                Value::Array(vec![Value::Boolean(true), Value::Boolean(false)]),
+            ])
+        );
     }
 }

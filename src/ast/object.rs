@@ -1,6 +1,6 @@
 use crate::{
     Error, ErrorKind, Result,
-    ast::{Value, ValueWithContext, parse_tokens},
+    ast::{Value, ValueWithContext, parse_tokens, validate_start_of_value},
     tokens::{Token, TokenOption, TokenWithContext},
 };
 use core::iter::Peekable;
@@ -39,7 +39,6 @@ impl ObjectState {
         self,
         tokens: &mut Peekable<impl Iterator<Item = TokenWithContext>>,
         text: &str,
-        fail_on_multiple_value: bool,
     ) -> Result<Self> {
         let res = match self {
             ObjectState::Open => match tokens.next() {
@@ -55,7 +54,11 @@ impl ObjectState {
                 },
                 maybe_token => {
                     return Err(Error::from_maybe_token_with_context(
-                        |tok| ErrorKind::ExpectedOpenCurlyBrace(None, tok),
+                        |tok| ErrorKind::ExpectedOpenBrace {
+                            expected: '{'.into(),
+                            context: None,
+                            found: tok,
+                        },
                         maybe_token.clone(),
                         text,
                     ));
@@ -114,7 +117,8 @@ impl ObjectState {
                 (None, maybe_token) => {
                     return Err(Error::from_maybe_token_with_context(
                         |tok: TokenOption| {
-                            ErrorKind::ExpectedKeyOrClosedCurlyBrace(open_ctx.clone(), tok)
+                            ErrorKind::expected_entry_or_closed_delimiter(open_ctx.clone(), tok)
+                                .expect("object should open with a curly brace")
                         },
                         maybe_token,
                         text,
@@ -176,23 +180,7 @@ impl ObjectState {
                 colon_ctx,
                 open_ctx,
             } => {
-                let peeked = tokens.peek().cloned();
-                if !matches!(
-                    peeked.as_ref().map(|ctx| &ctx.token),
-                    Some(
-                        Token::OpenCurlyBrace
-                            | Token::String(_)
-                            | Token::Null
-                            | Token::Boolean(_)
-                            | Token::Number(_)
-                    )
-                ) {
-                    return Err(Error::from_maybe_token_with_context(
-                        |tok| ErrorKind::ExpectedValue(Some(colon_ctx.clone()), tok),
-                        peeked,
-                        text,
-                    ));
-                }
+                validate_start_of_value(text, colon_ctx.clone(), tokens.peek().cloned())?;
 
                 let Token::String(key) = key_ctx.token else {
                     unreachable!("key context should always be a string");
@@ -210,14 +198,7 @@ impl ObjectState {
                     last_pair: Some(colon_ctx.range.start..json_ctx.end),
                 }
             }
-            ObjectState::End(map, range) => {
-                if fail_on_multiple_value
-                    && let Some(TokenWithContext { token, range }) = tokens.peek().cloned()
-                {
-                    return Err(Error::new(ErrorKind::TokenAfterEnd(token), range, text));
-                }
-                ObjectState::End(map, range)
-            }
+            ObjectState::End(map, range) => ObjectState::End(map, range),
         };
 
         Ok(res)
@@ -227,21 +208,13 @@ impl ObjectState {
 pub fn parse_object(
     tokens: &mut Peekable<impl Iterator<Item = TokenWithContext>>,
     text: &str,
-    fail_on_multiple_value: bool,
 ) -> Result<ValueWithContext> {
     let mut state = ObjectState::Open;
 
-    while tokens.peek().is_some() {
-        state = state.process(tokens, text, fail_on_multiple_value)?;
-
-        if !fail_on_multiple_value && let ObjectState::End(map, range) = state {
-            return Ok(ValueWithContext::new(Value::Object(map), range));
+    loop {
+        state = state.process(tokens, text)?;
+        if let ObjectState::End(map, range) = state {
+            break Ok(ValueWithContext::new(Value::Object(map), range));
         }
-    }
-
-    match state.process(tokens, text, fail_on_multiple_value) {
-        Ok(ObjectState::End(map, range)) => Ok(ValueWithContext::new(Value::Object(map), range)),
-        Err(e) => Err(e),
-        _ => unreachable!("object state will always be end or error"),
     }
 }
