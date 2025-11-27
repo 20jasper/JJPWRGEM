@@ -1,0 +1,10 @@
+---
+source: tests/conformance.rs
+expression: "format_output_snapshot(&case.text, &annotated)"
+---
+case --- 
+["\uD83F\uDFFE"]
+stdout --- 
+["\uD83F\uDFFE"]
+stderr --- 
+<empty>

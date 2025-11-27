@@ -1,0 +1,16 @@
+---
+source: tests/conformance.rs
+expression: "format_output_snapshot(&case.text, &annotated)"
+---
+case --- 
+["x",,]
+stdout --- 
+<empty>
+stderr --- 
+error: expected json value, found `,`
+ --> stdin:1:6
+  |
+1 | ["x",,]
+  |     -^
+  |     |
+  |     expected due to `,`

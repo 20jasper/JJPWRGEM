@@ -1,0 +1,16 @@
+---
+source: tests/conformance.rs
+expression: "format_output_snapshot(&case.text, &annotated)"
+---
+case --- 
+[-Infinity]
+stdout --- 
+<empty>
+stderr --- 
+error: expected digit following minus sign, found `I`
+ --> stdin:1:2
+  |
+1 | [-Infinity]
+  |  ^
+  |  |
+  |  minus sign found here

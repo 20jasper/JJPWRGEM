@@ -20,16 +20,30 @@ struct Case {
 }
 
 const CONFORMANCE_PATH: &str = "./tests/conformance/JSONTestSuite/test_parsing";
-const FILENAME_FILTER: [&str; 5] = [
+const FILENAME_FILTER: [&str; 16] = [
     // not yet supported
-    "array",
     "BOM",
+    "escape",
+    // bug
     "n_string_unicode_capitalu",
+    "surrogate",
+    "n_string_backslash_00.json",
+    "n_string_invalid_backslash_esc.json",
+    // should expect comma or closed
+    "n_array_colon_instead_of_comma.json",
+    "n_array_items_separated_by_semicolon.json",
+    // leading 0
+    "n_number_-01.json",
+    "n_number_neg_int_starting_with_zero.json",
+    "n_number_with_leading_zero.json",
+    // uh oh
+    "500",
+    "10000",
     // multi key is not consistent
     "y_object.json",
     "y_object_extreme_numbers",
+    " y_object_long_strings",
 ];
-const TEXT_FILTER: [&str; 2] = ["[", "]"];
 
 fn get_tests() -> (Vec<Case>, usize, usize) {
     let entries = fs::read_dir(CONFORMANCE_PATH).unwrap();
@@ -74,10 +88,6 @@ fn get_tests() -> (Vec<Case>, usize, usize) {
         let Ok(text) = std::fs::read_to_string(&path) else {
             continue;
         };
-        // TODO handle arr and number
-        if TEXT_FILTER.iter().any(|c| text.contains(c)) {
-            continue;
-        }
         cases.push(Case {
             text,
             file_name,
@@ -91,9 +101,11 @@ fn get_tests() -> (Vec<Case>, usize, usize) {
 
 #[test]
 fn feature() {
-    let (cases, total, rest) = get_tests();
-    assert_eq!(rest, 64);
+    let (mut cases, total, rest) = get_tests();
+    assert_eq!(rest, 230);
     assert_eq!(total, 318);
+
+    cases.sort_by(|a, b| a.file_name.cmp(&b.file_name));
 
     let renderer = Renderer::plain().decor_style(DecorStyle::Ascii);
     for case in cases {

@@ -1,0 +1,20 @@
+---
+source: tests/conformance.rs
+expression: "format_output_snapshot(&case.text, &annotated)"
+---
+case --- 
+[1]]
+stdout --- 
+<empty>
+stderr --- 
+error: unexpected token `]` after json finished
+ --> stdin:1:4
+  |
+1 | [1]]
+  |    ^
+  |
+help: consider removing the trailing content (starting with `]`)
+  |
+1 - [1]]
+1 + [1]
+  |

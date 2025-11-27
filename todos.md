@@ -54,6 +54,8 @@
   - [x] jjpwrgem crate name
   - [x] jjp bin name
   - [ ] axolotl skateboard
+- [ ] accessible output (look into annotate snippets issue + miette)
+- [ ] maybe reparse a step ahead to see if then valid?
 
 ### dev tooling
 
@@ -86,4 +88,47 @@
   - [ ] n_object_several_trailing_commas.json
 - [ ] should recommend changing single quotes and backticks to double
   - [ ] n_object_single_quote
-- [ ] error reporting for keywords, for example trbe marks t as error
+- [ ] error reporting for keywords, for example trbe marks t as error. Should handle casing
+  - [ ] n_incomplete_false
+  - [ ] n_incomplete_null
+  - [ ] n_incomplete_true
+  - [ ] n_structure_capitalized_true
+- [ ] , at start of obj or arr should recommend delete
+  - [ ] n_array_comma_and_number
+  - [ ] n_array_just_comma
+  - [ ] n_array_missing_value
+- [ ] recommend delete dup comma?
+  - [ ] n_array_double_comma
+- [ ] recommend comma if potential valid next arr val
+  - [ ] n_array_inner_array_no_comma
+- [ ] add placeholder and closing if no sig chars
+  - [ ] n_array_newlines_unclosed
+  - [ ] n_array_unclosed_trailing_comma
+- [ ] should recommend adding fraction digit 0 or remove
+  - [ ] n_number\_-2.
+  - [ ] n_number_0.e1
+- [ ] should recommend adding exponent digit or remove
+  - [ ] n_number_0.3e+
+  - [ ] n_number_0.3e
+  - [ ] n_number_0_capital_e+
+  - [ ] n_number_0_capital_e
+- [ ] should recommend 0 before .
+  - [ ] n_number\_.-1
+- [ ] maybe warn on NaN or Infinity/other js idents?
+  - [ ] n_number\_-nan
+- [ ] should
+- [ ] general context of token parser? should give more specific if following num
+  - [ ] n_number_0.1.2
+- [ ] maybe mark hex/octal/binary literals
+  - [ ] n_number_hex_1_digit
+  - [ ] n_number_hex_2_digits
+- [ ] whitespace in middle of tokens can be slurped for errors
+  - [ ] n_number_minus_space_1
+- [ ] escape non printing for display or include unicode escape afterwards no matter what if not possible to get exhaustive list https://crates.io/crates/is_printable https://crates.io/crates/unicode-names2
+  - [ ] n_structure_u+2060_word_joined
+  - [x] control
+  - [ ] format U+2000 to U+206F
+  - [ ] Variation Selectors: U+FE00 to U+FE0F
+  - [ ] Private Use Area: U+E000 to U+F8FF
+  - [ ] Tag Characters: U+E0001 to U+E007F
+  - [ ]

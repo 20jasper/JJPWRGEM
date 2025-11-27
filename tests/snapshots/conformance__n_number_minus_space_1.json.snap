@@ -1,0 +1,16 @@
+---
+source: tests/conformance.rs
+expression: "format_output_snapshot(&case.text, &annotated)"
+---
+case --- 
+[- 1]
+stdout --- 
+<empty>
+stderr --- 
+error: expected digit following minus sign, found ` `
+ --> stdin:1:2
+  |
+1 | [- 1]
+  |  ^
+  |  |
+  |  minus sign found here
