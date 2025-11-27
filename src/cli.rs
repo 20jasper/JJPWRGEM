@@ -2,7 +2,7 @@ use core::fmt::Debug;
 
 use annotate_snippets::Renderer;
 
-use crate::format;
+use crate::{Error, error::diagnostics::Source, format};
 
 pub struct Output {
     pub stdout: Option<String>,
@@ -17,8 +17,18 @@ impl Debug for Output {
     }
 }
 
-pub fn run(json: &str, renderer: &Renderer) -> Output {
-    match format::prettify_str(json) {
+pub fn run(json: Vec<u8>, renderer: &Renderer) -> Output {
+    let json = match String::from_utf8(json) {
+        Err(_) => {
+            return Output {
+                stdout: None,
+                stderr: Some(renderer.render(&Error::report_invalid_encoding(Source::Stdin("")))),
+            };
+        }
+        Ok(s) => s,
+    };
+
+    match format::prettify_str(&json) {
         Ok(pretty) => Output {
             stdout: Some(pretty),
             stderr: None,

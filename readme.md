@@ -4,7 +4,9 @@ JJPWRGEM JSON Parser With Really Good Error Messages
 
 An (eventually) RFC 8259 compliant JSON Parser
 
-Currently passes 54/319 tests from @nst's [JSONTestSuite](https://github.com/nst/JSONTestSuite)!
+Currently passes 247/319 tests from @nst's [JSONTestSuite](https://github.com/nst/JSONTestSuite)!
+
+Failures are due to high levels of recursion and escaping
 
 ```
 echo -en '{"coolKey"}' | jjp
@@ -29,6 +31,20 @@ I originally started this project to practice finite state machines, but got bac
 I am heavily inspired by the Rust compiler's error messages. I love the idea that unhelpful errors are considered bugs
 
 I checked out several JSON parsers and formatters, and none provided much context on _why_ a key was missing. Errors ranged from "expected closing on byte 10" to a snapshot of source code for that character, but none were up to my standards
+
+## indeterminate handling
+
+How cases undefined by the spec are handled
+
+- numbers of any size or length are allowed
+  - the original precision will be maintained
+  - -0 is not equal to 0 and will persist
+- the last duplicate key is stored
+  - escaped and unescaped characters are considered not equal
+- parsing will fail if BOM is included
+- only utf8 encoding is supported
+- no limitations on nesting or length
+- extensions such as trailing commas or comments are not allowed
 
 ## Notes
 

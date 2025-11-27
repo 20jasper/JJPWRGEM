@@ -1,0 +1,17 @@
+---
+source: tests/conformance.rs
+expression: "format_output_snapshot(&case.text, &annotated)"
+---
+case --- 
+[-2.]
+stdout --- 
+<empty>
+stderr --- 
+error: expected fraction digit following dot, found `]`
+ --> stdin:1:5
+  |
+1 | [-2.]
+  |  ---^
+  |  | |
+  |  | decimal point found here
+  |  number found here

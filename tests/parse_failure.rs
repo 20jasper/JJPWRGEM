@@ -59,8 +59,10 @@ macro_rules! fixture_tuple {
 fn annotate_test_json_fixtures_snapshots(#[case] (name, json): (&str, &str)) {
     use jjpwrgem::cli::run;
 
+    let json = json.as_bytes().to_vec();
+
     let renderer = Renderer::plain().decor_style(DecorStyle::Ascii);
-    let annotated = run(json, &renderer);
+    let annotated = run(json.clone(), &renderer);
 
     assert_snapshot!(
         name.to_ascii_lowercase(),
