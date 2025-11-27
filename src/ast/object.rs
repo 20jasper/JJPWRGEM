@@ -113,7 +113,8 @@ impl ObjectState {
                 (None, maybe_token) => {
                     return Err(Error::from_maybe_token_with_context(
                         |tok: TokenOption| {
-                            ErrorKind::ExpectedKeyOrClosedCurlyBrace(open_ctx.clone(), tok)
+                            ErrorKind::expected_entry_or_closed_delimiter(open_ctx.clone(), tok)
+                                .expect("object should open with a curly brace")
                         },
                         maybe_token,
                         text,

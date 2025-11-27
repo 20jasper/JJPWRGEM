@@ -6,7 +6,7 @@ use annotate_snippets::{Annotation, AnnotationKind, Group, Level, Snippet};
 use core::ops::Range;
 use std::{borrow::Cow, path::Path};
 pub const EXPECTED_COMMA_OR_CLOSED_CURLY_MESSAGE: &str = "the preceding key/value pair";
-pub const INSERT_MISSING_CURLY_HELP: &str = "insert the missing curly brace";
+pub const INSERT_MISSING_CLOSED_BRACE_HELP: &str = "insert the missing closed brace";
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Context<'a> {
@@ -151,11 +151,15 @@ pub fn patches_from_error<'a>(error: &'a Error) -> Vec<Patch<'a>> {
                 replacement,
             )]
         }
-        ErrorKind::ExpectedKeyOrClosedCurlyBrace(_, TokenOption(None)) => vec![Patch::new(
-            INSERT_MISSING_CURLY_HELP,
+        ErrorKind::ExpectedEntryOrClosedDelimiter {
+            expected,
+            found: TokenOption(None),
+            ..
+        } => vec![Patch::new(
+            Cow::Owned(format!("insert the missing closed delimiter `{expected}`")),
             error.range.end..error.range.end,
             source,
-            "}",
+            expected.to_string(),
         )],
         ErrorKind::ExpectedCommaOrClosedCurlyBrace { range, found, .. } => match found.0.as_ref() {
             Some(Token::String(s)) => vec![Patch::new(
@@ -165,7 +169,7 @@ pub fn patches_from_error<'a>(error: &'a Error) -> Vec<Patch<'a>> {
                 ",",
             )],
             None => vec![Patch::new(
-                INSERT_MISSING_CURLY_HELP,
+                INSERT_MISSING_CLOSED_BRACE_HELP,
                 range.end..range.end,
                 source,
                 "}",
@@ -257,7 +261,10 @@ pub fn patches_from_error<'a>(error: &'a Error) -> Vec<Patch<'a>> {
         ErrorKind::ExpectedDigitAfterE { .. }
         | ErrorKind::ExpectedDigitAfterDot { .. }
         | ErrorKind::ExpectedPlusOrMinusOrDigitAfterE { .. }
-        | ErrorKind::ExpectedKeyOrClosedCurlyBrace(_, TokenOption(Some(_)))
+        | ErrorKind::ExpectedEntryOrClosedDelimiter {
+            found: TokenOption(Some(_)),
+            ..
+        }
         | ErrorKind::UnexpectedCharacter(_)
         | ErrorKind::ExpectedOpenCurlyBrace(_, _)
         | ErrorKind::ExpectedQuote
@@ -270,7 +277,7 @@ pub fn context_from_error<'a>(error: &'a Error) -> Vec<Context<'a>> {
     match &*error.kind {
         ErrorKind::ExpectedKey(ctx, _)
         | ErrorKind::ExpectedColon(ctx, _)
-        | ErrorKind::ExpectedKeyOrClosedCurlyBrace(ctx, _)
+        | ErrorKind::ExpectedEntryOrClosedDelimiter { open_ctx: ctx, .. }
         | ErrorKind::ExpectedValue(Some(ctx), _)
         | ErrorKind::ExpectedOpenCurlyBrace(Some(ctx), _) => vec![Context::new(
             format!("expected due to {}", ctx.token),

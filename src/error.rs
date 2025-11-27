@@ -23,8 +23,12 @@ pub enum ErrorKind {
     ExpectedColon(TokenWithContext, TokenOption),
     /// expected json value, found {1}
     ExpectedValue(Option<TokenWithContext>, TokenOption),
-    /// expected key or closed curly brace, found {1}
-    ExpectedKeyOrClosedCurlyBrace(TokenWithContext, TokenOption),
+    /// expected entry or closed delimiter `{expected}`, found {found}
+    ExpectedEntryOrClosedDelimiter {
+        open_ctx: TokenWithContext,
+        expected: JsonChar,
+        found: TokenOption,
+    },
     /// expected comma or closed curly brace, found {found}
     ExpectedCommaOrClosedCurlyBrace {
         range: Range<usize>,
@@ -64,6 +68,29 @@ pub enum ErrorKind {
         exponent_ctx: Range<usize>,
         maybe_c: JsonCharOption,
     },
+}
+
+impl ErrorKind {
+    pub fn expected_entry_or_closed_delimiter(
+        open_ctx: TokenWithContext,
+        found: TokenOption,
+    ) -> Option<Self> {
+        closing_delimiter_for_open(&open_ctx.token).map(|expected| {
+            Self::ExpectedEntryOrClosedDelimiter {
+                open_ctx,
+                expected,
+                found,
+            }
+        })
+    }
+}
+
+fn closing_delimiter_for_open(token: &Token) -> Option<JsonChar> {
+    match token {
+        Token::OpenCurlyBrace => Some('}'.into()),
+        Token::OpenSquareBracket => Some(']'.into()),
+        _ => None,
+    }
 }
 
 #[derive(Debug, PartialEq, Eq, Display, Error)]

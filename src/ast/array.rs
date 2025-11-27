@@ -1,6 +1,6 @@
 use crate::{
     ast::{Value, ValueWithContext, parse_tokens},
-    error::Result,
+    error::{Error, ErrorKind, Result},
     tokens::{Token, TokenWithContext},
 };
 use core::iter::Peekable;
@@ -61,8 +61,27 @@ impl ArrayState {
                 Some(TokenWithContext { token, .. }) if token.is_start_of_value() => {
                     ArrayState::Value { items, open_ctx }
                 }
-                Some(_) => todo!("handle unexpected token in array"),
-                None => todo!("handle unterminated array"),
+                Some(_) => {
+                    let maybe_token = tokens.next();
+                    return Err(Error::from_maybe_token_with_context(
+                        |tok| {
+                            ErrorKind::expected_entry_or_closed_delimiter(open_ctx.clone(), tok)
+                                .expect("array should open with a square bracket")
+                        },
+                        maybe_token,
+                        text,
+                    ));
+                }
+                None => {
+                    return Err(Error::from_maybe_token_with_context(
+                        |tok| {
+                            ErrorKind::expected_entry_or_closed_delimiter(open_ctx.clone(), tok)
+                                .expect("array should open with a square bracket")
+                        },
+                        None,
+                        text,
+                    ));
+                }
             },
 
             ArrayState::Value {

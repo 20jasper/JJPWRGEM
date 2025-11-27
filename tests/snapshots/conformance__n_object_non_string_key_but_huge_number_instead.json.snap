@@ -7,7 +7,7 @@ case ---
 stdout --- 
 <empty>
 stderr --- 
-error: expected key or closed curly brace, found `9999E9999`
+error: expected entry or closed delimiter `}`, found `9999E9999`
  --> stdin:1:2
   |
 1 | {9999E9999:1}

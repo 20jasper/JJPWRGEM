@@ -205,12 +205,12 @@ mod tests {
     ))]
     #[case(json_to_json_and_error(
         test_json::OBJECT_DOUBLE_OPEN_CURLY,
-        ErrorKind::ExpectedKeyOrClosedCurlyBrace(TokenWithContext{token: Token::OpenCurlyBrace, range: 0..1}, Some(Token::OpenCurlyBrace).into()),
+    ErrorKind::expected_entry_or_closed_delimiter(TokenWithContext{token: Token::OpenCurlyBrace, range: 0..1}, Some(Token::OpenCurlyBrace).into()).expect("object should open with curly brace"),
         1..2,
     ))]
     #[case(json_to_json_and_error(
         test_json::OBJECT_OPEN_CURLY,
-        ErrorKind::ExpectedKeyOrClosedCurlyBrace(TokenWithContext{token: Token::OpenCurlyBrace, range: 0..1}, None.into()),
+    ErrorKind::expected_entry_or_closed_delimiter(TokenWithContext{token: Token::OpenCurlyBrace, range: 0..1}, None.into()).expect("object should open with curly brace"),
         0..1,
     ))]
     #[case(json_to_json_and_error(
