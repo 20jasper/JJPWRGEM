@@ -1,5 +1,7 @@
 use core::{iter::Peekable, ops::Range};
 
+use itertools::Itertools;
+
 use crate::{
     Error, ErrorKind, Result,
     tokens::{CharWithContext, Token, TokenWithContext, lexical::JsonChar},
@@ -45,10 +47,10 @@ impl NumberState {
         let res = match self {
             NumberState::MinusOrInteger => match chars.next() {
                 Some(CharWithContext(range, JsonChar('-'))) => NumberState::Leading(range),
-                Some(CharWithContext(range, c @ JsonChar('0'..='9'))) => {
+                Some(leading @ CharWithContext(_, JsonChar('0'..='9'))) => {
                     NumberState::IntegerOrDecimalOrExponentOrEnd {
-                        leading: Some(CharWithContext(range.clone(), c)),
-                        number_ctx: range,
+                        leading: Some(leading.clone()),
+                        number_ctx: leading.0,
                     }
                 }
                 maybe_c => {
@@ -60,10 +62,10 @@ impl NumberState {
                 }
             },
             NumberState::Leading(number_ctx) => match chars.next() {
-                Some(CharWithContext(leading_range, c @ JsonChar('0'..='9'))) => {
+                Some(leading @ CharWithContext(_, JsonChar('0'..='9'))) => {
                     NumberState::IntegerOrDecimalOrExponentOrEnd {
-                        leading: Some(CharWithContext(leading_range.clone(), c)),
-                        number_ctx: number_ctx.start..leading_range.end,
+                        leading: Some(leading.clone()),
+                        number_ctx: number_ctx.start..leading.0.end,
                     }
                 }
                 maybe_char @ (Some(_) | None) => {
@@ -83,26 +85,25 @@ impl NumberState {
             } => match (leading.as_ref(), chars.peek().cloned()) {
                 (
                     Some(CharWithContext(initial_range, JsonChar('0'))),
-                    Some(CharWithContext(_, JsonChar('0'))),
+                    Some(CharWithContext(_, JsonChar('0'..='9'))),
                 ) => {
-                    while chars
-                        .next_if(|CharWithContext(_, JsonChar(c))| *c == '0')
-                        .is_some()
-                    {}
+                    let final_zero_range = chars
+                        .peeking_take_while(|CharWithContext(_, JsonChar(c))| *c == '0')
+                        .last()
+                        .map(|CharWithContext(r, _)| r)
+                        .unwrap_or(initial_range.clone());
+
+                    let extra_end = match chars.peek().cloned() {
+                        Some(CharWithContext(_, JsonChar('1'..='9'))) => final_zero_range.end,
+                        _ => final_zero_range.start,
+                    };
+
                     return Err(Error::new(
                         ErrorKind::UnexpectedLeadingZero {
                             initial: initial_range.clone(),
-                            extra: initial_range.end
-                                ..chars
-                                    .peek()
-                                    .map(|CharWithContext(range, _)| range.start)
-                                    .unwrap_or(input.len()),
+                            extra: initial_range.start..extra_end,
                         },
-                        number_ctx.start
-                            ..chars
-                                .peek()
-                                .map(|CharWithContext(range, _)| range.start)
-                                .unwrap_or(input.len()),
+                        number_ctx.start..final_zero_range.end,
                         input,
                     ));
                 }
