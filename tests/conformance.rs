@@ -20,7 +20,7 @@ struct Case {
 }
 
 const CONFORMANCE_PATH: &str = "./tests/conformance/JSONTestSuite/test_parsing";
-const FILENAME_FILTER: [&str; 15] = [
+const FILENAME_FILTER: [&str; 12] = [
     // not yet supported
     "escape",
     // bug
@@ -31,10 +31,6 @@ const FILENAME_FILTER: [&str; 15] = [
     // should expect comma or closed
     "n_array_colon_instead_of_comma.json",
     "n_array_items_separated_by_semicolon.json",
-    // leading 0
-    "n_number_-01.json",
-    "n_number_neg_int_starting_with_zero.json",
-    "n_number_with_leading_zero.json",
     // uh oh
     "500",
     "10000",
@@ -100,7 +96,7 @@ fn get_tests() -> (Vec<Case>, usize, usize) {
 #[test]
 fn feature() {
     let (mut cases, total, rest) = get_tests();
-    assert_eq!(rest, 252);
+    assert_eq!(rest, 255);
     assert_eq!(total, 318);
 
     cases.sort_by(|a, b| a.file_name.cmp(&b.file_name));
