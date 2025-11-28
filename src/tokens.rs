@@ -6,10 +6,11 @@ use crate::{
     tokens::{
         lexical::{CONTROL_RANGE, JsonChar, is_whitespace},
         number::parse_num,
+        string::parse_string,
     },
 };
+use core::fmt::Display;
 use core::ops::Range;
-use core::{fmt::Display, iter::Peekable};
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Token {
@@ -113,6 +114,35 @@ impl From<(usize, char)> for CharWithContext {
     }
 }
 
+impl CharWithContext {
+    fn as_token_with_context(&self) -> Option<TokenWithContext> {
+        match self {
+            CharWithContext(range, JsonChar(c)) => {
+                let token = match c {
+                    '{' => Token::OpenCurlyBrace,
+                    '}' => Token::ClosedCurlyBrace,
+                    ':' => Token::Colon,
+                    ',' => Token::Comma,
+                    '[' => Token::OpenSquareBracket,
+                    ']' => Token::ClosedSquareBracket,
+                    _ => return None,
+                };
+                Some(TokenWithContext {
+                    token,
+                    range: range.clone(),
+                })
+            }
+        }
+    }
+
+    fn as_json_char(&self) -> JsonChar {
+        self.1
+    }
+    fn as_char(&self) -> char {
+        self.as_json_char().0
+    }
+}
+
 pub fn str_to_tokens(s: &str) -> Result<Vec<TokenWithContext>> {
     let mut chars = s
         .char_indices()
@@ -121,45 +151,20 @@ pub fn str_to_tokens(s: &str) -> Result<Vec<TokenWithContext>> {
 
     let mut res = vec![];
 
-    while let Some(CharWithContext(r, JsonChar(c))) = chars.peek().cloned() {
+    while let Some(ctx) = chars.peek().cloned() {
+        let CharWithContext(r, JsonChar(c)) = ctx.clone();
         if is_whitespace(c) {
             chars.next();
             continue;
         }
+        if let Some(tok) = ctx.as_token_with_context() {
+            res.push(tok);
+            chars.next();
+            continue;
+        }
         let token = match c {
-            '{' => {
-                chars.next();
-                Token::OpenCurlyBrace
-            }
-            '}' => {
-                chars.next();
-                Token::ClosedCurlyBrace
-            }
-            ':' => {
-                chars.next();
-                Token::Colon
-            }
-            ',' => {
-                chars.next();
-                Token::Comma
-            }
-            '[' => {
-                chars.next();
-                Token::OpenSquareBracket
-            }
-            ']' => {
-                chars.next();
-                Token::ClosedSquareBracket
-            }
-            '"' => {
-                chars.next();
-                // TODO to parse and handle it's own start
-                Token::String(parse_str(r.end, s, &mut chars)?.into())
-            }
-            '0'..='9' | '-' => {
-                res.push(parse_num(s, &mut chars)?);
-                continue;
-            }
+            '"' => parse_string(s, &mut chars)?,
+            '0'..='9' | '-' => parse_num(s, &mut chars)?,
             'n' | 't' | 'f' => {
                 let expected = match c {
                     'n' => NULL,
@@ -167,66 +172,86 @@ pub fn str_to_tokens(s: &str) -> Result<Vec<TokenWithContext>> {
                     'f' => FALSE,
                     _ => unreachable!("{c} is not able to be reached"),
                 };
-                let actual = chars
-                    .by_ref()
-                    .take(expected.len())
-                    .map(|CharWithContext(_, JsonChar(c))| c);
+                let actual = chars.by_ref().take(expected.len()).map(|c| c.as_char());
 
                 if actual.eq(expected.chars()) {
-                    match c {
+                    let token = match c {
                         'n' => Token::Null,
                         't' => true.into(),
                         'f' => false.into(),
                         _ => unreachable!("{c} is not able to be reached"),
+                    };
+                    let start = r.start;
+                    let end = *chars
+                        .peek()
+                        .map(|CharWithContext(r, _)| &r.start)
+                        .unwrap_or(&s.len());
+                    TokenWithContext {
+                        token,
+                        range: start..end,
                     }
                 } else {
-                    return Err(Error::new(ErrorKind::UnexpectedCharacter(c.into()), r, s));
+                    return Err(Error::new(
+                        ErrorKind::UnexpectedCharacter(c.into()),
+                        r.clone(),
+                        s,
+                    ));
                 }
             }
             _ => {
-                return Err(Error::new(ErrorKind::UnexpectedCharacter(c.into()), r, s));
+                return Err(Error::new(
+                    ErrorKind::UnexpectedCharacter(c.into()),
+                    r.clone(),
+                    s,
+                ));
             }
         };
-        let start = r.start;
-        let end = *chars
-            .peek()
-            .map(|CharWithContext(r, _)| &r.start)
-            .unwrap_or(&s.len());
-        res.push(TokenWithContext {
-            token,
-            range: start..end,
-        });
+        res.push(token);
     }
 
     Ok(res)
 }
 
-fn parse_str<'a>(
-    start: usize,
-    input: &'a str,
-    chars: &mut Peekable<impl Iterator<Item = CharWithContext>>,
-) -> Result<&'a str> {
-    let mut escape = false;
-    while let Some(CharWithContext(_, JsonChar(c))) =
-        chars.next_if(|CharWithContext(_, JsonChar(c))| {
-            (*c != '"' && !CONTROL_RANGE.contains(c)) || escape
-        })
-    {
-        escape = c == '\\' && !escape;
-    }
+mod string {
+    use crate::{
+        Error, ErrorKind, Result,
+        tokens::{CONTROL_RANGE, CharWithContext, JsonChar, Token, TokenWithContext},
+    };
+    use std::iter::Peekable;
 
-    if let Some(CharWithContext(r, JsonChar(c))) = chars.next() {
-        if !CONTROL_RANGE.contains(&c) {
-            Ok(&input[start..r.start])
-        } else {
-            Err(Error::new(
-                ErrorKind::UnexpectedControlCharacterInString(c.into()),
-                r,
-                input,
-            ))
+    pub fn parse_string(
+        input: &str,
+        chars: &mut Peekable<impl Iterator<Item = CharWithContext>>,
+    ) -> Result<TokenWithContext> {
+        let Some(CharWithContext(starting_quote, JsonChar('"'))) = chars.next() else {
+            unreachable!("must start with a quote");
+        };
+
+        let mut escape = false;
+        while let Some(CharWithContext(_, JsonChar(c))) =
+            chars.next_if(|CharWithContext(_, JsonChar(c))| {
+                (*c != '"' && !CONTROL_RANGE.contains(c)) || escape
+            })
+        {
+            escape = c == '\\' && !escape;
         }
-    } else {
-        Err(Error::from_unterminated(ErrorKind::ExpectedQuote, input))
+
+        if let Some(CharWithContext(r, JsonChar(c))) = chars.next() {
+            if !CONTROL_RANGE.contains(&c) {
+                Ok(TokenWithContext {
+                    token: Token::String(input[starting_quote.end..r.start].into()),
+                    range: starting_quote.start..r.end,
+                })
+            } else {
+                Err(Error::new(
+                    ErrorKind::UnexpectedControlCharacterInString(c.into()),
+                    r,
+                    input,
+                ))
+            }
+        } else {
+            Err(Error::from_unterminated(ErrorKind::ExpectedQuote, input))
+        }
     }
 }
 
