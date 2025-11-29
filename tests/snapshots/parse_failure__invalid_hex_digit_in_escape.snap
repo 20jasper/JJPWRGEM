@@ -1,0 +1,14 @@
+---
+source: tests/parse_failure.rs
+expression: "format_output_snapshot(json, &annotated)"
+---
+case --- 
+"\u1FZA"
+stdout --- 
+<empty>
+stderr --- 
+error: expected hex digit in escape, found `Z`
+ --> stdin:1:2
+  |
+1 | "\u1FZA"
+  |  ^^^^^

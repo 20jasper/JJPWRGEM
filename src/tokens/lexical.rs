@@ -1,32 +1,18 @@
 use core::{fmt::Display, ops::RangeInclusive};
 
-/// See [RFC 8259, Section 2](https://datatracker.ietf.org/doc/html/rfc8259#section-2):
-///
-///```abnf
-/// ws = *(
-///         %x20 /              ; Space
-///         %x09 /              ; Horizontal tab
-///         %x0A /              ; Line feed or New line
-///         %x0D )              ; Carriage return
-/// ```
-pub fn is_whitespace(c: char) -> bool {
-    matches!(c, ' ' | '\t' | '\n' | '\r')
-}
+use crate::tokens::CharWithContext;
 
-/// see [is_whitespace]
+/// see [JsonChar::is_whitespace]
 pub fn trim_end_whitespace(s: &str) -> &str {
     let end = s
         .char_indices()
+        .map(Into::<CharWithContext>::into)
         .rev()
-        .find(|(_, c)| !is_whitespace(*c))
-        .map(|(i, c)| i + c.len_utf8())
+        .find_map(|CharWithContext(r, c)| (!c.is_whitespace()).then_some(r.end))
         .unwrap_or_default();
 
     &s[..end]
 }
-
-/// See [RFC 8259, Section 7](https://datatracker.ietf.org/doc/html/rfc8259#section-7)
-pub const CONTROL_RANGE: RangeInclusive<char> = '\u{0000}'..='\u{001F}';
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy, PartialOrd, Ord)]
 pub struct JsonChar(pub char);
@@ -64,11 +50,36 @@ impl JsonChar {
             ch => format!("\\u{:04X}", u32::from(ch)),
         }
     }
+
+    pub fn can_be_escaped_directly(&self) -> bool {
+        matches!(self.0, '"' | '\\' | '/' | 'b' | 'f' | 'n' | 'r' | 't')
+    }
+
+    /// See [RFC 8259, Section 7](https://datatracker.ietf.org/doc/html/rfc8259#section-7)
+    pub const CONTROL_RANGE: RangeInclusive<char> = '\u{0000}'..='\u{001F}';
+
+    /// see [Self::CONTROL_RANGE]
+    pub fn is_control(&self) -> bool {
+        Self::CONTROL_RANGE.contains(&self.0)
+    }
+
+    /// See [RFC 8259, Section 2](https://datatracker.ietf.org/doc/html/rfc8259#section-2):
+    ///
+    ///```abnf
+    /// ws = *(
+    ///         %x20 /              ; Space
+    ///         %x09 /              ; Horizontal tab
+    ///         %x0A /              ; Line feed or New line
+    ///         %x0D )              ; Carriage return
+    /// ```
+    pub fn is_whitespace(&self) -> bool {
+        matches!(self.0, ' ' | '\t' | '\n' | '\r')
+    }
 }
 
 impl Display for JsonChar {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let rep = if CONTROL_RANGE.contains(&self.0) {
+        let rep = if self.is_control() {
             self.escape()
         } else {
             self.0.to_string()

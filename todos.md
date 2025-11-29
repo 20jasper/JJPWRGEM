@@ -131,3 +131,4 @@
   - [ ] Private Use Area: U+E000 to U+F8FF
   - [ ] Tag Characters: U+E0001 to U+E007F
   - [ ]
+- [ ] expected quote before end of string should suggest adding one
