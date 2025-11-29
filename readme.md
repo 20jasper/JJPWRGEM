@@ -52,7 +52,7 @@ JJPWRGEM JSON Parser With Really Good Error Messages. I was inspired by GNU to m
 
 ### How do you pronounce JJPWRGEM?
 
-$/ˈdʒeɪ dʒeɪ ˈpaʊər dʒɛm/$ JAY-jay-POW-er-jem
+/ˈdʒeɪ dʒeɪ ˈpaʊər dʒɛm/ JAY-jay-POW-er-jem
 
 ### But why is it called that?
 
