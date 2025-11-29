@@ -219,13 +219,46 @@ mod string {
         Error, ErrorKind, Result,
         tokens::{CONTROL_RANGE, CharWithContext, JsonChar, Token, TokenWithContext},
     };
+    use core::ops::Range;
     use std::iter::Peekable;
+
+    enum StringState {
+        Open,
+        // TODO track last escaped u escapes
+        CharOrEnd(Range<usize>),
+        Escape(Range<usize>),
+        End(TokenWithContext),
+    }
+
+    impl StringState {
+        fn process(
+            self,
+            chars: &mut Peekable<impl Iterator<Item = CharWithContext>>,
+        ) -> Result<Self> {
+            let res = match self {
+                StringState::Open => {
+                    let Some(CharWithContext(starting_quote, JsonChar('"'))) = chars.next() else {
+                        unreachable!("must start with a quote");
+                    };
+
+                    StringState::CharOrEnd(starting_quote)
+                }
+                StringState::CharOrEnd(range) => todo!(),
+                StringState::Escape(range) => todo!(),
+                StringState::End(token_with_context) => todo!(),
+            };
+
+            Ok(res)
+        }
+    }
 
     pub fn parse_string(
         input: &str,
         chars: &mut Peekable<impl Iterator<Item = CharWithContext>>,
     ) -> Result<TokenWithContext> {
-        let Some(CharWithContext(starting_quote, JsonChar('"'))) = chars.next() else {
+        let state = StringState::Open;
+
+        let Ok(StringState::CharOrEnd(starting_quote)) = state.process(chars) else {
             unreachable!("must start with a quote");
         };
 
