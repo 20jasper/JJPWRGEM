@@ -81,6 +81,13 @@ pub enum ErrorKind {
         u_ctx: Range<usize>,
         maybe_c: JsonCharOption,
     },
+    /** expected escapable sequence, found {maybe_c}.
+    valid escapes are `\"`, `\\`, `\/`, `\b`, `\f`, `\n`, `\r`, `\t` or `\uXXXX` (4 hex digits) */
+    ExpectedEscape {
+        maybe_c: JsonCharOption,
+        // slash_ctx: Range<usize>,
+        // string_ctx: Range<usize>
+    },
 }
 
 impl ErrorKind {

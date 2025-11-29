@@ -322,6 +322,7 @@ impl<'a> From<&'a Error> for Vec<Patch<'a>> {
             // reachable?
 
             // TODO patch
+            | ErrorKind::ExpectedEscape { ..}
             | ErrorKind::ExpectedHexDigit { .. }
             | ErrorKind::InvalidEncoding
             | ErrorKind::ExpectedDigitAfterE { .. }
@@ -407,8 +408,9 @@ impl<'a> From<&'a Error> for Vec<Context<'a>> {
                     source,
                 ),
             ],
-            // todo ctx
-            ErrorKind::ExpectedHexDigit { .. }
+
+            ErrorKind::ExpectedEscape { .. }
+            | ErrorKind::ExpectedHexDigit { .. }
             | ErrorKind::InvalidEncoding
             | ErrorKind::ExpectedValue(None, _)
             | ErrorKind::UnexpectedCharacter(_)

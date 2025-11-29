@@ -20,14 +20,13 @@ struct Case {
 }
 
 const CONFORMANCE_PATH: &str = "./tests/conformance/JSONTestSuite/test_parsing";
-const FILENAME_FILTER: [&str; 12] = [
+const FILENAME_FILTER: [&str; 11] = [
     // not yet supported
-    "escape",
+    "y_object_string_unicode.json",
+    "n_string_incomplete_escaped_character.json",
     // bug
     "n_string_unicode_capitalu",
     "surrogate",
-    "n_string_backslash_00.json",
-    "n_string_invalid_backslash_esc.json",
     // should expect comma or closed
     "n_array_colon_instead_of_comma.json",
     "n_array_items_separated_by_semicolon.json",
@@ -82,6 +81,12 @@ fn get_tests() -> (Vec<Case>, usize, usize) {
         let Ok(text) = std::fs::read(&path) else {
             continue;
         };
+        // TODO u escapes
+        if let Ok(text) = String::from_utf8(text.clone())
+            && text.contains(r"\u")
+        {
+            continue;
+        }
         cases.push(Case {
             text,
             file_name,
@@ -96,7 +101,7 @@ fn get_tests() -> (Vec<Case>, usize, usize) {
 #[test]
 fn feature() {
     let (mut cases, total, rest) = get_tests();
-    assert_eq!(rest, 255);
+    assert_eq!(rest, 261);
     assert_eq!(total, 318);
 
     cases.sort_by(|a, b| a.file_name.cmp(&b.file_name));

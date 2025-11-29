@@ -16,6 +16,16 @@ enum StringState {
         string_range: Range<usize>,
         quote_range: Range<usize>,
     },
+    UEscape {
+        #[allow(dead_code)]
+        string_range: Range<usize>,
+        #[allow(dead_code)]
+        quote_range: Range<usize>,
+        #[allow(dead_code)]
+        u_range: Range<usize>,
+        #[allow(dead_code)]
+        digits: Vec<CharWithContext>,
+    },
     End(TokenWithContext),
 }
 
@@ -71,11 +81,21 @@ impl StringState {
                         quote_range,
                     }
                 }
-                Some(CharWithContext(r, JsonChar('u'))) => {
-                    todo!()
+                Some(CharWithContext(r, JsonChar('u'))) => StringState::UEscape {
+                    string_range,
+                    quote_range,
+                    u_range: r,
+                    digits: vec![],
+                },
+                maybe_c => {
+                    return Err(Error::from_maybe_json_char_with_context(
+                        |c| ErrorKind::ExpectedEscape { maybe_c: c },
+                        maybe_c,
+                        input,
+                    ));
                 }
-                _ => todo!(),
             },
+            StringState::UEscape { .. } => todo!("uescapes are not yet supported"),
             StringState::End(_) => self,
         };
 

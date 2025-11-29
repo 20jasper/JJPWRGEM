@@ -1,0 +1,22 @@
+---
+source: tests/conformance.rs
+expression: "format_output_snapshot(case.text, &annotated)"
+---
+case --- 
+["new
+line"]
+stdout --- 
+<empty>
+stderr --- 
+error: unexpected unescaped control character `\n` in string literal
+ --> stdin:1:6
+  |
+1 |   ["new
+  |  ______^
+2 | | line"]
+  | |_^
+  |
+help: replace the control character with its escaped form
+  |
+1 | ["new\nline"]
+  |      ++
