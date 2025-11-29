@@ -178,14 +178,13 @@ pub fn str_to_tokens(s: &str) -> Result<Vec<TokenWithContext>> {
                         'f' => false.into(),
                         _ => unreachable!("{c} is not able to be reached"),
                     };
-                    let start = r.start;
                     let end = *chars
                         .peek()
                         .map(|CharWithContext(r, _)| &r.start)
                         .unwrap_or(&s.len());
                     TokenWithContext {
                         token,
-                        range: start..end,
+                        range: r.start..end,
                     }
                 } else {
                     return Err(Error::new(

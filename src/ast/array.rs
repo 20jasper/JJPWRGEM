@@ -103,12 +103,12 @@ impl ArrayState {
             } => {
                 validate_start_of_value(text, expect_ctx, tokens.peek().cloned())?;
 
-                let ValueWithContext { value, ctx } = parse_tokens(tokens, text, false)?;
+                let ValueWithContext { value, range } = parse_tokens(tokens, text, false)?;
                 items.push(value);
                 ArrayState::CommaOrEnd {
                     items,
                     open_ctx,
-                    last_value_range: ctx,
+                    last_value_range: range,
                 }
             }
 

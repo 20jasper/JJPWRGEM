@@ -49,20 +49,20 @@ pub enum ErrorKind {
     },
     /// expected fraction digit following dot, found {maybe_c}
     ExpectedDigitAfterDot {
-        number_ctx: Range<usize>,
-        dot_ctx: Range<usize>,
+        number_range: Range<usize>,
+        dot_range: Range<usize>,
         maybe_c: JsonCharOption,
     },
     /// expected +/- or digit after exponent indicator, found {maybe_c}
     ExpectedPlusOrMinusOrDigitAfterE {
-        number_ctx: Range<usize>,
-        e_ctx: Range<usize>,
+        number_range: Range<usize>,
+        e_range: Range<usize>,
         maybe_c: JsonCharOption,
     },
     /// expected digit after exponent indicator, found {maybe_c}
     ExpectedDigitAfterE {
-        number_ctx: Range<usize>,
-        exponent_ctx: Range<usize>,
+        number_range: Range<usize>,
+        exponent_range: Range<usize>,
         maybe_c: JsonCharOption,
     },
 
@@ -71,15 +71,14 @@ pub enum ErrorKind {
     UnexpectedControlCharacterInString(JsonChar),
     /// expected closing quote
     ExpectedQuote {
-        open_ctx: Range<usize>,
-        string_ctx: Range<usize>,
+        open_range: Range<usize>,
+        string_range: Range<usize>,
     },
-    // todo better context
     /// expected hex digit {digit_idx} of 4 in escape, found {maybe_c}
     ExpectedHexDigit {
-        quote_ctx: Range<usize>,
-        slash_ctx: Range<usize>,
-        u_ctx: Range<usize>,
+        quote_range: Range<usize>,
+        slash_range: Range<usize>,
+        u_range: Range<usize>,
         maybe_c: JsonCharOption,
         digit_idx: usize,
     },
@@ -87,9 +86,9 @@ pub enum ErrorKind {
     valid escapes are `\"`, `\\`, `\/`, `\b`, `\f`, `\n`, `\r`, `\t` or `\uXXXX` (4 hex digits) */
     ExpectedEscape {
         maybe_c: JsonCharOption,
-        slash_ctx: Range<usize>,
-        string_ctx: Range<usize>,
-        quote_ctx: Range<usize>,
+        slash_range: Range<usize>,
+        string_range: Range<usize>,
+        quote_range: Range<usize>,
     },
 
     // misc

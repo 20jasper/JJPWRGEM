@@ -290,37 +290,37 @@ impl<'a> From<&'a Error> for Vec<Patch<'a>> {
             )],
             ErrorKind::ExpectedDigitAfterDot {
                 maybe_c: JsonCharOption(None),
-                number_ctx,
+                number_range,
                 ..
             } => vec![Patch::new(
                 "insert placeholder digit after the decimal point",
-                number_ctx.end..number_ctx.end,
+                number_range.end..number_range.end,
                 source,
                 "0",
             )],
             ErrorKind::ExpectedPlusOrMinusOrDigitAfterE {
-                e_ctx,
+                e_range,
                 maybe_c: JsonCharOption(None),
                 ..
             } => vec![Patch::new(
                 "add placeholder exponent digits",
-                e_ctx.end..e_ctx.end,
+                e_range.end..e_range.end,
                 source,
                 "+1",
             )],
             ErrorKind::ExpectedDigitAfterE {
                 maybe_c: JsonCharOption(None),
-                number_ctx,
+                number_range,
                 ..
             } => vec![Patch::new(
                 "add a digit after the exponent sign",
-                number_ctx.end..number_ctx.end,
+                number_range.end..number_range.end,
                 source,
                 "0",
             )],
-            ErrorKind::ExpectedQuote { string_ctx, .. } => vec![Patch::new(
+            ErrorKind::ExpectedQuote { string_range, .. } => vec![Patch::new(
                 "insert the missing closing quote",
-                string_ctx.end..string_ctx.end,
+                string_range.end..string_range.end,
                 source,
                 "\"",
             )],
@@ -340,11 +340,11 @@ impl<'a> From<&'a Error> for Vec<Patch<'a>> {
             | ErrorKind::UnexpectedCharacter(_)
             | ErrorKind::ExpectedOpenBrace { .. }
             | ErrorKind::ExpectedMinusOrDigit(_) => Vec::new(),
-                ErrorKind::ExpectedEscape { maybe_c, slash_ctx, .. } => match maybe_c.0.as_ref() {
+                ErrorKind::ExpectedEscape { maybe_c, slash_range, .. } => match maybe_c.0.as_ref() {
                     Some(c) if c.is_control() => {
                         vec![Patch::new(
                             "escape the control character",
-                            slash_ctx.start..error.range.end,
+                            slash_range.start..error.range.end,
                             source,
                             c.escape(),
                         )]
@@ -352,7 +352,7 @@ impl<'a> From<&'a Error> for Vec<Patch<'a>> {
                     _=> {
                         vec![Patch::new(
                             "remove unnecessary escape slash",
-                            slash_ctx.clone(),
+                            slash_range.clone(),
                             source,
                             "",
                         )]
@@ -402,58 +402,58 @@ impl<'a> From<&'a Error> for Vec<Context<'a>> {
                 )]
             }
             ErrorKind::ExpectedDigitAfterDot {
-                dot_ctx,
-                number_ctx,
+                dot_range,
+                number_range,
                 ..
             } => vec![
-                Context::new("decimal point found here", dot_ctx.clone(), source),
-                Context::new("number found here", number_ctx.clone(), source),
+                Context::new("decimal point found here", dot_range.clone(), source),
+                Context::new("number found here", number_range.clone(), source),
             ],
             ErrorKind::ExpectedDigitAfterE {
-                number_ctx,
-                exponent_ctx,
+                number_range,
+                exponent_range,
                 maybe_c: _,
             }
             | ErrorKind::ExpectedPlusOrMinusOrDigitAfterE {
-                number_ctx,
-                e_ctx: exponent_ctx,
+                number_range,
+                e_range: exponent_range,
                 maybe_c: _,
             } => vec![
                 Context::new(
                     "number with exponent found here",
-                    number_ctx.clone(),
+                    number_range.clone(),
                     source,
                 ),
                 Context::new(
                     "exponent indicator found here",
-                    exponent_ctx.clone(),
+                    exponent_range.clone(),
                     source,
                 ),
             ],
-            ErrorKind::ExpectedQuote { open_ctx, .. } => vec![Context::new(
+            ErrorKind::ExpectedQuote { open_range, .. } => vec![Context::new(
                 "opening quote found here",
-                open_ctx.clone(),
+                open_range.clone(),
                 source,
             )],
             ErrorKind::ExpectedEscape {
-                slash_ctx,
-                quote_ctx,
+                slash_range,
+                quote_range,
                 ..
             } => vec![
-                Context::new("escape slash found here", slash_ctx.clone(), source),
-                Context::new("opening quote found here", quote_ctx.clone(), source),
+                Context::new("escape slash found here", slash_range.clone(), source),
+                Context::new("opening quote found here", quote_range.clone(), source),
             ],
 
             ErrorKind::ExpectedHexDigit {
-                quote_ctx,
-                slash_ctx,
-                u_ctx,
+                quote_range,
+                slash_range,
+                u_range,
                 ..
             } => vec![
-                Context::new("opening quote found here", quote_ctx.clone(), source),
+                Context::new("opening quote found here", quote_range.clone(), source),
                 Context::new(
                     "\\u escape started here",
-                    slash_ctx.start..u_ctx.end,
+                    slash_range.start..u_range.end,
                     source,
                 ),
             ],

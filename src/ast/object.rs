@@ -188,14 +188,14 @@ impl ObjectState {
 
                 let ValueWithContext {
                     value: json_value,
-                    ctx: json_ctx,
+                    range: json_range,
                 } = parse_tokens(tokens, text, false)?;
                 map.insert(key, json_value);
 
                 ObjectState::KeyOrEnd {
                     map,
                     open_ctx,
-                    last_pair: Some(colon_ctx.range.start..json_ctx.end),
+                    last_pair: Some(colon_ctx.range.start..json_range.end),
                 }
             }
             ObjectState::End(map, range) => ObjectState::End(map, range),

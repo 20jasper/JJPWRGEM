@@ -71,8 +71,8 @@ impl StringState {
                 None => {
                     return Err(Error::from_unterminated(
                         ErrorKind::ExpectedQuote {
-                            open_ctx: quote_range.clone(),
-                            string_ctx: string_range.clone(),
+                            open_range: quote_range.clone(),
+                            string_range: string_range.clone(),
                         },
                         input,
                     ));
@@ -100,9 +100,9 @@ impl StringState {
                     return Err(Error::from_maybe_json_char_with_context(
                         |c| ErrorKind::ExpectedEscape {
                             maybe_c: c,
-                            slash_ctx: slash_range.clone(),
-                            string_ctx: string_range.clone(),
-                            quote_ctx: quote_range.clone(),
+                            slash_range: slash_range.clone(),
+                            string_range: string_range.clone(),
+                            quote_range: quote_range.clone(),
                         },
                         maybe_c,
                         input,
@@ -137,9 +137,9 @@ impl StringState {
                 maybe_c => {
                     return Err(Error::from_maybe_json_char_with_context(
                         |c| ErrorKind::ExpectedHexDigit {
-                            quote_ctx: quote_range.clone(),
-                            slash_ctx: slash_range.clone(),
-                            u_ctx: u_range.clone(),
+                            quote_range: quote_range.clone(),
+                            slash_range: slash_range.clone(),
+                            u_range: u_range.clone(),
                             maybe_c: c,
                             digit_idx: digits.len() + 1,
                         },

@@ -33,12 +33,12 @@ fn token_to_value(token: Token) -> Option<Value> {
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct ValueWithContext {
     value: Value,
-    ctx: Range<usize>,
+    range: Range<usize>,
 }
 
 impl ValueWithContext {
-    pub fn new(value: Value, ctx: Range<usize>) -> Self {
-        Self { value, ctx }
+    pub fn new(value: Value, range: Range<usize>) -> Self {
+        Self { value, range }
     }
 }
 
@@ -68,7 +68,7 @@ pub fn parse_tokens(
             let TokenWithContext { token, range } = tokens.next().unwrap();
             ValueWithContext {
                 value: token_to_value(token).expect("token should be valid json value"),
-                ctx: range,
+                range,
             }
         }
         invalid => {
