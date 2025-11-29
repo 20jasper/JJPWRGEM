@@ -153,7 +153,7 @@ pub fn str_to_tokens(s: &str) -> Result<Vec<TokenWithContext>> {
 
     while let Some(ctx) = chars.peek().cloned() {
         let CharWithContext(r, JsonChar(c)) = ctx.clone();
-        if is_whitespace(c) {
+        if ctx.as_json_char().is_whitespace() {
             chars.next();
             continue;
         }
@@ -258,14 +258,14 @@ mod string {
     ) -> Result<TokenWithContext> {
         let state = StringState::Open;
 
-        let Ok(StringState::CharOrEnd(starting_quote)) = state.process(chars) else {
+        let Ok(StringState::CharOrEscapeOrEnd(starting_quote)) = state.process(chars, input) else {
             unreachable!("must start with a quote");
         };
 
         let mut escape = false;
         while let Some(CharWithContext(r, JsonChar(c))) =
             chars.next_if(|CharWithContext(_, JsonChar(c))| {
-                (*c != '"' && !CONTROL_RANGE.contains(c)) || escape
+                (*c != '"' && !JsonChar(*c).is_control()) || escape
             })
         {
             if escape {
@@ -299,15 +299,15 @@ mod string {
             escape = c == '\\' && !escape;
         }
 
-        if let Some(CharWithContext(r, JsonChar(c))) = chars.next() {
-            if !CONTROL_RANGE.contains(&c) {
+        if let Some(CharWithContext(r, c)) = chars.next() {
+            if !c.is_control() {
                 Ok(TokenWithContext {
                     token: Token::String(input[starting_quote.end..r.start].into()),
                     range: starting_quote.start..r.end,
                 })
             } else {
                 Err(Error::new(
-                    ErrorKind::UnexpectedControlCharacterInString(c.into()),
+                    ErrorKind::UnexpectedControlCharacterInString(c),
                     r,
                     input,
                 ))
