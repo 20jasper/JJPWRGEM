@@ -18,16 +18,11 @@ enum StringState {
         slash_range: Range<usize>,
     },
     UEscape {
-        #[allow(dead_code)]
         string_range: Range<usize>,
-        #[allow(dead_code)]
         quote_range: Range<usize>,
-        #[allow(dead_code)]
         u_range: Range<usize>,
-        #[allow(dead_code)]
         slash_range: Range<usize>,
-        #[allow(dead_code)]
-        digits: Vec<CharWithContext>,
+        digits: Vec<JsonChar>,
     },
     End(TokenWithContext),
 }
@@ -114,7 +109,45 @@ impl StringState {
                     ));
                 }
             },
-            StringState::UEscape { .. } => todo!("uescapes are not yet supported"),
+            StringState::UEscape {
+                string_range,
+                quote_range,
+                u_range,
+                slash_range,
+                mut digits,
+            } => match chars.next() {
+                Some(CharWithContext(r, c)) if c.is_hexdigit() => {
+                    let string_range = string_range.start..r.end;
+                    if digits.len() == 3 {
+                        StringState::CharOrEscapeOrEnd {
+                            string_range,
+                            quote_range,
+                        }
+                    } else {
+                        digits.push(c);
+                        StringState::UEscape {
+                            string_range,
+                            quote_range,
+                            u_range,
+                            slash_range,
+                            digits,
+                        }
+                    }
+                }
+                maybe_c => {
+                    return Err(Error::from_maybe_json_char_with_context(
+                        |c| ErrorKind::ExpectedHexDigit {
+                            quote_ctx: quote_range.clone(),
+                            slash_ctx: slash_range.clone(),
+                            u_ctx: u_range.clone(),
+                            maybe_c: c,
+                            digit_idx: digits.len() + 1,
+                        },
+                        maybe_c,
+                        input,
+                    ));
+                }
+            },
             StringState::End(_) => self,
         };
 

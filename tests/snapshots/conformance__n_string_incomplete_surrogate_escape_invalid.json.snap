@@ -1,0 +1,24 @@
+---
+source: tests/conformance.rs
+expression: "format_output_snapshot(case.text, &annotated)"
+---
+case --- 
+["\uD800\uD800\x"]
+stdout --- 
+<empty>
+stderr --- 
+error: expected escapable sequence, found `x`.
+       valid escapes are `\"`, `\\`, `\/`, `\b`, `\f`, `\n`, `\r`, `\t` or `\uXXXX` (4 hex digits)
+ --> stdin:1:16
+  |
+1 | ["\uD800\uD800\x"]
+  |  -            -^
+  |  |            |
+  |  |            escape slash found here
+  |  opening quote found here
+  |
+help: remove unnecessary escape slash
+  |
+1 - ["\uD800\uD800\x"]
+1 + ["\uD800\uD800x"]
+  |

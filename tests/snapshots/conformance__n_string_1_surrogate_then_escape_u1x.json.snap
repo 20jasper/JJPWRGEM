@@ -1,0 +1,17 @@
+---
+source: tests/conformance.rs
+expression: "format_output_snapshot(case.text, &annotated)"
+---
+case --- 
+["\uD800\u1x"]
+stdout --- 
+<empty>
+stderr --- 
+error: expected hex digit 2 of 4 in escape, found `x`
+ --> stdin:1:12
+  |
+1 | ["\uD800\u1x"]
+  |  -      -- ^
+  |  |      |
+  |  |      \u escape started here
+  |  opening quote found here

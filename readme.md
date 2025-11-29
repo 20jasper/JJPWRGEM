@@ -2,7 +2,7 @@
 
 JJPWRGEM JSON Parser With Really Good Error Messages
 
-An (eventually) RFC 8259 compliant JSON Parser. Currently passes 261/319 tests from @nst's amazing [JSONTestSuite](https://github.com/nst/JSONTestSuite)! Failures are due to high levels of recursion and escaping
+An (eventually) RFC 8259 compliant JSON Parser. Currently passes 309/319 tests from @nst's amazing [JSONTestSuite](https://github.com/nst/JSONTestSuite)!
 
 ![A logo of an axolotl riding a skateboard](./logo.webp)
 
@@ -43,6 +43,7 @@ How cases undefined by the spec are handled
 - only utf8 encoding is supported
 - no limitations on nesting or length
 - extensions such as trailing commas or comments are not allowed
+- surrogates are not validated, eg a lone continuation byte is valid
 
 ## FAQ
 

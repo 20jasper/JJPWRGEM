@@ -444,8 +444,20 @@ impl<'a> From<&'a Error> for Vec<Context<'a>> {
                 Context::new("opening quote found here", quote_ctx.clone(), source),
             ],
 
-            ErrorKind::ExpectedHexDigit { .. }
-            | ErrorKind::InvalidEncoding
+            ErrorKind::ExpectedHexDigit {
+                quote_ctx,
+                slash_ctx,
+                u_ctx,
+                ..
+            } => vec![
+                Context::new("opening quote found here", quote_ctx.clone(), source),
+                Context::new(
+                    "\\u escape started here",
+                    slash_ctx.start..u_ctx.end,
+                    source,
+                ),
+            ],
+            ErrorKind::InvalidEncoding
             | ErrorKind::ExpectedValue(None, _)
             | ErrorKind::UnexpectedCharacter(_)
             | ErrorKind::UnexpectedControlCharacterInString(_)
