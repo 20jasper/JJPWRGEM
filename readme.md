@@ -65,7 +65,13 @@ It's cool
 
 ### Is it blazingly fast™?
 
-I haven't benchmarked it yet, so maybe? I don't know
+Axolotls can't walk so fast, so relatively, yes
+
+### How long is an axolotl?
+
+According to the San Diego zoo, "[a]n axolotl can reach 12 inches in length, but on average grows to about 9 inches[^axolotlFact]"
+
+[^axolotlFact]: https://animals.sandiegozoo.org/animals/axolotl
 
 ## Notes
 
