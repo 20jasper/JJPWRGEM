@@ -12,4 +12,7 @@ error: expected escapable sequence, found `a`.
  --> stdin:1:4
   |
 1 | ["\a"]
-  |    ^
+  |  --^
+  |  ||
+  |  |escape slash found here
+  |  opening quote found here

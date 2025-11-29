@@ -12,4 +12,7 @@ error: expected escapable sequence, found `🌀`.
  --> stdin:1:4
   |
 1 | ["\🌀"]
-  |    ^^
+  |  --^^
+  |  ||
+  |  |escape slash found here
+  |  opening quote found here

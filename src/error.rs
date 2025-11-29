@@ -88,8 +88,9 @@ pub enum ErrorKind {
     valid escapes are `\"`, `\\`, `\/`, `\b`, `\f`, `\n`, `\r`, `\t` or `\uXXXX` (4 hex digits) */
     ExpectedEscape {
         maybe_c: JsonCharOption,
-        // slash_ctx: Range<usize>,
-        // string_ctx: Range<usize>
+        slash_ctx: Range<usize>,
+        string_ctx: Range<usize>,
+        quote_ctx: Range<usize>,
     },
 }
 

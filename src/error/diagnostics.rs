@@ -413,9 +413,21 @@ impl<'a> From<&'a Error> for Vec<Context<'a>> {
                     source,
                 ),
             ],
+            ErrorKind::ExpectedQuote { open_ctx, .. } => vec![Context::new(
+                "opening quote found here",
+                open_ctx.clone(),
+                source,
+            )],
+            ErrorKind::ExpectedEscape {
+                slash_ctx,
+                quote_ctx,
+                ..
+            } => vec![
+                Context::new("escape slash found here", slash_ctx.clone(), source),
+                Context::new("opening quote found here", quote_ctx.clone(), source),
+            ],
 
-            ErrorKind::ExpectedEscape { .. }
-            | ErrorKind::ExpectedHexDigit { .. }
+            ErrorKind::ExpectedHexDigit { .. }
             | ErrorKind::InvalidEncoding
             | ErrorKind::ExpectedValue(None, _)
             | ErrorKind::UnexpectedCharacter(_)
@@ -423,12 +435,6 @@ impl<'a> From<&'a Error> for Vec<Context<'a>> {
             | ErrorKind::TokenAfterEnd(_)
             | ErrorKind::ExpectedMinusOrDigit(_)
             | ErrorKind::ExpectedOpenBrace { context: None, .. } => Vec::new(),
-
-            ErrorKind::ExpectedQuote { open_ctx, .. } => vec![Context::new(
-                "opening quote found here",
-                open_ctx.clone(),
-                source,
-            )],
         }
     }
 }

@@ -15,6 +15,7 @@ enum StringState {
     Escape {
         string_range: Range<usize>,
         quote_range: Range<usize>,
+        slash_range: Range<usize>,
     },
     UEscape {
         #[allow(dead_code)]
@@ -23,6 +24,8 @@ enum StringState {
         quote_range: Range<usize>,
         #[allow(dead_code)]
         u_range: Range<usize>,
+        #[allow(dead_code)]
+        slash_range: Range<usize>,
         #[allow(dead_code)]
         digits: Vec<CharWithContext>,
     },
@@ -53,6 +56,7 @@ impl StringState {
                 Some(CharWithContext(r, JsonChar('\\'))) => StringState::Escape {
                     string_range: string_range.start..r.end,
                     quote_range,
+                    slash_range: r.clone(),
                 },
                 Some(CharWithContext(r, JsonChar('"'))) => StringState::End(TokenWithContext {
                     token: Token::String(input[quote_range.end..r.start].into()),
@@ -82,6 +86,7 @@ impl StringState {
             StringState::Escape {
                 string_range,
                 quote_range,
+                slash_range,
             } => match chars.next() {
                 Some(CharWithContext(r, c)) if c.can_be_escaped_directly() => {
                     StringState::CharOrEscapeOrEnd {
@@ -93,11 +98,17 @@ impl StringState {
                     string_range,
                     quote_range,
                     u_range: r,
+                    slash_range,
                     digits: vec![],
                 },
                 maybe_c => {
                     return Err(Error::from_maybe_json_char_with_context(
-                        |c| ErrorKind::ExpectedEscape { maybe_c: c },
+                        |c| ErrorKind::ExpectedEscape {
+                            maybe_c: c,
+                            slash_ctx: slash_range.clone(),
+                            string_ctx: string_range.clone(),
+                            quote_ctx: quote_range.clone(),
+                        },
                         maybe_c,
                         input,
                     ));
