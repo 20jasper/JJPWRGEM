@@ -12,4 +12,13 @@ error: expected escapable sequence, found `x`.
  --> stdin:1:4
   |
 1 | ["\x00"]
-  |    ^
+  |  --^
+  |  ||
+  |  |escape slash found here
+  |  opening quote found here
+  |
+help: remove unnecessary escape slash
+  |
+1 - ["\x00"]
+1 + ["x00"]
+  |

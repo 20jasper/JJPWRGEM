@@ -12,4 +12,12 @@ error: expected escapable sequence, found `\t`.
  --> stdin:1:4
   |
 1 | ["\    "]
-  |    ^^^^
+  |  --^^^^
+  |  ||
+  |  |escape slash found here
+  |  opening quote found here
+  |
+help: escape the control character
+  |
+1 | ["\t"]
+  |   ~~
