@@ -3,11 +3,7 @@ mod number;
 
 use crate::{
     Error, ErrorKind, Result,
-    tokens::{
-        lexical::{CONTROL_RANGE, JsonChar, is_whitespace},
-        number::parse_num,
-        string::parse_string,
-    },
+    tokens::{lexical::JsonChar, number::parse_num, string::parse_string},
 };
 use core::fmt::Display;
 use core::ops::Range;
@@ -217,7 +213,7 @@ mod string {
 
     use crate::{
         Error, ErrorKind, Result,
-        tokens::{CONTROL_RANGE, CharWithContext, JsonChar, Token, TokenWithContext},
+        tokens::{CharWithContext, JsonChar, Token, TokenWithContext},
     };
     use core::ops::Range;
     use std::iter::Peekable;
@@ -225,8 +221,14 @@ mod string {
     enum StringState {
         Open,
         // TODO track last escaped u escapes
-        CharOrEnd(Range<usize>),
-        Escape(Range<usize>),
+        CharOrEscapeOrEnd {
+            string_range: Range<usize>,
+            quote_range: Range<usize>,
+        },
+        Escape {
+            string_range: Range<usize>,
+            quote_range: Range<usize>,
+        },
         End(TokenWithContext),
     }
 
@@ -234,6 +236,7 @@ mod string {
         fn process(
             self,
             chars: &mut Peekable<impl Iterator<Item = CharWithContext>>,
+            input: &str,
         ) -> Result<Self> {
             let res = match self {
                 StringState::Open => {
@@ -241,11 +244,52 @@ mod string {
                         unreachable!("must start with a quote");
                     };
 
-                    StringState::CharOrEnd(starting_quote)
+                    StringState::CharOrEscapeOrEnd {
+                        string_range: starting_quote.clone(),
+                        quote_range: starting_quote.clone(),
+                    }
                 }
-                StringState::CharOrEnd(range) => todo!(),
-                StringState::Escape(range) => todo!(),
-                StringState::End(token_with_context) => todo!(),
+                StringState::CharOrEscapeOrEnd {
+                    string_range,
+                    quote_range,
+                } => match chars.next() {
+                    Some(CharWithContext(r, JsonChar('\\'))) => StringState::Escape {
+                        string_range: string_range.start..r.end,
+                        quote_range,
+                    },
+                    Some(CharWithContext(r, JsonChar('"'))) => StringState::End(TokenWithContext {
+                        token: Token::String(input[quote_range.end..r.start].into()),
+                        range: string_range.start..r.end,
+                    }),
+                    Some(CharWithContext(r, c)) if c.is_control() => {
+                        return Err(Error::new(
+                            ErrorKind::UnexpectedControlCharacterInString(c),
+                            r,
+                            input,
+                        ));
+                    }
+                    Some(CharWithContext(r, _)) => StringState::CharOrEscapeOrEnd {
+                        string_range: string_range.start..r.end,
+                        quote_range,
+                    },
+                    None => return Err(Error::from_unterminated(ErrorKind::ExpectedQuote, input)),
+                },
+                StringState::Escape {
+                    string_range,
+                    quote_range,
+                } => match chars.next() {
+                    Some(CharWithContext(r, c)) if c.can_be_escaped_directly() => {
+                        StringState::CharOrEscapeOrEnd {
+                            string_range: string_range.start..r.end,
+                            quote_range,
+                        }
+                    }
+                    Some(CharWithContext(r, JsonChar('u'))) => {
+                        todo!()
+                    }
+                    _ => todo!(),
+                },
+                StringState::End(_) => self,
             };
 
             Ok(res)
@@ -256,64 +300,13 @@ mod string {
         input: &str,
         chars: &mut Peekable<impl Iterator<Item = CharWithContext>>,
     ) -> Result<TokenWithContext> {
-        let state = StringState::Open;
+        let mut state = StringState::Open;
 
-        let Ok(StringState::CharOrEscapeOrEnd(starting_quote)) = state.process(chars, input) else {
-            unreachable!("must start with a quote");
-        };
-
-        let mut escape = false;
-        while let Some(CharWithContext(r, JsonChar(c))) =
-            chars.next_if(|CharWithContext(_, JsonChar(c))| {
-                (*c != '"' && !JsonChar(*c).is_control()) || escape
-            })
-        {
-            if escape {
-                match c {
-                    '"' | '\\' | '/' | 'b' | 'f' | 'n' | 'r' | 't' => {}
-                    'u' => {
-                        let chars = chars.take(4).collect_vec();
-
-                        let invalid = chars.iter().find(|x| !x.as_char().is_ascii_hexdigit());
-                        if let Some(invalid) = invalid {
-                            return Err(Error::new(
-                                ErrorKind::ExpectedHexDigit {
-                                    u_ctx: r.clone(),
-                                    maybe_c: Some(invalid.as_json_char()).into(),
-                                },
-                                r.start - 1..invalid.0.end,
-                                input,
-                            ));
-                        }
-
-                        if chars.len() != 4 {
-                            todo!("escape too short");
-                        }
-
-                        // TODO check valid leading 0s and whatnot for valid utf8
-                    }
-                    _ => todo!("invalid escape"),
-                }
+        loop {
+            state = state.process(chars, input)?;
+            if let StringState::End(tok) = state {
+                break Ok(tok);
             }
-
-            escape = c == '\\' && !escape;
-        }
-
-        if let Some(CharWithContext(r, c)) = chars.next() {
-            if !c.is_control() {
-                Ok(TokenWithContext {
-                    token: Token::String(input[starting_quote.end..r.start].into()),
-                    range: starting_quote.start..r.end,
-                })
-            } else {
-                Err(Error::new(
-                    ErrorKind::UnexpectedControlCharacterInString(c),
-                    r,
-                    input,
-                ))
-            }
-        } else {
-            Err(Error::from_unterminated(ErrorKind::ExpectedQuote, input))
         }
     }
 }

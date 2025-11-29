@@ -8,7 +8,7 @@ pub fn trim_end_whitespace(s: &str) -> &str {
         .char_indices()
         .map(Into::<CharWithContext>::into)
         .rev()
-        .find_map(|CharWithContext(r, c)| c.is_whitespace().then_some(r.end))
+        .find_map(|CharWithContext(r, c)| (!c.is_whitespace()).then_some(r.end))
         .unwrap_or_default();
 
     &s[..end]
