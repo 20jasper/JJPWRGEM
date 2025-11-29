@@ -62,7 +62,7 @@
 
 ### dev tooling
 
-- [ ] hook to format on commit
+- [x] hook to format on commit
 - [ ] just script to install all tools
 - [ ] submodule installation
 
@@ -87,8 +87,6 @@
 - [ ] expected key but found , should add key val beforehand
   - [ ] n_structure_open_object_comma
 - multichar emojis are not properly handled, see n_object_emoji.json
-- [ ] remove multiple trailing commas
-  - [ ] n_object_several_trailing_commas.json
 - [ ] should recommend changing single quotes and backticks to double
   - [ ] n_object_single_quote
 - [ ] error reporting for keywords, for example trbe marks t as error. Should handle casing
@@ -102,6 +100,8 @@
   - [ ] n_array_missing_value
 - [ ] recommend delete dup comma?
   - [ ] n_array_double_comma
+- [ ] remove multiple trailing commas
+  - [ ] n_object_several_trailing_commas.json
 - [ ] recommend comma if potential valid next arr val
   - [ ] n_array_inner_array_no_comma
 - [ ] add placeholder and closing if no sig chars
@@ -119,7 +119,6 @@
   - [ ] n_number\_.-1
 - [ ] maybe warn on NaN or Infinity/other js idents?
   - [ ] n_number\_-nan
-- [ ] should
 - [ ] general context of token parser? should give more specific if following num
   - [ ] n_number_0.1.2
 - [ ] maybe mark hex/octal/binary literals
