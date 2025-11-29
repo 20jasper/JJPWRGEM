@@ -77,8 +77,8 @@
 - [x] Handle inappropriately escaped forward slash in `n_object_trailing_comment.json`
 - [ ] Provide a hint to insert a value and closing curly when no significant characters remain
   - [ ] Investigate `n_object_missing_value.json`
-- [ ] Fix error message to state that a quote is expected after the opening quote
-  - [ ] Investigate `n_object_unterminated-value.json`
+- [x] Fix error message to state that a quote is expected after the opening quote
+  - [x] Investigate `n_object_unterminated-value.json`
 - [ ] Add helper messaging explaining that comments aren't allowed
 - [ ] expected key but found , should add key val beforehand
   - [ ] n_structure_open_object_comma
@@ -130,5 +130,4 @@
   - [ ] Variation Selectors: U+FE00 to U+FE0F
   - [ ] Private Use Area: U+E000 to U+F8FF
   - [ ] Tag Characters: U+E0001 to U+E007F
-  - [ ]
-- [ ] expected quote before end of string should suggest adding one
+- [x] expected quote before end of string should suggest adding one

@@ -16,3 +16,8 @@ error: expected escapable sequence, found `\t`.
   |  ||
   |  |escape slash found here
   |  opening quote found here
+  |
+help: escape the control character
+  |
+1 | ["\t"]
+  |   ~~

@@ -16,3 +16,9 @@ error: expected escapable sequence, found `{`.
   | ||
   | |escape slash found here
   | opening quote found here
+  |
+help: remove unnecessary escape slash
+  |
+1 - "\{"
+1 + "{"
+  |

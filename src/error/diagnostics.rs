@@ -328,7 +328,6 @@ impl<'a> From<&'a Error> for Vec<Patch<'a>> {
             // reachable?
 
             // TODO patch
-            | ErrorKind::ExpectedEscape { ..}
             | ErrorKind::ExpectedHexDigit { .. }
             | ErrorKind::InvalidEncoding
             | ErrorKind::ExpectedDigitAfterE { .. }
@@ -341,6 +340,24 @@ impl<'a> From<&'a Error> for Vec<Patch<'a>> {
             | ErrorKind::UnexpectedCharacter(_)
             | ErrorKind::ExpectedOpenBrace { .. }
             | ErrorKind::ExpectedMinusOrDigit(_) => Vec::new(),
+                ErrorKind::ExpectedEscape { maybe_c, slash_ctx, .. } => match maybe_c.0.as_ref() {
+                    Some(c) if c.is_control() => {
+                        vec![Patch::new(
+                            "escape the control character",
+                            slash_ctx.start..error.range.end,
+                            source,
+                            c.escape(),
+                        )]
+                    }
+                    _=> {
+                        vec![Patch::new(
+                            "remove unnecessary escape slash",
+                            slash_ctx.clone(),
+                            source,
+                            "",
+                        )]
+                    }
+                },
                     }
     }
 }
