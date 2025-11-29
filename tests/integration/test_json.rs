@@ -69,3 +69,20 @@ pub const MULTIKEY_OBJECT_WITH_LOTS_OF_WHITESPACE: &str = r#"      {
     }    
         
         "#;
+pub const STANDALONE_NULL: &str = "null";
+pub const STANDALONE_FALSE: &str = "false";
+pub const STANDALONE_TRUE: &str = "true";
+pub const STANDALONE_STRING: &str = r#""string""#;
+pub const NESTED_OBJECT_SINGLE_KEY: &str = r#"
+            {"rust": 
+            {"rust": 
+            {"rust": 
+            {"rust": null
+            }
+            }
+            }
+            }   
+        "#;
+pub const STANDALONE_STRING_WS: &str = r#"      "string"    
+        
+            "#;

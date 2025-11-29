@@ -1,0 +1,13 @@
+---
+source: tests/integration/format.rs
+expression: prettify_str(input).unwrap()
+---
+{
+    "rust": {
+        "rust": {
+            "rust": {
+                "rust": null
+            }
+        }
+    }
+}

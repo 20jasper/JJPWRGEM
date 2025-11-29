@@ -1,5 +1,8 @@
-use crate::common::annotate_and_assert_snapshot;
+use crate::common::format_output_snapshot;
 use crate::test_json::*;
+use annotate_snippets::{Renderer, renderer::DecorStyle};
+use insta::assert_snapshot;
+use jjpwrgem::cli::run;
 use rstest::rstest;
 
 #[rstest]
@@ -40,5 +43,13 @@ use rstest::rstest;
 #[case(crate::fixture_tuple!(INVALID_HEX_DIGIT_IN_ESCAPE))]
 #[case(crate::fixture_tuple!(INVALID_ESCAPED_CURLY))]
 fn annotate_test_json_failure_snapshots(#[case] (name, json): (&str, &str)) {
-    annotate_and_assert_snapshot(name, json);
+    let json_bytes = json.as_bytes().to_vec();
+
+    let renderer = Renderer::plain().decor_style(DecorStyle::Ascii);
+    let annotated = run(json_bytes.clone(), &renderer);
+
+    assert_snapshot!(
+        name.to_ascii_lowercase(),
+        format_output_snapshot(json_bytes, &annotated)
+    );
 }
