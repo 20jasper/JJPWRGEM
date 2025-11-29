@@ -1,0 +1,17 @@
+---
+source: tests/integration/conformance.rs
+expression: "format_output_snapshot(case.text, &annotated)"
+---
+case --- 
+[1ea]
+stdout --- 
+<empty>
+stderr --- 
+error: expected +/- or digit after exponent indicator, found `a`
+ --> stdin:1:4
+  |
+1 | [1ea]
+  |  --^
+  |  ||
+  |  |exponent indicator found here
+  |  number with exponent found here

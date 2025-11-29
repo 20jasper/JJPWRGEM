@@ -1,0 +1,21 @@
+---
+source: tests/integration/conformance.rs
+expression: "format_output_snapshot(case.text, &annotated)"
+---
+case --- 
+{ "foo" : "bar", "a" }
+stdout --- 
+<empty>
+stderr --- 
+error: expected colon after key, found `}`
+ --> stdin:1:22
+  |
+1 | { "foo" : "bar", "a" }
+  |                  --- ^
+  |                  |
+  |                  expected due to `"a"`
+  |
+help: insert colon and placeholder value
+  |
+1 | { "foo" : "bar", "a": "🐟🛹" }
+  |                     ++++++++

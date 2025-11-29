@@ -1,0 +1,10 @@
+---
+source: tests/integration/conformance.rs
+expression: "format_output_snapshot(case.text, &annotated)"
+---
+case --- 
+[123.456789]
+stdout --- 
+[123.456789]
+stderr --- 
+<empty>

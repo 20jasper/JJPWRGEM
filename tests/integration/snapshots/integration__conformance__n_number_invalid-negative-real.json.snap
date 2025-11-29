@@ -1,0 +1,14 @@
+---
+source: tests/integration/conformance.rs
+expression: "format_output_snapshot(case.text, &annotated)"
+---
+case --- 
+[-123.123foo]
+stdout --- 
+<empty>
+stderr --- 
+error: unexpected character `f`. expected start of a json value
+ --> stdin:1:10
+  |
+1 | [-123.123foo]
+  |          ^

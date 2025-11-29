@@ -1,0 +1,23 @@
+---
+source: tests/integration/conformance.rs
+expression: "format_output_snapshot(case.text, &annotated)"
+---
+case --- 
+["a",
+4
+,1,
+stdout --- 
+<empty>
+stderr --- 
+error: expected json value, found no significant characters
+ --> stdin:3:3
+  |
+3 | ,1,
+  |   ^
+  |   |
+  |   expected due to `,`
+  |
+help: insert a placeholder value
+  |
+3 | ,1, "rust is a must"
+  |     ++++++++++++++++

@@ -1,0 +1,22 @@
+---
+source: tests/integration/parse_failure.rs
+expression: "format_output_snapshot(json, &annotated)"
+---
+case --- 
+{"hi": null, 
+stdout --- 
+<empty>
+stderr --- 
+error: expected key, found no significant characters
+ --> stdin:1:12
+  |
+1 | {"hi": null, 
+  |            ^
+  |            |
+  |            expected due to `,`
+  |
+help: consider replacing the trailing comma with a closed curly brace
+  |
+1 - {"hi": null, 
+1 + {"hi": null} 
+  |

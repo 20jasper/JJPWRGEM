@@ -1,0 +1,21 @@
+---
+source: tests/integration/conformance.rs
+expression: "format_output_snapshot(case.text, &annotated)"
+---
+case --- 
+["x"
+stdout --- 
+<empty>
+stderr --- 
+error: expected entry or closed delimiter `]`, found no significant characters
+ --> stdin:1:4
+  |
+1 | ["x"
+  | -  ^
+  | |
+  | expected due to `[`
+  |
+help: insert the missing closed delimiter `]`
+  |
+1 | ["x"]
+  |     +

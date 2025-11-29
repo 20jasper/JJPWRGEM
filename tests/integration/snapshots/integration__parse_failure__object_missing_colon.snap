@@ -1,0 +1,21 @@
+---
+source: tests/integration/parse_failure.rs
+expression: "format_output_snapshot(json, &annotated)"
+---
+case --- 
+{"hi"    
+stdout --- 
+<empty>
+stderr --- 
+error: expected colon after key, found no significant characters
+ --> stdin:1:5
+  |
+1 | {"hi"    
+  |  ---^
+  |  |
+  |  expected due to `"hi"`
+  |
+help: insert colon, placeholder value, and closing curly brace
+  |
+1 | {"hi": "garlic bread" }    
+  |      ++++++++++++++++++
