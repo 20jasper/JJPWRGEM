@@ -1,0 +1,21 @@
+---
+source: tests/integration/conformance.rs
+expression: "format_output_snapshot(case.text, &annotated)"
+---
+case --- 
+{"x", null}
+stdout --- 
+<empty>
+stderr --- 
+error: expected colon after key, found `,`
+ --> stdin:1:5
+  |
+1 | {"x", null}
+  |  ---^
+  |  |
+  |  expected due to `"x"`
+  |
+help: insert colon and placeholder value
+  |
+1 | {"x": "🐟🛹", null}
+  |     ++++++++

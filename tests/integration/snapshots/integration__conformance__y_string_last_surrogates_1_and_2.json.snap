@@ -1,0 +1,10 @@
+---
+source: tests/integration/conformance.rs
+expression: "format_output_snapshot(case.text, &annotated)"
+---
+case --- 
+["\uDBFF\uDFFF"]
+stdout --- 
+["\uDBFF\uDFFF"]
+stderr --- 
+<empty>

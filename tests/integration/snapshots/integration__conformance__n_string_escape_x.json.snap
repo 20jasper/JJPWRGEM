@@ -1,0 +1,24 @@
+---
+source: tests/integration/conformance.rs
+expression: "format_output_snapshot(case.text, &annotated)"
+---
+case --- 
+["\x00"]
+stdout --- 
+<empty>
+stderr --- 
+error: expected escapable sequence, found `x`.
+       valid escapes are `\"`, `\\`, `\/`, `\b`, `\f`, `\n`, `\r`, `\t` or `\uXXXX` (4 hex digits)
+ --> stdin:1:4
+  |
+1 | ["\x00"]
+  |  --^
+  |  ||
+  |  |escape slash found here
+  |  opening quote found here
+  |
+help: remove unnecessary escape slash
+  |
+1 - ["\x00"]
+1 + ["x00"]
+  |

@@ -1,0 +1,13 @@
+---
+source: tests/integration/conformance.rs
+expression: "format_output_snapshot(case.text, &annotated)"
+---
+case --- 
+<raw bytes>
+[91, 0, 34, 0, 233, 0, 34, 0, 93, 0]
+stdout --- 
+<empty>
+stderr --- 
+error: source did not contain valid utf8
+ --> stdin
+  |

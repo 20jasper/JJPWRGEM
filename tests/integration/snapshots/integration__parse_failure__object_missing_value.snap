@@ -1,0 +1,21 @@
+---
+source: tests/integration/parse_failure.rs
+expression: "format_output_snapshot(json, &annotated)"
+---
+case --- 
+{"hi":
+stdout --- 
+<empty>
+stderr --- 
+error: expected json value, found no significant characters
+ --> stdin:1:6
+  |
+1 | {"hi":
+  |      ^
+  |      |
+  |      expected due to `:`
+  |
+help: insert a placeholder value
+  |
+1 | {"hi": "rust is a must"
+  |        ++++++++++++++++

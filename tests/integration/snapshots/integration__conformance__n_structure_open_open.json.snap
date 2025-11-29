@@ -1,0 +1,24 @@
+---
+source: tests/integration/conformance.rs
+expression: "format_output_snapshot(case.text, &annotated)"
+---
+case --- 
+["\{["\{["\{["\{
+stdout --- 
+<empty>
+stderr --- 
+error: expected escapable sequence, found `{`.
+       valid escapes are `\"`, `\\`, `\/`, `\b`, `\f`, `\n`, `\r`, `\t` or `\uXXXX` (4 hex digits)
+ --> stdin:1:4
+  |
+1 | ["\{["\{["\{["\{
+  |  --^
+  |  ||
+  |  |escape slash found here
+  |  opening quote found here
+  |
+help: remove unnecessary escape slash
+  |
+1 - ["\{["\{["\{["\{
+1 + ["{["\{["\{["\{
+  |

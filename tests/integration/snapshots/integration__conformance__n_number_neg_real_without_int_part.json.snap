@@ -1,0 +1,21 @@
+---
+source: tests/integration/conformance.rs
+expression: "format_output_snapshot(case.text, &annotated)"
+---
+case --- 
+[-.123]
+stdout --- 
+<empty>
+stderr --- 
+error: expected digit following minus sign, found `.`
+ --> stdin:1:2
+  |
+1 | [-.123]
+  |  ^
+  |  |
+  |  minus sign found here
+  |
+help: did you mean to add a fraction? consider adding a 0 before the period
+  |
+1 | [-0.123]
+  |   +

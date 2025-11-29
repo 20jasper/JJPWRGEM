@@ -112,7 +112,6 @@ fn validate_start_of_value(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::test_json;
 
     fn kv_to_map(tuples: &[(&str, Value)]) -> Value {
         Value::Object(
@@ -158,116 +157,6 @@ mod tests {
         );
     }
 
-    fn json_to_json_and_error(
-        json: &'static str,
-        kind: ErrorKind,
-        range: std::ops::Range<usize>,
-    ) -> (&'static str, Error) {
-        (json, Error::new(kind, range, json))
-    }
-
-    #[rstest::rstest]
-    #[case(json_to_json_and_error(
-        test_json::OBJECT_MISSING_COLON_WITH_COMMA,
-        ErrorKind::ExpectedColon(
-            TokenWithContext {
-                token: Token::String("hi".into()),
-                range: 1..5,
-            },
-            Some(Token::Comma).into(),
-        ),
-        5..6,
-    ))]
-    #[case(json_to_json_and_error(
-        test_json::OBJECT_MISSING_COLON_WITH_LEADING_WHITESPACE,
-        ErrorKind::ExpectedColon(
-            TokenWithContext {
-                token: Token::String("hi".into()),
-                range: 3..7,
-            },
-            None.into(),
-        ),
-        6..7,
-    ))]
-    #[case(json_to_json_and_error(
-        test_json::OBJECT_MISSING_COLON,
-        ErrorKind::ExpectedColon(
-            TokenWithContext {
-                token: Token::String("hi".into()),
-                range: 1..5,
-            },
-            None.into(),
-        ),
-        4..5,
-    ))]
-    #[case(json_to_json_and_error(
-        test_json::OBJECT_MISSING_VALUE,
-        ErrorKind::ExpectedValue(
-            Some(TokenWithContext {
-                token: Token::Colon,
-                range: 5..6,
-            }),
-            None.into(),
-        ),
-        5..6,
-    ))]
-    #[case(json_to_json_and_error(
-        test_json::CLOSED_CURLY,
-        ErrorKind::ExpectedValue(None, Some(Token::ClosedCurlyBrace).into()),
-        0..1,
-    ))]
-    #[case(json_to_json_and_error(
-        test_json::EMPTY_INPUT,
-        ErrorKind::ExpectedValue(None, None.into()),
-        0..0,
-    ))]
-    #[case(json_to_json_and_error(
-        test_json::OBJECT_DOUBLE_OPEN_CURLY,
-    ErrorKind::expected_entry_or_closed_delimiter(TokenWithContext{token: Token::OpenCurlyBrace, range: 0..1}, Some(Token::OpenCurlyBrace).into()).expect("object should open with curly brace"),
-        1..2,
-    ))]
-    #[case(json_to_json_and_error(
-        test_json::OBJECT_OPEN_CURLY,
-    ErrorKind::expected_entry_or_closed_delimiter(TokenWithContext{token: Token::OpenCurlyBrace, range: 0..1}, None.into()).expect("object should open with curly brace"),
-        0..1,
-    ))]
-    #[case(json_to_json_and_error(
-        test_json::OBJECT_MISSING_COMMA_BETWEEN_VALUES,
-        ErrorKind::ExpectedCommaOrClosedCurlyBrace {
-            range: 5..11,
-            open_ctx: TokenWithContext { token: Token::OpenCurlyBrace, range: 0..1 },
-            found: Some(Token::Null).into(),
-        },
-        12..16,
-    ))]
-    #[case(json_to_json_and_error(
-        test_json::OBJECT_MISSING_COMMA_OR_CLOSING_WITH_WHITESPACE,
-        ErrorKind::ExpectedCommaOrClosedCurlyBrace {
-            range: 5..11,
-            open_ctx: TokenWithContext { token: Token::OpenCurlyBrace, range: 0..1 },
-            found: None.into(),
-        },
-        10..11,
-    ))]
-    #[case(json_to_json_and_error(
-        test_json::OBJECT_TRAILING_COMMA_WITH_CLOSED,
-        ErrorKind::ExpectedKey(TokenWithContext {token: Token::Comma, range: 11..12}, Some(Token::ClosedCurlyBrace).into()),
-        13..14,
-    ))]
-    #[case(json_to_json_and_error(
-        test_json::OBJECT_TRAILING_COMMA,
-        ErrorKind::ExpectedKey(TokenWithContext {token: Token::Comma, range: 11..12}, None.into()),
-        11..12,
-    ))]
-    #[case(json_to_json_and_error(
-        test_json::OBJECT_EMPTY_THEN_OPEN,
-        ErrorKind::TokenAfterEnd(Token::OpenCurlyBrace),
-        2..3,
-    ))]
-    fn expected_error(#[case] (json, expected): (&str, Error)) {
-        assert_eq!(parse_str(json), Err(expected));
-    }
-
     #[rstest_reuse::template]
     #[rstest::rstest]
     #[case("null", Value::Null)]
@@ -292,35 +181,5 @@ mod tests {
     #[rstest_reuse::apply(primitive_template)]
     fn primitives(#[case] json: &str, #[case] expected: Value) {
         assert_eq!(parse_str(json), Ok(expected));
-    }
-
-    #[test]
-    fn arrays() {
-        assert_eq!(
-            parse_str(test_json::ARRAY_EMPTY).unwrap(),
-            Value::Array(vec![])
-        );
-
-        assert_eq!(
-            parse_str(test_json::ARRAY_SINGLE).unwrap(),
-            Value::Array(vec![Value::Number("1".into())])
-        );
-
-        assert_eq!(
-            parse_str(test_json::ARRAY_MANY).unwrap(),
-            Value::Array(vec![
-                Value::Number("1".into()),
-                Value::Number("2".into()),
-                Value::Number("3".into()),
-            ])
-        );
-
-        assert_eq!(
-            parse_str(test_json::ARRAY_SUBARRAYS).unwrap(),
-            Value::Array(vec![
-                Value::Array(vec![Value::String("a".into())]),
-                Value::Array(vec![Value::Boolean(true), Value::Boolean(false)]),
-            ])
-        );
     }
 }

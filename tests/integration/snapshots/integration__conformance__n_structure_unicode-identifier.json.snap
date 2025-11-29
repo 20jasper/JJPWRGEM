@@ -1,0 +1,14 @@
+---
+source: tests/integration/conformance.rs
+expression: "format_output_snapshot(case.text, &annotated)"
+---
+case --- 
+å
+stdout --- 
+<empty>
+stderr --- 
+error: unexpected character `å`. expected start of a json value
+ --> stdin:1:1
+  |
+1 | å
+  | ^

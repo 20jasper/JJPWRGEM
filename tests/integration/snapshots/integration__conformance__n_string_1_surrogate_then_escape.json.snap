@@ -1,0 +1,21 @@
+---
+source: tests/integration/conformance.rs
+expression: "format_output_snapshot(case.text, &annotated)"
+---
+case --- 
+["\uD800\"]
+stdout --- 
+<empty>
+stderr --- 
+error: expected closing quote
+ --> stdin:1:11
+  |
+1 | ["\uD800\"]
+  |  -        ^
+  |  |
+  |  opening quote found here
+  |
+help: insert the missing closing quote
+  |
+1 | ["\uD800\"]"
+  |            +
