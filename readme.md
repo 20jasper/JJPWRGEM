@@ -2,11 +2,9 @@
 
 JJPWRGEM JSON Parser With Really Good Error Messages
 
-An (eventually) RFC 8259 compliant JSON Parser
+An (eventually) RFC 8259 compliant JSON Parser. Currently passes 261/319 tests from @nst's amazing [JSONTestSuite](https://github.com/nst/JSONTestSuite)! Failures are due to high levels of recursion and escaping
 
-Currently passes 261/319 tests from @nst's amazing [JSONTestSuite](https://github.com/nst/JSONTestSuite)!
-
-Failures are due to high levels of recursion and escaping
+![A logo of an axolotl riding a skateboard](./logo.webp)
 
 ```
 echo -en '{"coolKey"}' | jjp
@@ -28,7 +26,7 @@ help: insert colon and placeholder value
 
 I originally started this project to practice finite state machines, but got back into it when hearing about the internals of some formatters and compilers!
 
-I am heavily inspired by the Rust compiler's error messages. I love the idea that unhelpful errors are considered bugs
+I am heavily inspired by the Rust compiler's error messages. I love that unhelpful errors are considered bugs
 
 I checked out several JSON parsers and formatters, and none provided much context on _why_ a key was missing. Errors ranged from "expected closing on byte 10" to a snapshot of source code for that character, but none were up to my standards
 
@@ -45,6 +43,28 @@ How cases undefined by the spec are handled
 - only utf8 encoding is supported
 - no limitations on nesting or length
 - extensions such as trailing commas or comments are not allowed
+
+## FAQ
+
+### What does JJPWRGEM stand for?
+
+JJPWRGEM JSON Parser With Really Good Error Messages. I was inspired by GNU to make a recursive acronym
+
+### How do you pronounce JJPWRGEM?
+
+$/ˈdʒeɪ dʒeɪ ˈpaʊər dʒɛm/$ JAY-jay-POW-er-jem
+
+### But why is it called that?
+
+It sounds cool and the name isn't taken on any package managers
+
+### Why is the logo an axolotl riding a skateboard?
+
+It's cool
+
+### Is it blazingly fast™?
+
+I haven't benchmarked it yet, so maybe? I don't know
 
 ## Notes
 
