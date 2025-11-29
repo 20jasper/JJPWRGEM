@@ -2,12 +2,12 @@
 format:
     cargo fmt --all
     just --fmt --unstable
-    npx -y prettier './**/*.{md,yaml}' --write
+    npx -y prettier './**/*.{md,yaml,yml}' --write
 
 format-check:
     cargo fmt --all -- --check
     just --fmt --unstable --check
-    npx -y prettier './**/*.{md,yaml}' --check
+    npx -y prettier './**/*.{md,yaml,yml}' --check
 
 lint:
     RUSTFLAGS=-Dwarnings cargo clippy --all-targets --all-features 

@@ -1,0 +1,21 @@
+# EXAMPLE USAGE:
+#
+#   Refer for explanation to following link:
+#   https://lefthook.dev/configuration/
+#
+pre-push:
+  parallel: true
+  jobs:
+    - run: just lint
+      glob: "*.rs"
+    - run: just format-check
+      glob: "*.{rs,md}|justfile"
+    - run: cargo test
+      glob: "*.rs"
+
+pre-commit:
+  parallel: true
+  jobs:
+    - run: just format
+      glob: "*.{rs,md}|justfile"
+      stage_fixed: true
