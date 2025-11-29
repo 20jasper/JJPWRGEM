@@ -11,12 +11,7 @@ pub type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Debug, PartialEq, Eq, Display, Clone)]
 pub enum ErrorKind {
-    /// unexpected character `{0}`. expected start of a json value
-    UnexpectedCharacter(JsonChar),
-    /// unexpected unescaped control character `{0}` in string literal
-    UnexpectedControlCharacterInString(JsonChar),
-    /// unexpected token {0} after json finished
-    TokenAfterEnd(Token),
+    // array/object
     /// expected key, found {1}
     ExpectedKey(TokenWithContext, TokenOption),
     /// expected colon after key, found {1}
@@ -40,11 +35,6 @@ pub enum ErrorKind {
         expected: JsonChar,
         context: Option<TokenWithContext>,
         found: TokenOption,
-    },
-    /// expected closing quote
-    ExpectedQuote {
-        open_ctx: Range<usize>,
-        string_ctx: Range<usize>,
     },
 
     // number
@@ -75,9 +65,15 @@ pub enum ErrorKind {
         exponent_ctx: Range<usize>,
         maybe_c: JsonCharOption,
     },
-    /// source did not contain valid utf8
-    InvalidEncoding,
 
+    // string
+    /// unexpected unescaped control character `{0}` in string literal
+    UnexpectedControlCharacterInString(JsonChar),
+    /// expected closing quote
+    ExpectedQuote {
+        open_ctx: Range<usize>,
+        string_ctx: Range<usize>,
+    },
     // todo better context
     /// expected hex digit in escape, found {maybe_c}
     ExpectedHexDigit {
@@ -92,6 +88,14 @@ pub enum ErrorKind {
         string_ctx: Range<usize>,
         quote_ctx: Range<usize>,
     },
+
+    // misc
+    /// source did not contain valid utf8
+    InvalidEncoding,
+    /// unexpected character `{0}`. expected start of a json value
+    UnexpectedCharacter(JsonChar),
+    /// unexpected token {0} after json finished
+    TokenAfterEnd(Token),
 }
 
 impl ErrorKind {
