@@ -152,187 +152,190 @@ impl<'a> From<&'a Error> for Vec<Patch<'a>> {
     fn from(error: &'a Error) -> Self {
         let source = error_source(error);
         match &*error.kind {
-                ErrorKind::ExpectedKey(
-                    TokenWithContext {
-                        token: Token::Comma,
-                        range,
-                    },
-                    TokenOption(Some(_)),
-                ) => {
-                    vec![Patch::new(
-                        "consider removing the trailing comma",
-                        range.clone(),
-                        source,
-                        "",
-                    )]
-                }
-                ErrorKind::ExpectedKey(
-                    TokenWithContext {
-                        token: Token::Comma,
-                        range,
-                    },
-                    TokenOption(None),
-                ) => {
-                    vec![Patch::new(
-                        "consider replacing the trailing comma with a closed curly brace",
-                        range.clone(),
-                        source,
-                        "}",
-                    )]
-                }
-                ErrorKind::ExpectedColon(ctx, found) => {
-                    let (message, replacement) = match found.0.as_ref() {
-                        None => (
-                            "insert colon, placeholder value, and closing curly brace",
-                            r#": "garlic bread" }"#,
-                        ),
-                        Some(Token::Comma) | Some(Token::ClosedCurlyBrace) => {
-                            ("insert colon and placeholder value", r#": "🐟🛹""#)
-                        }
-                        _ => ("insert the missing colon", ": "),
-                    };
+            ErrorKind::ExpectedKey(
+                TokenWithContext {
+                    token: Token::Comma,
+                    range,
+                },
+                TokenOption(Some(_)),
+            ) => {
+                vec![Patch::new(
+                    "consider removing the trailing comma",
+                    range.clone(),
+                    source,
+                    "",
+                )]
+            }
+            ErrorKind::ExpectedKey(
+                TokenWithContext {
+                    token: Token::Comma,
+                    range,
+                },
+                TokenOption(None),
+            ) => {
+                vec![Patch::new(
+                    "consider replacing the trailing comma with a closed curly brace",
+                    range.clone(),
+                    source,
+                    "}",
+                )]
+            }
+            ErrorKind::ExpectedColon(ctx, found) => {
+                let (message, replacement) = match found.0.as_ref() {
+                    None => (
+                        "insert colon, placeholder value, and closing curly brace",
+                        r#": "garlic bread" }"#,
+                    ),
+                    Some(Token::Comma) | Some(Token::ClosedCurlyBrace) => {
+                        ("insert colon and placeholder value", r#": "🐟🛹""#)
+                    }
+                    _ => ("insert the missing colon", ": "),
+                };
 
+                vec![Patch::new(
+                    message,
+                    ctx.range.end..ctx.range.end,
+                    source,
+                    replacement,
+                )]
+            }
+            ErrorKind::ExpectedEntryOrClosedDelimiter {
+                expected,
+                found: TokenOption(None),
+                ..
+            } => vec![Patch::new(
+                Cow::Owned(format!("insert the missing closed delimiter `{expected}`")),
+                error.range.end..error.range.end,
+                source,
+                expected.to_string(),
+            )],
+            ErrorKind::ExpectedCommaOrClosedCurlyBrace { range, found, .. } => match found.0.as_ref() {
+                Some(Token::String(s)) => vec![Patch::new(
+                    Cow::Owned(format!("is {s:?} a key? consider adding a comma")),
+                    range.end..range.end,
+                    source,
+                    ",",
+                )],
+                None => vec![Patch::new(
+                    INSERT_MISSING_CLOSED_BRACE_HELP,
+                    range.end..range.end,
+                    source,
+                    "}",
+                )],
+                _ => Vec::new(),
+            },
+            ErrorKind::ExpectedValue(ctx, tok_opt) => match (ctx, tok_opt.0.as_ref()) {
+                (
+                    Some(TokenWithContext {
+                        token: Token::Comma,
+                        range,
+                    }),
+                    Some(Token::ClosedSquareBracket),
+                ) => vec![Patch::new(
+                    "consider removing the trailing comma",
+                    range.clone(),
+                    source,
+                    "",
+                )],
+                (_, None) => vec![Patch::new(
+                    "insert a placeholder value",
+                    error.range.end..error.range.end,
+                    source,
+                    " \"rust is a must\"",
+                )],
+                (_, Some(Token::ClosedCurlyBrace)) => vec![Patch::new(
+                    "consider adding the missing open curly brace",
+                    error.range.end - 1..error.range.end,
+                    source,
+                    "{}",
+                )],
+                _ => Vec::new(),
+            },
+            ErrorKind::UnexpectedControlCharacterInString(escaped) => vec![Patch::new(
+                "replace the control character with its escaped form",
+                error.range.clone(),
+                source,
+                escaped.to_string(),
+            )],
+            ErrorKind::TokenAfterEnd(token) => vec![Patch::new(
+                format!("consider removing the trailing content (starting with {token})"),
+                error.range.start..error.source_text.len(),
+                source,
+                "",
+            )],
+            ErrorKind::ExpectedDigitFollowingMinus(range, found) => {
+                let patch_info = match found.0 {
+                    None => ("insert placeholder digits after the minus sign", "194"),
+                    Some(JsonChar('.')) => (
+                        "did you mean to add a fraction? consider adding a 0 before the period",
+                        "0",
+                    ),
+                    _ => return vec![],
+                };
+                let (message, replacement) = patch_info;
+                {
                     vec![Patch::new(
                         message,
-                        ctx.range.end..ctx.range.end,
+                        range.end..range.end,
                         source,
                         replacement,
                     )]
                 }
-                ErrorKind::ExpectedEntryOrClosedDelimiter {
-                    expected,
-                    found: TokenOption(None),
-                    ..
-                } => vec![Patch::new(
-                    Cow::Owned(format!("insert the missing closed delimiter `{expected}`")),
-                    error.range.end..error.range.end,
-                    source,
-                    expected.to_string(),
-                )],
-                ErrorKind::ExpectedCommaOrClosedCurlyBrace { range, found, .. } => match found.0.as_ref() {
-                    Some(Token::String(s)) => vec![Patch::new(
-                        Cow::Owned(format!("is {s:?} a key? consider adding a comma")),
-                        range.end..range.end,
-                        source,
-                        ",",
-                    )],
-                    None => vec![Patch::new(
-                        INSERT_MISSING_CLOSED_BRACE_HELP,
-                        range.end..range.end,
-                        source,
-                        "}",
-                    )],
-                    _ => Vec::new(),
-                },
-                ErrorKind::ExpectedValue(ctx, tok_opt) => match (ctx, tok_opt.0.as_ref()) {
-                    (
-                        Some(TokenWithContext {
-                            token: Token::Comma,
-                            range,
-                        }),
-                        Some(Token::ClosedSquareBracket),
-                    ) => vec![Patch::new(
-                        "consider removing the trailing comma",
-                        range.clone(),
-                        source,
-                        "",
-                    )],
-                    (_, None) => vec![Patch::new(
-                        "insert a placeholder value",
-                        error.range.end..error.range.end,
-                        source,
-                        " \"rust is a must\"",
-                    )],
-                    (_, Some(Token::ClosedCurlyBrace)) => vec![Patch::new(
-                        "consider adding the missing open curly brace",
-                        error.range.end - 1..error.range.end,
-                        source,
-                        "{}",
-                    )],
-                    _ => Vec::new(),
-                },
-                ErrorKind::UnexpectedControlCharacterInString(escaped) => vec![Patch::new(
-                    "replace the control character with its escaped form",
-                    error.range.clone(),
-                    source,
-                    escaped.to_string(),
-                )],
-                ErrorKind::TokenAfterEnd(token) => vec![Patch::new(
-                    format!("consider removing the trailing content (starting with {token})"),
-                    error.range.start..error.source_text.len(),
-                    source,
-                    "",
-                )],
-                ErrorKind::ExpectedDigitFollowingMinus(range, found) => {
-                    let patch_info = match found.0 {
-                        None => ("insert placeholder digits after the minus sign", "194"),
-                        Some(JsonChar('.')) => (
-                            "did you mean to add a fraction? consider adding a 0 before the period",
-                            "0",
-                        ),
-                        _ => return vec![],
-                    };
-                    let (message, replacement) = patch_info;
-                    {
-                        vec![Patch::new(
-                            message,
-                            range.end..range.end,
-                            source,
-                            replacement,
-                        )]
-                    }
-                }
-                ErrorKind::UnexpectedLeadingZero { extra, .. } => vec![Patch::new(
-                    "remove the leading zeros",
-                    extra.clone(),
-                    source,
-                    "",
-                )],
-                ErrorKind::ExpectedDigitAfterDot {
-                    maybe_c: JsonCharOption(None),
-                    number_ctx,
-                    ..
-                } => vec![Patch::new(
-                    "insert placeholder digit after the decimal point",
-                    number_ctx.end..number_ctx.end,
-                    source,
-                    "0",
-                )],
-                ErrorKind::ExpectedPlusOrMinusOrDigitAfterE {
-                    e_ctx,
-                    maybe_c: JsonCharOption(None),
-                    ..
-                } => vec![Patch::new(
-                    "add placeholder exponent digits",
-                    e_ctx.end..e_ctx.end,
-                    source,
-                    "+1",
-                )],
-                ErrorKind::ExpectedDigitAfterE {
-                    maybe_c: JsonCharOption(None),
-                    number_ctx,
-                    ..
-                } => vec![Patch::new(
-                    "add a digit after the exponent sign",
-                    number_ctx.end..number_ctx.end,
-                    source,
-                    "0",
-                )],
-                | ErrorKind::ExpectedKey(_, _)
-                        // reachable?
-                | ErrorKind::InvalidEncoding
-                | ErrorKind::ExpectedDigitAfterE { .. }
-                | ErrorKind::ExpectedDigitAfterDot { .. }
-                | ErrorKind::ExpectedPlusOrMinusOrDigitAfterE { .. }
-                | ErrorKind::ExpectedEntryOrClosedDelimiter {
-                    found: TokenOption(Some(_)),
-                    ..
-                }
-                | ErrorKind::UnexpectedCharacter(_)
-                | ErrorKind::ExpectedOpenBrace { .. }
-                | ErrorKind::ExpectedQuote
-                | ErrorKind::ExpectedMinusOrDigit(_) => Vec::new(),
             }
+            ErrorKind::UnexpectedLeadingZero { extra, .. } => vec![Patch::new(
+                "remove the leading zeros",
+                extra.clone(),
+                source,
+                "",
+            )],
+            ErrorKind::ExpectedDigitAfterDot {
+                maybe_c: JsonCharOption(None),
+                number_ctx,
+                ..
+            } => vec![Patch::new(
+                "insert placeholder digit after the decimal point",
+                number_ctx.end..number_ctx.end,
+                source,
+                "0",
+            )],
+            ErrorKind::ExpectedPlusOrMinusOrDigitAfterE {
+                e_ctx,
+                maybe_c: JsonCharOption(None),
+                ..
+            } => vec![Patch::new(
+                "add placeholder exponent digits",
+                e_ctx.end..e_ctx.end,
+                source,
+                "+1",
+            )],
+            ErrorKind::ExpectedDigitAfterE {
+                maybe_c: JsonCharOption(None),
+                number_ctx,
+                ..
+            } => vec![Patch::new(
+                "add a digit after the exponent sign",
+                number_ctx.end..number_ctx.end,
+                source,
+                "0",
+            )],
+            | ErrorKind::ExpectedKey(_, _)
+            // reachable?
+
+            // TODO patch
+            | ErrorKind::ExpectedHexDigit { .. }
+            | ErrorKind::InvalidEncoding
+            | ErrorKind::ExpectedDigitAfterE { .. }
+            | ErrorKind::ExpectedDigitAfterDot { .. }
+            | ErrorKind::ExpectedPlusOrMinusOrDigitAfterE { .. }
+            | ErrorKind::ExpectedEntryOrClosedDelimiter {
+                found: TokenOption(Some(_)),
+                ..
+            }
+            | ErrorKind::UnexpectedCharacter(_)
+            | ErrorKind::ExpectedOpenBrace { .. }
+            | ErrorKind::ExpectedQuote
+            | ErrorKind::ExpectedMinusOrDigit(_) => Vec::new(),
+                    }
     }
 }
 
@@ -404,7 +407,9 @@ impl<'a> From<&'a Error> for Vec<Context<'a>> {
                     source,
                 ),
             ],
-            ErrorKind::InvalidEncoding
+            // todo ctx
+            ErrorKind::ExpectedHexDigit { .. }
+            | ErrorKind::InvalidEncoding
             | ErrorKind::ExpectedValue(None, _)
             | ErrorKind::UnexpectedCharacter(_)
             | ErrorKind::UnexpectedControlCharacterInString(_)

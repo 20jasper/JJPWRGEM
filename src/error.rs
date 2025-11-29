@@ -74,6 +74,13 @@ pub enum ErrorKind {
     },
     /// source did not contain valid utf8
     InvalidEncoding,
+
+    // todo better context
+    /// expected hex digit in escape, found {maybe_c}
+    ExpectedHexDigit {
+        u_ctx: Range<usize>,
+        maybe_c: JsonCharOption,
+    },
 }
 
 impl ErrorKind {

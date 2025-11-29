@@ -48,6 +48,8 @@ pub const ARRAY_SUBARRAYS: &str = "[[\"a\"], [true, false]]";
 pub const ARRAY_OPEN: &str = "[";
 pub const ARRAY_OPEN_WITH_VALUE: &str = "[1, [";
 pub const ARRAY_MISSING_VALUE: &str = "[1, ]";
+pub const INVALID_HEX_DIGIT_IN_ESCAPE: &str = r#""\u1FZA""#;
+pub const INVALID_ESCAPED_CURLY: &str = r#""\{""#;
 
 pub fn format_output_snapshot(input: Vec<u8>, output: &Output) -> String {
     let input = String::from_utf8(input.clone()).unwrap_or(format!("<raw bytes>\n{input:?}"));

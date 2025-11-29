@@ -213,6 +213,8 @@ pub fn str_to_tokens(s: &str) -> Result<Vec<TokenWithContext>> {
 }
 
 mod string {
+    use itertools::Itertools;
+
     use crate::{
         Error, ErrorKind, Result,
         tokens::{CONTROL_RANGE, CharWithContext, JsonChar, Token, TokenWithContext},
@@ -228,11 +230,39 @@ mod string {
         };
 
         let mut escape = false;
-        while let Some(CharWithContext(_, JsonChar(c))) =
+        while let Some(CharWithContext(r, JsonChar(c))) =
             chars.next_if(|CharWithContext(_, JsonChar(c))| {
                 (*c != '"' && !CONTROL_RANGE.contains(c)) || escape
             })
         {
+            if escape {
+                match c {
+                    '"' | '\\' | '/' | 'b' | 'f' | 'n' | 'r' | 't' => {}
+                    'u' => {
+                        let chars = chars.take(4).collect_vec();
+
+                        let invalid = chars.iter().find(|x| !x.as_char().is_ascii_hexdigit());
+                        if let Some(invalid) = invalid {
+                            return Err(Error::new(
+                                ErrorKind::ExpectedHexDigit {
+                                    u_ctx: r.clone(),
+                                    maybe_c: Some(invalid.as_json_char()).into(),
+                                },
+                                r.start - 1..invalid.0.end,
+                                input,
+                            ));
+                        }
+
+                        if chars.len() != 4 {
+                            todo!("escape too short");
+                        }
+
+                        // TODO check valid leading 0s and whatnot for valid utf8
+                    }
+                    _ => todo!("invalid escape"),
+                }
+            }
+
             escape = c == '\\' && !escape;
         }
 
