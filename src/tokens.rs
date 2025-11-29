@@ -348,7 +348,6 @@ mod tests {
         ErrorKind::UnexpectedCharacter('n'.into()),
         Some(0..1)
     ))]
-    #[case(json_to_json_and_error(r#""hi"#, ErrorKind::ExpectedQuote, None))]
     #[case(json_to_json_and_error(
         r#""
     

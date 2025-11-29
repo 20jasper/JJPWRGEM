@@ -41,8 +41,11 @@ pub enum ErrorKind {
         context: Option<TokenWithContext>,
         found: TokenOption,
     },
-    /// expected quote before end of input
-    ExpectedQuote,
+    /// expected closing quote
+    ExpectedQuote {
+        open_ctx: Range<usize>,
+        string_ctx: Range<usize>,
+    },
 
     // number
     /// expected digit following minus sign, found {1}

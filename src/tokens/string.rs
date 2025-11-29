@@ -69,7 +69,15 @@ impl StringState {
                     string_range: string_range.start..r.end,
                     quote_range,
                 },
-                None => return Err(Error::from_unterminated(ErrorKind::ExpectedQuote, input)),
+                None => {
+                    return Err(Error::from_unterminated(
+                        ErrorKind::ExpectedQuote {
+                            open_ctx: quote_range.clone(),
+                            string_ctx: string_range.clone(),
+                        },
+                        input,
+                    ));
+                }
             },
             StringState::Escape {
                 string_range,
