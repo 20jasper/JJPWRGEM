@@ -318,6 +318,12 @@ impl<'a> From<&'a Error> for Vec<Patch<'a>> {
                 source,
                 "0",
             )],
+            ErrorKind::ExpectedQuote { string_ctx, .. } => vec![Patch::new(
+                "insert the missing closing quote",
+                string_ctx.end..string_ctx.end,
+                source,
+                "\"",
+            )],
             | ErrorKind::ExpectedKey(_, _)
             // reachable?
 
@@ -334,7 +340,6 @@ impl<'a> From<&'a Error> for Vec<Patch<'a>> {
             }
             | ErrorKind::UnexpectedCharacter(_)
             | ErrorKind::ExpectedOpenBrace { .. }
-            | ErrorKind::ExpectedQuote
             | ErrorKind::ExpectedMinusOrDigit(_) => Vec::new(),
                     }
     }
@@ -416,9 +421,14 @@ impl<'a> From<&'a Error> for Vec<Context<'a>> {
             | ErrorKind::UnexpectedCharacter(_)
             | ErrorKind::UnexpectedControlCharacterInString(_)
             | ErrorKind::TokenAfterEnd(_)
-            | ErrorKind::ExpectedQuote
             | ErrorKind::ExpectedMinusOrDigit(_)
             | ErrorKind::ExpectedOpenBrace { context: None, .. } => Vec::new(),
+
+            ErrorKind::ExpectedQuote { open_ctx, .. } => vec![Context::new(
+                "opening quote found here",
+                open_ctx.clone(),
+                source,
+            )],
         }
     }
 }

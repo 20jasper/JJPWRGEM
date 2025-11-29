@@ -1,6 +1,6 @@
 ---
-source: tests/conformance.rs
-expression: "format_output_snapshot(case.text, &annotated)"
+source: tests/parse_failure.rs
+expression: "format_output_snapshot(json, &annotated)"
 ---
 case --- 
 "

@@ -24,7 +24,7 @@ macro_rules! fixture_tuple {
 #[case(fixture_tuple!(OBJECT_OPEN_CURLY))]
 #[case(fixture_tuple!(CLOSED_CURLY))]
 #[case(fixture_tuple!(EMPTY_INPUT))]
-// #[case(fixture_tuple!(DOUBLE_QUOTE))]
+#[case(fixture_tuple!(DOUBLE_QUOTE))]
 #[case(fixture_tuple!(OBJECT_WITH_LINE_BREAK_VALUE))]
 #[case(fixture_tuple!(OBJECT_WITH_ADJACENT_STRINGS))]
 #[case(fixture_tuple!(OBJECT_EMPTY_THEN_OPEN))]
