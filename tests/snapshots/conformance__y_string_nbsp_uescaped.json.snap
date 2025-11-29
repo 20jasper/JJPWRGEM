@@ -1,0 +1,10 @@
+---
+source: tests/conformance.rs
+expression: "format_output_snapshot(case.text, &annotated)"
+---
+case --- 
+["new\u00A0line"]
+stdout --- 
+["new\u00A0line"]
+stderr --- 
+<empty>

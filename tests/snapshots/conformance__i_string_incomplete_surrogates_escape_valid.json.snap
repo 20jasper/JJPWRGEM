@@ -1,0 +1,10 @@
+---
+source: tests/conformance.rs
+expression: "format_output_snapshot(case.text, &annotated)"
+---
+case --- 
+["\uD800\uD800\n"]
+stdout --- 
+["\uD800\uD800\n"]
+stderr --- 
+<empty>

@@ -29,6 +29,10 @@
   - [ ] If object is empty, should be "{}"
   - [ ] standardize exponents
     - [ ] minifier should remove + and insignificant exponent 0s
+  - [ ] standardize escapes
+    - [ ] turn u escaped special cases to special case
+    - [ ] use same casing for escapes
+    - [ ] turn printable characters to normal (maybe an option, what if want cyrillic a to be escaped for example)
 - [ ] error handling
   - [x] display implementation for each token
   - [x] line/column
@@ -131,3 +135,8 @@
   - [ ] Private Use Area: U+E000 to U+F8FF
   - [ ] Tag Characters: U+E0001 to U+E007F
 - [x] expected quote before end of string should suggest adding one
+- [ ] if capital U escape \U, then recommend lowercasing it if 4 hex digits after
+  - [ ] n_string_unicode_capitalu.json
+- [ ] validate inappropriate surrogates
+- [ ] consider context aware quote closing
+  - [ ] n_string_1_surrogate_then_escape adds " at end when in unclosed array may be more appropriate

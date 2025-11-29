@@ -51,6 +51,10 @@ impl JsonChar {
         }
     }
 
+    pub fn is_hexdigit(&self) -> bool {
+        self.0.is_ascii_hexdigit()
+    }
+
     pub fn can_be_escaped_directly(&self) -> bool {
         matches!(self.0, '"' | '\\' | '/' | 'b' | 'f' | 'n' | 'r' | 't')
     }

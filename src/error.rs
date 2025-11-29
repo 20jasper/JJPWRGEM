@@ -75,10 +75,13 @@ pub enum ErrorKind {
         string_ctx: Range<usize>,
     },
     // todo better context
-    /// expected hex digit in escape, found {maybe_c}
+    /// expected hex digit {digit_idx} of 4 in escape, found {maybe_c}
     ExpectedHexDigit {
+        quote_ctx: Range<usize>,
+        slash_ctx: Range<usize>,
         u_ctx: Range<usize>,
         maybe_c: JsonCharOption,
+        digit_idx: usize,
     },
     /** expected escapable sequence, found {maybe_c}.
     valid escapes are `\"`, `\\`, `\/`, `\b`, `\f`, `\n`, `\r`, `\t` or `\uXXXX` (4 hex digits) */

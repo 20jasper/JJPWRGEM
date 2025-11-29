@@ -1,0 +1,10 @@
+---
+source: tests/conformance.rs
+expression: "format_output_snapshot(case.text, &annotated)"
+---
+case --- 
+["\u0061\u30af\u30EA\u30b9"]
+stdout --- 
+["\u0061\u30af\u30EA\u30b9"]
+stderr --- 
+<empty>
