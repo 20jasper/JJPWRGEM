@@ -9,7 +9,9 @@ pre-push:
     - run: just lint
       glob: "**/*.rs"
     - run: just format-check
-      glob: "{**/*.{rs,md,yml},justfile}"
+      glob: "justfile"
+    - run: just format-check
+      glob: "**/*.{rs,md,yml}"
     - run: cargo test
       glob: "**/*.rs"
 
@@ -17,5 +19,8 @@ pre-commit:
   parallel: true
   jobs:
     - run: just format
-      glob: "{**/*.{rs,md,yml},justfile}"
+      glob: "justfile"
+      stage_fixed: true
+    - run: just format
+      glob: "**/*.{rs,md,yml}"
       stage_fixed: true
