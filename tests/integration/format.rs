@@ -1,4 +1,25 @@
+use crate::common::annotate_and_assert_snapshot;
+use crate::test_json::*;
 use jjpwrgem::format::{prettify_str, uglify_str};
+use rstest::rstest;
+
+#[rstest]
+#[case(crate::fixture_tuple!(VALID_FRACTION))]
+#[case(crate::fixture_tuple!(VALID_NEGATIVE_FRACTION))]
+#[case(crate::fixture_tuple!(VALID_INTEGER))]
+#[case(crate::fixture_tuple!(VALID_NEGATIVE_INTEGER))]
+#[case(crate::fixture_tuple!(LONG_INTEGER))]
+#[case(crate::fixture_tuple!(LONG_FRACTION))]
+#[case(crate::fixture_tuple!(EXPONENT_WITH_PLUS_SIGN))]
+#[case(crate::fixture_tuple!(EXPONENT_WITH_MINUS_SIGN))]
+#[case(crate::fixture_tuple!(NEGATIVE_FLOAT_WITH_EXPONENT))]
+#[case(crate::fixture_tuple!(ARRAY_EMPTY))]
+#[case(crate::fixture_tuple!(ARRAY_SINGLE))]
+#[case(crate::fixture_tuple!(ARRAY_MANY))]
+#[case(crate::fixture_tuple!(ARRAY_SUBARRAYS))]
+fn annotate_test_json_successful_snapshots(#[case] (name, json): (&str, &str)) {
+    annotate_and_assert_snapshot(name, json);
+}
 
 #[test]
 fn prettify_arbitrarily_nested() {
@@ -50,25 +71,7 @@ fn uglify_removes_whitespace_primitive(#[case] input: &str) {
 
 #[test]
 fn uglify_removes_whitespace_object() {
-    let input = r#"      {
-
-
-        "hello hi":                       
-        
-        
-                     null
-
-
-
-                     ,
-
-
-                     "by": "hello"
-
-
-    }    
-        
-            "#;
+    let input = MULTIKEY_OBJECT_WITH_LOTS_OF_WHITESPACE;
     let res = uglify_str(input).unwrap();
     // we aren't guaranteed a key order
     assert!(

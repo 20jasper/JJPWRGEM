@@ -5,7 +5,7 @@ use annotate_snippets::{Renderer, renderer::DecorStyle};
 use insta::assert_snapshot;
 use jjpwrgem::cli::run;
 
-use crate::test_json::format_output_snapshot;
+use crate::common::format_output_snapshot;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum JsonResult {

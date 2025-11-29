@@ -1,0 +1,20 @@
+---
+source: tests/integration/test_json.rs
+expression: "format_output_snapshot(json_bytes, &annotated)"
+---
+case --- 
+{}{
+stdout --- 
+<empty>
+stderr --- 
+error: unexpected token `{` after json finished
+ --> stdin:1:3
+  |
+1 | {}{
+  |   ^
+  |
+help: consider removing the trailing content (starting with `{`)
+  |
+1 - {}{
+1 + {}
+  |

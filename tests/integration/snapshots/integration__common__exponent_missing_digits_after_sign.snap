@@ -1,0 +1,22 @@
+---
+source: tests/integration/common.rs
+expression: "format_output_snapshot(json_bytes, &annotated)"
+---
+case --- 
+98e+
+stdout --- 
+<empty>
+stderr --- 
+error: expected digit after exponent indicator, found no significant characters
+ --> stdin:1:4
+  |
+1 | 98e+
+  | ---^
+  | | |
+  | | exponent indicator found here
+  | number with exponent found here
+  |
+help: add a digit after the exponent sign
+  |
+1 | 98e+0
+  |     +

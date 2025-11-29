@@ -1,0 +1,22 @@
+---
+source: tests/integration/common.rs
+expression: "format_output_snapshot(json_bytes, &annotated)"
+---
+case --- 
+98.
+stdout --- 
+<empty>
+stderr --- 
+error: expected fraction digit following dot, found no significant characters
+ --> stdin:1:3
+  |
+1 | 98.
+  | --^
+  | | |
+  | | decimal point found here
+  | number found here
+  |
+help: insert placeholder digit after the decimal point
+  |
+1 | 98.0
+  |    +

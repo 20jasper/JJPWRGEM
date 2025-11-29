@@ -1,0 +1,10 @@
+---
+source: tests/integration/common.rs
+expression: "format_output_snapshot(json_bytes, &annotated)"
+---
+case --- 
+429e+6
+stdout --- 
+429e+6
+stderr --- 
+<empty>

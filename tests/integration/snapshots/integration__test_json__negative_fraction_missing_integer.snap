@@ -1,0 +1,21 @@
+---
+source: tests/integration/test_json.rs
+expression: "format_output_snapshot(json_bytes, &annotated)"
+---
+case --- 
+-.29
+stdout --- 
+<empty>
+stderr --- 
+error: expected digit following minus sign, found `.`
+ --> stdin:1:1
+  |
+1 | -.29
+  | ^
+  | |
+  | minus sign found here
+  |
+help: did you mean to add a fraction? consider adding a 0 before the period
+  |
+1 | -0.29
+  |  +

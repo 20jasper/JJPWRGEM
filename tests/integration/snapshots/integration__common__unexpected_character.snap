@@ -1,0 +1,14 @@
+---
+source: tests/integration/common.rs
+expression: "format_output_snapshot(json_bytes, &annotated)"
+---
+case --- 
+🦀
+stdout --- 
+<empty>
+stderr --- 
+error: unexpected character `🦀`. expected start of a json value
+ --> stdin:1:1
+  |
+1 | 🦀
+  | ^^

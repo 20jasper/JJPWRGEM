@@ -1,0 +1,21 @@
+---
+source: tests/integration/test_json.rs
+expression: "format_output_snapshot(json_bytes, &annotated)"
+---
+case --- 
+{"hi" null 
+stdout --- 
+<empty>
+stderr --- 
+error: expected colon after key, found `null`
+ --> stdin:1:7
+  |
+1 | {"hi" null 
+  |  ---- ^^^^
+  |  |
+  |  expected due to `"hi"`
+  |
+help: insert the missing colon
+  |
+1 | {"hi":  null 
+  |      +

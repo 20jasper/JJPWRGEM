@@ -1,0 +1,17 @@
+---
+source: tests/integration/test_json.rs
+expression: "format_output_snapshot(json_bytes, &annotated)"
+---
+case --- 
+"\u1FZA"
+stdout --- 
+<empty>
+stderr --- 
+error: expected hex digit 3 of 4 in escape, found `Z`
+ --> stdin:1:6
+  |
+1 | "\u1FZA"
+  | ---  ^
+  | ||
+  | |\u escape started here
+  | opening quote found here

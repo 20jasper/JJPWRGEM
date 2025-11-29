@@ -1,0 +1,22 @@
+---
+source: tests/integration/common.rs
+expression: "format_output_snapshot(json_bytes, &annotated)"
+---
+case --- 
+012
+stdout --- 
+<empty>
+stderr --- 
+error: unexpected leading zero
+ --> stdin:1:1
+  |
+1 | 012
+  | ^
+  | |
+  | first zero found here
+  |
+help: remove the leading zeros
+  |
+1 - 012
+1 + 12
+  |

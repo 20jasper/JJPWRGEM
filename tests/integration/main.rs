@@ -1,3 +1,4 @@
+mod common;
 mod conformance;
 mod format;
 mod parse_failure;

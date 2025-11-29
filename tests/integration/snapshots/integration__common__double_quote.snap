@@ -1,0 +1,21 @@
+---
+source: tests/integration/common.rs
+expression: "format_output_snapshot(json_bytes, &annotated)"
+---
+case --- 
+"
+stdout --- 
+<empty>
+stderr --- 
+error: expected closing quote
+ --> stdin:1:1
+  |
+1 | "
+  | ^
+  | |
+  | opening quote found here
+  |
+help: insert the missing closing quote
+  |
+1 | ""
+  |  +

@@ -1,0 +1,16 @@
+---
+source: tests/integration/test_json.rs
+expression: "format_output_snapshot(json_bytes, &annotated)"
+---
+case --- 
+-abcd
+stdout --- 
+<empty>
+stderr --- 
+error: expected digit following minus sign, found `a`
+ --> stdin:1:1
+  |
+1 | -abcd
+  | ^
+  | |
+  | minus sign found here

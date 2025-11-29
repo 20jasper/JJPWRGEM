@@ -1,5 +1,3 @@
-use jjpwrgem::cli::Output;
-
 pub const OBJECT_MISSING_COLON_WITH_COMMA: &str = r#"{"hi", "#;
 pub const OBJECT_MISSING_COLON_WITH_NULL: &str = r#"{"hi" null "#;
 pub const OBJECT_MISSING_COLON_WITH_CLOSED_CURLY: &str = r#"{"hi" }"#;
@@ -50,8 +48,24 @@ pub const ARRAY_OPEN_WITH_VALUE: &str = "[1, [";
 pub const ARRAY_MISSING_VALUE: &str = "[1, ]";
 pub const INVALID_HEX_DIGIT_IN_ESCAPE: &str = r#""\u1FZA""#;
 pub const INVALID_ESCAPED_CURLY: &str = r#""\{""#;
+pub const MULTIKEY_OBJECT_WITH_LOTS_OF_WHITESPACE: &str = r#"      {
 
-pub fn format_output_snapshot(input: Vec<u8>, output: &Output) -> String {
-    let input = String::from_utf8(input.clone()).unwrap_or(format!("<raw bytes>\n{input:?}"));
-    format!("case --- \n{input}\n{output:?}")
-}
+    "hello hi":                       
+
+
+             null
+
+
+
+
+             ,
+
+
+             "by": "hello"
+
+
+
+
+    }    
+        
+        "#;
