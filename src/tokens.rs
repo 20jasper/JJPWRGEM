@@ -270,7 +270,7 @@ mod tests {
     #[case("true", Token::Boolean(true))]
     #[case("false", Token::Boolean(false))]
     #[case("\"burger\"", Token::String("burger"))]
-    #[case(r#"\"\"burger\""#, Token::String(r#"\"burger\""#))]
+    #[case(r#""\"burger\"""#, Token::String(r#"\"burger\""#))]
     #[case(r#"0"#, 0.into())]
     #[case(r#"12389"#, 12389.into())]
     #[case(r#"-12389"#, (-12389).into())]
