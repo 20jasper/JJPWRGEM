@@ -3,7 +3,8 @@ pub mod diagnostics;
 use crate::tokens::CharWithContext;
 use crate::tokens::lexical::trim_end_whitespace;
 use crate::tokens::{JsonCharOption, Token, TokenOption, TokenWithContext, lexical::JsonChar};
-use core::ops::Range;
+use core::fmt::Display;
+use core::ops::{Deref, Range};
 use displaydoc::Display;
 use thiserror::Error;
 
@@ -124,9 +125,20 @@ fn closing_delimiter_for_open(token: &Token) -> Option<JsonChar> {
 }
 
 #[derive(Debug, PartialEq, Eq, Display, Error)]
+// box inner error for performance--a Rust enum is as large as the largest
+// variant so happy path case becomes 100s of bytes otherwise
+pub struct Error(pub Box<ErrorInner>);
+
+impl Display for Error {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+#[derive(Debug, PartialEq, Eq, Display, Error)]
 /// {kind} at line {line} column {column}
-pub struct Error {
-    kind: Box<ErrorKind>,
+pub struct ErrorInner {
+    kind: ErrorKind,
     range: Range<usize>,
     /// 1 indexed line number
     line: usize,
@@ -136,19 +148,34 @@ pub struct Error {
     source_name: String,
 }
 
+impl From<ErrorInner> for Error {
+    fn from(value: ErrorInner) -> Self {
+        Error(Box::new(value))
+    }
+}
+
+impl Deref for Error {
+    type Target = ErrorInner;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
 impl Error {
     pub fn new(kind: ErrorKind, range: Range<usize>, text: &str) -> Self {
         // TODO take this as a param or have some sort of context
         let source_name = "stdin".into();
         let (line, column) = get_line_and_column(text, range.clone());
-        Self {
-            kind: kind.into(),
+        ErrorInner {
+            kind,
             range,
             line,
             column,
             source_text: text.into(),
             source_name,
         }
+        .into()
     }
 
     pub fn from_unterminated(kind: ErrorKind, text: &str) -> Self {
