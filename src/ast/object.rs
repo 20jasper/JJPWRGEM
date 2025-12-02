@@ -8,38 +8,38 @@ use core::ops::Range;
 use std::collections::HashMap;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
-enum ObjectState {
+enum ObjectState<'a> {
     Open,
     KeyOrEnd {
-        map: HashMap<String, Value>,
-        open_ctx: TokenWithContext,
+        map: HashMap<&'a str, Value<'a>>,
+        open_ctx: TokenWithContext<'a>,
         last_pair: Option<Range<usize>>,
     },
     Key {
-        map: HashMap<String, Value>,
-        comma_ctx: TokenWithContext,
-        open_ctx: TokenWithContext,
+        map: HashMap<&'a str, Value<'a>>,
+        comma_ctx: TokenWithContext<'a>,
+        open_ctx: TokenWithContext<'a>,
     },
     Colon {
-        key_ctx: TokenWithContext,
-        map: HashMap<String, Value>,
-        open_ctx: TokenWithContext,
+        key_ctx: TokenWithContext<'a>,
+        map: HashMap<&'a str, Value<'a>>,
+        open_ctx: TokenWithContext<'a>,
     },
     Value {
-        key_ctx: TokenWithContext,
-        colon_ctx: TokenWithContext,
-        map: HashMap<String, Value>,
-        open_ctx: TokenWithContext,
+        key_ctx: TokenWithContext<'a>,
+        colon_ctx: TokenWithContext<'a>,
+        map: HashMap<&'a str, Value<'a>>,
+        open_ctx: TokenWithContext<'a>,
     },
-    End(HashMap<String, Value>, Range<usize>),
+    End(HashMap<&'a str, Value<'a>>, Range<usize>),
 }
 
-impl ObjectState {
+impl<'a> ObjectState<'a> {
     fn process(
         self,
-        tokens: &mut Peekable<impl Iterator<Item = TokenWithContext>>,
-        text: &str,
-    ) -> Result<Self> {
+        tokens: &mut Peekable<impl Iterator<Item = TokenWithContext<'a>>>,
+        text: &'a str,
+    ) -> Result<'a, Self> {
         let res = match self {
             ObjectState::Open => match tokens.next() {
                 Some(
@@ -205,10 +205,10 @@ impl ObjectState {
     }
 }
 
-pub fn parse_object(
-    tokens: &mut Peekable<impl Iterator<Item = TokenWithContext>>,
-    text: &str,
-) -> Result<ValueWithContext> {
+pub fn parse_object<'a>(
+    tokens: &mut Peekable<impl Iterator<Item = TokenWithContext<'a>>>,
+    text: &'a str,
+) -> Result<'a, ValueWithContext<'a>> {
     let mut state = ObjectState::Open;
 
     loop {

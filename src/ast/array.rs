@@ -7,31 +7,31 @@ use core::iter::Peekable;
 use std::ops::Range;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
-pub enum ArrayState {
+pub enum ArrayState<'a> {
     Open,
     ValueOrEnd {
-        items: Vec<Value>,
-        open_ctx: TokenWithContext,
+        items: Vec<Value<'a>>,
+        open_ctx: TokenWithContext<'a>,
     },
     Value {
-        items: Vec<Value>,
-        open_ctx: TokenWithContext,
-        expect_ctx: TokenWithContext,
+        items: Vec<Value<'a>>,
+        open_ctx: TokenWithContext<'a>,
+        expect_ctx: TokenWithContext<'a>,
     },
     CommaOrEnd {
-        items: Vec<Value>,
-        open_ctx: TokenWithContext,
+        items: Vec<Value<'a>>,
+        open_ctx: TokenWithContext<'a>,
         last_value_range: Range<usize>,
     },
-    End(ValueWithContext),
+    End(ValueWithContext<'a>),
 }
 
-impl ArrayState {
+impl<'a> ArrayState<'a> {
     pub fn process(
         self,
-        tokens: &mut Peekable<impl Iterator<Item = TokenWithContext>>,
-        text: &str,
-    ) -> Result<Self> {
+        tokens: &mut Peekable<impl Iterator<Item = TokenWithContext<'a>>>,
+        text: &'a str,
+    ) -> Result<'a, Self> {
         let next_state = match self {
             ArrayState::Open => match tokens.next() {
                 Some(
@@ -160,10 +160,10 @@ impl ArrayState {
     }
 }
 
-pub fn parse_array(
-    tokens: &mut Peekable<impl Iterator<Item = TokenWithContext>>,
-    text: &str,
-) -> Result<ValueWithContext> {
+pub fn parse_array<'a>(
+    tokens: &mut Peekable<impl Iterator<Item = TokenWithContext<'a>>>,
+    text: &'a str,
+) -> Result<'a, ValueWithContext<'a>> {
     let mut state = ArrayState::Open;
 
     loop {

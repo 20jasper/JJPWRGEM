@@ -5,7 +5,7 @@ use crate::{
 use core::ops::Range;
 use std::iter::Peekable;
 
-enum StringState {
+enum StringState<'a> {
     Open,
     // TODO track last escaped u escapes
     CharOrEscapeOrEnd {
@@ -24,15 +24,15 @@ enum StringState {
         slash_range: Range<usize>,
         digits: Vec<JsonChar>,
     },
-    End(TokenWithContext),
+    End(TokenWithContext<'a>),
 }
 
-impl StringState {
+impl<'a> StringState<'a> {
     fn process(
         self,
         chars: &mut Peekable<impl Iterator<Item = CharWithContext>>,
-        input: &str,
-    ) -> Result<Self> {
+        input: &'a str,
+    ) -> Result<'a, Self> {
         let res = match self {
             StringState::Open => {
                 let Some(CharWithContext(starting_quote, JsonChar('"'))) = chars.next() else {
@@ -155,10 +155,10 @@ impl StringState {
     }
 }
 
-pub fn parse_string(
-    input: &str,
+pub fn parse_string<'a>(
+    input: &'a str,
     chars: &mut Peekable<impl Iterator<Item = CharWithContext>>,
-) -> Result<TokenWithContext> {
+) -> Result<'a, TokenWithContext<'a>> {
     let mut state = StringState::Open;
 
     loop {

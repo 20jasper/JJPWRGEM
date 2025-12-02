@@ -8,19 +8,20 @@ use crate::error::{ErrorKind, Result};
 use crate::tokens::{Token, TokenWithContext, str_to_tokens};
 use core::iter::Peekable;
 use core::ops::Range;
+use std::borrow::Cow;
 use std::collections::HashMap;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
-pub enum Value {
+pub enum Value<'a> {
     Null,
-    String(String),
-    Number(String),
-    Object(HashMap<String, Value>),
-    Array(Vec<Value>),
+    String(&'a str),
+    Number(Cow<'a, str>),
+    Object(HashMap<&'a str, Value<'a>>),
+    Array(Vec<Value<'a>>),
     Boolean(bool),
 }
 
-fn token_to_value(token: Token) -> Option<Value> {
+fn token_to_value<'a>(token: Token<'a>) -> Option<Value<'a>> {
     Some(match token {
         Token::String(s) => Value::String(s),
         Token::Null => Value::Null,
@@ -31,27 +32,27 @@ fn token_to_value(token: Token) -> Option<Value> {
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
-pub struct ValueWithContext {
-    value: Value,
+pub struct ValueWithContext<'a> {
+    value: Value<'a>,
     range: Range<usize>,
 }
 
-impl ValueWithContext {
-    pub fn new(value: Value, range: Range<usize>) -> Self {
+impl<'a> ValueWithContext<'a> {
+    pub fn new(value: Value<'a>, range: Range<usize>) -> Self {
         Self { value, range }
     }
 }
 
-pub fn parse_str(json: &str) -> Result<Value> {
+pub fn parse_str<'a>(json: &'a str) -> Result<'a, Value<'a>> {
     let tokens = str_to_tokens(json)?;
     Ok(parse_tokens(&mut tokens.into_iter().peekable(), json, true)?.value)
 }
 
-pub fn parse_tokens(
-    tokens: &mut Peekable<impl Iterator<Item = TokenWithContext>>,
-    text: &str,
+pub fn parse_tokens<'a>(
+    tokens: &mut Peekable<impl Iterator<Item = TokenWithContext<'a>>>,
+    text: &'a str,
     fail_on_multiple_value: bool,
-) -> Result<ValueWithContext> {
+) -> Result<'a, ValueWithContext<'a>> {
     let peeked = if let Some(peeked) = tokens.peek() {
         peeked.clone()
     } else {
@@ -91,11 +92,11 @@ pub fn parse_tokens(
     Ok(val)
 }
 
-fn validate_start_of_value(
-    text: &str,
-    expect_ctx: TokenWithContext,
-    maybe_token: Option<TokenWithContext>,
-) -> Result<()> {
+fn validate_start_of_value<'a>(
+    text: &'a str,
+    expect_ctx: TokenWithContext<'a>,
+    maybe_token: Option<TokenWithContext<'a>>,
+) -> Result<'a, ()> {
     if !maybe_token
         .as_ref()
         .is_some_and(|ctx| ctx.token.is_start_of_value())
@@ -113,13 +114,8 @@ fn validate_start_of_value(
 mod tests {
     use super::*;
 
-    fn kv_to_map(tuples: &[(&str, Value)]) -> Value {
-        Value::Object(
-            tuples
-                .iter()
-                .map(|(k, v)| ((*k).into(), v.clone()))
-                .collect(),
-        )
+    fn kv_to_map<'a>(tuples: &[(&'a str, Value<'a>)]) -> Value<'a> {
+        Value::Object(tuples.iter().map(|(k, v)| (*k, v.clone())).collect())
     }
 
     #[test]
@@ -131,7 +127,7 @@ mod tests {
     fn one_key_value_pair() {
         assert_eq!(
             parse_str(r#"{"hi":"bye"}"#).unwrap(),
-            kv_to_map(&[("hi", Value::String("bye".into()))])
+            kv_to_map(&[("hi", Value::String("bye"))])
         );
     }
 
@@ -153,7 +149,7 @@ mod tests {
             "#
             )
             .unwrap(),
-            nested(nested(nested(nested(Value::String("rust".into())))))
+            nested(nested(nested(nested(Value::String("rust")))))
         );
     }
 
