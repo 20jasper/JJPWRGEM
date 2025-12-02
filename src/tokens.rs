@@ -8,22 +8,23 @@ use crate::{
 };
 use core::fmt::Display;
 use core::ops::Range;
+use std::borrow::Cow;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
-pub enum Token {
+pub enum Token<'a> {
     OpenCurlyBrace,
     ClosedCurlyBrace,
     Colon,
     Comma,
     OpenSquareBracket,
     ClosedSquareBracket,
-    String(String),
-    Number(String),
+    String(&'a str),
+    Number(Cow<'a, str>),
     Null,
     Boolean(bool),
 }
 
-impl Token {
+impl<'a> Token<'a> {
     pub fn is_start_of_value(&self) -> bool {
         matches!(
             self,
@@ -37,7 +38,7 @@ impl Token {
     }
 }
 
-impl Display for Token {
+impl Display for Token<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let val = match self {
             Token::OpenCurlyBrace => "{",
@@ -47,7 +48,7 @@ impl Display for Token {
             Token::OpenSquareBracket => "[",
             Token::ClosedSquareBracket => "]",
             Token::String(x) => &format!("{x:?}"),
-            Token::Number(x) => &x.to_string(),
+            Token::Number(x) => x.as_ref(),
             Token::Boolean(x) => &format!("{x:?}"),
             Token::Null => NULL,
         };
@@ -57,9 +58,9 @@ impl Display for Token {
 
 const NO_SIGNIFICANT_CHARACTERS: &str = "no significant characters";
 #[derive(Debug, PartialEq, Eq, Clone)]
-pub struct TokenOption(pub(crate) Option<Token>);
+pub struct TokenOption<'a>(pub(crate) Option<Token<'a>>);
 
-impl Display for TokenOption {
+impl Display for TokenOption<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let val = match &self.0 {
             Some(x) => x.to_string(),
@@ -69,8 +70,8 @@ impl Display for TokenOption {
     }
 }
 
-impl From<Option<Token>> for TokenOption {
-    fn from(value: Option<Token>) -> Self {
+impl<'a> From<Option<Token<'a>>> for TokenOption<'a> {
+    fn from(value: Option<Token<'a>>) -> Self {
         Self(value)
     }
 }
@@ -94,8 +95,8 @@ impl From<Option<JsonChar>> for JsonCharOption {
     }
 }
 #[derive(Debug, PartialEq, Eq, Clone)]
-pub struct TokenWithContext {
-    pub token: Token,
+pub struct TokenWithContext<'a> {
+    pub token: Token<'a>,
     pub range: Range<usize>,
 }
 
@@ -112,7 +113,7 @@ impl From<(usize, char)> for CharWithContext {
 }
 
 impl CharWithContext {
-    fn as_token_with_context(&self) -> Option<TokenWithContext> {
+    fn as_token_with_context<'a>(&self) -> Option<TokenWithContext<'a>> {
         match self {
             CharWithContext(range, JsonChar(c)) => {
                 let token = match c {
@@ -140,7 +141,7 @@ impl CharWithContext {
     }
 }
 
-pub fn str_to_tokens(s: &str) -> Result<Vec<TokenWithContext>> {
+pub fn str_to_tokens<'a>(s: &'a str) -> Result<'a, Vec<TokenWithContext<'a>>> {
     let mut chars = s
         .char_indices()
         .map(Into::<CharWithContext>::into)
@@ -208,25 +209,25 @@ pub fn str_to_tokens(s: &str) -> Result<Vec<TokenWithContext>> {
     Ok(res)
 }
 
-impl From<bool> for Token {
+impl From<bool> for Token<'_> {
     fn from(value: bool) -> Self {
         Token::Boolean(value)
     }
 }
 // TODO macro for every num type
-impl From<usize> for Token {
+impl From<usize> for Token<'_> {
     fn from(value: usize) -> Self {
-        Token::Number(value.to_string())
+        Token::Number(value.to_string().into())
     }
 }
-impl From<i32> for Token {
+impl From<i32> for Token<'_> {
     fn from(value: i32) -> Self {
-        Token::Number(value.to_string())
+        Token::Number(value.to_string().into())
     }
 }
-impl From<f64> for Token {
+impl From<f64> for Token<'_> {
     fn from(value: f64) -> Self {
-        Token::Number(value.to_string())
+        Token::Number(value.to_string().into())
     }
 }
 
@@ -244,7 +245,7 @@ mod tests {
                     range: 0..1
                 },
                 TokenWithContext {
-                    token: Token::String("rust".into()),
+                    token: Token::String("rust"),
                     range: 1..7
                 },
                 TokenWithContext {
@@ -252,7 +253,7 @@ mod tests {
                     range: 7..8
                 },
                 TokenWithContext {
-                    token: Token::String("is a must".into()),
+                    token: Token::String("is a must"),
                     range: 9..20
                 },
                 TokenWithContext {
@@ -268,8 +269,8 @@ mod tests {
     #[case("null", Token::Null)]
     #[case("true", Token::Boolean(true))]
     #[case("false", Token::Boolean(false))]
-    #[case("\"burger\"", Token::String("burger".into()))]
-    #[case(r#""\"burger\"""#, Token::String(r#"\"burger\""#.into()))]
+    #[case("\"burger\"", Token::String("burger"))]
+    #[case(r#"\"\"burger\""#, Token::String(r#"\"burger\""#))]
     #[case(r#"0"#, 0.into())]
     #[case(r#"12389"#, 12389.into())]
     #[case(r#"-12389"#, (-12389).into())]
@@ -305,7 +306,7 @@ mod tests {
                     range: 0..1
                 },
                 TokenWithContext {
-                    token: Token::String("rust".into()),
+                    token: Token::String("rust"),
                     range: 18..24
                 },
                 TokenWithContext {
@@ -324,11 +325,11 @@ mod tests {
         )
     }
 
-    fn json_to_json_and_error(
+    fn json_to_json_and_error<'a>(
         json: &'static str,
-        kind: ErrorKind,
+        kind: ErrorKind<'a>,
         range: Option<Range<usize>>,
-    ) -> (&'static str, Error) {
+    ) -> (&'static str, Error<'a>) {
         let error = match range {
             Some(range) => Error::new(kind, range, json),
             None => Error::from_unterminated(kind, json),
@@ -374,7 +375,7 @@ mod tests {
                     range: 0..1
                 },
                 TokenWithContext {
-                    token: Token::String("rust".into()),
+                    token: Token::String("rust"),
                     range: 18..24
                 },
                 TokenWithContext {
@@ -382,7 +383,7 @@ mod tests {
                     range: 24..25
                 },
                 TokenWithContext {
-                    token: Token::String("is a must".into()),
+                    token: Token::String("is a must"),
                     range: 26..37
                 },
                 TokenWithContext {
@@ -390,7 +391,7 @@ mod tests {
                     range: 37..38
                 },
                 TokenWithContext {
-                    token: Token::String("name".into()),
+                    token: Token::String("name"),
                     range: 55..61
                 },
                 TokenWithContext {
@@ -398,7 +399,7 @@ mod tests {
                     range: 61..62
                 },
                 TokenWithContext {
-                    token: Token::String("ferris".into()),
+                    token: Token::String("ferris"),
                     range: 63..71
                 },
                 TokenWithContext {

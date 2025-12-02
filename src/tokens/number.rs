@@ -8,7 +8,7 @@ use crate::{
 };
 
 #[derive(Debug, PartialEq, Eq, Clone)]
-enum NumberState {
+enum NumberState<'a> {
     MinusOrInteger,
     Leading(Range<usize>),
     IntegerOrDecimalOrExponentOrEnd {
@@ -29,11 +29,11 @@ enum NumberState {
         e_range: CharWithContext,
     },
     ExponentDigitOrEnd(Range<usize>),
-    End(TokenWithContext),
+    End(TokenWithContext<'a>),
 }
 
-impl NumberState {
-    fn make_end(s: &str, range: Range<usize>) -> Self {
+impl<'a> NumberState<'a> {
+    fn make_end(s: &'a str, range: Range<usize>) -> Self {
         NumberState::End(TokenWithContext {
             token: Token::Number(s[range.clone()].into()),
             range,
@@ -42,8 +42,8 @@ impl NumberState {
     fn process(
         self,
         chars: &mut Peekable<impl Iterator<Item = CharWithContext>>,
-        input: &str,
-    ) -> Result<Self> {
+        input: &'a str,
+    ) -> Result<'a, Self> {
         let res = match self {
             NumberState::MinusOrInteger => match chars.next() {
                 Some(CharWithContext(range, JsonChar('-'))) => NumberState::Leading(range),
@@ -238,10 +238,10 @@ impl NumberState {
 /// zero          = %x30              ; 0
 /// ```
 /// See [RFC 8259 Section 6](https://datatracker.ietf.org/doc/html/rfc8259#section-6)
-pub fn parse_num(
-    input: &str,
+pub fn parse_num<'a>(
+    input: &'a str,
     chars: &mut Peekable<impl Iterator<Item = CharWithContext>>,
-) -> Result<TokenWithContext> {
+) -> Result<'a, TokenWithContext<'a>> {
     let mut state = NumberState::MinusOrInteger;
 
     loop {

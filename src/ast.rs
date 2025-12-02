@@ -22,10 +22,10 @@ pub enum Value {
 
 fn token_to_value(token: Token) -> Option<Value> {
     Some(match token {
-        Token::String(s) => Value::String(s),
+        Token::String(s) => Value::String(s.into()),
         Token::Null => Value::Null,
         Token::Boolean(b) => Value::Boolean(b),
-        Token::Number(n) => Value::Number(n),
+        Token::Number(n) => Value::Number(n.into()),
         _ => return None,
     })
 }
@@ -42,16 +42,16 @@ impl ValueWithContext {
     }
 }
 
-pub fn parse_str(json: &str) -> Result<Value> {
+pub fn parse_str(json: &str) -> Result<'_, Value> {
     let tokens = str_to_tokens(json)?;
     Ok(parse_tokens(&mut tokens.into_iter().peekable(), json, true)?.value)
 }
 
-pub fn parse_tokens(
-    tokens: &mut Peekable<impl Iterator<Item = TokenWithContext>>,
-    text: &str,
+pub fn parse_tokens<'a>(
+    tokens: &mut Peekable<impl Iterator<Item = TokenWithContext<'a>>>,
+    text: &'a str,
     fail_on_multiple_value: bool,
-) -> Result<ValueWithContext> {
+) -> Result<'a, ValueWithContext> {
     let peeked = if let Some(peeked) = tokens.peek() {
         peeked.clone()
     } else {
@@ -91,11 +91,11 @@ pub fn parse_tokens(
     Ok(val)
 }
 
-fn validate_start_of_value(
-    text: &str,
-    expect_ctx: TokenWithContext,
-    maybe_token: Option<TokenWithContext>,
-) -> Result<()> {
+fn validate_start_of_value<'a>(
+    text: &'a str,
+    expect_ctx: TokenWithContext<'a>,
+    maybe_token: Option<TokenWithContext<'a>>,
+) -> Result<'a, ()> {
     if !maybe_token
         .as_ref()
         .is_some_and(|ctx| ctx.token.is_start_of_value())

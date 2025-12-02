@@ -137,7 +137,7 @@ impl<'a> Diagnostic<'a> {
     }
 }
 
-fn error_source<'a>(error: &'a Error) -> Source<'a> {
+fn error_source<'a>(error: &'a Error<'a>) -> Source<'a> {
     if error.source_name == "stdin" {
         Source::Stdin(error.source_text.as_str())
     } else {
@@ -148,8 +148,8 @@ fn error_source<'a>(error: &'a Error) -> Source<'a> {
     }
 }
 
-impl<'a> From<&'a Error> for Vec<Patch<'a>> {
-    fn from(error: &'a Error) -> Self {
+impl<'a> From<&'a Error<'a>> for Vec<Patch<'a>> {
+    fn from(error: &'a Error<'a>) -> Self {
         let source = error_source(error);
         match &error.kind {
             ErrorKind::ExpectedKey(
@@ -367,8 +367,8 @@ impl<'a> From<&'a Error> for Vec<Patch<'a>> {
     }
 }
 
-impl<'a> From<&'a Error> for Vec<Context<'a>> {
-    fn from(error: &'a Error) -> Self {
+impl<'a> From<&'a Error<'a>> for Vec<Context<'a>> {
+    fn from(error: &'a Error<'a>) -> Self {
         let source = error_source(error);
         match &error.kind {
             ErrorKind::ExpectedKey(ctx, _)
@@ -474,8 +474,8 @@ impl<'a> From<&'a Error> for Vec<Context<'a>> {
     }
 }
 
-impl<'a> From<&'a Error> for Diagnostic<'a> {
-    fn from(error: &'a Error) -> Self {
+impl<'a> From<&'a Error<'a>> for Diagnostic<'a> {
+    fn from(error: &'a Error<'a>) -> Self {
         Diagnostic {
             message: error.kind.to_string(),
             range: Some(error.range.clone()),
@@ -486,12 +486,12 @@ impl<'a> From<&'a Error> for Diagnostic<'a> {
     }
 }
 
-impl Error {
-    pub fn report<'a>(&'a self) -> Vec<Group<'a>> {
+impl<'a> Error<'a> {
+    pub fn report(&'a self) -> Vec<Group<'a>> {
         Diagnostic::from(self).report()
     }
 
-    pub fn report_invalid_encoding<'a>(source: Source<'a>) -> Vec<Group<'a>> {
+    pub fn report_invalid_encoding(source: Source<'a>) -> Vec<Group<'a>> {
         Diagnostic {
             message: ErrorKind::InvalidEncoding.to_string(),
             source,

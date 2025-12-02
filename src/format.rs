@@ -69,7 +69,7 @@ impl FormatOptions {
     }
 }
 
-pub fn format_str(json: &str, options: &FormatOptions) -> Result<String> {
+pub fn format_str<'a>(json: &'a str, options: &FormatOptions) -> Result<'a, String> {
     Ok(format_value(&parse_str(json)?, options, 0))
 }
 
@@ -115,7 +115,7 @@ pub fn format_value(val: &Value, options: &FormatOptions, depth: usize) -> Strin
     }
 }
 
-pub fn uglify_str(json: &str) -> Result<String> {
+pub fn uglify_str(json: &str) -> Result<'_, String> {
     Ok(uglify_value(&parse_str(json)?))
 }
 
@@ -123,7 +123,7 @@ pub fn uglify_value(val: &Value) -> String {
     format_value(val, &FormatOptions::uglify(), 0)
 }
 
-pub fn prettify_str(json: &str) -> Result<String> {
+pub fn prettify_str(json: &str) -> Result<'_, String> {
     Ok(prettify_value(&parse_str(json)?))
 }
 
