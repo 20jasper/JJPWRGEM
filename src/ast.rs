@@ -16,7 +16,7 @@ pub enum Value<'a> {
     Null,
     String(&'a str),
     Number(Cow<'a, str>),
-    Object(HashMap<String, Value<'a>>),
+    Object(HashMap<&'a str, Value<'a>>),
     Array(Vec<Value<'a>>),
     Boolean(bool),
 }
@@ -115,12 +115,7 @@ mod tests {
     use super::*;
 
     fn kv_to_map<'a>(tuples: &[(&'a str, Value<'a>)]) -> Value<'a> {
-        Value::Object(
-            tuples
-                .iter()
-                .map(|(k, v)| ((*k).into(), v.clone()))
-                .collect(),
-        )
+        Value::Object(tuples.iter().map(|(k, v)| (*k, v.clone())).collect())
     }
 
     #[test]

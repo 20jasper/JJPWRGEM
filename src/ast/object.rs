@@ -11,27 +11,27 @@ use std::collections::HashMap;
 enum ObjectState<'a> {
     Open,
     KeyOrEnd {
-        map: HashMap<String, Value<'a>>,
+        map: HashMap<&'a str, Value<'a>>,
         open_ctx: TokenWithContext<'a>,
         last_pair: Option<Range<usize>>,
     },
     Key {
-        map: HashMap<String, Value<'a>>,
+        map: HashMap<&'a str, Value<'a>>,
         comma_ctx: TokenWithContext<'a>,
         open_ctx: TokenWithContext<'a>,
     },
     Colon {
         key_ctx: TokenWithContext<'a>,
-        map: HashMap<String, Value<'a>>,
+        map: HashMap<&'a str, Value<'a>>,
         open_ctx: TokenWithContext<'a>,
     },
     Value {
         key_ctx: TokenWithContext<'a>,
         colon_ctx: TokenWithContext<'a>,
-        map: HashMap<String, Value<'a>>,
+        map: HashMap<&'a str, Value<'a>>,
         open_ctx: TokenWithContext<'a>,
     },
-    End(HashMap<String, Value<'a>>, Range<usize>),
+    End(HashMap<&'a str, Value<'a>>, Range<usize>),
 }
 
 impl<'a> ObjectState<'a> {
@@ -190,7 +190,7 @@ impl<'a> ObjectState<'a> {
                     value: json_value,
                     range: json_range,
                 } = parse_tokens(tokens, text, false)?;
-                map.insert(key.into(), json_value);
+                map.insert(key, json_value);
 
                 ObjectState::KeyOrEnd {
                     map,
