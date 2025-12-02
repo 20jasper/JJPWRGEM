@@ -4,5 +4,6 @@
   },
   "files.readonlyInclude": {
     "tests/conformance/JSONTestSuite": true
-  }
+  },
+  "coverage-gutters.coverageBaseDir": "./target/llvm-cov"
 }

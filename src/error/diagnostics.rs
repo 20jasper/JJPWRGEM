@@ -209,21 +209,23 @@ impl<'a> From<&'a Error> for Vec<Patch<'a>> {
                 source,
                 expected.to_string(),
             )],
-            ErrorKind::ExpectedCommaOrClosedCurlyBrace { range, found, .. } => match found.0.as_ref() {
-                Some(Token::String(s)) => vec![Patch::new(
-                    Cow::Owned(format!("is {s:?} a key? consider adding a comma")),
-                    range.end..range.end,
-                    source,
-                    ",",
-                )],
-                None => vec![Patch::new(
-                    INSERT_MISSING_CLOSED_BRACE_HELP,
-                    range.end..range.end,
-                    source,
-                    "}",
-                )],
-                _ => Vec::new(),
-            },
+            ErrorKind::ExpectedCommaOrClosedCurlyBrace { range, found, .. } => {
+                match found.0.as_ref() {
+                    Some(Token::String(s)) => vec![Patch::new(
+                        Cow::Owned(format!("is {s:?} a key? consider adding a comma")),
+                        range.end..range.end,
+                        source,
+                        ",",
+                    )],
+                    None => vec![Patch::new(
+                        INSERT_MISSING_CLOSED_BRACE_HELP,
+                        range.end..range.end,
+                        source,
+                        "}",
+                    )],
+                    _ => Vec::new(),
+                }
+            }
             ErrorKind::ExpectedValue(ctx, tok_opt) => match (ctx, tok_opt.0.as_ref()) {
                 (
                     Some(TokenWithContext {
@@ -324,41 +326,44 @@ impl<'a> From<&'a Error> for Vec<Patch<'a>> {
                 source,
                 "\"",
             )],
-            | ErrorKind::ExpectedKey(_, _)
-            // reachable?
+            ErrorKind::ExpectedEscape {
+                maybe_c,
+                slash_range,
+                ..
+            } => match maybe_c.0.as_ref() {
+                Some(c) if c.is_control() => {
+                    vec![Patch::new(
+                        "escape the control character",
+                        slash_range.start..error.range.end,
+                        source,
+                        c.escape(),
+                    )]
+                }
+                _ => {
+                    vec![Patch::new(
+                        "remove unnecessary escape slash",
+                        slash_range.clone(),
+                        source,
+                        "",
+                    )]
+                }
+            },
 
-            // TODO patch
-            | ErrorKind::ExpectedHexDigit { .. }
-            | ErrorKind::InvalidEncoding
-            | ErrorKind::ExpectedDigitAfterE { .. }
-            | ErrorKind::ExpectedDigitAfterDot { .. }
-            | ErrorKind::ExpectedPlusOrMinusOrDigitAfterE { .. }
-            | ErrorKind::ExpectedEntryOrClosedDelimiter {
+            ErrorKind::ExpectedDigitAfterE { .. } => Vec::new(),
+            ErrorKind::ExpectedDigitAfterDot { .. } => Vec::new(),
+            ErrorKind::ExpectedPlusOrMinusOrDigitAfterE { .. } => Vec::new(),
+            ErrorKind::ExpectedEntryOrClosedDelimiter {
                 found: TokenOption(Some(_)),
                 ..
-            }
-            | ErrorKind::UnexpectedCharacter(_)
-            | ErrorKind::ExpectedOpenBrace { .. }
-            | ErrorKind::ExpectedMinusOrDigit(_) => Vec::new(),
-                ErrorKind::ExpectedEscape { maybe_c, slash_range, .. } => match maybe_c.0.as_ref() {
-                    Some(c) if c.is_control() => {
-                        vec![Patch::new(
-                            "escape the control character",
-                            slash_range.start..error.range.end,
-                            source,
-                            c.escape(),
-                        )]
-                    }
-                    _=> {
-                        vec![Patch::new(
-                            "remove unnecessary escape slash",
-                            slash_range.clone(),
-                            source,
-                            "",
-                        )]
-                    }
-                },
-                    }
+            } => Vec::new(),
+            ErrorKind::UnexpectedCharacter(_) => Vec::new(),
+            ErrorKind::ExpectedHexDigit { .. } => Vec::new(),
+            // unreachable
+            ErrorKind::InvalidEncoding => Vec::new(),
+            ErrorKind::ExpectedOpenBrace { .. } => Vec::new(),
+            ErrorKind::ExpectedMinusOrDigit(_) => Vec::new(),
+            ErrorKind::ExpectedKey(_, _) => Vec::new(),
+        }
     }
 }
 
@@ -457,13 +462,14 @@ impl<'a> From<&'a Error> for Vec<Context<'a>> {
                     source,
                 ),
             ],
-            ErrorKind::InvalidEncoding
-            | ErrorKind::ExpectedValue(None, _)
-            | ErrorKind::UnexpectedCharacter(_)
-            | ErrorKind::UnexpectedControlCharacterInString(_)
-            | ErrorKind::TokenAfterEnd(_)
-            | ErrorKind::ExpectedMinusOrDigit(_)
-            | ErrorKind::ExpectedOpenBrace { context: None, .. } => Vec::new(),
+            ErrorKind::ExpectedValue(None, _) => Vec::new(),
+            ErrorKind::UnexpectedCharacter(_) => Vec::new(),
+            ErrorKind::UnexpectedControlCharacterInString(_) => Vec::new(),
+            ErrorKind::TokenAfterEnd(_) => Vec::new(),
+            // unreachable
+            ErrorKind::InvalidEncoding => Vec::new(),
+            ErrorKind::ExpectedMinusOrDigit(_) => Vec::new(),
+            ErrorKind::ExpectedOpenBrace { context: None, .. } => Vec::new(),
         }
     }
 }

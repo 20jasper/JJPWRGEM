@@ -79,6 +79,16 @@ I went with annotate snippets over other libraries like codespan reporting since
 
 ## references
 
+### parsers/diagnostics
+
 https://rustc-dev-guide.rust-lang.org/diagnostics/error-codes.html
+
 https://github.com/rust-lang/rust/pull/27475
+
 OXC
+
+### Accessibility
+
+https://afixt.com/accessible-by-design-improving-command-line-interfaces-for-all-users/
+
+miette
