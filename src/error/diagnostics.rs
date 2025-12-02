@@ -151,7 +151,7 @@ fn error_source<'a>(error: &'a Error) -> Source<'a> {
 impl<'a> From<&'a Error> for Vec<Patch<'a>> {
     fn from(error: &'a Error) -> Self {
         let source = error_source(error);
-        match &*error.kind {
+        match &error.kind {
             ErrorKind::ExpectedKey(
                 TokenWithContext {
                     token: Token::Comma,
@@ -370,7 +370,7 @@ impl<'a> From<&'a Error> for Vec<Patch<'a>> {
 impl<'a> From<&'a Error> for Vec<Context<'a>> {
     fn from(error: &'a Error) -> Self {
         let source = error_source(error);
-        match &*error.kind {
+        match &error.kind {
             ErrorKind::ExpectedKey(ctx, _)
             | ErrorKind::ExpectedColon(ctx, _)
             | ErrorKind::ExpectedEntryOrClosedDelimiter { open_ctx: ctx, .. }
