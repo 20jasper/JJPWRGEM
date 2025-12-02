@@ -11,27 +11,27 @@ use std::collections::HashMap;
 enum ObjectState<'a> {
     Open,
     KeyOrEnd {
-        map: HashMap<String, Value>,
+        map: HashMap<String, Value<'a>>,
         open_ctx: TokenWithContext<'a>,
         last_pair: Option<Range<usize>>,
     },
     Key {
-        map: HashMap<String, Value>,
+        map: HashMap<String, Value<'a>>,
         comma_ctx: TokenWithContext<'a>,
         open_ctx: TokenWithContext<'a>,
     },
     Colon {
         key_ctx: TokenWithContext<'a>,
-        map: HashMap<String, Value>,
+        map: HashMap<String, Value<'a>>,
         open_ctx: TokenWithContext<'a>,
     },
     Value {
         key_ctx: TokenWithContext<'a>,
         colon_ctx: TokenWithContext<'a>,
-        map: HashMap<String, Value>,
+        map: HashMap<String, Value<'a>>,
         open_ctx: TokenWithContext<'a>,
     },
-    End(HashMap<String, Value>, Range<usize>),
+    End(HashMap<String, Value<'a>>, Range<usize>),
 }
 
 impl<'a> ObjectState<'a> {
@@ -208,7 +208,7 @@ impl<'a> ObjectState<'a> {
 pub fn parse_object<'a>(
     tokens: &mut Peekable<impl Iterator<Item = TokenWithContext<'a>>>,
     text: &'a str,
-) -> Result<'a, ValueWithContext> {
+) -> Result<'a, ValueWithContext<'a>> {
     let mut state = ObjectState::Open;
 
     loop {

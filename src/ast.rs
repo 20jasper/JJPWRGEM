@@ -8,41 +8,42 @@ use crate::error::{ErrorKind, Result};
 use crate::tokens::{Token, TokenWithContext, str_to_tokens};
 use core::iter::Peekable;
 use core::ops::Range;
+use std::borrow::Cow;
 use std::collections::HashMap;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
-pub enum Value {
+pub enum Value<'a> {
     Null,
-    String(String),
-    Number(String),
-    Object(HashMap<String, Value>),
-    Array(Vec<Value>),
+    String(&'a str),
+    Number(Cow<'a, str>),
+    Object(HashMap<String, Value<'a>>),
+    Array(Vec<Value<'a>>),
     Boolean(bool),
 }
 
-fn token_to_value(token: Token) -> Option<Value> {
+fn token_to_value<'a>(token: Token<'a>) -> Option<Value<'a>> {
     Some(match token {
-        Token::String(s) => Value::String(s.into()),
+        Token::String(s) => Value::String(s),
         Token::Null => Value::Null,
         Token::Boolean(b) => Value::Boolean(b),
-        Token::Number(n) => Value::Number(n.into()),
+        Token::Number(n) => Value::Number(n),
         _ => return None,
     })
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
-pub struct ValueWithContext {
-    value: Value,
+pub struct ValueWithContext<'a> {
+    value: Value<'a>,
     range: Range<usize>,
 }
 
-impl ValueWithContext {
-    pub fn new(value: Value, range: Range<usize>) -> Self {
+impl<'a> ValueWithContext<'a> {
+    pub fn new(value: Value<'a>, range: Range<usize>) -> Self {
         Self { value, range }
     }
 }
 
-pub fn parse_str(json: &str) -> Result<'_, Value> {
+pub fn parse_str<'a>(json: &'a str) -> Result<'a, Value<'a>> {
     let tokens = str_to_tokens(json)?;
     Ok(parse_tokens(&mut tokens.into_iter().peekable(), json, true)?.value)
 }
@@ -51,7 +52,7 @@ pub fn parse_tokens<'a>(
     tokens: &mut Peekable<impl Iterator<Item = TokenWithContext<'a>>>,
     text: &'a str,
     fail_on_multiple_value: bool,
-) -> Result<'a, ValueWithContext> {
+) -> Result<'a, ValueWithContext<'a>> {
     let peeked = if let Some(peeked) = tokens.peek() {
         peeked.clone()
     } else {
@@ -113,7 +114,7 @@ fn validate_start_of_value<'a>(
 mod tests {
     use super::*;
 
-    fn kv_to_map(tuples: &[(&str, Value)]) -> Value {
+    fn kv_to_map<'a>(tuples: &[(&'a str, Value<'a>)]) -> Value<'a> {
         Value::Object(
             tuples
                 .iter()
@@ -131,7 +132,7 @@ mod tests {
     fn one_key_value_pair() {
         assert_eq!(
             parse_str(r#"{"hi":"bye"}"#).unwrap(),
-            kv_to_map(&[("hi", Value::String("bye".into()))])
+            kv_to_map(&[("hi", Value::String("bye"))])
         );
     }
 
@@ -153,7 +154,7 @@ mod tests {
             "#
             )
             .unwrap(),
-            nested(nested(nested(nested(Value::String("rust".into())))))
+            nested(nested(nested(nested(Value::String("rust")))))
         );
     }
 

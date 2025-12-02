@@ -10,20 +10,20 @@ use std::ops::Range;
 pub enum ArrayState<'a> {
     Open,
     ValueOrEnd {
-        items: Vec<Value>,
+        items: Vec<Value<'a>>,
         open_ctx: TokenWithContext<'a>,
     },
     Value {
-        items: Vec<Value>,
+        items: Vec<Value<'a>>,
         open_ctx: TokenWithContext<'a>,
         expect_ctx: TokenWithContext<'a>,
     },
     CommaOrEnd {
-        items: Vec<Value>,
+        items: Vec<Value<'a>>,
         open_ctx: TokenWithContext<'a>,
         last_value_range: Range<usize>,
     },
-    End(ValueWithContext),
+    End(ValueWithContext<'a>),
 }
 
 impl<'a> ArrayState<'a> {
@@ -163,7 +163,7 @@ impl<'a> ArrayState<'a> {
 pub fn parse_array<'a>(
     tokens: &mut Peekable<impl Iterator<Item = TokenWithContext<'a>>>,
     text: &'a str,
-) -> Result<'a, ValueWithContext> {
+) -> Result<'a, ValueWithContext<'a>> {
     let mut state = ArrayState::Open;
 
     loop {

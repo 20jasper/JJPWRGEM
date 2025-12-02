@@ -87,7 +87,7 @@ pub fn format_value(val: &Value, options: &FormatOptions, depth: usize) -> Strin
                 .iter()
                 .map(|(key, val)| {
                     (
-                        format_value(&Value::String(key.clone()), options, 0),
+                        format_value(&Value::String(key), options, 0),
                         format_value(val, options, depth + 1),
                     )
                 })
