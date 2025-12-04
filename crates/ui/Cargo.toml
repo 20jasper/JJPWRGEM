@@ -1,0 +1,8 @@
+[package]
+name = "jjpwrgem-ui"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+annotate-snippets = "0.12.8"
+jjpwrgem-parse = { workspace = true }

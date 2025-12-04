@@ -1,4 +1,4 @@
-use jjpwrgem::cli::Output;
+use cli::Output;
 
 #[macro_export]
 macro_rules! fixture_tuple {

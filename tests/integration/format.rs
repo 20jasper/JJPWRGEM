@@ -1,6 +1,6 @@
 use crate::test_json::*;
 use insta::assert_snapshot;
-use jjpwrgem::format::{prettify_str, uglify_str};
+use jjpwrgem_parse::format::{prettify_str, uglify_str};
 
 #[rstest_reuse::template]
 #[rstest::rstest]

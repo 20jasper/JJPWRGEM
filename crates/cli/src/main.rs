@@ -1,7 +1,7 @@
+use cli::{Output, run};
+use jjpwrgem_ui::Color;
+use jjpwrgem_ui::Style;
 use std::io::Read;
-
-use annotate_snippets::{Renderer, renderer::DecorStyle};
-use jjpwrgem::cli::{Output, run};
 
 fn main() {
     let mut buf = vec![];
@@ -9,8 +9,7 @@ fn main() {
         .read_to_end(&mut buf)
         .expect("Failed to read from stdin");
 
-    let renderer = Renderer::styled().decor_style(DecorStyle::Unicode);
-    let output = run(buf, &renderer);
+    let output = run(buf, Style::Pretty(Color::Plain));
     print_output(&output);
 }
 

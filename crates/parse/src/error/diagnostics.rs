@@ -2,7 +2,6 @@ use crate::{
     Error, ErrorKind,
     tokens::{JsonCharOption, Token, TokenOption, TokenWithContext, lexical::JsonChar},
 };
-use annotate_snippets::{Annotation, AnnotationKind, Group, Level, Snippet};
 use core::ops::Range;
 use std::{borrow::Cow, path::Path};
 pub const EXPECTED_COMMA_OR_CLOSED_CURLY_MESSAGE: &str = "the preceding key/value pair";
@@ -10,9 +9,9 @@ pub const INSERT_MISSING_CLOSED_BRACE_HELP: &str = "insert the missing closed br
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Context<'a> {
-    message: Cow<'a, str>,
-    span: Range<usize>,
-    source: Source<'a>,
+    pub message: Cow<'a, str>,
+    pub span: Range<usize>,
+    pub source: Source<'a>,
 }
 
 impl<'a> Context<'a> {
@@ -26,10 +25,10 @@ impl<'a> Context<'a> {
 }
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Patch<'a> {
-    message: Cow<'a, str>,
-    span: Range<usize>,
-    source: Source<'a>,
-    replacement: Cow<'a, str>,
+    pub message: Cow<'a, str>,
+    pub span: Range<usize>,
+    pub source: Source<'a>,
+    pub replacement: Cow<'a, str>,
 }
 
 impl<'a> Patch<'a> {
@@ -48,39 +47,10 @@ impl<'a> Patch<'a> {
     }
 }
 
-impl<'a> From<Patch<'a>> for annotate_snippets::Patch<'a> {
-    fn from(patch: Patch<'a>) -> Self {
-        annotate_snippets::Patch::new(patch.span, patch.replacement)
-    }
-}
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum Source<'a> {
     Stdin(&'a str),
     File { source: &'a str, path: &'a Path },
-}
-impl<'a, T: Clone> From<Source<'a>> for Snippet<'a, T> {
-    fn from(val: Source<'a>) -> Self {
-        let (source, path) = match val {
-            Source::Stdin(src) => (src, "stdin"),
-            Source::File { source, path } => (
-                source,
-                path.to_str()
-                    .expect("diagnostic paths should be valid utf8"),
-            ),
-        };
-        Snippet::source(source).path(path)
-    }
-}
-
-impl<'a> From<Context<'a>> for Annotation<'a> {
-    fn from(ctx: Context<'a>) -> Self {
-        let Context {
-            message,
-            span,
-            source: _,
-        } = ctx;
-        AnnotationKind::Context.span(span).label(message)
-    }
 }
 pub struct Diagnostic<'a> {
     pub message: String,
@@ -105,35 +75,6 @@ impl<'a> Diagnostic<'a> {
             source,
             range,
         }
-    }
-
-    fn report(self) -> Vec<Group<'a>> {
-        let Diagnostic {
-            message,
-            context,
-            patches,
-            source,
-            range,
-        } = self;
-
-        let annotations = if let Some(range) = range {
-            std::iter::once(AnnotationKind::Primary.span(range))
-                .chain(context.into_iter().map(Annotation::from))
-                .collect()
-        } else {
-            vec![]
-        };
-
-        let error_group = Level::ERROR
-            .primary_title(message)
-            .element(Snippet::from(source).annotations(annotations));
-        let patch_group = patches.into_iter().map(|patch| {
-            Level::HELP
-                .primary_title(patch.message.clone())
-                .element(Snippet::from(source).patches(vec![patch.into()]))
-        });
-
-        std::iter::once(error_group).chain(patch_group).collect()
     }
 }
 
@@ -486,19 +427,12 @@ impl<'a> From<&'a Error<'a>> for Diagnostic<'a> {
     }
 }
 
-impl<'a> Error<'a> {
-    pub fn report(&'a self) -> Vec<Group<'a>> {
-        Diagnostic::from(self).report()
-    }
-
-    pub fn report_invalid_encoding(source: Source<'a>) -> Vec<Group<'a>> {
-        Diagnostic {
-            message: ErrorKind::InvalidEncoding.to_string(),
-            source,
-            range: None,
-            patches: vec![],
-            context: vec![],
-        }
-        .report()
+pub fn invalid_encoding<'a>(source: Source<'a>) -> Diagnostic<'a> {
+    Diagnostic {
+        message: ErrorKind::InvalidEncoding.to_string(),
+        source,
+        range: None,
+        patches: vec![],
+        context: vec![],
     }
 }

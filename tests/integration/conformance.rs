@@ -1,9 +1,9 @@
 use std::ffi::OsStr;
 use std::fs;
 
-use annotate_snippets::{Renderer, renderer::DecorStyle};
+use cli::run;
 use insta::assert_snapshot;
-use jjpwrgem::cli::run;
+use jjpwrgem_ui::{Color, Style};
 
 use crate::common::format_output_snapshot;
 
@@ -93,9 +93,8 @@ fn feature() {
 
     cases.sort_by(|a, b| a.file_name.cmp(&b.file_name));
 
-    let renderer = Renderer::plain().decor_style(DecorStyle::Ascii);
     for case in cases {
-        let annotated = run(case.text.clone(), &renderer);
+        let annotated = run(case.text.clone(), Style::Pretty(Color::Plain));
 
         assert_snapshot!(
             case.file_name,

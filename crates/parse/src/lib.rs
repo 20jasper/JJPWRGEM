@@ -1,8 +1,6 @@
 pub mod ast;
 pub mod error;
-pub mod tokens;
-
-pub mod cli;
 pub mod format;
+pub mod tokens;
 
 pub use crate::error::{Error, ErrorKind, Result};

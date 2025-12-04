@@ -20,7 +20,10 @@ lint:
     RUSTFLAGS=-Dwarnings cargo clippy --all-targets --all-features 
 
 test-cov:
-    cargo llvm-cov --lcov --output-path ./target/llvm-cov/lcov.info
+    cargo llvm-cov --workspace
+
+test-cov-open:
+    cargo llvm-cov --workspace --open
 
 watch:
     cargo watch -q -c -x "install --path ."

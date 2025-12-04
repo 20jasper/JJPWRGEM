@@ -1,8 +1,9 @@
 use core::fmt::Debug;
-
-use annotate_snippets::Renderer;
-
-use crate::{Error, error::diagnostics::Source, format};
+use jjpwrgem_parse::{
+    error::diagnostics::{Diagnostic, Source, invalid_encoding},
+    format,
+};
+use jjpwrgem_ui::Style;
 
 pub struct Output {
     pub stdout: Option<String>,
@@ -17,12 +18,15 @@ impl Debug for Output {
     }
 }
 
-pub fn run(json: Vec<u8>, renderer: &Renderer) -> Output {
+pub fn run(json: Vec<u8>, style: Style) -> Output {
     let json = match String::from_utf8(json) {
         Err(_) => {
             return Output {
                 stdout: None,
-                stderr: Some(renderer.render(&Error::report_invalid_encoding(Source::Stdin("")))),
+                stderr: Some(jjpwrgem_ui::render(
+                    invalid_encoding(Source::Stdin("")),
+                    style,
+                )),
             };
         }
         Ok(s) => s,
@@ -35,7 +39,7 @@ pub fn run(json: Vec<u8>, renderer: &Renderer) -> Output {
         },
         Err(error) => Output {
             stdout: None,
-            stderr: Some(renderer.render(&error.report())),
+            stderr: Some(jjpwrgem_ui::render(Diagnostic::from(&error), style)),
         },
     }
 }
