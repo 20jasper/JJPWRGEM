@@ -6,6 +6,8 @@
 pre-push:
   parallel: true
   jobs:
+    - run: just prepush
+      glob: "**/*.rs"
     - run: just lint
       glob: "**/*.rs"
     - run: just format-check
@@ -18,6 +20,8 @@ pre-push:
 pre-commit:
   parallel: true
   jobs:
+    - run: just precommit
+      glob: "**/*.rs"
     - run: just format
       glob: "justfile"
       stage_fixed: true

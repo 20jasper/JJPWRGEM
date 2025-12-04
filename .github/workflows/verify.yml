@@ -39,8 +39,15 @@ jobs:
         run: rustup update ${{ env.TOOLCHAIN }} && rustup default ${{ env.TOOLCHAIN }}
       - name: Install just
         uses: taiki-e/install-action@just
+      - name: Install cargo-shear
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-shear
       - name: Configure Dependency Caching
         uses: Swatinem/rust-cache@v2
+
+      - name: check unused dependencies
+        run: cargo shear
 
       - name: lint
         run: just lint
