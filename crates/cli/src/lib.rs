@@ -2,7 +2,7 @@ use core::fmt::Debug;
 
 use annotate_snippets::Renderer;
 
-use crate::{Error, error::diagnostics::Source, format};
+use jjpwrgem_parse::{Error, error::diagnostics::Source, format};
 
 pub struct Output {
     pub stdout: Option<String>,

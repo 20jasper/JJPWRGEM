@@ -1,7 +1,6 @@
-use std::io::Read;
-
 use annotate_snippets::{Renderer, renderer::DecorStyle};
-use jjpwrgem::cli::{Output, run};
+use cli::{Output, run};
+use std::io::Read;
 
 fn main() {
     let mut buf = vec![];

@@ -1,8 +1,8 @@
 use crate::common::format_output_snapshot;
 use crate::test_json::*;
 use annotate_snippets::{Renderer, renderer::DecorStyle};
+use cli::run;
 use insta::assert_snapshot;
-use jjpwrgem::cli::run;
 use rstest::rstest;
 
 #[rstest]

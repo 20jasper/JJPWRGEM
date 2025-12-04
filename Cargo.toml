@@ -3,24 +3,45 @@ name = "jjpwrgem"
 description = "jjpwrgem json parser with really good error messages"
 version = "0.1.3"
 edition = "2024"
+authors = ["Jacob Asper <jacobasper191@gmail.com>"]
+keywords = ["parser", "formatter", "json", "linter"]
+categories = ["command-line-utilities", "text-processing", "encoding"]
+homepage = "https://github.com/20jasper/jjpwrgem"
+repository = "https://github.com/20jasper/jjpwrgem"
+
+[[bin]]
+name = "jjp"
+path = "crates/cli/src/main.rs"
+
+[[test]]
+name = "integration"
+path = "tests/integration/main.rs"
+
+
+[workspace]
+members = ["crates/cli", "crates/parse"]
+
+[workspace.dependencies]
+anstream = "0.6.21"
+annotate-snippets = "0.12.8"
+jjpwrgem-parse = { path = "crates/parse" }
 
 [dependencies]
-annotate-snippets = "0.12.8"
 anstream = "0.6.21"
-displaydoc = "0.2.5"
-itertools = "0.14.0"
-thiserror = "2.0.17"
+annotate-snippets = "0.12.8"
+cli = { path = "crates/cli" }
+jjpwrgem-parse = { path = "crates/parse" }
 
 [dev-dependencies]
 insta = "1.44.1"
 rstest = "0.26.1"
 rstest_reuse = "0.7.0"
 
-[lints.clippy]
-
-[[bin]]
-name = "jjp"
-path = "src/main.rs"
 
 [profile.release]
 opt-level = 3
+
+[lints.clippy]
+[lints.rustdoc]
+broken_intra_doc_links = "warn"
+missing_crate_level_docs = "warn"

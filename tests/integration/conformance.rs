@@ -2,8 +2,8 @@ use std::ffi::OsStr;
 use std::fs;
 
 use annotate_snippets::{Renderer, renderer::DecorStyle};
+use cli::run;
 use insta::assert_snapshot;
-use jjpwrgem::cli::run;
 
 use crate::common::format_output_snapshot;
 
