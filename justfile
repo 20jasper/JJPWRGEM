@@ -7,6 +7,7 @@ dev-install:
     cargo binstall cargo-insta -y
     cargo binstall cargo-shear -y
     cargo binstall cargo-diet -y
+    cargo binstall cargo-dist -y
 
 # format rust, justfile, and markdown
 format:

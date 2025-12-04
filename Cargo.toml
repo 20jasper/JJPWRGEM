@@ -42,6 +42,11 @@ rstest_reuse = "0.7.0"
 [profile.release]
 opt-level = 3
 
+# The profile that 'dist' will build with
+[profile.dist]
+inherits = "release"
+lto = "thin"
+
 [lints.clippy]
 [lints.rustdoc]
 broken_intra_doc_links = "warn"
