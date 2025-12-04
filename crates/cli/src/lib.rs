@@ -1,8 +1,10 @@
-use core::fmt::Debug;
-
 use annotate_snippets::Renderer;
-
-use jjpwrgem_parse::{Error, error::diagnostics::Source, format};
+use core::fmt::Debug;
+use jjpwrgem_parse::{
+    error::diagnostics::{Source, invalid_encoding},
+    format,
+};
+use jjpwrgem_ui::{pretty, report_error};
 
 pub struct Output {
     pub stdout: Option<String>,
@@ -22,7 +24,7 @@ pub fn run(json: Vec<u8>, renderer: &Renderer) -> Output {
         Err(_) => {
             return Output {
                 stdout: None,
-                stderr: Some(renderer.render(&Error::report_invalid_encoding(Source::Stdin("")))),
+                stderr: Some(renderer.render(&pretty::report(invalid_encoding(Source::Stdin(""))))),
             };
         }
         Ok(s) => s,
@@ -35,7 +37,7 @@ pub fn run(json: Vec<u8>, renderer: &Renderer) -> Output {
         },
         Err(error) => Output {
             stdout: None,
-            stderr: Some(renderer.render(&error.report())),
+            stderr: Some(renderer.render(&report_error(&error))),
         },
     }
 }

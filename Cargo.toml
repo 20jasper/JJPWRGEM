@@ -19,12 +19,13 @@ path = "tests/integration/main.rs"
 
 
 [workspace]
-members = ["crates/cli", "crates/parse"]
+members = ["crates/cli", "crates/ui", "crates/parse"]
 
 [workspace.dependencies]
 anstream = "0.6.21"
 annotate-snippets = "0.12.8"
 jjpwrgem-parse = { path = "crates/parse" }
+jjpwrgem-ui = { path = "crates/ui" }
 
 [dependencies]
 anstream = "0.6.21"
