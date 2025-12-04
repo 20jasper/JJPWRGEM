@@ -5,6 +5,5 @@ edition = "2024"
 
 [dependencies]
 anstream = { workspace = true }
-annotate-snippets = { workspace = true }
 jjpwrgem-parse = { workspace = true }
 jjpwrgem-ui = { workspace = true }

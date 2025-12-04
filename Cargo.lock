@@ -81,7 +81,6 @@ checksum = "9330f8b2ff13f34540b44e946ef35111825727b38d33286ef986142615121801"
 name = "cli"
 version = "0.1.0"
 dependencies = [
- "annotate-snippets",
  "anstream",
  "jjpwrgem-parse",
  "jjpwrgem-ui",
@@ -240,11 +239,11 @@ dependencies = [
 name = "jjpwrgem"
 version = "0.1.3"
 dependencies = [
- "annotate-snippets",
  "anstream",
  "cli",
  "insta",
  "jjpwrgem-parse",
+ "jjpwrgem-ui",
  "rstest",
  "rstest_reuse",
 ]

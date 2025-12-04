@@ -1,9 +1,23 @@
-use annotate_snippets::Group;
-use jjpwrgem_parse::{Error, error::diagnostics::Diagnostic};
+use annotate_snippets::{Renderer, renderer::DecorStyle};
+use jjpwrgem_parse::error::diagnostics::Diagnostic;
 
 pub mod pretty;
-use crate::pretty::report;
 
-pub fn report_error<'a>(err: &'a Error<'a>) -> Vec<Group<'a>> {
-    report(Diagnostic::from(err))
+pub fn render(diag: Diagnostic<'_>, opts: Style) -> String {
+    let Style::Pretty(color) = opts;
+
+    match color {
+        Color::Ansi => Renderer::styled(),
+        Color::Plain => Renderer::plain(),
+    }
+    .decor_style(DecorStyle::Ascii)
+    .render(&pretty::report(diag))
+}
+
+pub enum Color {
+    Ansi,
+    Plain,
+}
+pub enum Style {
+    Pretty(Color),
 }
