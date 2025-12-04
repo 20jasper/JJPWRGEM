@@ -46,7 +46,6 @@ jobs:
 
       - name: check unused dependencies
         run: cargo shear
-
       - name: lint
         run: just lint
 
