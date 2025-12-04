@@ -1,10 +1,12 @@
+set working-directory := "."
+
 dev-install:
-    cargo install --locked cargo-binstall
     cargo binstall just -y
     cargo binstall cargo-watch -y
     cargo binstall cargo-llvm-cov -y
     cargo binstall cargo-insta -y
     cargo binstall cargo-shear -y
+    cargo binstall cargo-diet -y
 
 # format rust, justfile, and markdown
 format:
@@ -28,3 +30,15 @@ test-cov-open:
 
 watch:
     cargo watch -q -c -x "install --path ."
+
+# removes unnecessary files from crates before publishing
+diet:
+    for x in ./crates/* .; do \
+    	echo "dieting $x"; \
+    	(cd $x && cargo diet -r); \
+    done
+
+prepublish:
+    just format-check
+    just lint
+    just diet

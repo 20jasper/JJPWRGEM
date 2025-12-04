@@ -6,25 +6,21 @@
 pre-push:
   parallel: true
   jobs:
-    - run: cargo shear
-      glob: "**/*.rs"
     - run: just lint
-      glob: "**/*.rs"
+      glob: "*.rs"
     - run: just format-check
-      glob: "justfile"
-    - run: just format-check
-      glob: "**/*.{rs,md,yml}"
+      glob:
+        - "justfile"
+        - "**/*.{rs,md,yml}"
+    - run: cargo shear
     - run: cargo test
       glob: "**/*.rs"
 
 pre-commit:
-  parallel: true
   jobs:
-    - run: cargo shear
-      glob: "**/*.rs"
+    - run: just diet && git add ./crates/**/Cargo.toml Cargo.toml
     - run: just format
-      glob: "justfile"
-      stage_fixed: true
-    - run: just format
-      glob: "**/*.{rs,md,yml}"
+      glob:
+        - "justfile"
+        - "**/*.{rs,md,yml}"
       stage_fixed: true
