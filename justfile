@@ -26,8 +26,9 @@ test-cov:
 watch:
     cargo watch -q -c -x "install --path ."
 
-precommit:
+check-deps:
     cargo shear
 
-prepush:
-    cargo shear
+precommit: check-deps
+
+prepush: check-deps
