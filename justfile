@@ -19,6 +19,9 @@ format-check:
 lint:
     RUSTFLAGS=-Dwarnings cargo clippy --all-targets --all-features 
 
+test:
+    cargo test --workspace
+
 test-cov:
     cargo llvm-cov --workspace
 
