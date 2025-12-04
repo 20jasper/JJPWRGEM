@@ -4,6 +4,7 @@ dev-install:
     cargo binstall cargo-watch -y
     cargo binstall cargo-llvm-cov -y
     cargo binstall cargo-insta -y
+    cargo binstall cargo-shear -y
 
 # format rust, justfile, and markdown
 format:
