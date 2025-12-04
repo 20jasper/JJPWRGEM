@@ -6,7 +6,7 @@
 pre-push:
   parallel: true
   jobs:
-    - run: just prepush
+    - run: cargo shear
       glob: "**/*.rs"
     - run: just lint
       glob: "**/*.rs"
@@ -20,7 +20,7 @@ pre-push:
 pre-commit:
   parallel: true
   jobs:
-    - run: just precommit
+    - run: cargo shear
       glob: "**/*.rs"
     - run: just format
       glob: "justfile"
