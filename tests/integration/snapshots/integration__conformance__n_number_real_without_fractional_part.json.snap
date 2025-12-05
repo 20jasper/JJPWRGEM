@@ -5,8 +5,10 @@ expression: output
 args: []
 status: 1
 success: false
-stdout ---
+stdin ---
 [1.]
+stdout ---
+
 stderr ---
 error: expected fraction digit following dot, found `]`
  --> stdin:1:4

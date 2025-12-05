@@ -34,11 +34,12 @@ impl Display for Output {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "args: {:?}\nstatus: {}\nsuccess: {}\nstdout ---\n{}\nstderr ---\n{}",
+            "args: {:?}\nstatus: {}\nsuccess: {}\nstdin ---\n{}\nstdout ---\n{}\nstderr ---\n{}",
             self.args,
             self.status.code().unwrap_or(-1),
             self.status.success(),
             self.stdin,
+            self.stdout,
             self.stderr
         )
     }

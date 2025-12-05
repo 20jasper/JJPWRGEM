@@ -5,8 +5,10 @@ expression: output
 args: []
 status: 1
 success: false
-stdout ---
+stdin ---
 [1,,2]
+stdout ---
+
 stderr ---
 error: expected json value, found `,`
  --> stdin:1:4

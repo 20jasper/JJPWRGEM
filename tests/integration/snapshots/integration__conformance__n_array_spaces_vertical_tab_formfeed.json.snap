@@ -5,8 +5,10 @@ expression: output
 args: []
 status: 1
 success: false
-stdout ---
+stdin ---
 ["a"\f]
+stdout ---
+
 stderr ---
 error: unexpected unescaped control character `\u000B` in string literal
  --> stdin:1:3

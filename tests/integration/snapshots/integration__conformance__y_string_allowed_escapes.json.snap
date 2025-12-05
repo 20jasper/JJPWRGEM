@@ -5,6 +5,9 @@ expression: output
 args: []
 status: 0
 success: true
+stdin ---
+["\"\\\/\b\f\n\r\t"]
 stdout ---
 ["\"\\\/\b\f\n\r\t"]
+
 stderr ---

@@ -5,8 +5,10 @@ expression: output
 args: []
 status: 1
 success: false
-stdout ---
+stdin ---
 {"hi": null, }
+stdout ---
+
 stderr ---
 error: expected key, found `}`
  --> stdin:1:14

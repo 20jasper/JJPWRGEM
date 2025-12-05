@@ -5,8 +5,10 @@ expression: output
 args: []
 status: 1
 success: false
-stdout ---
+stdin ---
  
+stdout ---
+
 stderr ---
 error: expected json value, found no significant characters
  --> stdin:1:1

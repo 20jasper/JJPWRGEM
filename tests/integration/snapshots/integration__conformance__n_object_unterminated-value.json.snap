@@ -5,8 +5,10 @@ expression: output
 args: []
 status: 1
 success: false
-stdout ---
+stdin ---
 {"a":"a
+stdout ---
+
 stderr ---
 error: expected closing quote
  --> stdin:1:7

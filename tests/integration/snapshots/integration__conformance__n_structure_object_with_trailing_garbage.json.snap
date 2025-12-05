@@ -5,8 +5,10 @@ expression: output
 args: []
 status: 1
 success: false
-stdout ---
+stdin ---
 {"a": true} "x"
+stdout ---
+
 stderr ---
 error: unexpected token `"x"` after json finished
  --> stdin:1:13

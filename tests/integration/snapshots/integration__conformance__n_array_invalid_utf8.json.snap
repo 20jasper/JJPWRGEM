@@ -5,8 +5,10 @@ expression: output
 args: []
 status: 1
 success: false
-stdout ---
+stdin ---
 raw bytes: [91, 255, 93]
+stdout ---
+
 stderr ---
 error: source did not contain valid utf8
  --> stdin

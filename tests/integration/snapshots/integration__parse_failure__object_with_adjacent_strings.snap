@@ -5,8 +5,10 @@ expression: output
 args: []
 status: 1
 success: false
-stdout ---
+stdin ---
 {"hi": "bye" "ferris": null
+stdout ---
+
 stderr ---
 error: expected comma or closed curly brace, found `"ferris"`
  --> stdin:1:14

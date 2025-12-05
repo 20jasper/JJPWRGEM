@@ -5,8 +5,10 @@ expression: output
 args: []
 status: 1
 success: false
-stdout ---
+stdin ---
 [fals]
+stdout ---
+
 stderr ---
 error: unexpected character `f`. expected start of a json value
  --> stdin:1:2

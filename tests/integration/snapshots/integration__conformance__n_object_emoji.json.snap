@@ -5,8 +5,10 @@ expression: output
 args: []
 status: 1
 success: false
-stdout ---
+stdin ---
 {🇨🇭}
+stdout ---
+
 stderr ---
 error: unexpected character `🇨`. expected start of a json value
  --> stdin:1:2

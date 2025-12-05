@@ -5,6 +5,9 @@ expression: output
 args: []
 status: 0
 success: true
+stdin ---
+["new\u000Aline"]
 stdout ---
 ["new\u000Aline"]
+
 stderr ---

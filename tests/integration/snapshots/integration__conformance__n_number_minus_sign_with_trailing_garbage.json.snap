@@ -5,8 +5,10 @@ expression: output
 args: []
 status: 1
 success: false
-stdout ---
+stdin ---
 [-foo]
+stdout ---
+
 stderr ---
 error: expected digit following minus sign, found `f`
  --> stdin:1:2

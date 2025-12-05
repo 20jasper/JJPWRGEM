@@ -5,8 +5,10 @@ expression: output
 args: []
 status: 1
 success: false
-stdout ---
+stdin ---
 ["\uqqqq"]
+stdout ---
+
 stderr ---
 error: expected hex digit 1 of 4 in escape, found `q`
  --> stdin:1:5

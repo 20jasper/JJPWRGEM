@@ -5,9 +5,11 @@ expression: output
 args: []
 status: 1
 success: false
-stdout ---
+stdin ---
 ["new
 line"]
+stdout ---
+
 stderr ---
 error: unexpected unescaped control character `\n` in string literal
  --> stdin:1:6

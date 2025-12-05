@@ -5,8 +5,10 @@ expression: output
 args: []
 status: 1
 success: false
-stdout ---
+stdin ---
 [1 000.0]
+stdout ---
+
 stderr ---
 error: unexpected leading zero
  --> stdin:1:4

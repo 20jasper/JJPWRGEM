@@ -5,8 +5,13 @@ expression: output
 args: []
 status: 0
 success: true
-stdout ---
+stdin ---
 {
 "a": "b"
 }
+stdout ---
+{
+    "a": "b"
+}
+
 stderr ---

@@ -5,8 +5,10 @@ expression: output
 args: []
 status: 1
 success: false
-stdout ---
+stdin ---
 [1 true]
+stdout ---
+
 stderr ---
 error: expected entry or closed delimiter `]`, found `true`
  --> stdin:1:4

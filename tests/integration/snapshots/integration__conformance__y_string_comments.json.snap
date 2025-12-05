@@ -5,6 +5,9 @@ expression: output
 args: []
 status: 0
 success: true
+stdin ---
+["a/*b*/c/*d//e"]
 stdout ---
 ["a/*b*/c/*d//e"]
+
 stderr ---

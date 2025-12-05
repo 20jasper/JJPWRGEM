@@ -5,8 +5,10 @@ expression: output
 args: []
 status: 1
 success: false
-stdout ---
+stdin ---
 [""
+stdout ---
+
 stderr ---
 error: expected entry or closed delimiter `]`, found no significant characters
  --> stdin:1:3

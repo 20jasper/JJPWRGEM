@@ -5,6 +5,9 @@ expression: output
 args: []
 status: 0
 success: true
+stdin ---
+[100000000000000000000]
 stdout ---
 [100000000000000000000]
+
 stderr ---

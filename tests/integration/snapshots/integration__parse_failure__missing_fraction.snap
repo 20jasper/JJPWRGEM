@@ -5,8 +5,10 @@ expression: output
 args: []
 status: 1
 success: false
-stdout ---
+stdin ---
 98.
+stdout ---
+
 stderr ---
 error: expected fraction digit following dot, found no significant characters
  --> stdin:1:3

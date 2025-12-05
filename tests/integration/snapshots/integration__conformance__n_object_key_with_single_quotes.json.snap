@@ -5,8 +5,10 @@ expression: output
 args: []
 status: 1
 success: false
-stdout ---
+stdin ---
 {key: 'value'}
+stdout ---
+
 stderr ---
 error: unexpected character `k`. expected start of a json value
  --> stdin:1:2

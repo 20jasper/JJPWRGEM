@@ -5,8 +5,10 @@ expression: output
 args: []
 status: 1
 success: false
-stdout ---
+stdin ---
 {9999E9999:1}
+stdout ---
+
 stderr ---
 error: expected entry or closed delimiter `}`, found `9999E9999`
  --> stdin:1:2

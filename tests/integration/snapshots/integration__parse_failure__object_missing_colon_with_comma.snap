@@ -5,8 +5,10 @@ expression: output
 args: []
 status: 1
 success: false
-stdout ---
+stdin ---
 {"hi", 
+stdout ---
+
 stderr ---
 error: expected colon after key, found `,`
  --> stdin:1:6

@@ -5,8 +5,10 @@ expression: output
 args: []
 status: 1
 success: false
-stdout ---
+stdin ---
 98e+
+stdout ---
+
 stderr ---
 error: expected digit after exponent indicator, found no significant characters
  --> stdin:1:4

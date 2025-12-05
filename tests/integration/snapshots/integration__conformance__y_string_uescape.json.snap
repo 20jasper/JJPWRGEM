@@ -5,6 +5,9 @@ expression: output
 args: []
 status: 0
 success: true
+stdin ---
+["\u0061\u30af\u30EA\u30b9"]
 stdout ---
 ["\u0061\u30af\u30EA\u30b9"]
+
 stderr ---

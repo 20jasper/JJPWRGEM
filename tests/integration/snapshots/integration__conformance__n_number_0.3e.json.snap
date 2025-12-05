@@ -5,8 +5,10 @@ expression: output
 args: []
 status: 1
 success: false
-stdout ---
+stdin ---
 [0.3e]
+stdout ---
+
 stderr ---
 error: expected +/- or digit after exponent indicator, found `]`
  --> stdin:1:6

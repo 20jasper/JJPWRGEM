@@ -5,7 +5,10 @@ expression: output
 args: []
 status: 0
 success: true
-stdout ---
+stdin ---
 [1
 ]
+stdout ---
+[1]
+
 stderr ---
