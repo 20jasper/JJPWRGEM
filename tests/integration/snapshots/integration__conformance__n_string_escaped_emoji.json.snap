@@ -1,12 +1,15 @@
 ---
 source: tests/integration/conformance.rs
-expression: "format_output_snapshot(case.text, &annotated)"
+expression: output
 ---
-case --- 
+args: []
+status: 1
+success: false
+stdin ---
 ["\🌀"]
-stdout --- 
-<empty>
-stderr --- 
+stdout ---
+
+stderr ---
 error: expected escapable sequence, found `🌀`.
        valid escapes are `\"`, `\\`, `\/`, `\b`, `\f`, `\n`, `\r`, `\t` or `\uXXXX` (4 hex digits)
  --> stdin:1:4

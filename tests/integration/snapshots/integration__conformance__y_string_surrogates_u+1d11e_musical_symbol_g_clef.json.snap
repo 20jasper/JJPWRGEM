@@ -1,10 +1,13 @@
 ---
 source: tests/integration/conformance.rs
-expression: "format_output_snapshot(case.text, &annotated)"
+expression: output
 ---
-case --- 
+args: []
+status: 0
+success: true
+stdin ---
 ["\uD834\uDd1e"]
-stdout --- 
+stdout ---
 ["\uD834\uDd1e"]
-stderr --- 
-<empty>
+
+stderr ---

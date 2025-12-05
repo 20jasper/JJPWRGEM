@@ -1,12 +1,15 @@
 ---
 source: tests/integration/conformance.rs
-expression: "format_output_snapshot(case.text, &annotated)"
+expression: output
 ---
-case --- 
+args: []
+status: 0
+success: true
+stdin ---
 {"title":"\u041f\u043e\u043b\u0442\u043e\u0440\u0430 \u0417\u0435\u043c\u043b\u0435\u043a\u043e\u043f\u0430" }
-stdout --- 
+stdout ---
 {
     "title": "\u041f\u043e\u043b\u0442\u043e\u0440\u0430 \u0417\u0435\u043c\u043b\u0435\u043a\u043e\u043f\u0430"
 }
-stderr --- 
-<empty>
+
+stderr ---

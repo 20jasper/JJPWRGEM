@@ -1,10 +1,13 @@
 ---
 source: tests/integration/conformance.rs
-expression: "format_output_snapshot(case.text, &annotated)"
+expression: output
 ---
-case --- 
+args: []
+status: 0
+success: true
+stdin ---
 ["a/*b*/c/*d//e"]
-stdout --- 
+stdout ---
 ["a/*b*/c/*d//e"]
-stderr --- 
-<empty>
+
+stderr ---

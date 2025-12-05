@@ -1,11 +1,8 @@
+use crate::common::cli;
+use crate::common::exec_cmd;
+use insta::assert_snapshot;
 use std::ffi::OsStr;
 use std::fs;
-
-use cli::run;
-use insta::assert_snapshot;
-use jjpwrgem_ui::{Color, Style};
-
-use crate::common::format_output_snapshot;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum JsonResult {
@@ -85,6 +82,8 @@ fn get_tests() -> (Vec<Case>, usize, usize) {
     (cases, total, rest)
 }
 
+mod common {}
+
 #[test]
 fn feature() {
     let (mut cases, total, rest) = get_tests();
@@ -94,13 +93,19 @@ fn feature() {
     cases.sort_by(|a, b| a.file_name.cmp(&b.file_name));
 
     for case in cases {
-        let annotated = run(case.text.clone(), Style::Pretty(Color::Plain));
+        let output = exec_cmd(&mut cli(), case.text);
 
-        assert_snapshot!(
-            case.file_name,
-            format_output_snapshot(case.text, &annotated)
+        assert_snapshot!(case.file_name.clone(), output);
+
+        assert!(
+            case.expected != JsonResult::Fail || !output.status.success(),
+            "expected failure: {}",
+            &case.file_name,
         );
-        assert!(case.expected != JsonResult::Fail || annotated.stderr.is_some());
-        assert!(case.expected != JsonResult::Pass || annotated.stdout.is_some());
+        assert!(
+            case.expected != JsonResult::Pass || output.status.success(),
+            "expected success: {}",
+            &case.file_name,
+        );
     }
 }

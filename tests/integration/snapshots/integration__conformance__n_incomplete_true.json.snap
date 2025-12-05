@@ -1,12 +1,15 @@
 ---
 source: tests/integration/conformance.rs
-expression: "format_output_snapshot(case.text, &annotated)"
+expression: output
 ---
-case --- 
+args: []
+status: 1
+success: false
+stdin ---
 [tru]
-stdout --- 
-<empty>
-stderr --- 
+stdout ---
+
+stderr ---
 error: unexpected character `t`. expected start of a json value
  --> stdin:1:2
   |

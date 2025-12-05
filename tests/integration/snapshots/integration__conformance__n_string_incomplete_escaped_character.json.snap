@@ -1,12 +1,15 @@
 ---
 source: tests/integration/conformance.rs
-expression: "format_output_snapshot(case.text, &annotated)"
+expression: output
 ---
-case --- 
+args: []
+status: 1
+success: false
+stdin ---
 ["\u00A"]
-stdout --- 
-<empty>
-stderr --- 
+stdout ---
+
+stderr ---
 error: expected hex digit 4 of 4 in escape, found `"`
  --> stdin:1:8
   |
