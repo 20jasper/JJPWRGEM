@@ -8,6 +8,7 @@ keywords = ["parser", "formatter", "json", "linter"]
 categories = ["command-line-utilities", "text-processing", "encoding"]
 homepage = "https://github.com/20jasper/jjpwrgem"
 repository = "https://github.com/20jasper/jjpwrgem"
+license = "MIT"
 include = ["readme.md"]
 
 [[bin]]
@@ -24,14 +25,14 @@ members = ["crates/cli", "crates/ui", "crates/parse"]
 
 [workspace.dependencies]
 anstream = "0.6.21"
-jjpwrgem-parse = { path = "crates/parse" }
-jjpwrgem-ui = { path = "crates/ui" }
+jjpwrgem-parse = { path = "crates/parse", version = "0.1.0" }
+jjpwrgem-ui = { path = "crates/ui", version = "0.1.0" }
 
 [dependencies]
 anstream = "0.6.21"
-cli = { path = "crates/cli" }
-jjpwrgem-parse = { path = "crates/parse" }
-jjpwrgem-ui = { path = "crates/ui" }
+cli = { path = "crates/cli", version = "0.1.0" }
+jjpwrgem-parse = { path = "crates/parse", version = "0.1.0" }
+jjpwrgem-ui = { path = "crates/ui", version = "0.1.0" }
 
 [dev-dependencies]
 insta = "1.44.1"
@@ -41,6 +42,11 @@ rstest_reuse = "0.7.0"
 
 [profile.release]
 opt-level = 3
+
+# The profile that 'dist' will build with
+[profile.dist]
+inherits = "release"
+lto = "thin"
 
 [lints.clippy]
 [lints.rustdoc]

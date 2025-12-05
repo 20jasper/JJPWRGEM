@@ -2,7 +2,7 @@
 
 JJPWRGEM JSON Parser With Really Good Error Messages
 
-An (eventually) RFC 8259 compliant JSON Parser. Currently passes 309/319 tests from @nst's amazing [JSONTestSuite](https://github.com/nst/JSONTestSuite)!
+An RFC 8259 compliant JSON Parser!
 
 ![A logo of an axolotl riding a skateboard](./logo.webp)
 
@@ -22,13 +22,9 @@ help: insert colon and placeholder value
   ╰╴          ++++++++
 ```
 
-## Motivations
+## Stability
 
-I originally started this project to practice finite state machines, but got back into it when hearing about the internals of some formatters and compilers!
-
-I am heavily inspired by the Rust compiler's error messages. I love that unhelpful errors are considered bugs
-
-I checked out several JSON parsers and formatters, and none provided much context on _why_ a key was missing. Errors ranged from "expected closing on byte 10" to a snapshot of source code for that character, but none were up to my standards
+JJPWRGEM is in its infancy and extremely likely to have breaking changes (properly marked with semver of course!)
 
 ## indeterminate handling
 
@@ -72,6 +68,14 @@ Axolotls can't walk so fast, so relatively, yes
 According to the San Diego zoo, "[a]n axolotl can reach 12 inches in length, but on average grows to about 9 inches[^axolotlFact]"
 
 [^axolotlFact]: https://animals.sandiegozoo.org/animals/axolotl
+
+## Motivations
+
+I originally started this project to practice finite state machines, but got back into it when hearing about the internals of some formatters and compilers!
+
+I am heavily inspired by the Rust compiler's error messages. I love that unhelpful errors are considered bugs
+
+I checked out several JSON parsers and formatters, and none provided much context on _why_ a key was missing. Errors ranged from "expected closing on byte 10" to a snapshot of source code for that character, but none were up to my standards
 
 ## Notes
 

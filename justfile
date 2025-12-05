@@ -1,12 +1,13 @@
 set working-directory := "."
 
 dev-install:
-    cargo binstall just -y
     cargo binstall cargo-watch -y
     cargo binstall cargo-llvm-cov -y
     cargo binstall cargo-insta -y
     cargo binstall cargo-shear -y
     cargo binstall cargo-diet -y
+    cargo binstall cargo-dist -y
+    cargo binstall release-plz -y
 
 # format rust, justfile, and markdown
 format:

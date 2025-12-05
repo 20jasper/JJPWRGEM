@@ -1,0 +1,4 @@
+[workspace]
+publish = false
+git_tag_enable = true
+changelog_update = true
