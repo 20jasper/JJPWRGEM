@@ -1,12 +1,13 @@
 ---
 source: tests/integration/parse_failure.rs
-expression: "format_output_snapshot(json, &annotated)"
+expression: output
 ---
-case --- 
+command: "jjp"
+status: 1
+success: false
+stdout ---
 -abcd
-stdout --- 
-<empty>
-stderr --- 
+stderr ---
 error: expected digit following minus sign, found `a`
  --> stdin:1:1
   |

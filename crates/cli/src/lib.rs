@@ -4,10 +4,12 @@ use jjpwrgem_parse::{
     format,
 };
 use jjpwrgem_ui::Style;
+use std::process::ExitCode;
 
 pub struct Output {
     pub stdout: Option<String>,
     pub stderr: Option<String>,
+    pub exit_code: ExitCode,
 }
 
 impl Debug for Output {
@@ -27,6 +29,7 @@ pub fn run(json: Vec<u8>, style: Style) -> Output {
                     invalid_encoding(Source::Stdin("")),
                     style,
                 )),
+                exit_code: ExitCode::FAILURE,
             };
         }
         Ok(s) => s,
@@ -36,10 +39,12 @@ pub fn run(json: Vec<u8>, style: Style) -> Output {
         Ok(pretty) => Output {
             stdout: Some(pretty),
             stderr: None,
+            exit_code: ExitCode::SUCCESS,
         },
         Err(error) => Output {
             stdout: None,
             stderr: Some(jjpwrgem_ui::render(Diagnostic::from(&error), style)),
+            exit_code: ExitCode::FAILURE,
         },
     }
 }

@@ -1,13 +1,13 @@
 ---
 source: tests/integration/conformance.rs
-expression: "format_output_snapshot(case.text, &annotated)"
+expression: output
 ---
-case --- 
-<raw bytes>
-[91, 34, 252, 128, 128, 128, 128, 128, 34, 93]
-stdout --- 
-<empty>
-stderr --- 
+command: "jjp"
+status: 1
+success: false
+stdout ---
+raw bytes: [91, 34, 252, 128, 128, 128, 128, 128, 34, 93]
+stderr ---
 error: source did not contain valid utf8
  --> stdin
   |

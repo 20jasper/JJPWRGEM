@@ -1,12 +1,13 @@
 ---
 source: tests/integration/parse_failure.rs
-expression: "format_output_snapshot(json, &annotated)"
+expression: output
 ---
-case --- 
+command: "jjp"
+status: 1
+success: false
+stdout ---
   {"hi"    
-stdout --- 
-<empty>
-stderr --- 
+stderr ---
 error: expected colon after key, found no significant characters
  --> stdin:1:7
   |

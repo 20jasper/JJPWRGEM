@@ -1,12 +1,13 @@
 ---
 source: tests/integration/conformance.rs
-expression: "format_output_snapshot(case.text, &annotated)"
+expression: output
 ---
-case --- 
+command: "jjp"
+status: 1
+success: false
+stdout ---
 [1.0e+]
-stdout --- 
-<empty>
-stderr --- 
+stderr ---
 error: expected digit after exponent indicator, found `]`
  --> stdin:1:7
   |

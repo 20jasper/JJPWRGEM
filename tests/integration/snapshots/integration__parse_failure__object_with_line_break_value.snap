@@ -1,13 +1,14 @@
 ---
 source: tests/integration/parse_failure.rs
-expression: "format_output_snapshot(json, &annotated)"
+expression: output
 ---
-case --- 
+command: "jjp"
+status: 1
+success: false
+stdout ---
 {"hi": "line
 break"}
-stdout --- 
-<empty>
-stderr --- 
+stderr ---
 error: unexpected unescaped control character `\n` in string literal
  --> stdin:1:13
   |

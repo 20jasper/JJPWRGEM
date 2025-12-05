@@ -1,14 +1,15 @@
 ---
 source: tests/integration/conformance.rs
-expression: "format_output_snapshot(case.text, &annotated)"
+expression: output
 ---
-case --- 
+command: "jjp"
+status: 1
+success: false
+stdout ---
 [1,
 1
 ,1
-stdout --- 
-<empty>
-stderr --- 
+stderr ---
 error: expected entry or closed delimiter `]`, found no significant characters
  --> stdin:3:2
   |

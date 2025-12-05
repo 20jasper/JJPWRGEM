@@ -1,12 +1,13 @@
 ---
 source: tests/integration/parse_failure.rs
-expression: "format_output_snapshot(json, &annotated)"
+expression: output
 ---
-case --- 
+command: "jjp"
+status: 1
+success: false
+stdout ---
 "\{"
-stdout --- 
-<empty>
-stderr --- 
+stderr ---
 error: expected escapable sequence, found `{`.
        valid escapes are `\"`, `\\`, `\/`, `\b`, `\f`, `\n`, `\r`, `\t` or `\uXXXX` (4 hex digits)
  --> stdin:1:3

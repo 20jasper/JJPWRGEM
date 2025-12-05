@@ -1,12 +1,13 @@
 ---
 source: tests/integration/conformance.rs
-expression: "format_output_snapshot(case.text, &annotated)"
+expression: output
 ---
-case --- 
+command: "jjp"
+status: 1
+success: false
+stdout ---
 ["x"]]
-stdout --- 
-<empty>
-stderr --- 
+stderr ---
 error: unexpected token `]` after json finished
  --> stdin:1:6
   |

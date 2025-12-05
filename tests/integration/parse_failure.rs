@@ -1,8 +1,7 @@
-use crate::common::format_output_snapshot;
+use crate::common::cli;
+use crate::common::exec_cmd;
 use crate::test_json::*;
-use cli::run;
 use insta::assert_snapshot;
-use jjpwrgem_ui::{Color, Style};
 use rstest::rstest;
 
 #[rstest]
@@ -45,10 +44,7 @@ use rstest::rstest;
 fn annotate_test_json_failure_snapshots(#[case] (name, json): (&str, &str)) {
     let json_bytes = json.as_bytes().to_vec();
 
-    let annotated = run(json_bytes.clone(), Style::Pretty(Color::Plain));
+    let output = exec_cmd(&mut cli(), json_bytes);
 
-    assert_snapshot!(
-        name.to_ascii_lowercase(),
-        format_output_snapshot(json_bytes, &annotated)
-    );
+    assert_snapshot!(name.to_ascii_lowercase(), output);
 }

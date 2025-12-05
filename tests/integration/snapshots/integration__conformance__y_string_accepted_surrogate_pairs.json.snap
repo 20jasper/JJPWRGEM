@@ -1,10 +1,10 @@
 ---
 source: tests/integration/conformance.rs
-expression: "format_output_snapshot(case.text, &annotated)"
+expression: output
 ---
-case --- 
+command: "jjp"
+status: 0
+success: true
+stdout ---
 ["\ud83d\ude39\ud83d\udc8d"]
-stdout --- 
-["\ud83d\ude39\ud83d\udc8d"]
-stderr --- 
-<empty>
+stderr ---

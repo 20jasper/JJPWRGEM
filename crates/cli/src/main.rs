@@ -2,8 +2,9 @@ use cli::{Output, run};
 use jjpwrgem_ui::Color;
 use jjpwrgem_ui::Style;
 use std::io::Read;
+use std::process::ExitCode;
 
-fn main() {
+fn main() -> ExitCode {
     let mut buf = vec![];
     std::io::stdin()
         .read_to_end(&mut buf)
@@ -11,6 +12,8 @@ fn main() {
 
     let output = run(buf, Style::Pretty(Color::Plain));
     print_output(&output);
+
+    output.exit_code
 }
 
 fn print_output(output: &Output) {

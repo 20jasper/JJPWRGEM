@@ -1,10 +1,10 @@
 ---
 source: tests/integration/conformance.rs
-expression: "format_output_snapshot(case.text, &annotated)"
+expression: output
 ---
-case --- 
+command: "jjp"
+status: 0
+success: true
+stdout ---
 [-237462374673276894279832749832423479823246327846]
-stdout --- 
-[-237462374673276894279832749832423479823246327846]
-stderr --- 
-<empty>
+stderr ---
