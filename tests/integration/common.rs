@@ -1,5 +1,6 @@
 use core::fmt::Display;
 use std::{
+    env, fs,
     io::Write,
     process::{Command, ExitStatus, Stdio},
 };
@@ -11,15 +12,18 @@ macro_rules! fixture_tuple {
     };
 }
 
-const EXE: &str = "jjp";
-
 pub fn cli() -> Command {
-    Command::new(EXE)
+    let exe = env!("CARGO_BIN_EXE_jjp");
+    assert!(
+        fs::exists(exe).unwrap_or_default(),
+        "couldn't find executable, did you forget to build?"
+    );
+    Command::new(exe)
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Output {
-    pub command: String,
+    pub args: Vec<String>,
     pub stdin: String,
     pub stdout: String,
     pub stderr: String,
@@ -30,8 +34,8 @@ impl Display for Output {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "command: {}\nstatus: {}\nsuccess: {}\nstdout ---\n{}\nstderr ---\n{}",
-            self.command,
+            "args: {:?}\nstatus: {}\nsuccess: {}\nstdout ---\n{}\nstderr ---\n{}",
+            self.args,
             self.status.code().unwrap_or(-1),
             self.status.success(),
             self.stdin,
@@ -62,7 +66,10 @@ pub fn exec_cmd(cmd: &mut Command, stdin: Vec<u8>) -> Output {
     };
 
     Output {
-        command: format!("{cmd:?}"),
+        args: cmd
+            .get_args()
+            .map(|x| x.to_str().unwrap().to_string())
+            .collect::<Vec<_>>(),
         stdin: fmt_bytes(stdin),
         stdout: fmt_bytes(output.stdout),
         stderr: fmt_bytes(output.stderr),

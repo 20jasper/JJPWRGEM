@@ -2,7 +2,7 @@
 source: tests/integration/conformance.rs
 expression: output
 ---
-command: "jjp"
+args: []
 status: 1
 success: false
 stdout ---
