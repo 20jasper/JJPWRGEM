@@ -2,3 +2,15 @@
 publish = false
 git_tag_enable = true
 changelog_update = true
+
+[changelog]
+commit_parsers = [
+  { message = "^feat:", group = "added" },
+  { message = "^changed:", group = "changed" },
+  { message = "^deprecated:", group = "deprecated" },
+  { message = "^fix:", group = "fixed" },
+  { message = "^security:", group = "security" },
+  { message = "^perf:", group = "performance" },
+  { message = "^chore:", skip = true },
+  { message = "^.*", skip = true },
+]
