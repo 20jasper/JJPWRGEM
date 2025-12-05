@@ -78,15 +78,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9330f8b2ff13f34540b44e946ef35111825727b38d33286ef986142615121801"
 
 [[package]]
-name = "cli"
-version = "0.1.0"
-dependencies = [
- "anstream",
- "jjpwrgem-parse",
- "jjpwrgem-ui",
-]
-
-[[package]]
 name = "colorchoice"
 version = "1.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -240,7 +231,6 @@ name = "jjpwrgem"
 version = "0.1.4"
 dependencies = [
  "anstream",
- "cli",
  "insta",
  "jjpwrgem-parse",
  "jjpwrgem-ui",
