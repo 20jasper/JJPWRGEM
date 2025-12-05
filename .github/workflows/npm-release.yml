@@ -5,28 +5,25 @@ on:
     workflows: ["Release"]
     types:
       - completed
-
+permissions:
+  id-token: write
+  contents: read
 jobs:
   publish:
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
-
-      - name: Download release artifact
-        uses: actions/download-artifact@v5
+      - uses: actions/setup-node@v5
         with:
-          name: jjpwrgem-npm-package.tar.gz
-          path: .
-
-      - name: Extract npm package
+          node-version: "24"
+          registry-url: "https://registry.npmjs.org"
+      - name: Download release artifact
+        uses: robinraju/release-downloader@daf26c55d821e836577a15f77d86ddc078948b05 # v1.12
+        with:
+          latest: true
+          fileName: jjpwrgem-npm-package.tar.gz
+      - name: upload package
         run: |
-          mkdir -p npm-package
-          tar -xzf jjpwrgem-npm-package.tar.gz -C npm-package
-
-      - name: Publish to npm
-        run: |
-          cd npm-package
+          tar -xzf jjpwrgem-npm-package.tar.gz
+          cd package
           npm publish --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
