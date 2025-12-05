@@ -13,6 +13,7 @@ pre-push:
         - "justfile"
         - "**/*.{rs,md,yml}"
     - run: cargo shear
+    - run: dist plan
     - run: cargo test
       glob: "**/*.rs"
 
