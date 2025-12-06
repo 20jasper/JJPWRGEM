@@ -2,7 +2,7 @@
 source: tests/integration/parse_failure.rs
 expression: output
 ---
-args: []
+args: ["check"]
 status: 1
 success: false
 stdin ---

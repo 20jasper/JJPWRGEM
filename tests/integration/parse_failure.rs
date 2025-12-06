@@ -44,7 +44,7 @@ use rstest::rstest;
 fn annotate_test_json_failure_snapshots(#[case] (name, json): (&str, &str)) {
     let json_bytes = json.as_bytes().to_vec();
 
-    let output = exec_cmd(&mut cli(), json_bytes);
+    let output = exec_cmd(cli().arg("check"), json_bytes);
 
     assert_snapshot!(name.to_ascii_lowercase(), output);
 }
