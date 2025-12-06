@@ -45,6 +45,10 @@ help: insert colon and placeholder value
 ### Precompiled
 
 ```bash
+mise use -g github:20jasper/jjpwrgem
+```
+
+```bash
 npm install -g jjpwrgem
 ```
 
