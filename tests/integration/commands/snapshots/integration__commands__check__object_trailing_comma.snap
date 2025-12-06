@@ -1,0 +1,25 @@
+---
+source: tests/integration/commands/check.rs
+expression: output
+---
+args: ["check"]
+status: 1
+success: false
+stdin ---
+{"hi": null, 
+stdout ---
+
+stderr ---
+error: expected key, found no significant characters
+ --> stdin:1:12
+  |
+1 | {"hi": null, 
+  |            ^
+  |            |
+  |            expected due to `,`
+  |
+help: consider replacing the trailing comma with a closed curly brace
+  |
+1 - {"hi": null, 
+1 + {"hi": null} 
+  |

@@ -1,0 +1,5 @@
+---
+source: tests/integration/commands/format.rs
+expression: output.stdout
+---
+[1, 2, 3]

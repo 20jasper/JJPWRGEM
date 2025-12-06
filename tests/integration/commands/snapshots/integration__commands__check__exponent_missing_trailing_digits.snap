@@ -1,0 +1,25 @@
+---
+source: tests/integration/commands/check.rs
+expression: output
+---
+args: ["check"]
+status: 1
+success: false
+stdin ---
+98e
+stdout ---
+
+stderr ---
+error: expected +/- or digit after exponent indicator, found no significant characters
+ --> stdin:1:3
+  |
+1 | 98e
+  | --^
+  | | |
+  | | exponent indicator found here
+  | number with exponent found here
+  |
+help: add placeholder exponent digits
+  |
+1 | 98e+1
+  |    ++

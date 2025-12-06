@@ -1,0 +1,17 @@
+---
+source: tests/integration/commands/check.rs
+expression: output
+---
+args: ["check"]
+status: 1
+success: false
+stdin ---
+
+stdout ---
+
+stderr ---
+error: unexpected character `\u000B`. expected start of a json value
+ --> stdin:1:1
+  |
+1 | ␋
+  | ^

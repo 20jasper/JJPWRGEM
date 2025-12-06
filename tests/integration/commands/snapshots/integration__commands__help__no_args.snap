@@ -1,6 +1,5 @@
 ---
 source: tests/integration/commands/help.rs
-assertion_line: 18
 expression: stdout
 ---
 

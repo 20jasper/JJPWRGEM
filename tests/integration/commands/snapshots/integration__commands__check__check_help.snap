@@ -1,0 +1,10 @@
+---
+source: tests/integration/commands/check.rs
+expression: output.stdout
+---
+Validates json syntax
+
+Usage: jjp check
+
+Options:
+  -h, --help  Print help

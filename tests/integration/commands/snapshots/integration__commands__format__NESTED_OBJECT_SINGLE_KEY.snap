@@ -1,0 +1,13 @@
+---
+source: tests/integration/commands/format.rs
+expression: output.stdout
+---
+{
+    "rust": {
+        "rust": {
+            "rust": {
+                "rust": null
+            }
+        }
+    }
+}
