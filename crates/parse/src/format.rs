@@ -1,5 +1,3 @@
-use core::fmt;
-
 use crate::{
     Result,
     ast::{Value, parse_str},
@@ -77,6 +75,36 @@ pub fn format_str<'a>(json: &'a str, options: &FormatOptions) -> Result<'a, Stri
     Ok(buf)
 }
 
+/// writes formatted delimiters between formatted items
+///
+/// avoids allocating intermediate `String`s declaratively
+/// # Examples
+/// ```
+/// # use jjpwrgem_parse::format::join_into;
+/// # use std::fmt::Write as _;
+///
+/// let mut buf = String::new();
+/// join_into(&mut buf, [1,2,3,4],
+///     |buf, x| write!(buf, "{}", x * 2).unwrap(),
+///     |buf, _| write!(buf, ",").unwrap(),
+/// );
+/// assert_eq!(buf, "2,4,6,8");
+/// ```
+pub fn join_into<T>(
+    buf: &mut String,
+    items: impl IntoIterator<Item = T>,
+    mut item_fmt: impl FnMut(&mut String, &T),
+    mut delim_fmt: impl FnMut(&mut String, &T),
+) {
+    let mut iter = items.into_iter().peekable();
+    while let Some(x) = iter.next() {
+        item_fmt(buf, &x);
+        if iter.peek().is_some() {
+            delim_fmt(buf, &x);
+        }
+    }
+}
+
 pub fn format_value_into(buf: &mut String, val: &Value, options: &FormatOptions, depth: usize) {
     use std::fmt::Write as _;
 
@@ -91,26 +119,27 @@ pub fn format_value_into(buf: &mut String, val: &Value, options: &FormatOptions,
             let closing_indent = options.get_indent(depth);
 
             write!(buf, "{{{eol}").unwrap();
-            for (i, (key, val)) in hash_map.iter().enumerate() {
-                write!(buf, "{key_indent}\"{key}\":{kv_delim}").unwrap();
-                format_value_into(buf, val, options, depth + 1);
-                if i + 1 < hash_map.len() {
-                    write!(buf, ",{eol}").unwrap();
-                }
-            }
+            join_into(
+                buf,
+                hash_map,
+                |buf, (key, val)| {
+                    write!(buf, "{key_indent}\"{key}\":{kv_delim}").unwrap();
+                    format_value_into(buf, val, options, depth + 1);
+                },
+                |buf, _| write!(buf, ",{eol}").unwrap(),
+            );
             write!(buf, "{eol}{closing_indent}}}").unwrap();
         }
         Value::Array(items) if items.is_empty() => write!(buf, "[]").unwrap(),
         Value::Array(items) => {
             let delimiter = options.get_array_value_delimiter();
-            let joiner = format!(",{}", delimiter);
             write!(buf, "[").unwrap();
-            for (i, item) in items.iter().enumerate() {
-                if i > 0 {
-                    write!(buf, "{joiner}").unwrap();
-                }
-                format_value_into(buf, item, options, depth + 1);
-            }
+            join_into(
+                buf,
+                items,
+                |buf, val| format_value_into(buf, val, options, depth + 1),
+                |buf, _| write!(buf, ",{delimiter}").unwrap(),
+            );
             write!(buf, "]").unwrap();
         }
         Value::Boolean(b) => write!(buf, "{b}").unwrap(),
