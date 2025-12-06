@@ -63,7 +63,7 @@ pub fn check(json: String, style: Style) -> Output {
 
 fn print_output(output: &Output) {
     if let Some(stdout) = &output.stdout {
-        anstream::println!("{stdout}");
+        println!("{stdout}");
     }
     if let Some(stderr) = &output.stderr {
         anstream::eprintln!("{stderr}");
