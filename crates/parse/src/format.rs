@@ -1,3 +1,5 @@
+use core::fmt;
+
 use crate::{
     Result,
     ast::{Value, parse_str},
@@ -70,49 +72,55 @@ impl FormatOptions {
 }
 
 pub fn format_str<'a>(json: &'a str, options: &FormatOptions) -> Result<'a, String> {
-    Ok(format_value(&parse_str(json)?, options, 0))
+    let mut buf = String::with_capacity(json.len());
+    format_value_into(&mut buf, &parse_str(json)?, options, 0);
+    Ok(buf)
 }
 
-pub fn format_value(val: &Value, options: &FormatOptions, depth: usize) -> String {
+pub fn format_value_into(buf: &mut String, val: &Value, options: &FormatOptions, depth: usize) {
+    use std::fmt::Write as _;
+
     match val {
-        Value::Null => NULL.to_owned(),
-        Value::String(s) => format!("\"{s}\""),
-        Value::Number(s) => s.to_string(),
+        Value::Null => write!(buf, "{NULL}").unwrap(),
+        Value::String(s) => write!(buf, "\"{s}\"").unwrap(),
+        Value::Number(s) => write!(buf, "{s}").unwrap(),
         Value::Object(hash_map) => {
             let kv_delim = options.get_key_val_delimiter();
             let key_indent = options.get_indent(depth + 1);
             let eol = options.get_eol();
+            let closing_indent = options.get_indent(depth);
 
-            let pairs = hash_map
-                .iter()
-                .map(|(key, val)| {
-                    (
-                        format_value(&Value::String(key), options, 0),
-                        format_value(val, options, depth + 1),
-                    )
-                })
-                .map(|(key, val)| format!("{key_indent}{key}:{kv_delim}{val}",))
-                .collect::<Vec<_>>()
-                .join(&format!(",{eol}"));
-            [
-                "{".into(),
-                pairs,
-                format!("{}}}", options.get_indent(depth)),
-            ]
-            .join(&eol)
+            write!(buf, "{{{eol}").unwrap();
+            for (i, (key, val)) in hash_map.iter().enumerate() {
+                write!(buf, "{key_indent}\"{key}\":{kv_delim}").unwrap();
+                format_value_into(buf, val, options, depth + 1);
+                if i + 1 < hash_map.len() {
+                    write!(buf, ",{eol}").unwrap();
+                }
+            }
+            write!(buf, "{eol}{closing_indent}}}").unwrap();
         }
-        Value::Array(items) if items.is_empty() => "[]".into(),
+        Value::Array(items) if items.is_empty() => write!(buf, "[]").unwrap(),
         Value::Array(items) => {
-            let formatted = items
-                .iter()
-                .map(|item| format_value(item, options, depth + 1))
-                .collect::<Vec<_>>();
-
-            let joiner = format!(",{}", options.get_array_value_delimiter());
-            format!("[{}]", formatted.join(&joiner))
+            let delimiter = options.get_array_value_delimiter();
+            let joiner = format!(",{}", delimiter);
+            write!(buf, "[").unwrap();
+            for (i, item) in items.iter().enumerate() {
+                if i > 0 {
+                    write!(buf, "{joiner}").unwrap();
+                }
+                format_value_into(buf, item, options, depth + 1);
+            }
+            write!(buf, "]").unwrap();
         }
-        Value::Boolean(b) => b.to_string(),
+        Value::Boolean(b) => write!(buf, "{b}").unwrap(),
     }
+}
+
+pub fn format_value(val: &Value, options: &FormatOptions) -> String {
+    let mut buf = String::new();
+    format_value_into(&mut buf, val, options, 0);
+    buf
 }
 
 pub fn uglify_str(json: &str) -> Result<'_, String> {
@@ -120,7 +128,7 @@ pub fn uglify_str(json: &str) -> Result<'_, String> {
 }
 
 pub fn uglify_value(val: &Value) -> String {
-    format_value(val, &FormatOptions::uglify(), 0)
+    format_value(val, &FormatOptions::uglify())
 }
 
 pub fn prettify_str(json: &str) -> Result<'_, String> {
@@ -128,5 +136,5 @@ pub fn prettify_str(json: &str) -> Result<'_, String> {
 }
 
 pub fn prettify_value(val: &Value) -> String {
-    format_value(val, &FormatOptions::prettify(), 0)
+    format_value(val, &FormatOptions::prettify())
 }
