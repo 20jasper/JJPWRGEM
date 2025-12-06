@@ -2,12 +2,12 @@
 
 JJPWRGEM JSON Parser With Really Good Error Messages
 
-An RFC 8259 compliant JSON Parser!
+An RFC 8259 compliant JSON Parser and formatter!
 
 ![A logo of an axolotl riding a skateboard](./logo.webp)
 
 ```
-echo -en '{"coolKey"}' | jjp
+echo -en '{"coolKey"}' | jjp parse
 error: expected colon after key, found `}`
   ╭▸ stdin:1:11
   │
@@ -22,11 +22,45 @@ help: insert colon and placeholder value
   ╰╴          ++++++++
 ```
 
+## Table of contents
+
+- [JJPWRGEM](#jjpwrgem)
+  - [Table of contents](#table-of-contents)
+  - [Installation](#installation)
+    - [Precompiled](#precompiled)
+    - [From source](#from-source)
+  - [Stability](#stability)
+  - [Indeterminate Handling](#indeterminate-handling)
+  - [FAQ](#faq)
+    - [What does JJPWRGEM stand for?](#what-does-jjpwrgem-stand-for)
+    - [How do you pronounce JJPWRGEM?](#how-do-you-pronounce-jjpwrgem)
+    - [But why is it called that?](#but-why-is-it-called-that)
+    - [Why is the logo an axolotl riding a skateboard?](#why-is-the-logo-an-axolotl-riding-a-skateboard)
+    - [Is it blazingly fast™?](#is-it-blazingly-fast)
+    - [How long is an axolotl?](#how-long-is-an-axolotl)
+  - [Motivations](#motivations)
+
+## Installation
+
+### Precompiled
+
+```bash
+npm install -g jjpwrgem
+```
+
+See [releases](https://github.com/20jasper/JJPWRGEM/releases) for shell and powershell installation instructions and raw binaries
+
+### From source
+
+```
+cargo install --path .
+```
+
 ## Stability
 
 JJPWRGEM is in its infancy and extremely likely to have breaking changes (properly marked with semver of course!)
 
-## indeterminate handling
+## Indeterminate Handling
 
 How cases undefined by the spec are handled
 
@@ -76,23 +110,3 @@ I originally started this project to practice finite state machines, but got bac
 I am heavily inspired by the Rust compiler's error messages. I love that unhelpful errors are considered bugs
 
 I checked out several JSON parsers and formatters, and none provided much context on _why_ a key was missing. Errors ranged from "expected closing on byte 10" to a snapshot of source code for that character, but none were up to my standards
-
-## Notes
-
-I went with annotate snippets over other libraries like codespan reporting since it better supports patches and workflows that don't require files, like reading from stdin
-
-## references
-
-### parsers/diagnostics
-
-https://rustc-dev-guide.rust-lang.org/diagnostics/error-codes.html
-
-https://github.com/rust-lang/rust/pull/27475
-
-OXC
-
-### Accessibility
-
-https://afixt.com/accessible-by-design-improving-command-line-interfaces-for-all-users/
-
-miette
