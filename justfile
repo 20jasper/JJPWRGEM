@@ -43,3 +43,7 @@ prepublish:
     just format-check
     just lint
     just diet
+
+release-binary:
+    release-plz update
+    cargo release --no-publish --tag-prefix=jjpwrgem- --execute

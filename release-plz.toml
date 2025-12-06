@@ -11,6 +11,7 @@ commit_parsers = [
   { message = "^fix:", group = "fixed" },
   { message = "^security:", group = "security" },
   { message = "^perf:", group = "performance" },
+  { message = "^docs", group = "documentation" },
   { message = "^chore:", skip = true },
   { message = "^.*", skip = true },
 ]
