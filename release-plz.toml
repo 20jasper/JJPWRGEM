@@ -5,7 +5,7 @@ changelog_update = true
 
 [changelog]
 commit_parsers = [
-  { message = "^feat:", group = "added" },
+  { message = "^(feat|feature):", group = "added" },
   { message = "^changed:", group = "changed" },
   { message = "^deprecated:", group = "deprecated" },
   { message = "^fix:", group = "fixed" },
