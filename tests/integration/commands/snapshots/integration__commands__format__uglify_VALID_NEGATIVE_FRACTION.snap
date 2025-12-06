@@ -1,0 +1,5 @@
+---
+source: tests/integration/commands/format.rs
+expression: output.stdout
+---
+-98.123456789

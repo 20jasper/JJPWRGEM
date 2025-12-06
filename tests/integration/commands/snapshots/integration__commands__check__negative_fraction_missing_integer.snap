@@ -1,0 +1,24 @@
+---
+source: tests/integration/commands/check.rs
+expression: output
+---
+args: ["check"]
+status: 1
+success: false
+stdin ---
+-.29
+stdout ---
+
+stderr ---
+error: expected digit following minus sign, found `.`
+ --> stdin:1:1
+  |
+1 | -.29
+  | ^
+  | |
+  | minus sign found here
+  |
+help: did you mean to add a fraction? consider adding a 0 before the period
+  |
+1 | -0.29
+  |  +

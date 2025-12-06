@@ -1,0 +1,25 @@
+---
+source: tests/integration/commands/check.rs
+expression: output
+---
+args: ["check"]
+status: 1
+success: false
+stdin ---
+000
+stdout ---
+
+stderr ---
+error: unexpected leading zero
+ --> stdin:1:1
+  |
+1 | 000
+  | -^^
+  | |
+  | first zero found here
+  |
+help: remove the leading zeros
+  |
+1 - 000
+1 + 0
+  |

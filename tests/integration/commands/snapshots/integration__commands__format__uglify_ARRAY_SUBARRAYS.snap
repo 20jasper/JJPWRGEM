@@ -1,0 +1,5 @@
+---
+source: tests/integration/commands/format.rs
+expression: output.stdout
+---
+[["a"],[true,false]]

@@ -1,0 +1,11 @@
+---
+source: tests/integration/commands/format.rs
+expression: output.stdout
+---
+Make your json look really good
+
+Usage: jjp format [OPTIONS]
+
+Options:
+  -u, --uglify  Removes all insignificant whitespace instead of pretty printing, also known as minifying
+  -h, --help    Print help

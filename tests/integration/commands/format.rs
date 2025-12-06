@@ -1,6 +1,6 @@
+use crate::common::{cli, exec_cmd};
 use crate::test_json::*;
 use insta::assert_snapshot;
-use jjpwrgem_parse::format::{prettify_str, uglify_str};
 
 #[rstest_reuse::template]
 #[rstest::rstest]
@@ -27,20 +27,49 @@ fn format_template(#[case] (name, input): (&str, &str)) {}
 
 #[rstest_reuse::apply(format_template)]
 fn prettify(#[case] (name, input): (&str, &str)) {
-    assert_snapshot!(name.to_string(), prettify_str(input).unwrap());
+    let mut cmd = cli();
+    cmd.args(["format"]);
+
+    let output = exec_cmd(&mut cmd, input.as_bytes().to_vec());
+    assert!(output.status.success());
+
+    assert_snapshot!(name.to_string(), output.stdout);
 }
 
 #[rstest_reuse::apply(format_template)]
 fn uglify(#[case] (name, input): (&str, &str)) {
-    assert_snapshot!(format!("uglify_{name}"), uglify_str(input).unwrap());
+    let mut cmd = cli();
+    cmd.args(["format", "--uglify"]);
+
+    let output = exec_cmd(&mut cmd, input.as_bytes().to_vec());
+    assert!(output.status.success());
+
+    assert_snapshot!(format!("uglify_{name}"), output.stdout);
 }
 
 #[test]
 fn uglify_removes_whitespace_object() {
-    let input = MULTIKEY_OBJECT_WITH_LOTS_OF_WHITESPACE;
-    let res = uglify_str(input).unwrap();
-    // we aren't guaranteed a key order
-    assert!(
-        res == r#"{"hello hi":null,"by":"hello"}"# || res == r#"{"by":"hello","hello hi":null}"#
+    let output = exec_cmd(
+        cli().args(["format", "--uglify"]),
+        MULTIKEY_OBJECT_WITH_LOTS_OF_WHITESPACE.as_bytes().to_vec(),
     );
+    assert!(output.status.success());
+
+    assert!(
+        output.stdout.trim() == r#"{"hello hi":null,"by":"hello"}"#
+            || output.stdout.trim() == r#"{"by":"hello","hello hi":null}"#,
+        "unexpected uglify result: {}",
+        output.stdout
+    );
+}
+
+#[test]
+fn help_subcommand_again() {
+    let mut cmd = cli();
+    cmd.args(["format", "--help"]);
+
+    let output = exec_cmd(&mut cmd, vec![]);
+    assert!(output.status.success(), "{output}");
+
+    assert_snapshot!("format_help", output.stdout);
 }

@@ -1,11 +1,10 @@
 use clap::Parser;
-use jjpwrgem_parse::ast::parse_str;
-use jjpwrgem_parse::error::diagnostics;
-use jjpwrgem_parse::error::diagnostics::Diagnostic;
-use jjpwrgem_parse::error::diagnostics::Source;
-use jjpwrgem_parse::format;
-use jjpwrgem_ui::Color;
-use jjpwrgem_ui::Style;
+use jjpwrgem_parse::{
+    ast::parse_str,
+    error::diagnostics::{self, Diagnostic, Source},
+    format,
+};
+use jjpwrgem_ui::{Color, Style};
 use std::io::Read;
 use std::process::ExitCode;
 
