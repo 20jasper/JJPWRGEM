@@ -1,3 +1,4 @@
+mod commands;
 mod common;
 mod conformance;
 mod format;
