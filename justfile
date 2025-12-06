@@ -47,3 +47,7 @@ prepublish:
 release-binary:
     release-plz update
     cargo release --no-publish --tag-prefix=jjpwrgem- --execute
+
+# preview release notes
+release-notes:
+    dist host --steps=create --output-format=json | jq -r .announcement_github_body
