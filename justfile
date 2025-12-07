@@ -29,6 +29,14 @@ test-cov:
 test-cov-open:
     cargo llvm-cov --workspace --open
 
+# generate README files from templates
+generate-readmes:
+    cargo run -p xtask -q -- generate-readmes
+
+# verify that README.md files match generated templates
+verify-readmes:
+    cargo run -p xtask -q -- verify-readmes
+
 watch:
     cargo watch -q -c -x "install --path ."
 

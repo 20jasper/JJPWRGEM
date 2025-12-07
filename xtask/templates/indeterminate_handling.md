@@ -1,9 +1,3 @@
-<!-- GENERATED FILE - update the templates in the xtask -->
-
-# jjpwrgem-parse
-
-Documentation and utilities for the parser used by the CLI.
-
 ## Indeterminate Handling
 
 How cases undefined by the spec are handled
