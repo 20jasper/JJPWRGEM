@@ -6,11 +6,11 @@ args: ["format"]
 status: 0
 success: true
 stdin ---
-{"a":"b","a":"c"}
+{"asd":"sdf", "dfg":"fgh"}
 stdout ---
 {
-    "a": "b",
-    "a": "c"
+    "asd": "sdf",
+    "dfg": "fgh"
 }
 
 stderr ---

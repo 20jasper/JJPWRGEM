@@ -48,7 +48,7 @@
 - [ ] cli
   - [x] stdin
   - [ ] files
-  - [ ] help screen
+  - [x] help screen
   - [ ] --fix option
   - [ ] colors (support-color)
   - [ ] look into insta snapshot docs
@@ -63,7 +63,7 @@
 ### dev tooling
 
 - [x] hook to format on commit
-- [ ] just script to install all tools
+- [x] just script to install all tools
 - [ ] submodule installation
 
 ### Testing

@@ -19,17 +19,14 @@ struct Case {
 }
 
 const CONFORMANCE_PATH: &str = "./tests/conformance/JSONTestSuite/test_parsing";
-const FILENAME_FILTER: [&str; 7] = [
+const FILENAME_FILTER: [&str; 5] = [
     // should expect comma or closed
     "n_array_colon_instead_of_comma.json",
     "n_array_items_separated_by_semicolon.json",
     // uh oh
     "500",
     "10000",
-    // multi key is not consistent
-    "y_object.json",
-    "y_object_extreme_numbers",
-    "y_object_long_strings",
+    "n_structure_open_array_object",
 ];
 
 fn get_tests() -> (Vec<Case>, usize, usize) {
@@ -87,7 +84,7 @@ mod common {}
 #[test]
 fn feature() {
     let (mut cases, total, rest) = get_tests();
-    assert_eq!(rest, 309);
+    assert_eq!(rest, 313);
     assert_eq!(total, 318);
 
     cases.sort_by(|a, b| a.file_name.cmp(&b.file_name));

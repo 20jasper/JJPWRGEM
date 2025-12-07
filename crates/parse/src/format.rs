@@ -112,7 +112,7 @@ pub fn format_value_into(buf: &mut String, val: &Value, options: &FormatOptions,
         Value::Null => write!(buf, "{NULL}").unwrap(),
         Value::String(s) => write!(buf, "\"{s}\"").unwrap(),
         Value::Number(s) => write!(buf, "{s}").unwrap(),
-        Value::Object(hash_map) => {
+        Value::Object(entries) => {
             let kv_delim = options.get_key_val_delimiter();
             let key_indent = options.get_indent(depth + 1);
             let eol = options.get_eol();
@@ -121,7 +121,7 @@ pub fn format_value_into(buf: &mut String, val: &Value, options: &FormatOptions,
             write!(buf, "{{{eol}").unwrap();
             join_into(
                 buf,
-                hash_map,
+                entries.0.iter(),
                 |buf, (key, val)| {
                     write!(buf, "{key_indent}\"{key}\":{kv_delim}").unwrap();
                     format_value_into(buf, val, options, depth + 1);
