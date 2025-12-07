@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.2](https://github.com/20jasper/JJPWRGEM/releases/tag/jjpwrgem-v0.2.2) - 2025-12-07
+
+### Documentation
+
+- add mise installer steps
+- update readme with new command format and installation instructions. removes extra notes
+
+### Performance
+
+- join_into utility to declaritively avoid allocating delimiter strings
+- write to single buffer instead of allocating buffer per JSON value
+- don't use anstream for content without ansi
+
 ## [0.2.0](https://github.com/20jasper/JJPWRGEM/releases/tag/jjpwrgem-v0.2.0) - 2025-12-06
 
 ### Added
