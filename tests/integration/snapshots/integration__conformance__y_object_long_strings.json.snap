@@ -1,0 +1,18 @@
+---
+source: tests/integration/conformance.rs
+expression: output
+---
+args: ["format"]
+status: 0
+success: true
+stdin ---
+{"x":[{"id": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"}], "id": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"}
+stdout ---
+{
+    "x": [{
+            "id": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+        }],
+    "id": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+}
+
+stderr ---

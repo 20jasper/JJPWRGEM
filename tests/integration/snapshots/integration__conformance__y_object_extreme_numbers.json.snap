@@ -6,11 +6,11 @@ args: ["format"]
 status: 0
 success: true
 stdin ---
-{"a":"b","a":"c"}
+{ "min": -1.0e+28, "max": 1.0e+28 }
 stdout ---
 {
-    "a": "b",
-    "a": "c"
+    "min": -1.0e+28,
+    "max": 1.0e+28
 }
 
 stderr ---

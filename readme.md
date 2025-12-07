@@ -71,7 +71,7 @@ How cases undefined by the spec are handled
 - numbers of any size or length are allowed
   - the original precision will be maintained
   - -0 is not equal to 0 and will persist
-- the last duplicate key is stored
+- duplicate keys are both kept
   - escaped and unescaped characters are considered not equal
 - parsing will fail if BOM is included
 - only utf8 encoding is supported

@@ -1,37 +1,36 @@
 use crate::{
     Error, ErrorKind, Result,
-    ast::{Value, ValueWithContext, parse_tokens, validate_start_of_value},
+    ast::{ObjectEntries, Value, ValueWithContext, parse_tokens, validate_start_of_value},
     tokens::{Token, TokenOption, TokenWithContext},
 };
 use core::iter::Peekable;
 use core::ops::Range;
-use std::collections::HashMap;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 enum ObjectState<'a> {
     Open,
     KeyOrEnd {
-        map: HashMap<&'a str, Value<'a>>,
+        map: ObjectEntries<'a>,
         open_ctx: TokenWithContext<'a>,
         last_pair: Option<Range<usize>>,
     },
     Key {
-        map: HashMap<&'a str, Value<'a>>,
+        map: ObjectEntries<'a>,
         comma_ctx: TokenWithContext<'a>,
         open_ctx: TokenWithContext<'a>,
     },
     Colon {
         key_ctx: TokenWithContext<'a>,
-        map: HashMap<&'a str, Value<'a>>,
+        map: ObjectEntries<'a>,
         open_ctx: TokenWithContext<'a>,
     },
     Value {
         key_ctx: TokenWithContext<'a>,
         colon_ctx: TokenWithContext<'a>,
-        map: HashMap<&'a str, Value<'a>>,
+        map: ObjectEntries<'a>,
         open_ctx: TokenWithContext<'a>,
     },
-    End(HashMap<&'a str, Value<'a>>, Range<usize>),
+    End(ObjectEntries<'a>, Range<usize>),
 }
 
 impl<'a> ObjectState<'a> {
@@ -48,7 +47,7 @@ impl<'a> ObjectState<'a> {
                         ..
                     },
                 ) => ObjectState::KeyOrEnd {
-                    map: HashMap::new(),
+                    map: ObjectEntries::new(),
                     open_ctx: ctx,
                     last_pair: None,
                 },
@@ -190,7 +189,7 @@ impl<'a> ObjectState<'a> {
                     value: json_value,
                     range: json_range,
                 } = parse_tokens(tokens, text, false)?;
-                map.insert(key, json_value);
+                map.push(key, json_value);
 
                 ObjectState::KeyOrEnd {
                     map,

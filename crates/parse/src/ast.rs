@@ -9,14 +9,32 @@ use crate::tokens::{Token, TokenWithContext, str_to_tokens};
 use core::iter::Peekable;
 use core::ops::Range;
 use std::borrow::Cow;
-use std::collections::HashMap;
+
+#[derive(Debug, PartialEq, Eq, Clone, Default)]
+pub struct ObjectEntries<'a>(pub Vec<(&'a str, Value<'a>)>);
+
+impl<'a> ObjectEntries<'a> {
+    pub fn new() -> Self {
+        Self(Vec::new())
+    }
+
+    pub fn push(&mut self, k: &'a str, v: Value<'a>) {
+        self.0.push((k, v));
+    }
+}
+
+impl<'a> From<Vec<(&'a str, Value<'a>)>> for ObjectEntries<'a> {
+    fn from(value: Vec<(&'a str, Value<'a>)>) -> Self {
+        ObjectEntries(value)
+    }
+}
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Value<'a> {
     Null,
     String(&'a str),
     Number(Cow<'a, str>),
-    Object(HashMap<&'a str, Value<'a>>),
+    Object(ObjectEntries<'a>),
     Array(Vec<Value<'a>>),
     Boolean(bool),
 }
@@ -115,7 +133,7 @@ mod tests {
     use super::*;
 
     fn kv_to_map<'a>(tuples: &[(&'a str, Value<'a>)]) -> Value<'a> {
-        Value::Object(tuples.iter().map(|(k, v)| (*k, v.clone())).collect())
+        Value::Object(tuples.to_vec().into())
     }
 
     #[test]
