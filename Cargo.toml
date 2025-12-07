@@ -10,7 +10,7 @@ homepage = "https://github.com/20jasper/jjpwrgem"
 repository = "https://github.com/20jasper/jjpwrgem"
 license = "MIT"
 readme = "readme.md"
-include = ["readme.md", "README.template.md", "CHANGELOG.md", "crates/cli/main.rs"]
+include = ["readme.md", "CHANGELOG.md", "crates/cli/main.rs"]
 
 [[bin]]
 name = "jjp"
@@ -22,7 +22,7 @@ path = "tests/integration/main.rs"
 
 
 [workspace]
-members = ["crates/ui", "crates/parse"]
+members = ["crates/ui", "crates/parse", "xtask"]
 
 [workspace.dependencies]
 anstream = "0.6.21"
