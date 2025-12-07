@@ -7,7 +7,7 @@ An RFC 8259 compliant JSON Parser and formatter!
 ![A logo of an axolotl riding a skateboard](./logo.webp)
 
 ```
-echo -en '{"coolKey"}' | jjp parse
+echo -en '{"coolKey"}' | jjp check
 error: expected colon after key, found `}`
   ╭▸ stdin:1:11
   │
