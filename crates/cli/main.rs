@@ -76,7 +76,11 @@ mod commands {
     #[derive(Parser)]
     #[command()]
     #[command(
-        version,
+        version = concat!(
+            env!("CARGO_PKG_VERSION"), "\n", 
+            include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/axolotl.txt")), "\n",
+            "an axolotl riding a skateboard"
+        ),
         about,
         after_help = r#"Examples:
     $ echo -en '{ "rust":"is a must"   } ' | jjp format
