@@ -1,9 +1,8 @@
 use crate::{
     Error, ErrorKind, Result,
     ast::{ObjectEntries, Value, ValueWithContext, parse_tokens, validate_start_of_value},
-    tokens::{Token, TokenOption, TokenWithContext},
+    tokens::{Token, TokenOption, TokenStream, TokenWithContext},
 };
-use core::iter::Peekable;
 use core::ops::Range;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -34,13 +33,9 @@ enum ObjectState<'a> {
 }
 
 impl<'a> ObjectState<'a> {
-    fn process(
-        self,
-        tokens: &mut Peekable<impl Iterator<Item = TokenWithContext<'a>>>,
-        text: &'a str,
-    ) -> Result<'a, Self> {
+    fn process(self, tokens: &mut TokenStream<'a>, text: &'a str) -> Result<'a, Self> {
         let res = match self {
-            ObjectState::Open => match tokens.next() {
+            ObjectState::Open => match tokens.next_token()? {
                 Some(
                     ctx @ TokenWithContext {
                         token: Token::OpenCurlyBrace,
@@ -58,7 +53,7 @@ impl<'a> ObjectState<'a> {
                             context: None,
                             found: tok,
                         },
-                        maybe_token.clone(),
+                        maybe_token,
                         text,
                     ));
                 }
@@ -68,7 +63,7 @@ impl<'a> ObjectState<'a> {
                 map,
                 open_ctx,
                 last_pair,
-            } => match (last_pair, tokens.next()) {
+            } => match (last_pair, tokens.next_token()?) {
                 (
                     _,
                     Some(TokenWithContext {
@@ -129,7 +124,7 @@ impl<'a> ObjectState<'a> {
                 map,
                 comma_ctx,
                 open_ctx,
-            } => match tokens.next() {
+            } => match tokens.next_token()? {
                 Some(
                     key_ctx @ TokenWithContext {
                         token: Token::String(_),
@@ -152,7 +147,7 @@ impl<'a> ObjectState<'a> {
                 map,
                 key_ctx,
                 open_ctx,
-            } => match tokens.next() {
+            } => match tokens.next_token()? {
                 Some(
                     colon_ctx @ TokenWithContext {
                         token: Token::Colon,
@@ -179,7 +174,7 @@ impl<'a> ObjectState<'a> {
                 colon_ctx,
                 open_ctx,
             } => {
-                validate_start_of_value(text, colon_ctx.clone(), tokens.peek().cloned())?;
+                validate_start_of_value(text, colon_ctx.clone(), tokens.peek_token()?)?;
 
                 let Token::String(key) = key_ctx.token else {
                     unreachable!("key context should always be a string");
@@ -205,7 +200,7 @@ impl<'a> ObjectState<'a> {
 }
 
 pub fn parse_object<'a>(
-    tokens: &mut Peekable<impl Iterator<Item = TokenWithContext<'a>>>,
+    tokens: &mut TokenStream<'a>,
     text: &'a str,
 ) -> Result<'a, ValueWithContext<'a>> {
     let mut state = ObjectState::Open;

@@ -1,12 +1,9 @@
 mod array;
 mod object;
 
-use crate::Error;
-use crate::ast::array::parse_array;
-use crate::ast::object::parse_object;
-use crate::error::{ErrorKind, Result};
-use crate::tokens::{Token, TokenWithContext, str_to_tokens};
-use core::iter::Peekable;
+use crate::ast::{array::parse_array, object::parse_object};
+use crate::tokens::{Token, TokenStream, TokenWithContext};
+use crate::{Error, ErrorKind, Result};
 use core::ops::Range;
 use std::borrow::Cow;
 
@@ -62,18 +59,15 @@ impl<'a> ValueWithContext<'a> {
 }
 
 pub fn parse_str<'a>(json: &'a str) -> Result<'a, Value<'a>> {
-    let tokens = str_to_tokens(json)?;
-    Ok(parse_tokens(&mut tokens.into_iter().peekable(), json, true)?.value)
+    Ok(parse_tokens(&mut TokenStream::new(json), json, true)?.value)
 }
 
 pub fn parse_tokens<'a>(
-    tokens: &mut Peekable<impl Iterator<Item = TokenWithContext<'a>>>,
+    tokens: &mut TokenStream<'a>,
     text: &'a str,
     fail_on_multiple_value: bool,
 ) -> Result<'a, ValueWithContext<'a>> {
-    let peeked = if let Some(peeked) = tokens.peek() {
-        peeked.clone()
-    } else {
+    let Some(peeked) = tokens.peek_token()? else {
         return Err(Error::from_maybe_token_with_context(
             |tok| ErrorKind::ExpectedValue(None, tok),
             None,
@@ -84,7 +78,9 @@ pub fn parse_tokens<'a>(
         Token::OpenCurlyBrace => parse_object(tokens, text)?,
         Token::OpenSquareBracket => parse_array(tokens, text)?,
         Token::Null | Token::String(_) | Token::Boolean(_) | Token::Number(_) => {
-            let TokenWithContext { token, range } = tokens.next().unwrap();
+            let TokenWithContext { token, range } = tokens
+                .next_token()?
+                .expect("peek guaranteed a value for scalar token");
             ValueWithContext {
                 value: token_to_value(token).expect("token should be valid json value"),
                 range,
@@ -99,7 +95,9 @@ pub fn parse_tokens<'a>(
         }
     };
 
-    if fail_on_multiple_value && let Some(TokenWithContext { token, range }) = tokens.peek() {
+    if fail_on_multiple_value
+        && let Some(TokenWithContext { token, range }) = tokens.peek_token()?
+    {
         return Err(Error::new(
             ErrorKind::TokenAfterEnd(token.clone()),
             range.clone(),

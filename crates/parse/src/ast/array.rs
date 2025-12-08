@@ -1,9 +1,8 @@
 use crate::{
     ast::{Value, ValueWithContext, parse_tokens, validate_start_of_value},
     error::{Error, ErrorKind, Result},
-    tokens::{Token, TokenWithContext},
+    tokens::{Token, TokenStream, TokenWithContext},
 };
-use core::iter::Peekable;
 use std::ops::Range;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -27,13 +26,9 @@ pub enum ArrayState<'a> {
 }
 
 impl<'a> ArrayState<'a> {
-    pub fn process(
-        self,
-        tokens: &mut Peekable<impl Iterator<Item = TokenWithContext<'a>>>,
-        text: &'a str,
-    ) -> Result<'a, Self> {
+    pub fn process(self, tokens: &mut TokenStream<'a>, text: &'a str) -> Result<'a, Self> {
         let next_state = match self {
-            ArrayState::Open => match tokens.next() {
+            ArrayState::Open => match tokens.next_token()? {
                 Some(
                     open_ctx @ TokenWithContext {
                         token: Token::OpenSquareBracket,
@@ -56,13 +51,13 @@ impl<'a> ArrayState<'a> {
                 }
             },
 
-            ArrayState::ValueOrEnd { items, open_ctx } => match tokens.peek().cloned() {
+            ArrayState::ValueOrEnd { items, open_ctx } => match tokens.peek_token()? {
                 Some(TokenWithContext {
                     token: Token::ClosedSquareBracket,
                     range: closed_range,
                     ..
                 }) => {
-                    tokens.next();
+                    tokens.next_token()?;
                     ArrayState::End(ValueWithContext::new(
                         Value::Array(items),
                         open_ctx.range.start..closed_range.end,
@@ -74,13 +69,12 @@ impl<'a> ArrayState<'a> {
                     expect_ctx: open_ctx.clone(),
                 },
                 Some(_) => {
-                    let maybe_token = tokens.next();
                     return Err(Error::from_maybe_token_with_context(
                         |tok| {
                             ErrorKind::expected_entry_or_closed_delimiter(open_ctx.clone(), tok)
                                 .expect("array should open with a square bracket")
                         },
-                        maybe_token,
+                        tokens.next_token()?,
                         text,
                     ));
                 }
@@ -101,7 +95,7 @@ impl<'a> ArrayState<'a> {
                 open_ctx,
                 expect_ctx,
             } => {
-                validate_start_of_value(text, expect_ctx, tokens.peek().cloned())?;
+                validate_start_of_value(text, expect_ctx, tokens.peek_token()?.clone())?;
 
                 let ValueWithContext { value, range } = parse_tokens(tokens, text, false)?;
                 items.push(value);
@@ -114,12 +108,12 @@ impl<'a> ArrayState<'a> {
 
             ArrayState::CommaOrEnd {
                 items, open_ctx, ..
-            } => match tokens.peek().cloned() {
+            } => match tokens.peek_token()? {
                 Some(TokenWithContext {
                     token: Token::ClosedSquareBracket,
                     range: closed_range,
                 }) => {
-                    tokens.next();
+                    tokens.next_token()?;
                     ArrayState::End(ValueWithContext::new(
                         Value::Array(items),
                         open_ctx.range.start..closed_range.end,
@@ -131,7 +125,7 @@ impl<'a> ArrayState<'a> {
                         ..
                     },
                 ) => {
-                    tokens.next();
+                    tokens.next_token()?;
                     ArrayState::Value {
                         items,
                         open_ctx,
@@ -139,13 +133,12 @@ impl<'a> ArrayState<'a> {
                     }
                 }
                 _ => {
-                    let maybe_token = tokens.next();
                     return Err(Error::from_maybe_token_with_context(
                         |tok| {
                             ErrorKind::expected_entry_or_closed_delimiter(open_ctx.clone(), tok)
                                 .expect("array should open with a square bracket")
                         },
-                        maybe_token,
+                        tokens.next_token()?,
                         text,
                     ));
                 }
@@ -161,7 +154,7 @@ impl<'a> ArrayState<'a> {
 }
 
 pub fn parse_array<'a>(
-    tokens: &mut Peekable<impl Iterator<Item = TokenWithContext<'a>>>,
+    tokens: &mut TokenStream<'a>,
     text: &'a str,
 ) -> Result<'a, ValueWithContext<'a>> {
     let mut state = ArrayState::Open;

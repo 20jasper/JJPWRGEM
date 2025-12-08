@@ -1,14 +1,12 @@
 pub mod lexical;
 mod number;
+mod stream;
 mod string;
 
-use crate::{
-    Error, ErrorKind, Result,
-    tokens::{lexical::JsonChar, number::parse_num, string::parse_string},
-};
-use core::fmt::Display;
-use core::ops::Range;
+use crate::tokens::lexical::JsonChar;
+use core::{fmt::Display, ops::Range};
 use std::borrow::Cow;
+pub use stream::TokenStream;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Token<'a> {
@@ -141,74 +139,6 @@ impl CharWithContext {
     }
 }
 
-pub fn str_to_tokens<'a>(s: &'a str) -> Result<'a, Vec<TokenWithContext<'a>>> {
-    let mut chars = s
-        .char_indices()
-        .map(Into::<CharWithContext>::into)
-        .peekable();
-
-    let mut res = vec![];
-
-    while let Some(ctx) = chars.peek().cloned() {
-        let CharWithContext(r, JsonChar(c)) = ctx.clone();
-        if ctx.as_json_char().is_whitespace() {
-            chars.next();
-            continue;
-        }
-        if let Some(tok) = ctx.as_token_with_context() {
-            res.push(tok);
-            chars.next();
-            continue;
-        }
-        let token = match c {
-            '"' => parse_string(s, &mut chars)?,
-            '0'..='9' | '-' => parse_num(s, &mut chars)?,
-            'n' | 't' | 'f' => {
-                let expected = match c {
-                    'n' => NULL,
-                    't' => TRUE,
-                    'f' => FALSE,
-                    _ => unreachable!("{c} is not able to be reached"),
-                };
-                let actual = chars.by_ref().take(expected.len()).map(|c| c.as_char());
-
-                if actual.eq(expected.chars()) {
-                    let token = match c {
-                        'n' => Token::Null,
-                        't' => true.into(),
-                        'f' => false.into(),
-                        _ => unreachable!("{c} is not able to be reached"),
-                    };
-                    let end = *chars
-                        .peek()
-                        .map(|CharWithContext(r, _)| &r.start)
-                        .unwrap_or(&s.len());
-                    TokenWithContext {
-                        token,
-                        range: r.start..end,
-                    }
-                } else {
-                    return Err(Error::new(
-                        ErrorKind::UnexpectedCharacter(c.into()),
-                        r.clone(),
-                        s,
-                    ));
-                }
-            }
-            _ => {
-                return Err(Error::new(
-                    ErrorKind::UnexpectedCharacter(c.into()),
-                    r.clone(),
-                    s,
-                ));
-            }
-        };
-        res.push(token);
-    }
-
-    Ok(res)
-}
-
 impl From<bool> for Token<'_> {
     fn from(value: bool) -> Self {
         Token::Boolean(value)
@@ -233,8 +163,13 @@ impl From<f64> for Token<'_> {
 
 #[cfg(test)]
 mod tests {
+    use crate::{Error, ErrorKind, Result};
+
     use super::*;
 
+    fn str_to_tokens<'a>(s: &'a str) -> Result<'a, Vec<TokenWithContext<'a>>> {
+        stream::TokenStream::new(s).collect()
+    }
     #[test]
     fn should_parse_single_key_object() {
         assert_eq!(
@@ -274,10 +209,10 @@ mod tests {
     #[case(r#"0"#, 0.into())]
     #[case(r#"12389"#, 12389.into())]
     #[case(r#"-12389"#, (-12389).into())]
-    // #[case(r#"5.8888"#, 5.888.into())]
+    #[case(r#"5.8888"#, 5.8888.into())]
     #[case(r#"-0"#, Token::Number("-0".into()))]
-    // #[case(r#"-1e5"#, Token::Number("-1e5".into()))]
-    // #[case(r#"-1.48e50"#, Token::Number("-1.48e50".into()))]
+    #[case(r#"-1e5"#, Token::Number("-1e5".into()))]
+    #[case(r#"-1.48e50"#, Token::Number("-1.48e50".into()))]
     fn primitive_template(#[case] json: &str, #[case] expected: Token) {}
 
     #[rstest_reuse::apply(primitive_template)]
