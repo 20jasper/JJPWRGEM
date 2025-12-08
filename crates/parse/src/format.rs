@@ -102,11 +102,12 @@ pub fn join_into<T>(
     mut item_fmt: impl FnMut(&mut String, &T),
     mut delim_fmt: impl FnMut(&mut String, &T),
 ) {
-    let mut iter = items.into_iter().peekable();
-    while let Some(x) = iter.next() {
-        item_fmt(buf, &x);
-        if iter.peek().is_some() {
-            delim_fmt(buf, &x);
+    let mut iter = items.into_iter();
+    if let Some(first) = iter.next() {
+        item_fmt(buf, &first);
+        for item in iter {
+            delim_fmt(buf, &item);
+            item_fmt(buf, &item);
         }
     }
 }
