@@ -59,3 +59,20 @@ fn check_help_snapshot() {
 
     assert_snapshot!("check_help", output.stdout);
 }
+
+#[rstest::rstest]
+#[case(r#"{"coolKey"}"#, "failure")]
+#[case(r#"{"hello I am valid": null} "#, "success")]
+fn docs(#[case] input: &str, #[case] postfix: &str) {
+    insta::with_settings!({
+        snapshot_path => "docs/snapshots",
+        prepend_module_to_snapshot => false,
+    }, {
+        let mut cmd = cli();
+        cmd.args(["check"]);
+
+        let output = exec_cmd(&mut cmd, input.as_bytes().to_vec());
+
+        assert_snapshot!(format!("check_{postfix}"), output.docs_display_stdin());
+    });
+}

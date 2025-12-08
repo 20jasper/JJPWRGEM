@@ -1,0 +1,8 @@
+---
+source: tests/integration/commands/format.rs
+expression: output.docs_display_stdin()
+---
+$ echo -en "{ \"rust\":\"is a must\"   } " | jjp format
+{
+    "rust": "is a must"
+}

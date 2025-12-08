@@ -50,6 +50,16 @@ stderr ---
             self.stderr
         )
     }
+
+    pub fn docs_display_stdin(&self) -> String {
+        format!(
+            "$ echo -en {:?} | jjp {}\n{}{}",
+            self.stdin,
+            self.args.join(" "),
+            self.stdout,
+            self.stderr
+        )
+    }
 }
 
 pub fn exec_cmd(cmd: &mut Command, stdin: Vec<u8>) -> Output {

@@ -4,6 +4,17 @@ use std::io::Write;
 use std::process::ExitCode;
 use std::process::{Command, Stdio};
 
+fn strip_front_matter(raw: &str) -> &str {
+    const FRONT_MATTER_SEP: &str = "\n---\n";
+    raw.split_once(FRONT_MATTER_SEP)
+        .expect("snapshots should always have a separator")
+        .1
+}
+const CHECK_EXAMPLE: &str = include_str!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/../tests/integration/commands/docs/snapshots/check_failure.snap"
+));
+
 const BANNER: &str = "<!-- GENERATED FILE - update the templates in the xtask -->\n\n";
 
 const JJPWREGEM_TEMPLATE: &str = include_str!(concat!(
@@ -44,8 +55,9 @@ enum Commands {
 }
 
 fn render_template(template: &str) -> Result<String, Box<dyn std::error::Error>> {
-    let include_marker = "{{IND}}";
-    let processed = template.replace(include_marker, SHARED_FRAGMENT);
+    let processed = template
+        .replace("{{IND}}", SHARED_FRAGMENT)
+        .replace("{{CHECK_EXAMPLE}}", strip_front_matter(CHECK_EXAMPLE));
     let with_banner = format!("{}{}", BANNER, processed);
     let formatted = prettier_format(&with_banner)?;
     Ok(formatted)

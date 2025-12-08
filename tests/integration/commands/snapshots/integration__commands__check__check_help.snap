@@ -8,3 +8,20 @@ Usage: jjp check
 
 Options:
   -h, --help  Print help
+
+Examples:
+	$ echo -en "{\"hello I am valid\": null} " | jjp check
+
+	$ echo -en "{\"coolKey\"}" | jjp check
+	error: expected colon after key, found `}`
+	 --> stdin:1:11
+	  |
+	1 | {"coolKey"}
+	  |  ---------^
+	  |  |
+	  |  expected due to `"coolKey"`
+	  |
+	help: insert colon and placeholder value
+	  |
+	1 | {"coolKey": "🐟🛹"}
+	  |           ++++++++

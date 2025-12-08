@@ -7,19 +7,7 @@ An RFC 8259 compliant JSON Parser and formatter!
 ![A logo of an axolotl riding a skateboard](./logo.webp)
 
 ```
-echo -en '{"coolKey"}' | jjp check
-error: expected colon after key, found `}`
-  ╭▸ stdin:1:11
-  │
-1 │ {"coolKey"}
-  │  ┬────────━
-  │  │
-  │  expected due to `"coolKey"`
-  ╰╴
-help: insert colon and placeholder value
-  ╭╴
-1 │ {"coolKey": "🐟🛹"}
-  ╰╴          ++++++++
+{{CHECK_EXAMPLE}}
 ```
 
 ## Table of contents
@@ -46,7 +34,7 @@ See [releases](https://github.com/20jasper/JJPWRGEM/releases) for shell and powe
 
 ### From source
 
-```
+```bash
 cargo install --path .
 ```
 

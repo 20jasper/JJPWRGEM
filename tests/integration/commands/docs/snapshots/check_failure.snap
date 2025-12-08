@@ -1,0 +1,17 @@
+---
+source: tests/integration/commands/check.rs
+expression: output.docs_display_stdin()
+---
+$ echo -en "{\"coolKey\"}" | jjp check
+error: expected colon after key, found `}`
+ --> stdin:1:11
+  |
+1 | {"coolKey"}
+  |  ---------^
+  |  |
+  |  expected due to `"coolKey"`
+  |
+help: insert colon and placeholder value
+  |
+1 | {"coolKey": "🐟🛹"}
+  |           ++++++++
