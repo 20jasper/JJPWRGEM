@@ -1,7 +1,7 @@
 use crate::{
     Result,
     ast::{Value, parse_str},
-    tokens::NULL,
+    tokens::{FALSE, NULL, TRUE},
 };
 
 pub struct FormatOptions {
@@ -106,43 +106,59 @@ pub fn join_into<T>(
 }
 
 pub fn format_value_into(buf: &mut String, val: &Value, options: &FormatOptions, depth: usize) {
-    use std::fmt::Write as _;
-
+    #[inline]
+    fn push_quoted(buf: &mut String, value: &str) {
+        buf.push('"');
+        buf.push_str(value);
+        buf.push('"');
+    }
     match val {
-        Value::Null => write!(buf, "{NULL}").unwrap(),
-        Value::String(s) => write!(buf, "\"{s}\"").unwrap(),
-        Value::Number(s) => write!(buf, "{s}").unwrap(),
+        Value::Null => buf.push_str(NULL),
+        Value::String(s) => push_quoted(buf, s),
+        Value::Number(s) => buf.push_str(s.as_ref()),
         Value::Object(entries) => {
             let kv_delim = options.get_key_val_delimiter();
             let key_indent = options.get_indent(depth + 1);
             let eol = options.get_eol();
             let closing_indent = options.get_indent(depth);
 
-            write!(buf, "{{{eol}").unwrap();
+            buf.push('{');
+            buf.push_str(&eol);
             join_into(
                 buf,
                 entries.0.iter(),
                 |buf, (key, val)| {
-                    write!(buf, "{key_indent}\"{key}\":{kv_delim}").unwrap();
+                    buf.push_str(&key_indent);
+                    push_quoted(buf, key);
+                    buf.push(':');
+                    buf.push_str(&kv_delim);
                     format_value_into(buf, val, options, depth + 1);
                 },
-                |buf, _| write!(buf, ",{eol}").unwrap(),
+                |buf, _| {
+                    buf.push(',');
+                    buf.push_str(&eol);
+                },
             );
-            write!(buf, "{eol}{closing_indent}}}").unwrap();
+            buf.push_str(&eol);
+            buf.push_str(&closing_indent);
+            buf.push('}');
         }
-        Value::Array(items) if items.is_empty() => write!(buf, "[]").unwrap(),
+        Value::Array(items) if items.is_empty() => buf.push_str("[]"),
         Value::Array(items) => {
             let delimiter = options.get_array_value_delimiter();
-            write!(buf, "[").unwrap();
+            buf.push('[');
             join_into(
                 buf,
                 items,
                 |buf, val| format_value_into(buf, val, options, depth + 1),
-                |buf, _| write!(buf, ",{delimiter}").unwrap(),
+                |buf, _| {
+                    buf.push(',');
+                    buf.push_str(&delimiter);
+                },
             );
-            write!(buf, "]").unwrap();
+            buf.push(']');
         }
-        Value::Boolean(b) => write!(buf, "{b}").unwrap(),
+        Value::Boolean(b) => buf.push_str(if *b { TRUE } else { FALSE }),
     }
 }
 
