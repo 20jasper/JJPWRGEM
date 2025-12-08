@@ -46,7 +46,7 @@ fn annotate_test_json_failure_snapshots(#[case] (name, json): (&str, &str)) {
 
     let output = exec_cmd(cli().arg("check"), json_bytes);
 
-    assert_snapshot!(name.to_ascii_lowercase(), output);
+    assert_snapshot!(name.to_ascii_lowercase(), output.snapshot_display());
 }
 
 #[test]
@@ -55,7 +55,7 @@ fn check_help_snapshot() {
     cmd.args(["check", "--help"]);
 
     let output = exec_cmd(&mut cmd, vec![]);
-    assert!(output.status.success(), "{output}");
+    assert!(output.status.success(), "{}", output.snapshot_display());
 
     assert_snapshot!("check_help", output.stdout);
 }

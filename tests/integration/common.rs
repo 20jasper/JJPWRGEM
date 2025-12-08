@@ -1,4 +1,4 @@
-use core::fmt::Display;
+use core::fmt::Debug;
 use std::{
     env, fs,
     io::Write,
@@ -30,11 +30,18 @@ pub struct Output {
     pub status: ExitStatus,
 }
 
-impl Display for Output {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "args: {:?}\nstatus: {}\nsuccess: {}\nstdin ---\n{}\nstdout ---\n{}\nstderr ---\n{}",
+impl Output {
+    pub fn snapshot_display(&self) -> String {
+        format!(
+            r#"args: {:?}
+status: {}
+success: {}
+stdin ---
+{}
+stdout ---
+{}
+stderr ---
+{}"#,
             self.args,
             self.status.code().unwrap_or(-1),
             self.status.success(),

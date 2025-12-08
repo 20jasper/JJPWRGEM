@@ -33,7 +33,7 @@ fn prettify(#[case] (name, input): (&str, &str)) {
     let output = exec_cmd(&mut cmd, input.as_bytes().to_vec());
     assert!(output.status.success());
 
-    assert_snapshot!(name.to_string(), output.stdout);
+    assert_snapshot!(name.to_string(), output.snapshot_display());
 }
 
 #[rstest_reuse::apply(format_template)]
@@ -44,7 +44,7 @@ fn uglify(#[case] (name, input): (&str, &str)) {
     let output = exec_cmd(&mut cmd, input.as_bytes().to_vec());
     assert!(output.status.success());
 
-    assert_snapshot!(format!("uglify_{name}"), output.stdout);
+    assert_snapshot!(format!("uglify_{name}"), output.snapshot_display());
 }
 
 #[test]
@@ -69,7 +69,7 @@ fn help_subcommand_again() {
     cmd.args(["format", "--help"]);
 
     let output = exec_cmd(&mut cmd, vec![]);
-    assert!(output.status.success(), "{output}");
+    assert!(output.status.success(), "{}", output.snapshot_display());
 
     assert_snapshot!("format_help", output.stdout);
 }
