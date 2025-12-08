@@ -22,7 +22,7 @@ enum StringState<'a> {
         quote_range: Range<usize>,
         u_range: Range<usize>,
         slash_range: Range<usize>,
-        digits: Vec<JsonChar>,
+        digits_seen: usize,
     },
     End(TokenWithContext<'a>),
 }
@@ -94,7 +94,7 @@ impl<'a> StringState<'a> {
                     quote_range,
                     u_range: r,
                     slash_range,
-                    digits: vec![],
+                    digits_seen: 0,
                 },
                 maybe_c => {
                     return Err(Error::from_maybe_json_char_with_context(
@@ -114,23 +114,23 @@ impl<'a> StringState<'a> {
                 quote_range,
                 u_range,
                 slash_range,
-                mut digits,
+                digits_seen,
             } => match chars.next() {
                 Some(CharWithContext(r, c)) if c.is_hexdigit() => {
                     let string_range = string_range.start..r.end;
-                    if digits.len() == 3 {
+                    let next_digits = digits_seen + 1;
+                    if next_digits == 4 {
                         StringState::CharOrEscapeOrEnd {
                             string_range,
                             quote_range,
                         }
                     } else {
-                        digits.push(c);
                         StringState::UEscape {
                             string_range,
                             quote_range,
                             u_range,
                             slash_range,
-                            digits,
+                            digits_seen: next_digits,
                         }
                     }
                 }
@@ -141,7 +141,7 @@ impl<'a> StringState<'a> {
                             slash_range: slash_range.clone(),
                             u_range: u_range.clone(),
                             maybe_c: c,
-                            digit_idx: digits.len() + 1,
+                            digit_idx: digits_seen + 1,
                         },
                         maybe_c,
                         input,
