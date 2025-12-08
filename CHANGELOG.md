@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.2](https://github.com/20jasper/JJPWRGEM/releases/tag/jjpwrgem-v0.3.2) - 2025-12-08
+
+### Performance
+
+- write delimiters and indentation directly to buffer, avoiding intermediate allocations
+
 ## [0.3.1](https://github.com/20jasper/JJPWRGEM/releases/tag/jjpwrgem-v0.3.1) - 2025-12-08
 
 ### Performance
