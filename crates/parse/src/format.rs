@@ -1,3 +1,5 @@
+use core::iter;
+
 use crate::{
     Result,
     ast::{Value, parse_str},
@@ -44,28 +46,32 @@ impl FormatOptions {
         }
     }
 
-    fn get(opts: Option<(char, usize)>) -> String {
-        if let Some((c, size)) = opts {
-            [c].repeat(size).into_iter().collect()
-        } else {
-            "".into()
+    #[inline]
+    fn push_repeat(buf: &mut String, c: char, count: usize) {
+        buf.extend(iter::repeat_n(c, count));
+    }
+
+    #[inline]
+    fn write_spec(buf: &mut String, spec: Option<(char, usize)>) {
+        if let Some((c, size)) = spec {
+            Self::push_repeat(buf, c, size);
         }
     }
 
-    pub fn get_key_val_delimiter(&self) -> String {
-        Self::get(self.key_val_delimiter)
+    pub fn write_key_val_delimiter(&self, buf: &mut String) {
+        Self::write_spec(buf, self.key_val_delimiter);
     }
 
-    pub fn get_array_value_delimiter(&self) -> String {
-        Self::get(self.array_value_delimiter)
+    pub fn write_array_value_delimiter(&self, buf: &mut String) {
+        Self::write_spec(buf, self.array_value_delimiter);
     }
 
-    pub fn get_eol(&self) -> String {
-        Self::get(self.eol)
+    pub fn write_eol(&self, buf: &mut String) {
+        Self::write_spec(buf, self.eol);
     }
 
-    pub fn get_indent(&self, level: usize) -> String {
-        Self::get(self.indent.map(|(c, size)| (c, size * level)))
+    pub fn write_indent(&self, buf: &mut String, level: usize) {
+        Self::write_spec(buf, self.indent.map(|(c, size)| (c, size * level)));
     }
 }
 
@@ -117,35 +123,29 @@ pub fn format_value_into(buf: &mut String, val: &Value, options: &FormatOptions,
         Value::String(s) => push_quoted(buf, s),
         Value::Number(s) => buf.push_str(s.as_ref()),
         Value::Object(entries) => {
-            let kv_delim = options.get_key_val_delimiter();
-            let key_indent = options.get_indent(depth + 1);
-            let eol = options.get_eol();
-            let closing_indent = options.get_indent(depth);
-
             buf.push('{');
-            buf.push_str(&eol);
+            options.write_eol(buf);
             join_into(
                 buf,
                 entries.0.iter(),
                 |buf, (key, val)| {
-                    buf.push_str(&key_indent);
+                    options.write_indent(buf, depth + 1);
                     push_quoted(buf, key);
                     buf.push(':');
-                    buf.push_str(&kv_delim);
+                    options.write_key_val_delimiter(buf);
                     format_value_into(buf, val, options, depth + 1);
                 },
                 |buf, _| {
                     buf.push(',');
-                    buf.push_str(&eol);
+                    options.write_eol(buf);
                 },
             );
-            buf.push_str(&eol);
-            buf.push_str(&closing_indent);
+            options.write_eol(buf);
+            options.write_indent(buf, depth);
             buf.push('}');
         }
         Value::Array(items) if items.is_empty() => buf.push_str("[]"),
         Value::Array(items) => {
-            let delimiter = options.get_array_value_delimiter();
             buf.push('[');
             join_into(
                 buf,
@@ -153,7 +153,7 @@ pub fn format_value_into(buf: &mut String, val: &Value, options: &FormatOptions,
                 |buf, val| format_value_into(buf, val, options, depth + 1),
                 |buf, _| {
                     buf.push(',');
-                    buf.push_str(&delimiter);
+                    options.write_array_value_delimiter(buf);
                 },
             );
             buf.push(']');
