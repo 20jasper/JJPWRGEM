@@ -116,22 +116,36 @@ impl<'a> Iterator for TokenStreamInner<'a> {
 
 #[derive(Debug, Clone)]
 pub struct TokenStream<'a> {
-    inner: Peekable<TokenStreamInner<'a>>,
+    inner: TokenStreamInner<'a>,
+    cached: Option<TokenWithContext<'a>>,
 }
 
 impl<'a> TokenStream<'a> {
     pub fn new(s: &'a str) -> Self {
         Self {
-            inner: TokenStreamInner::new(s).peekable(),
+            inner: TokenStreamInner::new(s),
+            cached: None,
         }
     }
 
-    pub fn peek_token(&mut self) -> Result<'a, Option<TokenWithContext<'a>>> {
-        self.inner.peek().cloned().transpose()
+    pub fn peek_token(&mut self) -> Result<'a, Option<&TokenWithContext<'a>>> {
+        if self.cached.is_none() {
+            match self.inner.next() {
+                Some(Ok(token)) => self.cached = Some(token),
+                Some(Err(err)) => return Err(err),
+                None => return Ok(None),
+            }
+        }
+
+        Ok(self.cached.as_ref())
     }
 
     pub fn next_token(&mut self) -> Result<'a, Option<TokenWithContext<'a>>> {
-        self.inner.next().transpose()
+        if let Some(token) = self.cached.take() {
+            Ok(Some(token))
+        } else {
+            self.next().transpose()
+        }
     }
 }
 

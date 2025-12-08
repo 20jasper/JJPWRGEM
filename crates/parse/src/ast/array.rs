@@ -51,7 +51,7 @@ impl<'a> ArrayState<'a> {
                 }
             },
 
-            ArrayState::ValueOrEnd { items, open_ctx } => match tokens.peek_token()? {
+            ArrayState::ValueOrEnd { items, open_ctx } => match tokens.peek_token()?.cloned() {
                 Some(TokenWithContext {
                     token: Token::ClosedSquareBracket,
                     range: closed_range,
@@ -95,7 +95,7 @@ impl<'a> ArrayState<'a> {
                 open_ctx,
                 expect_ctx,
             } => {
-                validate_start_of_value(text, expect_ctx, tokens.peek_token()?.clone())?;
+                validate_start_of_value(text, expect_ctx, tokens.peek_token()?.cloned())?;
 
                 let ValueWithContext { value, range } = parse_tokens(tokens, text, false)?;
                 items.push(value);
@@ -108,7 +108,7 @@ impl<'a> ArrayState<'a> {
 
             ArrayState::CommaOrEnd {
                 items, open_ctx, ..
-            } => match tokens.peek_token()? {
+            } => match tokens.peek_token()?.cloned() {
                 Some(TokenWithContext {
                     token: Token::ClosedSquareBracket,
                     range: closed_range,

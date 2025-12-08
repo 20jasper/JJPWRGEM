@@ -174,7 +174,7 @@ impl<'a> ObjectState<'a> {
                 colon_ctx,
                 open_ctx,
             } => {
-                validate_start_of_value(text, colon_ctx.clone(), tokens.peek_token()?)?;
+                validate_start_of_value(text, colon_ctx.clone(), tokens.peek_token()?.cloned())?;
 
                 let Token::String(key) = key_ctx.token else {
                     unreachable!("key context should always be a string");
