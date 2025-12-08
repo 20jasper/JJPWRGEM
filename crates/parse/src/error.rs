@@ -124,7 +124,7 @@ fn closing_delimiter_for_open(token: &Token) -> Option<JsonChar> {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, Display, Error)]
+#[derive(Debug, PartialEq, Eq, Display, Error, Clone)]
 // box inner error for performance--a Rust enum is as large as the largest
 // variant so happy path case becomes 100s of bytes otherwise
 pub struct Error<'a>(pub Box<ErrorInner<'a>>);
@@ -135,7 +135,7 @@ impl<'a> Display for Error<'a> {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, Display, Error)]
+#[derive(Debug, PartialEq, Eq, Display, Error, Clone)]
 /// {kind} at line {line} column {column}
 pub struct ErrorInner<'a> {
     kind: ErrorKind<'a>,
