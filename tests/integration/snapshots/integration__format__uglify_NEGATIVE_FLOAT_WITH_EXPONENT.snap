@@ -1,5 +1,0 @@
----
-source: tests/integration/format.rs
-expression: uglify_str(input).unwrap()
----
--98.25e12
