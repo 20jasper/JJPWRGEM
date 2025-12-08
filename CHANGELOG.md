@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0](https://github.com/20jasper/JJPWRGEM/releases/tag/jjpwrgem-v0.3.0) - 2025-12-08
+
+### Added
+
+- axolotl logo in version screen
+- consistent key ordering
+
+### Deprecated
+
+- removed help subcommand
+
+### Documentation
+
+- autogenerate examples and add examples to subcommands
+- update readme with correct command
+- add xtask to generate readmes
+
+### Performance
+
+- TokenStream iterator instead of collecting into intermediary Vec
+
+
 ## [0.2.2](https://github.com/20jasper/JJPWRGEM/releases/tag/jjpwrgem-v0.2.2) - 2025-12-07
 
 ### Documentation
