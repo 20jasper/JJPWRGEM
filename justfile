@@ -29,6 +29,11 @@ test-cov:
 test-cov-open:
     cargo llvm-cov --workspace --open
 
+# deletes snapshots locally and rejects in CI
+test-snapshot:
+    cargo insta test --unreferenced auto 
+    cargo insta review
+
 # generate README files from templates
 generate-readmes:
     cargo run -p xtask -q -- generate-readmes
