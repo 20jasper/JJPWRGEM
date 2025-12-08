@@ -1,5 +1,22 @@
 ---
 source: tests/integration/commands/format.rs
-expression: output.stdout
+expression: output.snapshot_display()
 ---
+args: ["format", "--uglify"]
+status: 0
+success: true
+stdin ---
+
+            {"rust": 
+            {"rust": 
+            {"rust": 
+            {"rust": null
+            }
+            }
+            }
+            }   
+        
+stdout ---
 {"rust":{"rust":{"rust":{"rust":null}}}}
+
+stderr ---

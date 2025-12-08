@@ -92,7 +92,7 @@ fn feature() {
     for case in cases {
         let output = exec_cmd(cli().arg("format"), case.text);
 
-        assert_snapshot!(case.file_name.clone(), output);
+        assert_snapshot!(case.file_name.clone(), output.snapshot_display());
 
         assert!(
             case.expected != JsonResult::Fail || !output.status.success(),

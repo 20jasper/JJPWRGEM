@@ -1,5 +1,13 @@
 ---
 source: tests/integration/commands/format.rs
-expression: output.stdout
+expression: output.snapshot_display()
 ---
+args: ["format", "--uglify"]
+status: 0
+success: true
+stdin ---
 98.8
+stdout ---
+98.8
+
+stderr ---

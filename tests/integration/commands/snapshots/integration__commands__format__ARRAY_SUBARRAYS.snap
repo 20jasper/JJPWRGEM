@@ -1,5 +1,13 @@
 ---
 source: tests/integration/commands/format.rs
-expression: output.stdout
+expression: output.snapshot_display()
 ---
+args: ["format"]
+status: 0
+success: true
+stdin ---
 [["a"], [true, false]]
+stdout ---
+[["a"], [true, false]]
+
+stderr ---
