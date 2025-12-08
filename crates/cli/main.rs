@@ -73,8 +73,32 @@ fn print_output(output: &Output) {
 mod commands {
     use clap::{Parser, Subcommand};
 
+    fn strip_front_matter(raw: &str) -> &str {
+        const FRONT_MATTER_SEP: &str = "\n---\n";
+        raw.split_once(FRONT_MATTER_SEP)
+            .expect("snapshots should always have a separator")
+            .1
+    }
+    fn indent(s: &str) -> String {
+        s.lines()
+            .map(|x| format!("\t{x}"))
+            .collect::<Vec<_>>()
+            .join("\n")
+    }
+    macro_rules! get_docs_snapshot {
+        ($name:literal) => {
+            include_str!(concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/tests/integration/commands/docs/snapshots/",
+                $name,
+                ".snap"
+            ))
+        };
+    }
+
+    use get_docs_snapshot;
+
     #[derive(Parser)]
-    #[command()]
     #[command(
         version = concat!(
             env!("CARGO_PKG_VERSION"), "\n", 
@@ -82,26 +106,12 @@ mod commands {
             "an axolotl riding a skateboard"
         ),
         about,
-        after_help = r#"Examples:
-    $ echo -en '{ "rust":"is a must"   } ' | jjp format
-    {
-        "rust": "is a must"
-    }
-
-    $ echo -en '{"coolKey"}' | jjp check
-    error: expected colon after key, found `}`
-    --> stdin:1:11
-    |
-    1 | {"coolKey"}
-    |  ---------^
-    |  |
-    |  expected due to `"coolKey"`
-    |
-    help: insert colon and placeholder value
-    |
-    1 | {"coolKey": "🐟🛹"}
-    |           ++++++++
-        "#
+        help_expected = true,
+        after_help = format!(
+            "jjpwrgem is a tool for formatting and validating json inputs\n\nExamples:\n{}\n\n{}\n\nRun jjp <COMMAND> --help for information about specific commands",
+            indent(strip_front_matter(get_docs_snapshot!("format_pretty"))),
+            indent(strip_front_matter(get_docs_snapshot!("check_failure"))), 
+        )
     )]
     pub struct Cli {
         #[command(subcommand)]
@@ -111,11 +121,21 @@ mod commands {
     #[derive(Subcommand)]
     pub enum Commands {
         /// Make your json look really good
+        #[command(after_help = format!(
+            "Examples:\n{}\n\n{}",
+            indent(strip_front_matter(get_docs_snapshot!("format_pretty"))),
+            indent(strip_front_matter(get_docs_snapshot!("format_uglify"))),
+        ))]
         Format {
             /// Removes all insignificant whitespace instead of pretty printing, also known as minifying
             #[arg(short, long)]
             uglify: bool,
         },
+        #[command(after_help = format!(
+            "Examples:\n{}\n\n{}",
+            indent(strip_front_matter(get_docs_snapshot!("check_success"))),
+            indent(strip_front_matter(get_docs_snapshot!("check_failure"))),
+        ))]
         /// Validates json syntax
         Check,
     }

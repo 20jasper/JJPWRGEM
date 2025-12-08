@@ -1,7 +1,13 @@
 ---
 source: tests/integration/commands/format.rs
-expression: output.stdout
+expression: output.snapshot_display()
 ---
+args: ["format", "--help"]
+status: 0
+success: true
+stdin ---
+
+stdout ---
 Make your json look really good
 
 Usage: jjp format [OPTIONS]
@@ -9,3 +15,14 @@ Usage: jjp format [OPTIONS]
 Options:
   -u, --uglify  Removes all insignificant whitespace instead of pretty printing, also known as minifying
   -h, --help    Print help
+
+Examples:
+	$ echo -en "{ \"rust\":\"is a must\"   } " | jjp format
+	{
+	    "rust": "is a must"
+	}
+
+	$ echo -en "{ \"shoppingList\": [\"cheese\", \"slushy machine\"]   } " | jjp format --uglify
+	{"shoppingList":["cheese","slushy machine"]}
+
+stderr ---

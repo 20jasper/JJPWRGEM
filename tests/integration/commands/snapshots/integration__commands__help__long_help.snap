@@ -2,14 +2,12 @@
 source: tests/integration/commands/help.rs
 expression: output.snapshot_display()
 ---
-args: []
-status: 2
-success: false
+args: ["--help"]
+status: 0
+success: true
 stdin ---
 
 stdout ---
-
-stderr ---
 jjpwrgem json parser with really good error messages
 
 Usage: jjp <COMMAND>
@@ -46,3 +44,5 @@ Examples:
 	  |           ++++++++
 
 Run jjp <COMMAND> --help for information about specific commands
+
+stderr ---

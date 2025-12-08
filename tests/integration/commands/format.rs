@@ -71,5 +71,22 @@ fn help_subcommand_again() {
     let output = exec_cmd(&mut cmd, vec![]);
     assert!(output.status.success(), "{}", output.snapshot_display());
 
-    assert_snapshot!("format_help", output.stdout);
+    assert_snapshot!("format_help", output.snapshot_display());
+}
+
+#[rstest::rstest]
+#[case(&[], r#"{ "rust":"is a must"   } "#, "pretty")]
+#[case(&["--uglify"], r#"{ "shoppingList": ["cheese", "slushy machine"]   } "#, "uglify")]
+fn docs(#[case] args: &[&str], #[case] input: &str, #[case] postfix: &str) {
+    insta::with_settings!({
+        snapshot_path => "docs/snapshots",
+        prepend_module_to_snapshot => false,
+    }, {
+        let mut cmd = cli();
+        cmd.args(std::iter::once("format").chain(args.iter().copied()));
+
+        let output = exec_cmd(&mut cmd, input.as_bytes().to_vec());
+
+        assert_snapshot!(format!("format_{postfix}"), output.docs_display_stdin());
+    });
 }
