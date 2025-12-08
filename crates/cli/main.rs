@@ -106,6 +106,7 @@ mod commands {
             "an axolotl riding a skateboard"
         ),
         about,
+        disable_help_subcommand = true,
         help_expected = true,
         after_help = format!(
             "jjpwrgem is a tool for formatting and validating json inputs\n\nExamples:\n{}\n\n{}\n\nRun jjp <COMMAND> --help for information about specific commands",
