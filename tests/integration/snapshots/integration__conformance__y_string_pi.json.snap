@@ -9,7 +9,7 @@ stdin ---
 ["π"]
 stdout ---
 [
-    "π"
+  "π"
 ]
 
 stderr ---

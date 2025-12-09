@@ -9,7 +9,7 @@ stdin ---
 ["\"\\\/\b\f\n\r\t"]
 stdout ---
 [
-    "\"\\\/\b\f\n\r\t"
+  "\"\\\/\b\f\n\r\t"
 ]
 
 stderr ---

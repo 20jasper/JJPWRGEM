@@ -19,7 +19,7 @@ Options:
 Examples:
 	$ echo -en "{ \"rust\":\"is a must\"   } " | jjp format
 	{
-	    "rust": "is a must"
+	  "rust": "is a must"
 	}
 
 	$ echo -en "{ \"shoppingList\": [\"cheese\", \"slushy machine\"]   } " | jjp format --uglify

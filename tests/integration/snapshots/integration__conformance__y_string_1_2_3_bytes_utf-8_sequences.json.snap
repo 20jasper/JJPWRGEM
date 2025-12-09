@@ -9,7 +9,7 @@ stdin ---
 ["\u0060\u012a\u12AB"]
 stdout ---
 [
-    "\u0060\u012a\u12AB"
+  "\u0060\u012a\u12AB"
 ]
 
 stderr ---

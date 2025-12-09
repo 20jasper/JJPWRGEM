@@ -27,7 +27,7 @@ jjpwrgem is a tool for formatting and validating json inputs
 Examples:
 	$ echo -en "{ \"rust\":\"is a must\"   } " | jjp format
 	{
-	    "rust": "is a must"
+	  "rust": "is a must"
 	}
 
 	$ echo -en "{\"coolKey\"}" | jjp check

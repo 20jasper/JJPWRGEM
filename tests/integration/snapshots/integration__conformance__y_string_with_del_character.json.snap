@@ -9,7 +9,7 @@ stdin ---
 ["aa"]
 stdout ---
 [
-    "aa"
+  "aa"
 ]
 
 stderr ---

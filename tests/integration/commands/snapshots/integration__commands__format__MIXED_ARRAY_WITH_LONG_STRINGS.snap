@@ -23,29 +23,29 @@ stdin ---
 ]
 stdout ---
 [
-    "a long string value that includes\nline breaks\nand\ttabs",
-    {
-        "outer": {
-            "inner": [
-                1,
-                2,
-                {
-                    "deep": "value"
-                }
-            ]
-        }
-    },
-    [
+  "a long string value that includes\nline breaks\nand\ttabs",
+  {
+    "outer": {
+      "inner": [
+        1,
+        2,
         {
-            "arrayKey": {
-                "nestedArray": [
-                    true,
-                    false,
-                    null
-                ]
-            }
+          "deep": "value"
         }
-    ]
+      ]
+    }
+  },
+  [
+    {
+      "arrayKey": {
+        "nestedArray": [
+          true,
+          false,
+          null
+        ]
+      }
+    }
+  ]
 ]
 
 stderr ---

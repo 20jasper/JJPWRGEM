@@ -9,13 +9,13 @@ stdin ---
 [["a"], [true, false]]
 stdout ---
 [
-    [
-        "a"
-    ],
-    [
-        true,
-        false
-    ]
+  [
+    "a"
+  ],
+  [
+    true,
+    false
+  ]
 ]
 
 stderr ---

@@ -15,25 +15,25 @@ stdin ---
 ]
 stdout ---
 [
-    {
-        "alpha": 1
-    },
-    {
-        "beta": true
-    },
-    {
-        "gamma": null
-    },
-    {
-        "delta": "value"
-    },
-    {
-        "epsilon": [
-            1,
-            2,
-            3
-        ]
-    }
+  {
+    "alpha": 1
+  },
+  {
+    "beta": true
+  },
+  {
+    "gamma": null
+  },
+  {
+    "delta": "value"
+  },
+  {
+    "epsilon": [
+      1,
+      2,
+      3
+    ]
+  }
 ]
 
 stderr ---

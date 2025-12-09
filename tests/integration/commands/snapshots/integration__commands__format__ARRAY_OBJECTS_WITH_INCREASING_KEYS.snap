@@ -20,30 +20,30 @@ stdin ---
 ]
 stdout ---
 [
-    {},
-    {
-        "alpha": 1
-    },
-    {
-        "alpha": 1,
-        "beta": true
-    },
-    {
-        "first": null,
-        "second": "two",
-        "third": 3
-    },
-    {
-        "id": 42,
-        "name": "nested",
-        "flags": [
-            true,
-            false
-        ],
-        "meta": {
-            "note": "varied keys"
-        }
+  {},
+  {
+    "alpha": 1
+  },
+  {
+    "alpha": 1,
+    "beta": true
+  },
+  {
+    "first": null,
+    "second": "two",
+    "third": 3
+  },
+  {
+    "id": 42,
+    "name": "nested",
+    "flags": [
+      true,
+      false
+    ],
+    "meta": {
+      "note": "varied keys"
     }
+  }
 ]
 
 stderr ---
