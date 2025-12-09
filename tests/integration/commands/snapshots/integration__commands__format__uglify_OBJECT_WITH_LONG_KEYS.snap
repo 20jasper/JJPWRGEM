@@ -1,0 +1,18 @@
+---
+source: tests/integration/commands/format.rs
+expression: output.snapshot_display()
+---
+args: ["format", "--uglify"]
+status: 0
+success: true
+stdin ---
+{
+    "this is a very very very long key name with spaces and punctuation like --- ???": "value",
+    "another extremely verbose key used for stress testing": {
+        "inner object key with numbers 12345": "data"
+    }
+}
+stdout ---
+{"this is a very very very long key name with spaces and punctuation like --- ???":"value","another extremely verbose key used for stress testing":{"inner object key with numbers 12345":"data"}}
+
+stderr ---

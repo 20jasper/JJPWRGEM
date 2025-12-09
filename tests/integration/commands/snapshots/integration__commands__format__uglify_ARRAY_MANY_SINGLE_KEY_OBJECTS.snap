@@ -1,0 +1,19 @@
+---
+source: tests/integration/commands/format.rs
+expression: output.snapshot_display()
+---
+args: ["format", "--uglify"]
+status: 0
+success: true
+stdin ---
+[
+    {"alpha": 1},
+    {"beta": true},
+    {"gamma": null},
+    {"delta": "value"},
+    {"epsilon": [1, 2, 3]}
+]
+stdout ---
+[{"alpha":1},{"beta":true},{"gamma":null},{"delta":"value"},{"epsilon":[1,2,3]}]
+
+stderr ---

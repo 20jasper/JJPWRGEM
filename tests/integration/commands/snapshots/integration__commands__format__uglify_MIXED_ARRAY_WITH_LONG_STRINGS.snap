@@ -1,0 +1,27 @@
+---
+source: tests/integration/commands/format.rs
+expression: output.snapshot_display()
+---
+args: ["format", "--uglify"]
+status: 0
+success: true
+stdin ---
+[
+    "a long string value that includes\nline breaks\nand\ttabs",
+    {
+        "outer": {
+            "inner": [1, 2, {"deep": "value"}]
+        }
+    },
+    [
+        {
+            "arrayKey": {
+                "nestedArray": [true, false, null]
+            }
+        }
+    ]
+]
+stdout ---
+["a long string value that includes\nline breaks\nand\ttabs",{"outer":{"inner":[1,2,{"deep":"value"}]}},[{"arrayKey":{"nestedArray":[true,false,null]}}]]
+
+stderr ---

@@ -1,0 +1,42 @@
+---
+source: tests/integration/commands/format.rs
+expression: output.snapshot_display()
+---
+args: ["format"]
+status: 0
+success: true
+stdin ---
+[
+    {},
+    {"alpha": 1},
+    {"alpha": 1, "beta": true},
+    {"first": null, "second": "two", "third": 3},
+    {
+        "id": 42,
+        "name": "nested",
+        "flags": [true, false],
+        "meta": {"note": "varied keys"}
+    }
+]
+stdout ---
+[{
+
+    }, {
+        "alpha": 1
+    }, {
+        "alpha": 1,
+        "beta": true
+    }, {
+        "first": null,
+        "second": "two",
+        "third": 3
+    }, {
+        "id": 42,
+        "name": "nested",
+        "flags": [true, false],
+        "meta": {
+            "note": "varied keys"
+        }
+    }]
+
+stderr ---
