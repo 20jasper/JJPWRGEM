@@ -149,15 +149,21 @@ pub fn format_value_into(buf: &mut String, val: &Value, options: &FormatOptions,
         Value::Array(items) if items.is_empty() => buf.push_str("[]"),
         Value::Array(items) => {
             buf.push('[');
+            options.write_eol(buf);
             join_into(
                 buf,
                 items,
-                |buf, val| format_value_into(buf, val, options, depth + 1),
+                |buf, val| {
+                    options.write_indent(buf, depth + 1);
+                    format_value_into(buf, val, options, depth + 1)
+                },
                 |buf, _| {
                     buf.push(',');
-                    options.write_array_value_delimiter(buf);
+                    options.write_eol(buf);
                 },
             );
+            options.write_eol(buf);
+            options.write_indent(buf, depth);
             buf.push(']');
         }
         Value::Boolean(b) => buf.push_str(if *b { TRUE } else { FALSE }),

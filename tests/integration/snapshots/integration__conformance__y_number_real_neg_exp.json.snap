@@ -1,6 +1,6 @@
 ---
 source: tests/integration/conformance.rs
-expression: output
+expression: output.snapshot_display()
 ---
 args: ["format"]
 status: 0
@@ -8,6 +8,8 @@ success: true
 stdin ---
 [1e-2]
 stdout ---
-[1e-2]
+[
+    1e-2
+]
 
 stderr ---
