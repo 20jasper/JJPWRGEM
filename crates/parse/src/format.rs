@@ -123,6 +123,7 @@ pub fn format_value_into(buf: &mut String, val: &Value, options: &FormatOptions,
         Value::Null => buf.push_str(NULL),
         Value::String(s) => push_quoted(buf, s),
         Value::Number(s) => buf.push_str(s.as_ref()),
+        Value::Object(entries) if entries.0.is_empty() => buf.push_str("{}"),
         Value::Object(entries) => {
             buf.push('{');
             options.write_eol(buf);
