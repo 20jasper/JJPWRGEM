@@ -32,6 +32,7 @@ use insta::assert_snapshot;
 #[case(crate::fixture_tuple!(ARRAY_WITH_NESTED_OBJECTS))]
 #[case(crate::fixture_tuple!(MIXED_ARRAY_WITH_LONG_STRINGS))]
 #[case(crate::fixture_tuple!(STANDALONE_STRING_WS))]
+#[case(crate::fixture_tuple!(DEEPLY_NESTED))]
 fn format_template(#[case] (name, input): (&str, &str)) {}
 
 #[rstest_reuse::apply(format_template)]
