@@ -62,7 +62,7 @@ stderr ---
     }
 }
 
-pub fn exec_cmd(cmd: &mut Command, stdin: Vec<u8>) -> Output {
+pub fn exec_cmd(cmd: &mut Command, stdin: Option<Vec<u8>>) -> Output {
     let mut child = cmd
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
@@ -70,17 +70,23 @@ pub fn exec_cmd(cmd: &mut Command, stdin: Vec<u8>) -> Output {
         .spawn()
         .expect("test command failed");
 
-    child
-        .stdin
-        .take()
-        .expect("should have stdin")
-        .write_all(&stdin)
-        .expect("failed to write to stdin");
+    if let Some(stdin) = &stdin {
+        child
+            .stdin
+            .take()
+            .expect("should have stdin")
+            .write_all(stdin)
+            .expect("failed to write to stdin");
+    }
 
     let output = child.wait_with_output().expect("failed to wait on child");
 
-    let fmt_bytes = |xs: Vec<u8>| {
-        String::from_utf8(xs.clone()).unwrap_or_else(|_| format!("raw bytes: {xs:?}"))
+    let fmt_bytes = |xs: Option<Vec<u8>>| {
+        if let Some(xs) = xs {
+            String::from_utf8(xs.clone()).unwrap_or_else(|_| format!("raw bytes: {xs:?}"))
+        } else {
+            "<no stdin passed>".into()
+        }
     };
 
     Output {
@@ -89,8 +95,8 @@ pub fn exec_cmd(cmd: &mut Command, stdin: Vec<u8>) -> Output {
             .map(|x| x.to_str().unwrap().to_string())
             .collect::<Vec<_>>(),
         stdin: fmt_bytes(stdin),
-        stdout: fmt_bytes(output.stdout),
-        stderr: fmt_bytes(output.stderr),
+        stdout: fmt_bytes(output.stdout.into()),
+        stderr: fmt_bytes(output.stderr.into()),
         status: output.status,
     }
 }

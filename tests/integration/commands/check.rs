@@ -44,7 +44,7 @@ use rstest::rstest;
 fn annotate_test_json_failure_snapshots(#[case] (name, json): (&str, &str)) {
     let json_bytes = json.as_bytes().to_vec();
 
-    let output = exec_cmd(cli().arg("check"), json_bytes);
+    let output = exec_cmd(cli().arg("check"), Some(json_bytes));
 
     assert_snapshot!(name.to_ascii_lowercase(), output.snapshot_display());
 }
@@ -54,10 +54,19 @@ fn check_help_snapshot() {
     let mut cmd = cli();
     cmd.args(["check", "--help"]);
 
-    let output = exec_cmd(&mut cmd, vec![]);
-    assert!(output.status.success(), "{}", output.snapshot_display());
+    let output = exec_cmd(&mut cmd, None);
+    assert_snapshot!("check_help", output.snapshot_display());
+}
 
-    assert_snapshot!("check_help", output.stdout);
+#[test]
+fn no_stdin() {
+    let mut cmd = cli();
+    cmd.args(["check"]);
+
+    let output = exec_cmd(&mut cmd, None);
+    assert!(!output.status.success(), "{}", output.snapshot_display());
+
+    assert_snapshot!(output.snapshot_display());
 }
 
 #[rstest::rstest]
@@ -71,7 +80,7 @@ fn docs(#[case] input: &str, #[case] postfix: &str) {
         let mut cmd = cli();
         cmd.args(["check"]);
 
-        let output = exec_cmd(&mut cmd, input.as_bytes().to_vec());
+        let output = exec_cmd(&mut cmd, Some(input.as_bytes().to_vec()));
 
         assert_snapshot!(format!("check_{postfix}"), output.docs_display_stdin());
     });
