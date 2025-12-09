@@ -6,7 +6,7 @@ args: ["format", "--help"]
 status: 0
 success: true
 stdin ---
-
+<no stdin passed>
 stdout ---
 Make your json look really good
 

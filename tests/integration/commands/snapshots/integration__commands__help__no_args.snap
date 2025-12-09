@@ -6,7 +6,7 @@ args: []
 status: 2
 success: false
 stdin ---
-
+<no stdin passed>
 stdout ---
 
 stderr ---

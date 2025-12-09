@@ -6,7 +6,7 @@ args: ["-h"]
 status: 0
 success: true
 stdin ---
-
+<no stdin passed>
 stdout ---
 jjpwrgem json parser with really good error messages
 

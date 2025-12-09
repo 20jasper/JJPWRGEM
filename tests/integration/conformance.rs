@@ -90,7 +90,7 @@ fn feature() {
     cases.sort_by(|a, b| a.file_name.cmp(&b.file_name));
 
     for case in cases {
-        let output = exec_cmd(cli().arg("format"), case.text);
+        let output = exec_cmd(cli().arg("format"), Some(case.text));
 
         assert_snapshot!(case.file_name.clone(), output.snapshot_display());
 

@@ -30,7 +30,7 @@ fn prettify(#[case] (name, input): (&str, &str)) {
     let mut cmd = cli();
     cmd.args(["format"]);
 
-    let output = exec_cmd(&mut cmd, input.as_bytes().to_vec());
+    let output = exec_cmd(&mut cmd, Some(input.as_bytes().to_vec()));
     assert!(output.status.success());
 
     assert_snapshot!(name.to_string(), output.snapshot_display());
@@ -41,7 +41,7 @@ fn uglify(#[case] (name, input): (&str, &str)) {
     let mut cmd = cli();
     cmd.args(["format", "--uglify"]);
 
-    let output = exec_cmd(&mut cmd, input.as_bytes().to_vec());
+    let output = exec_cmd(&mut cmd, Some(input.as_bytes().to_vec()));
     assert!(output.status.success());
 
     assert_snapshot!(format!("uglify_{name}"), output.snapshot_display());
@@ -51,7 +51,7 @@ fn uglify(#[case] (name, input): (&str, &str)) {
 fn uglify_removes_whitespace_object() {
     let output = exec_cmd(
         cli().args(["format", "--uglify"]),
-        MULTIKEY_OBJECT_WITH_LOTS_OF_WHITESPACE.as_bytes().to_vec(),
+        Some(MULTIKEY_OBJECT_WITH_LOTS_OF_WHITESPACE.as_bytes().to_vec()),
     );
     assert!(output.status.success());
 
@@ -64,14 +64,25 @@ fn uglify_removes_whitespace_object() {
 }
 
 #[test]
-fn help_subcommand_again() {
+fn help_subcommand() {
     let mut cmd = cli();
     cmd.args(["format", "--help"]);
 
-    let output = exec_cmd(&mut cmd, vec![]);
+    let output = exec_cmd(&mut cmd, None);
     assert!(output.status.success(), "{}", output.snapshot_display());
 
     assert_snapshot!("format_help", output.snapshot_display());
+}
+
+#[test]
+fn no_stdin() {
+    let mut cmd = cli();
+    cmd.args(["check"]);
+
+    let output = exec_cmd(&mut cmd, None);
+    assert!(!output.status.success(), "{}", output.snapshot_display());
+
+    assert_snapshot!(output.snapshot_display());
 }
 
 #[rstest::rstest]
@@ -85,7 +96,7 @@ fn docs(#[case] args: &[&str], #[case] input: &str, #[case] postfix: &str) {
         let mut cmd = cli();
         cmd.args(std::iter::once("format").chain(args.iter().copied()));
 
-        let output = exec_cmd(&mut cmd, input.as_bytes().to_vec());
+        let output = exec_cmd(&mut cmd, Some(input.as_bytes().to_vec()));
 
         assert_snapshot!(format!("format_{postfix}"), output.docs_display_stdin());
     });

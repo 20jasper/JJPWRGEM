@@ -11,7 +11,7 @@ fn check_help_snapshot(#[case] args: Vec<&str>, #[case] name: &str) {
     let mut cmd = cli();
     cmd.args(&args);
 
-    let output = exec_cmd(&mut cmd, vec![]);
+    let output = exec_cmd(&mut cmd, None);
 
     assert_snapshot!(name, output.snapshot_display());
 }

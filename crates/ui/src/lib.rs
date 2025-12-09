@@ -1,23 +1,55 @@
+use crate::message::BasicErrorMessage;
 use annotate_snippets::{Renderer, renderer::DecorStyle};
-use jjpwrgem_parse::error::diagnostics::Diagnostic;
 
-pub mod pretty;
+pub use jjpwrgem_parse::error::diagnostics::Diagnostic;
 
-pub fn render(diag: Diagnostic<'_>, opts: Style) -> String {
-    let Style::Pretty(color) = opts;
+mod pretty;
 
-    match color {
-        Color::Ansi => Renderer::styled(),
-        Color::Plain => Renderer::plain(),
-    }
-    .decor_style(DecorStyle::Ascii)
-    .render(&pretty::report(diag))
-}
-
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Color {
     Ansi,
     Plain,
 }
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Style {
     Pretty(Color),
+}
+
+impl Style {
+    fn get_renderer(self: Style) -> Renderer {
+        let Style::Pretty(color) = self;
+
+        match color {
+            Color::Ansi => Renderer::styled(),
+            Color::Plain => Renderer::plain(),
+        }
+        .decor_style(DecorStyle::Ascii)
+    }
+
+    pub fn render_diagnostic(self, diag: Diagnostic<'_>) -> String {
+        self.get_renderer().render(&pretty::report_diagnostic(diag))
+    }
+
+    pub fn render_message(self, m: BasicErrorMessage) -> String {
+        self.get_renderer().render(&pretty::report_message(m))
+    }
+}
+
+pub mod message {
+
+    #[derive(Debug, PartialEq, Eq, Clone)]
+    pub struct BasicErrorMessage {
+        pub error: String,
+        pub help: Option<String>,
+    }
+
+    impl BasicErrorMessage {
+        pub fn new(error: impl Into<String>, help: Option<String>) -> Self {
+            Self {
+                error: error.into(),
+                help,
+            }
+        }
+    }
 }

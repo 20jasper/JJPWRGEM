@@ -1,12 +1,12 @@
 ---
-source: tests/integration/conformance.rs
+source: tests/integration/commands/check.rs
 expression: output.snapshot_display()
 ---
-args: ["format"]
+args: ["check"]
 status: 1
 success: false
 stdin ---
-
+<no stdin passed>
 stdout ---
 
 stderr ---

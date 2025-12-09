@@ -1,7 +1,13 @@
 ---
 source: tests/integration/commands/check.rs
-expression: output.stdout
+expression: output.snapshot_display()
 ---
+args: ["check", "--help"]
+status: 0
+success: true
+stdin ---
+<no stdin passed>
+stdout ---
 Validates json syntax
 
 Usage: jjp check
@@ -25,3 +31,5 @@ Examples:
 	  |
 	1 | {"coolKey": "🐟🛹"}
 	  |           ++++++++
+
+stderr ---
