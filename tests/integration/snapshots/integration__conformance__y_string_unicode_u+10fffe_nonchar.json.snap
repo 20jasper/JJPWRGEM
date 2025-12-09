@@ -9,7 +9,7 @@ stdin ---
 ["\uDBFF\uDFFE"]
 stdout ---
 [
-    "\uDBFF\uDFFE"
+  "\uDBFF\uDFFE"
 ]
 
 stderr ---

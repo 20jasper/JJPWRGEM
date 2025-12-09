@@ -9,7 +9,7 @@ stdin ---
 ["new\u00A0line"]
 stdout ---
 [
-    "new\u00A0line"
+  "new\u00A0line"
 ]
 
 stderr ---

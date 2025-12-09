@@ -1,6 +1,6 @@
 ---
 source: tests/integration/conformance.rs
-expression: output
+expression: output.snapshot_display()
 ---
 args: ["format"]
 status: 0
@@ -9,8 +9,8 @@ stdin ---
 {"asd":"sdf", "dfg":"fgh"}
 stdout ---
 {
-    "asd": "sdf",
-    "dfg": "fgh"
+  "asd": "sdf",
+  "dfg": "fgh"
 }
 
 stderr ---

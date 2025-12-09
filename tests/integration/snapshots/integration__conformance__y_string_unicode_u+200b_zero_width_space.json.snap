@@ -9,7 +9,7 @@ stdin ---
 ["\u200B"]
 stdout ---
 [
-    "\u200B"
+  "\u200B"
 ]
 
 stderr ---

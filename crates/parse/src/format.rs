@@ -41,7 +41,7 @@ impl FormatOptions {
         Self {
             key_val_delimiter: Some((' ', 1)),
             array_value_delimiter: Some((' ', 1)),
-            indent: Some((' ', 4)),
+            indent: Some((' ', 2)),
             eol: Some(('\n', 1)),
         }
     }

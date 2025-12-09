@@ -24,30 +24,30 @@ stdin ---
 ]
 stdout ---
 [
-    {
-        "id": 1,
-        "name": "alpha",
-        "flags": [
-            true,
-            false
-        ],
-        "meta": {
-            "info": "level1"
-        },
-        "count": 10
+  {
+    "id": 1,
+    "name": "alpha",
+    "flags": [
+      true,
+      false
+    ],
+    "meta": {
+      "info": "level1"
     },
-    {
-        "id": 2,
-        "name": "beta",
-        "flags": [
-            false,
-            true
-        ],
-        "meta": {
-            "info": "level2"
-        },
-        "count": 20
-    }
+    "count": 10
+  },
+  {
+    "id": 2,
+    "name": "beta",
+    "flags": [
+      false,
+      true
+    ],
+    "meta": {
+      "info": "level2"
+    },
+    "count": 20
+  }
 ]
 
 stderr ---

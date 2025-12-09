@@ -9,7 +9,7 @@ stdin ---
 ["\ud800abc"]
 stdout ---
 [
-    "\ud800abc"
+  "\ud800abc"
 ]
 
 stderr ---

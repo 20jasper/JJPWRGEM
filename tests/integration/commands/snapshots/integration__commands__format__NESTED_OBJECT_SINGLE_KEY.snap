@@ -18,13 +18,13 @@ stdin ---
         
 stdout ---
 {
+  "rust": {
     "rust": {
-        "rust": {
-            "rust": {
-                "rust": null
-            }
-        }
+      "rust": {
+        "rust": null
+      }
     }
+  }
 }
 
 stderr ---

@@ -1,6 +1,6 @@
 ---
 source: tests/integration/conformance.rs
-expression: output
+expression: output.snapshot_display()
 ---
 args: ["format"]
 status: 0
@@ -9,8 +9,8 @@ stdin ---
 { "min": -1.0e+28, "max": 1.0e+28 }
 stdout ---
 {
-    "min": -1.0e+28,
-    "max": 1.0e+28
+  "min": -1.0e+28,
+  "max": 1.0e+28
 }
 
 stderr ---

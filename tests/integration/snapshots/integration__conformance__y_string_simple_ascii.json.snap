@@ -9,7 +9,7 @@ stdin ---
 ["asd "]
 stdout ---
 [
-    "asd "
+  "asd "
 ]
 
 stderr ---

@@ -1,6 +1,6 @@
 ---
 source: tests/integration/conformance.rs
-expression: output
+expression: output.snapshot_display()
 ---
 args: ["format"]
 status: 0
@@ -9,8 +9,8 @@ stdin ---
 {"a":"b","a":"c"}
 stdout ---
 {
-    "a": "b",
-    "a": "c"
+  "a": "b",
+  "a": "c"
 }
 
 stderr ---
