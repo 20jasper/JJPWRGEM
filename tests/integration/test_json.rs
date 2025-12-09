@@ -46,6 +46,55 @@ pub const ARRAY_SUBARRAYS: &str = "[[\"a\"], [true, false]]";
 pub const ARRAY_OPEN: &str = "[";
 pub const ARRAY_OPEN_WITH_VALUE: &str = "[1, [";
 pub const ARRAY_MISSING_VALUE: &str = "[1, ]";
+pub const ARRAY_OBJECTS_WITH_INCREASING_KEYS: &str = r#"[
+    {},
+    {"alpha": 1},
+    {"alpha": 1, "beta": true},
+    {"first": null, "second": "two", "third": 3},
+    {
+        "id": 42,
+        "name": "nested",
+        "flags": [true, false],
+        "meta": {"note": "varied keys"}
+    }
+]"#;
+pub const ARRAY_MULTIPLE_EMPTY_OBJECTS: &str = r#"[{}, {}, {}, {}]"#;
+pub const ARRAY_MANY_SINGLE_KEY_OBJECTS: &str = r#"[
+    {"alpha": 1},
+    {"beta": true},
+    {"gamma": null},
+    {"delta": "value"},
+    {"epsilon": [1, 2, 3]}
+]"#;
+pub const ARRAY_MANY_TWO_KEY_OBJECTS: &str = r#"[
+    {"id": 1, "label": "one"},
+    {"id": 2, "label": "two"},
+    {"id": 3, "label": "three"},
+    {"id": 4, "label": "four"}
+]"#;
+pub const ARRAY_MANY_FIVE_KEY_OBJECTS: &str = r#"[
+    {
+        "id": 1,
+        "name": "alpha",
+        "flags": [true, false],
+        "meta": {"info": "level1"},
+        "count": 10
+    },
+    {
+        "id": 2,
+        "name": "beta",
+        "flags": [false, true],
+        "meta": {"info": "level2"},
+        "count": 20
+    }
+]"#;
+pub const ARRAYS_NESTED_FIVE_LEVELS_WITH_OBJECT: &str = r#"[[[[[
+    {
+        "depth": 5,
+        "payload": ["text", 42, {"inner": true}, [null, false]],
+        "meta": {"notes": "deep array"}
+    }
+]]]]]"#;
 pub const INVALID_HEX_DIGIT_IN_ESCAPE: &str = r#""\u1FZA""#;
 pub const INVALID_ESCAPED_CURLY: &str = r#""\{""#;
 pub const MULTIKEY_OBJECT_WITH_LOTS_OF_WHITESPACE: &str = r#"      {
@@ -69,6 +118,50 @@ pub const MULTIKEY_OBJECT_WITH_LOTS_OF_WHITESPACE: &str = r#"      {
     }    
         
         "#;
+pub const OBJECT_WITH_LONG_KEYS: &str = r#"{
+    "this is a very very very long key name with spaces and punctuation like --- ???": "value",
+    "another extremely verbose key used for stress testing": {
+        "inner object key with numbers 12345": "data"
+    }
+}"#;
+pub const ARRAY_WITH_NESTED_OBJECTS: &str = r#"[
+    {
+        "level1": {
+            "level2": {
+                "level3": "value"
+            }
+        }
+    },
+    {
+        "another": [
+            {
+                "deep": {
+                    "key": 1
+                }
+            },
+            {
+                "deep": {
+                    "key": 2
+                }
+            }
+        ]
+    }
+]"#;
+pub const MIXED_ARRAY_WITH_LONG_STRINGS: &str = r#"[
+    "a long string value that includes\nline breaks\nand\ttabs",
+    {
+        "outer": {
+            "inner": [1, 2, {"deep": "value"}]
+        }
+    },
+    [
+        {
+            "arrayKey": {
+                "nestedArray": [true, false, null]
+            }
+        }
+    ]
+]"#;
 pub const STANDALONE_NULL: &str = "null";
 pub const STANDALONE_FALSE: &str = "false";
 pub const STANDALONE_TRUE: &str = "true";

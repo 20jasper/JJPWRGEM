@@ -1,0 +1,18 @@
+---
+source: tests/integration/commands/format.rs
+expression: output.snapshot_display()
+---
+args: ["format", "--uglify"]
+status: 0
+success: true
+stdin ---
+[
+    {"id": 1, "label": "one"},
+    {"id": 2, "label": "two"},
+    {"id": 3, "label": "three"},
+    {"id": 4, "label": "four"}
+]
+stdout ---
+[{"id":1,"label":"one"},{"id":2,"label":"two"},{"id":3,"label":"three"},{"id":4,"label":"four"}]
+
+stderr ---

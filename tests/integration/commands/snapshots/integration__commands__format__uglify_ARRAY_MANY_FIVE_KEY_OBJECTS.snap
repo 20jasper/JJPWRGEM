@@ -1,0 +1,28 @@
+---
+source: tests/integration/commands/format.rs
+expression: output.snapshot_display()
+---
+args: ["format", "--uglify"]
+status: 0
+success: true
+stdin ---
+[
+    {
+        "id": 1,
+        "name": "alpha",
+        "flags": [true, false],
+        "meta": {"info": "level1"},
+        "count": 10
+    },
+    {
+        "id": 2,
+        "name": "beta",
+        "flags": [false, true],
+        "meta": {"info": "level2"},
+        "count": 20
+    }
+]
+stdout ---
+[{"id":1,"name":"alpha","flags":[true,false],"meta":{"info":"level1"},"count":10},{"id":2,"name":"beta","flags":[false,true],"meta":{"info":"level2"},"count":20}]
+
+stderr ---

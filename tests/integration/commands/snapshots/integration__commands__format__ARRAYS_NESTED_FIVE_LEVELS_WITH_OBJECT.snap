@@ -1,0 +1,27 @@
+---
+source: tests/integration/commands/format.rs
+expression: output.snapshot_display()
+---
+args: ["format"]
+status: 0
+success: true
+stdin ---
+[[[[[
+    {
+        "depth": 5,
+        "payload": ["text", 42, {"inner": true}, [null, false]],
+        "meta": {"notes": "deep array"}
+    }
+]]]]]
+stdout ---
+[[[[[{
+                        "depth": 5,
+                        "payload": ["text", 42, {
+                                "inner": true
+                            }, [null, false]],
+                        "meta": {
+                            "notes": "deep array"
+                        }
+                    }]]]]]
+
+stderr ---

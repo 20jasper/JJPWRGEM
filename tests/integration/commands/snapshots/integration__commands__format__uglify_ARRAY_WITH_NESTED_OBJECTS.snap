@@ -1,0 +1,35 @@
+---
+source: tests/integration/commands/format.rs
+expression: output.snapshot_display()
+---
+args: ["format", "--uglify"]
+status: 0
+success: true
+stdin ---
+[
+    {
+        "level1": {
+            "level2": {
+                "level3": "value"
+            }
+        }
+    },
+    {
+        "another": [
+            {
+                "deep": {
+                    "key": 1
+                }
+            },
+            {
+                "deep": {
+                    "key": 2
+                }
+            }
+        ]
+    }
+]
+stdout ---
+[{"level1":{"level2":{"level3":"value"}}},{"another":[{"deep":{"key":1}},{"deep":{"key":2}}]}]
+
+stderr ---
