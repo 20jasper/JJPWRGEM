@@ -8,7 +8,6 @@ use crate::{
 
 pub struct FormatOptions {
     key_val_delimiter: Option<(char, usize)>,
-    array_value_delimiter: Option<(char, usize)>,
     indent: Option<(char, usize)>,
     eol: Option<(char, usize)>,
 }
@@ -16,13 +15,11 @@ pub struct FormatOptions {
 impl FormatOptions {
     pub fn new(
         key_val_delimiter: Option<(char, usize)>,
-        array_value_delimiter: Option<(char, usize)>,
         indent: Option<(char, usize)>,
         eol: Option<(char, usize)>,
     ) -> Self {
         Self {
             key_val_delimiter,
-            array_value_delimiter,
             indent,
             eol,
         }
@@ -31,7 +28,6 @@ impl FormatOptions {
     pub fn uglify() -> Self {
         Self {
             key_val_delimiter: None,
-            array_value_delimiter: None,
             indent: None,
             eol: None,
         }
@@ -40,7 +36,6 @@ impl FormatOptions {
     pub fn prettify() -> Self {
         Self {
             key_val_delimiter: Some((' ', 1)),
-            array_value_delimiter: Some((' ', 1)),
             indent: Some((' ', 2)),
             eol: Some(('\n', 1)),
         }
@@ -60,10 +55,6 @@ impl FormatOptions {
 
     pub fn write_key_val_delimiter(&self, buf: &mut String) {
         Self::write_spec(buf, self.key_val_delimiter);
-    }
-
-    pub fn write_array_value_delimiter(&self, buf: &mut String) {
-        Self::write_spec(buf, self.array_value_delimiter);
     }
 
     pub fn write_eol(&self, buf: &mut String) {
