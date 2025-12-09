@@ -14,16 +14,26 @@ stdin ---
     {"epsilon": [1, 2, 3]}
 ]
 stdout ---
-[{
+[
+    {
         "alpha": 1
-    }, {
+    },
+    {
         "beta": true
-    }, {
+    },
+    {
         "gamma": null
-    }, {
+    },
+    {
         "delta": "value"
-    }, {
-        "epsilon": [1, 2, 3]
-    }]
+    },
+    {
+        "epsilon": [
+            1,
+            2,
+            3
+        ]
+    }
+]
 
 stderr ---

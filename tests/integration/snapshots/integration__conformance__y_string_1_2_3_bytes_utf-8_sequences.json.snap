@@ -1,6 +1,6 @@
 ---
 source: tests/integration/conformance.rs
-expression: output
+expression: output.snapshot_display()
 ---
 args: ["format"]
 status: 0
@@ -8,6 +8,8 @@ success: true
 stdin ---
 ["\u0060\u012a\u12AB"]
 stdout ---
-["\u0060\u012a\u12AB"]
+[
+    "\u0060\u012a\u12AB"
+]
 
 stderr ---

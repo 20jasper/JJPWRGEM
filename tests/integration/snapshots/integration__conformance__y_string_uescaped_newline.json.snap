@@ -1,6 +1,6 @@
 ---
 source: tests/integration/conformance.rs
-expression: output
+expression: output.snapshot_display()
 ---
 args: ["format"]
 status: 0
@@ -8,6 +8,8 @@ success: true
 stdin ---
 ["new\u000Aline"]
 stdout ---
-["new\u000Aline"]
+[
+    "new\u000Aline"
+]
 
 stderr ---
