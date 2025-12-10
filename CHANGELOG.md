@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0](https://github.com/20jasper/JJPWRGEM/releases/tag/jjpwrgem-v0.4.0) - 2025-12-10
+
+### Changed
+
+- default prettified indentation is now two spaces
+- non-empty arrays write each item on its own line
+- keep empty objects on a single line
+
+### Tests
+
+- add coverage for hard-to-format inputs
+- add regression test for deeply nested JSON
+
 ## [0.3.3](https://github.com/20jasper/JJPWRGEM/releases/tag/jjpwrgem-v0.3.3) - 2025-12-09
 
 ### Fixed
