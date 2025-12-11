@@ -64,3 +64,13 @@ release-binary:
 # preview release notes
 release-notes:
     dist host --steps=create --output-format=json | jq -r .announcement_github_body
+
+# runs stress tests against 10+ cli tools and outputs results to xtask folder
+bench:
+    mkdir -p xtask/bench/output
+    docker build -t jjp-benchmark .
+    docker run --rm \
+        -u "$(id -u):$(id -g)" \
+        -v "$(pwd)/xtask/bench/output:/benchmark/output" \
+        jjp-benchmark
+    npx -y prettier './xtask/bench/output/*.md' --write
