@@ -6,7 +6,7 @@ license = "MIT"
 publish = false
 
 [dependencies]
-displaydoc = "0.2.5"
+displaydoc = { workspace = true }
 itertools = "0.14.0"
 thiserror = "2.0.17"
 
