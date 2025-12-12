@@ -1,3 +1,4 @@
 tests/conformance/JSONTestSuite
+xtask/bench/data
 .github/workflows/release.yml
 CHANGELOG.md
