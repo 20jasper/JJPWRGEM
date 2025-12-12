@@ -5,7 +5,7 @@ edition = "2024"
 publish = false
 
 [dependencies]
-clap = { version = "4", features = ["derive"] }
+clap = { workspace = true }
 plotters = { version = "0.3", default-features = false, features = [
   "bitmap_backend",
   "bitmap_encoder",
