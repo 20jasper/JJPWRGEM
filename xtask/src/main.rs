@@ -1,8 +1,9 @@
 use clap::{Parser, Subcommand};
 use std::fs;
 use std::io::Write;
-use std::process::ExitCode;
-use std::process::{Command, Stdio};
+use std::process::{Command, ExitCode, Stdio};
+
+mod plot;
 
 fn strip_front_matter(raw: &str) -> &str {
     const FRONT_MATTER_SEP: &str = "\n---\n";
@@ -52,6 +53,8 @@ enum Commands {
     GenerateReadmes,
     /// Verify generated READMEs match what's committed
     VerifyReadmes,
+    /// Generate candlestick charts for all benchmark datasets
+    PlotBenchmarks,
 }
 
 fn render_template(template: &str) -> Result<String, Box<dyn std::error::Error>> {
@@ -112,6 +115,13 @@ fn main() -> ExitCode {
                 return ExitCode::FAILURE;
             }
         }
+        Commands::PlotBenchmarks => match plot::plot_all_benchmarks() {
+            Ok(()) => println!("Wrote candlestick charts for all benchmarks"),
+            Err(err) => {
+                eprintln!("failed to plot candlestick charts: {err}");
+                return ExitCode::FAILURE;
+            }
+        },
     };
 
     ExitCode::SUCCESS
