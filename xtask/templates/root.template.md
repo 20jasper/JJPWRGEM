@@ -44,6 +44,14 @@ JJPWRGEM is in its infancy and extremely likely to have breaking changes (proper
 
 {{IND}}
 
+### Is it blazingly fast™?
+
+Axolotls can't walk so fast, so skateboards are pretty fast 🛹🐟
+
+jjpwrgem can parse and pretty print a 1.7MB JSON file in around ~11ms and the average package.json in ~500 microseconds
+
+See the [benchmarks](/benchmarks.md) for more info!
+
 ## FAQ
 
 ### What does JJPWRGEM stand for?
@@ -61,10 +69,6 @@ It sounds cool and the name isn't taken on any package managers
 ### Why is the logo an axolotl riding a skateboard?
 
 It's cool
-
-### Is it blazingly fast™?
-
-Axolotls can't walk so fast, so relatively, yes
 
 ### How long is an axolotl?
 
