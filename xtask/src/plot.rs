@@ -1,15 +1,13 @@
 use std::cmp::Ordering;
-use std::fs::File;
-use std::io::BufReader;
 use std::path::{Path, PathBuf};
 use std::sync::OnceLock;
 
-use anyhow::{Context, Result, anyhow, bail};
+use anyhow::{Context, Error, Result, anyhow, bail};
 use base64::{Engine as _, engine::general_purpose::STANDARD};
+use jjpwrgem_parse::ast::{self, Value};
 use plotters::coord::Shift;
 use plotters::prelude::*;
 use plotters::style::{FontStyle, register_font};
-use serde::Deserialize;
 
 const CHART_WIDTH: u32 = 1280;
 const CHART_HEIGHT: u32 = 720;
@@ -19,15 +17,76 @@ const EMBEDDED_FONT_BASE64: &str =
 
 static FONT_BYTES: OnceLock<&'static [u8]> = OnceLock::new();
 
-#[derive(Deserialize)]
-struct PrettyCanadaResults {
-    results: Vec<BenchmarkResult>,
-}
-
-#[derive(Deserialize)]
 struct BenchmarkResult {
     command: String,
     times: Vec<f64>,
+}
+
+impl<'a> TryFrom<&Value<'a>> for BenchmarkResult {
+    type Error = Error;
+
+    fn try_from(item: &Value<'a>) -> std::result::Result<Self, Self::Error> {
+        let ast::Value::Object(entry) = item else {
+            bail!("must be a JSON object");
+        };
+
+        let command_value = entry
+            .get("command")
+            .with_context(|| "missing 'command' field")?;
+        let ast::Value::String(value) = command_value else {
+            bail!("command must be a string");
+        };
+        let command = (*value).to_owned();
+
+        let times_value = entry
+            .get("times")
+            .with_context(|| "missing 'times' field")?;
+        let ast::Value::Array(times_array) = times_value else {
+            bail!("must be an array");
+        };
+
+        let times = times_array
+            .iter()
+            .enumerate()
+            .map(|(time_index, time_value)| -> Result<f64> {
+                let ast::Value::Number(number) = time_value else {
+                    bail!("times[{time_index}] must be a number");
+                };
+                let parsed = number.as_ref().parse::<f64>().with_context(|| {
+                    format!(
+                        "times[{time_index}] value '{}' is not a valid number",
+                        number
+                    )
+                })?;
+                Ok(parsed)
+            })
+            .collect::<Result<Vec<_>>>()?;
+
+        Ok(BenchmarkResult { command, times })
+    }
+}
+
+fn parse_benchmark_results(raw: &str) -> Result<Vec<BenchmarkResult>> {
+    let root = ast::parse_str(raw)
+        .map_err(|err| anyhow!("failed to parse JSON with jjpwrgem parser: {err}"))?;
+    let ast::Value::Object(entries) = root else {
+        bail!("benchmark data must be a JSON object");
+    };
+
+    let results_value = entries
+        .get("results")
+        .context("benchmark data missing 'results' field")?;
+    let ast::Value::Array(items) = results_value else {
+        bail!("'results' field must be an array");
+    };
+
+    items
+        .iter()
+        .enumerate()
+        .map(|(index, item)| -> Result<BenchmarkResult> {
+            item.try_into().with_context(|| format!("index: {index}"))
+        })
+        .collect()
 }
 
 #[derive(Clone, Copy)]
@@ -193,14 +252,13 @@ pub fn plot_benchmark_candlesticks(
 ) -> Result<()> {
     ensure_font_registered()?;
 
-    let file = File::open(input)
-        .with_context(|| format!("failed to open input file {}", input.display()))?;
-    let reader = BufReader::new(file);
-    let parsed: PrettyCanadaResults =
-        serde_json::from_reader(reader).context("failed to parse benchmark data")?;
+    let raw = std::fs::read_to_string(input)
+        .with_context(|| format!("failed to read input file {}", input.display()))?;
+    let results = parse_benchmark_results(&raw)
+        .with_context(|| format!("failed to parse benchmark data in {}", input.display()))?;
 
     let mut entries = Vec::new();
-    for result in parsed.results {
+    for result in results {
         let Some(time_stats) = compute_stats(&result.times) else {
             bail!("benchmark '{}' is missing time samples", result.command);
         };
