@@ -8,8 +8,8 @@ publish = false
 [dependencies]
 displaydoc = { workspace = true }
 itertools = "0.14.0"
-thiserror = "2.0.17"
+thiserror = { workspace = true }
 
 [dev-dependencies]
-rstest = "0.26.1"
-rstest_reuse = "0.7.0"
+rstest = { workspace = true }
+rstest_reuse = { workspace = true }
