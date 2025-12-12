@@ -25,6 +25,10 @@ const JJPWREGEM_PARSE_TEMPLATE: &str = include_str!(concat!(
     env!("CARGO_MANIFEST_DIR"),
     "/templates/parse.template.md"
 ));
+const BENCH_TEMPLATE: &str = include_str!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/templates/bench.template.md"
+));
 const SHARED_FRAGMENT: &str = include_str!(concat!(
     env!("CARGO_MANIFEST_DIR"),
     "/templates/indeterminate_handling.md"
@@ -32,12 +36,59 @@ const SHARED_FRAGMENT: &str = include_str!(concat!(
 
 const ROOT_OUT_PATH_STR: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/../readme.md");
 const PARSE_OUT_PATH_STR: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/../crates/parse/readme.md");
+const BENCH_OUT_PATH_STR: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/../benchmarks.md");
 
 const EXISTING_ROOT: &str = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../readme.md"));
 const EXISTING_PARSE: &str = include_str!(concat!(
     env!("CARGO_MANIFEST_DIR"),
     "/../crates/parse/readme.md"
 ));
+const EXISTING_BENCH: &str = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../benchmarks.md"));
+
+const BENCH_TABLE_REPLACEMENTS: [(&str, &str); 6] = [
+    (
+        "{{PRETTY_CANADA_TABLE}}",
+        include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/bench/output/pretty-canada.md"
+        )),
+    ),
+    (
+        "{{UGLY_CANADA_TABLE}}",
+        include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/bench/output/ugly-canada.md"
+        )),
+    ),
+    (
+        "{{PRETTY_CITM_CATALOG_TABLE}}",
+        include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/bench/output/pretty-citm_catalog.md"
+        )),
+    ),
+    (
+        "{{UGLY_CITM_CATALOG_TABLE}}",
+        include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/bench/output/ugly-citm_catalog.md"
+        )),
+    ),
+    (
+        "{{PRETTY_TWITTER_TABLE}}",
+        include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/bench/output/pretty-twitter.md"
+        )),
+    ),
+    (
+        "{{UGLY_TWITTER_TABLE}}",
+        include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/bench/output/ugly-twitter.md"
+        )),
+    ),
+];
 
 fn prettier_format(input: &str) -> Result<String, Box<dyn std::error::Error>> {
     let mut child = Command::new("npx")
@@ -65,31 +116,44 @@ fn prettier_format(input: &str) -> Result<String, Box<dyn std::error::Error>> {
     Ok(formatted)
 }
 
-fn render_template(template: &str) -> Result<String, Box<dyn std::error::Error>> {
-    let processed = template
+fn render_template(
+    template: &str,
+    replacements: &[(&str, &str)],
+) -> Result<String, Box<dyn std::error::Error>> {
+    let mut processed = template
         .replace("{{IND}}", SHARED_FRAGMENT)
         .replace("{{CHECK_EXAMPLE}}", strip_front_matter(CHECK_EXAMPLE));
+
+    for (needle, replacement) in replacements {
+        processed = processed.replace(needle, replacement.trim());
+    }
+
     let with_banner = format!("{}{}", BANNER, processed);
     let formatted = prettier_format(&with_banner)?;
     Ok(formatted)
 }
 
 pub fn write_readmes() {
-    let root_rendered = render_template(JJPWREGEM_TEMPLATE).unwrap();
-    let parse_rendered = render_template(JJPWREGEM_PARSE_TEMPLATE).unwrap();
+    let root_rendered = render_template(JJPWREGEM_TEMPLATE, &[]).unwrap();
+    let parse_rendered = render_template(JJPWREGEM_PARSE_TEMPLATE, &[]).unwrap();
+    let bench_rendered = render_template(BENCH_TEMPLATE, &BENCH_TABLE_REPLACEMENTS).unwrap();
 
     fs::write(ROOT_OUT_PATH_STR, root_rendered).unwrap();
     fs::write(PARSE_OUT_PATH_STR, parse_rendered).unwrap();
+    fs::write(BENCH_OUT_PATH_STR, bench_rendered).unwrap();
 }
 
 pub fn are_readmes_updated() -> Result<(), &'static str> {
-    let root_rendered = render_template(JJPWREGEM_TEMPLATE).unwrap();
-    let parse_rendered = render_template(JJPWREGEM_PARSE_TEMPLATE).unwrap();
+    let root_rendered = render_template(JJPWREGEM_TEMPLATE, &[]).unwrap();
+    let parse_rendered = render_template(JJPWREGEM_PARSE_TEMPLATE, &[]).unwrap();
+    let bench_rendered = render_template(BENCH_TEMPLATE, &BENCH_TABLE_REPLACEMENTS).unwrap();
 
     if EXISTING_ROOT != root_rendered {
         Err("readme.md out of date (root)")
     } else if EXISTING_PARSE != parse_rendered {
         Err("crates/parse/readme.md out of date")
+    } else if EXISTING_BENCH != bench_rendered {
+        Err("xtask/bench/readme.md out of date")
     } else {
         Ok(())
     }
