@@ -74,3 +74,7 @@ bench:
         -v "$(pwd)/xtask/bench/output:/benchmark/output" \
         jjp-benchmark
     npx -y prettier './xtask/bench/output/*.md' --write
+    just plot-bench
+
+plot-bench:
+    cargo run -p xtask -- plot-benchmarks
