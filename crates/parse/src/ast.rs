@@ -18,6 +18,10 @@ impl<'a> ObjectEntries<'a> {
     pub fn push(&mut self, k: &'a str, v: Value<'a>) {
         self.0.push((k, v));
     }
+
+    pub fn get(&self, k: &'a str) -> Option<&Value<'a>> {
+        self.0.iter().find_map(|(k2, v)| (k == *k2).then_some(v))
+    }
 }
 
 impl<'a> From<Vec<(&'a str, Value<'a>)>> for ObjectEntries<'a> {
