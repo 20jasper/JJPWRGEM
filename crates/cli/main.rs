@@ -58,7 +58,10 @@ fn main() -> ExitCode {
         Ok(s) => s,
     };
     let output = match &cli.command {
-        Commands::Format { uglify } => format(json, style, *uglify),
+        Commands::Format {
+            uglify,
+            preferred_width,
+        } => format(json, style, *uglify, *preferred_width),
         Commands::Check => check(json, style),
     };
 
@@ -67,14 +70,14 @@ fn main() -> ExitCode {
     output.exit_code
 }
 
-pub fn format(json: String, style: Style, uglify: bool) -> Output {
-    let cmd = if !uglify {
-        format::prettify_str
+pub fn format(json: String, style: Style, uglify: bool, preferred_width: usize) -> Output {
+    let result = if uglify {
+        format::uglify_str(&json)
     } else {
-        format::uglify_str
+        format::prettify_str(&json, preferred_width)
     };
 
-    match cmd(&json) {
+    match result {
         Ok(pretty) => Output::success(pretty),
         Err(error) => Output::failure_diagnostic(Diagnostic::from(&error), style),
     }

@@ -8,8 +8,6 @@ success: true
 stdin ---
 [1E22]
 stdout ---
-[
-  1E22
-]
+[1E22]
 
 stderr ---

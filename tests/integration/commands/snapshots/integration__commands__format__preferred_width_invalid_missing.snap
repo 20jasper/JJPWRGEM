@@ -1,0 +1,15 @@
+---
+source: tests/integration/commands/format.rs
+expression: output.snapshot_display()
+---
+args: ["format", "--preferred-width"]
+status: 2
+success: false
+stdin ---
+<no stdin passed>
+stdout ---
+
+stderr ---
+error: a value is required for '--preferred-width <PREFERRED_WIDTH>' but none was supplied
+
+For more information, try '--help'.

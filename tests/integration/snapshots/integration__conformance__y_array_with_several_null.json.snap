@@ -8,12 +8,6 @@ success: true
 stdin ---
 [1,null,null,null,2]
 stdout ---
-[
-  1,
-  null,
-  null,
-  null,
-  2
-]
+[1, null, null, null, 2]
 
 stderr ---

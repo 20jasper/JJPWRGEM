@@ -8,8 +8,6 @@ success: true
 stdin ---
 ["new\u000Aline"]
 stdout ---
-[
-  "new\u000Aline"
-]
+["new\u000Aline"]
 
 stderr ---

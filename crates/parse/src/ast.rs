@@ -22,6 +22,14 @@ impl<'a> ObjectEntries<'a> {
     pub fn get(&self, k: &'a str) -> Option<&Value<'a>> {
         self.0.iter().find_map(|(k2, v)| (k == *k2).then_some(v))
     }
+
+    pub fn len(&self) -> usize {
+        self.0.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
 }
 
 impl<'a> From<Vec<(&'a str, Value<'a>)>> for ObjectEntries<'a> {

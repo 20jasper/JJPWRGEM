@@ -27,10 +27,7 @@ stdout ---
               {
                 "inner": true
               },
-              [
-                null,
-                false
-              ]
+              [null, false]
             ],
             "meta": {
               "notes": "deep array"

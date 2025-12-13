@@ -13,8 +13,12 @@ Make your json look really good
 Usage: jjp format [OPTIONS]
 
 Options:
-  -u, --uglify  Removes all insignificant whitespace instead of pretty printing, also known as minifying
-  -h, --help    Print help
+  -u, --uglify
+          Removes all insignificant whitespace instead of pretty printing, also known as minifying. Cannot be combined with --preferred-width
+      --preferred-width <PREFERRED_WIDTH>
+          Preferred maximum line width. Note this is not a hard maximum width [default: 80]
+  -h, --help
+          Print help
 
 Examples:
 	$ echo -en "{ \"rust\":\"is a must\"   } " | jjp format

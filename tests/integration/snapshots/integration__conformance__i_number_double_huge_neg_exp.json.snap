@@ -8,8 +8,6 @@ success: true
 stdin ---
 [123.456e-789]
 stdout ---
-[
-  123.456e-789
-]
+[123.456e-789]
 
 stderr ---

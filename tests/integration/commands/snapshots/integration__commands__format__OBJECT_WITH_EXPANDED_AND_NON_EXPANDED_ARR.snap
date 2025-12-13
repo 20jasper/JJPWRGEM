@@ -1,0 +1,27 @@
+---
+source: tests/integration/commands/format.rs
+expression: output.snapshot_display()
+---
+args: ["format"]
+status: 0
+success: true
+stdin ---
+
+{
+    "hi1": ["rust is a must","rust is a must","rust is a must","rust is a must", "rust is a must"],
+    "hi2": ["rust is a must","rust is a must","rust is a must", "rust is a must"]
+}
+
+stdout ---
+{
+  "hi1": [
+    "rust is a must",
+    "rust is a must",
+    "rust is a must",
+    "rust is a must",
+    "rust is a must"
+  ],
+  "hi2": ["rust is a must", "rust is a must", "rust is a must", "rust is a must"]
+}
+
+stderr ---

@@ -147,6 +147,7 @@ pub const ARRAY_WITH_NESTED_OBJECTS: &str = r#"[
         ]
     }
 ]"#;
+pub const ARRAY_WITH_LONG_STRING: &str = r#"[1,2,3,4,5,"helllllllooooooo"]"#;
 pub const MIXED_ARRAY_WITH_LONG_STRINGS: &str = r#"[
     "a long string value that includes\nline breaks\nand\ttabs",
     {
@@ -184,4 +185,55 @@ pub const DEEPLY_NESTED: &str = r#"
 [[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[
 "rust is a must"
 ]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]
+"#;
+pub const OBJECT_WITH_LONG_KEY_AND_ARR_VAL: &str = r#"
+{
+    "reallllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllyyy-long-key": ["should expand"]
+}
+"#;
+pub const OBJECT_WITH_EXPANDED_AND_NON_EXPANDED_ARR: &str = r#"
+{
+    "hi1": ["rust is a must","rust is a must","rust is a must","rust is a must", "rust is a must"],
+    "hi2": ["rust is a must","rust is a must","rust is a must", "rust is a must"]
+}
+"#;
+pub const DEEPLY_NESTED_OBJECT_WITH_ARR_VALUES: &str = r#" 
+{
+    "obj": { "obj": { "obj": { "obj": { "obj": { "obj": { "obj": { "obj": { "obj": { "obj": { "obj": { "obj": { "obj": { "obj": { "obj": { "obj": { "obj": { "obj": {
+                    "slkdfjlsdfjsdsldkjflsfljdflksdjksdfljksdfjlkdflksjfdkl": ["hello"]
+                } } } } } } } } } } } } } } } } } } }
+"#;
+pub const TSCONFIG: &str = r#"
+{
+  "compilerOptions": {
+    "target": "ES6",
+    "module": "CommonJS",
+    "lib": [
+      "ES2020",
+      "DOM",
+      "DOM.Iterable"
+    ],
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "noImplicitAny": true,
+    "removeComments": true,
+    "preserveConstEnums": true,
+    "sourceMap": true
+  },
+  "include": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "**/*.spec.ts",
+    "**/*.test.ts",
+    "dist",
+    "temp",
+    "examples"
+  ]
+}
 "#;

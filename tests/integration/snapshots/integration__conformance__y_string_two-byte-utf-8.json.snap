@@ -8,8 +8,6 @@ success: true
 stdin ---
 ["\u0123"]
 stdout ---
-[
-  "\u0123"
-]
+["\u0123"]
 
 stderr ---
