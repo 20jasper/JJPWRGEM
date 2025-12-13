@@ -65,7 +65,7 @@ release-binary:
 release-notes:
     dist host --steps=create --output-format=json | jq -r .announcement_github_body
 
-# runs stress tests against 10+ cli tools and outputs results to xtask folder
+# runs perf tests against 10+ cli tools and regenerates outputs and embeds in readmes
 bench:
     mkdir -p xtask/bench/output
     docker build -t jjp-benchmark .
@@ -75,6 +75,7 @@ bench:
         jjp-benchmark
     npx -y prettier './xtask/bench/output/*.md' --write
     just plot-bench
+    just generate-readmes
 
 plot-bench:
     cargo run -p xtask -- plot-benchmarks
