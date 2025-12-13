@@ -1,0 +1,16 @@
+---
+source: tests/integration/commands/format.rs
+expression: output.snapshot_display()
+---
+args: ["format", "--eol"]
+status: 2
+success: false
+stdin ---
+<no stdin passed>
+stdout ---
+
+stderr ---
+error: a value is required for '--end-of-line <END_OF_LINE>' but none was supplied
+  [possible values: lf, crlf, cr]
+
+For more information, try '--help'.

@@ -1,4 +1,5 @@
-use clap::{Parser, Subcommand};
+use clap::{Parser, Subcommand, ValueEnum};
+use jjpwrgem_parse::format::LineEnding;
 
 use crate::{
     docs::{indent, strip_front_matter},
@@ -43,6 +44,10 @@ pub enum Commands {
         /// Preferred maximum line width. Note this is not a hard maximum width
         #[arg(long, default_value_t = 80, conflicts_with = "uglify")]
         preferred_width: usize,
+
+        /// Line ending to use when formatting output
+        #[arg(value_enum, long, visible_alias = "eol", default_value_t)]
+        end_of_line: LineEndingArg,
     },
     #[command(after_help = format!(
         "Examples:\n{}\n\n{}",
@@ -51,4 +56,25 @@ pub enum Commands {
     ))]
     /// Validates json syntax
     Check,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq, ValueEnum, Default)]
+pub enum LineEndingArg {
+    #[default]
+    #[value(name = "lf")]
+    Lf,
+    #[value(name = "crlf")]
+    CrLf,
+    #[value(name = "cr")]
+    Cr,
+}
+
+impl LineEndingArg {
+    pub const fn into_parse(self) -> LineEnding {
+        match self {
+            Self::Lf => LineEnding::Lf,
+            Self::CrLf => LineEnding::CrLf,
+            Self::Cr => LineEnding::Cr,
+        }
+    }
 }

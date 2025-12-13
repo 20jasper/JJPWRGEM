@@ -97,27 +97,6 @@ pub const ARRAYS_NESTED_FIVE_LEVELS_WITH_OBJECT: &str = r#"[[[[[
 ]]]]]"#;
 pub const INVALID_HEX_DIGIT_IN_ESCAPE: &str = r#""\u1FZA""#;
 pub const INVALID_ESCAPED_CURLY: &str = r#""\{""#;
-pub const MULTIKEY_OBJECT_WITH_LOTS_OF_WHITESPACE: &str = r#"      {
-
-    "hello hi":                       
-
-
-             null
-
-
-
-
-             ,
-
-
-             "by": "hello"
-
-
-
-
-    }    
-        
-        "#;
 pub const OBJECT_WITH_LONG_KEYS: &str = r#"{
     "this is a very very very long key name with spaces and punctuation like --- ???": "value",
     "another extremely verbose key used for stress testing": {

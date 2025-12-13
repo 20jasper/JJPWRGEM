@@ -7,7 +7,7 @@ use clap::Parser;
 use jjpwrgem_parse::{
     ast::parse_str,
     error::diagnostics::{self, Diagnostic, Source},
-    format,
+    format::{self, LineEnding},
 };
 use jjpwrgem_ui::{Color, Style};
 use std::io::{IsTerminal, Read};
@@ -61,7 +61,14 @@ fn main() -> ExitCode {
         Commands::Format {
             uglify,
             preferred_width,
-        } => format(json, style, *uglify, *preferred_width),
+            end_of_line,
+        } => format(
+            json,
+            style,
+            *uglify,
+            *preferred_width,
+            end_of_line.into_parse(),
+        ),
         Commands::Check => check(json, style),
     };
 
@@ -70,11 +77,17 @@ fn main() -> ExitCode {
     output.exit_code
 }
 
-pub fn format(json: String, style: Style, uglify: bool, preferred_width: usize) -> Output {
+pub fn format(
+    json: String,
+    style: Style,
+    uglify: bool,
+    preferred_width: usize,
+    line_ending: LineEnding,
+) -> Output {
     let result = if uglify {
         format::uglify_str(&json)
     } else {
-        format::prettify_str(&json, preferred_width)
+        format::prettify_str(&json, preferred_width, line_ending)
     };
 
     match result {

@@ -17,6 +17,8 @@ Options:
           Removes all insignificant whitespace instead of pretty printing, also known as minifying. Cannot be combined with --preferred-width
       --preferred-width <PREFERRED_WIDTH>
           Preferred maximum line width. Note this is not a hard maximum width [default: 80]
+      --end-of-line <END_OF_LINE>
+          Line ending to use when formatting output [default: lf] [aliases: --eol] [possible values: lf, crlf, cr]
   -h, --help
           Print help
 
