@@ -41,11 +41,13 @@ help: insert colon and placeholder value
 mise use -g github:20jasper/jjpwrgem
 ```
 
+See [releases](https://github.com/20jasper/JJPWRGEM/releases) for shell and powershell installation instructions and raw binaries
+
+Note: node adds ~60ms of overhead
+
 ```bash
 npm install -g jjpwrgem
 ```
-
-See [releases](https://github.com/20jasper/JJPWRGEM/releases) for shell and powershell installation instructions and raw binaries
 
 ### From source
 

@@ -139,3 +139,8 @@
 - [ ] validate inappropriate surrogates
 - [ ] consider context aware quote closing
   - [ ] n_string_1_surrogate_then_escape adds " at end when in unclosed array may be more appropriate
+
+### extensions
+
+- [ ] json lines
+- [ ] trailing comma
