@@ -6,6 +6,7 @@ use crate::{
     tokens::{FALSE, NULL, TRUE},
 };
 
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct FormatOptions {
     key_val_delimiter: Option<(char, usize)>,
     indent: Option<(char, usize)>,
@@ -40,36 +41,71 @@ impl FormatOptions {
             eol: Some(('\n', 1)),
         }
     }
+}
 
-    #[inline]
-    fn push_repeat(buf: &mut String, c: char, count: usize) {
-        buf.extend(iter::repeat_n(c, count));
-    }
+struct FormatBuf {
+    opts: FormatOptions,
+    buf: String,
+    line_start: usize,
+}
 
-    #[inline]
-    fn write_spec(buf: &mut String, spec: Option<(char, usize)>) {
-        if let Some((c, size)) = spec {
-            Self::push_repeat(buf, c, size);
+impl FormatBuf {
+    fn new(buf: String, opts: FormatOptions) -> Self {
+        Self {
+            opts,
+            buf,
+            line_start: 0,
         }
     }
 
-    pub fn write_key_val_delimiter(&self, buf: &mut String) {
-        Self::write_spec(buf, self.key_val_delimiter);
+    fn push(&mut self, value: char) {
+        self.buf.push(value);
+    }
+    fn push_str(&mut self, value: &str) {
+        self.buf.push_str(value);
     }
 
-    pub fn write_eol(&self, buf: &mut String) {
-        Self::write_spec(buf, self.eol);
+    #[inline]
+    fn push_quoted(&mut self, value: &str) {
+        self.push('"');
+        self.push_str(value);
+        self.push('"');
     }
 
-    pub fn write_indent(&self, buf: &mut String, level: usize) {
-        Self::write_spec(buf, self.indent.map(|(c, size)| (c, size * level)));
+    #[inline]
+    fn push_repeat(&mut self, c: char, count: usize) {
+        self.buf.extend(iter::repeat_n(c, count));
+    }
+
+    #[inline]
+    fn write_spec(&mut self, spec: Option<(char, usize)>) {
+        if let Some((c, size)) = spec {
+            self.push_repeat(c, size);
+        }
+    }
+
+    pub fn write_key_val_delimiter(&mut self) {
+        self.write_spec(self.opts.key_val_delimiter);
+    }
+
+    pub fn write_eol(&mut self) {
+        self.write_spec(self.opts.eol);
+        self.line_start = self.buf.len();
+    }
+
+    pub fn write_indent(&mut self, level: usize) {
+        self.write_spec(self.opts.indent.map(|(c, size)| (c, size * level)));
+    }
+
+    fn into_inner(self) -> String {
+        self.buf
     }
 }
 
-pub fn format_str<'a>(json: &'a str, options: &FormatOptions) -> Result<'a, String> {
-    let mut buf = String::with_capacity(json.len());
-    format_value_into(&mut buf, &parse_str(json)?, options, 0);
-    Ok(buf)
+pub fn format_str<'a>(json: &'a str, options: FormatOptions) -> Result<'a, String> {
+    let mut buf = FormatBuf::new(String::with_capacity(json.len()), options);
+    format_value_into(&mut buf, &parse_str(json)?, 0);
+    Ok(buf.into_inner())
 }
 
 /// writes formatted delimiters between formatted items
@@ -87,11 +123,11 @@ pub fn format_str<'a>(json: &'a str, options: &FormatOptions) -> Result<'a, Stri
 /// );
 /// assert_eq!(buf, "2,4,6,8");
 /// ```
-pub fn join_into<T>(
-    buf: &mut String,
+pub fn join_into<T, B>(
+    buf: &mut B,
     items: impl IntoIterator<Item = T>,
-    mut item_fmt: impl FnMut(&mut String, &T),
-    mut delim_fmt: impl FnMut(&mut String, &T),
+    mut item_fmt: impl FnMut(&mut B, &T),
+    mut delim_fmt: impl FnMut(&mut B, &T),
 ) {
     let mut iter = items.into_iter();
     if let Some(first) = iter.next() {
@@ -103,68 +139,65 @@ pub fn join_into<T>(
     }
 }
 
-pub fn format_value_into(buf: &mut String, val: &Value, options: &FormatOptions, depth: usize) {
-    #[inline]
-    fn push_quoted(buf: &mut String, value: &str) {
-        buf.push('"');
-        buf.push_str(value);
-        buf.push('"');
-    }
+fn format_value_into(buf: &mut FormatBuf, val: &Value, depth: usize) {
     match val {
         Value::Null => buf.push_str(NULL),
-        Value::String(s) => push_quoted(buf, s),
+        Value::String(s) => buf.push_quoted(s),
         Value::Number(s) => buf.push_str(s.as_ref()),
         Value::Object(entries) if entries.0.is_empty() => buf.push_str("{}"),
         Value::Object(entries) => {
             buf.push('{');
-            options.write_eol(buf);
+            buf.write_eol();
             join_into(
                 buf,
                 entries.0.iter(),
                 |buf, (key, val)| {
-                    options.write_indent(buf, depth + 1);
-                    push_quoted(buf, key);
+                    buf.write_indent(depth + 1);
+                    buf.push_quoted(key);
                     buf.push(':');
-                    options.write_key_val_delimiter(buf);
-                    format_value_into(buf, val, options, depth + 1);
+                    buf.write_key_val_delimiter();
+                    format_value_into(buf, val, depth + 1);
                 },
                 |buf, _| {
                     buf.push(',');
-                    options.write_eol(buf);
+                    buf.write_eol();
                 },
             );
-            options.write_eol(buf);
-            options.write_indent(buf, depth);
+            buf.write_eol();
+            buf.write_indent(depth);
             buf.push('}');
         }
         Value::Array(items) if items.is_empty() => buf.push_str("[]"),
         Value::Array(items) => {
-            buf.push('[');
-            options.write_eol(buf);
-            join_into(
-                buf,
-                items,
-                |buf, val| {
-                    options.write_indent(buf, depth + 1);
-                    format_value_into(buf, val, options, depth + 1)
-                },
-                |buf, _| {
-                    buf.push(',');
-                    options.write_eol(buf);
-                },
-            );
-            options.write_eol(buf);
-            options.write_indent(buf, depth);
-            buf.push(']');
+            expanded_format_arr_into(buf, items, depth);
         }
         Value::Boolean(b) => buf.push_str(if *b { TRUE } else { FALSE }),
     }
 }
 
+fn expanded_format_arr_into(buf: &mut FormatBuf, items: &[Value], depth: usize) {
+    buf.push('[');
+    buf.write_eol();
+    join_into(
+        buf,
+        items,
+        |buf, val| {
+            buf.write_indent(depth + 1);
+            format_value_into(buf, val, depth + 1)
+        },
+        |buf, _| {
+            buf.push(',');
+            buf.write_eol();
+        },
+    );
+    buf.write_eol();
+    buf.write_indent(depth);
+    buf.push(']');
+}
 pub fn format_value(val: &Value, options: &FormatOptions) -> String {
-    let mut buf = String::new();
-    format_value_into(&mut buf, val, options, 0);
-    buf
+    let mut buf = FormatBuf::new(String::new(), *options);
+    format_value_into(&mut buf, val, 0);
+    buf.into_inner()
 }
 
 pub fn uglify_str(json: &str) -> Result<'_, String> {
