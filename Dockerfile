@@ -38,16 +38,9 @@ RUN --mount=type=bind,source=crates,target=crates \
     cargo build --locked --release && \
     install -Dm755 ./target/release/$APP_NAME /usr/local/cargo/bin/$APP_NAME
 
-FROM node:24-bullseye AS final
-
-RUN apt-get update && apt-get install -y \
-    curl \
-    git \
-    build-essential
-
+FROM node:24-bullseye AS mise
 ARG BENCHMARK_PATH="./xtask/bench"
 
-# mise
 COPY ${BENCHMARK_PATH}/mise.toml /mise/mise.toml
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 ENV MISE_DATA_DIR="/mise"
@@ -59,7 +52,26 @@ ENV PATH="/mise/shims:$PATH"
 RUN curl https://mise.run | sh
 
 RUN mise trust -y
-RUN mise install
+RUN MISE_JOBS=1 mise install
+
+FROM node:24-bullseye AS final
+
+RUN apt-get update && apt-get install -y \
+    curl \
+    git \
+    build-essential
+
+ARG BENCHMARK_PATH="./xtask/bench"
+
+# reuse mise installation layers unless mise.toml changes
+COPY --from=mise /usr/local/bin/mise /usr/local/bin/mise
+COPY --from=mise /mise /mise
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+ENV MISE_DATA_DIR="/mise"
+ENV MISE_CONFIG_DIR="/mise"
+ENV MISE_CACHE_DIR="/mise/cache"
+ENV MISE_INSTALL_PATH="/usr/local/bin/mise"
+ENV PATH="/mise/shims:$PATH"
 
 RUN apt-get update && apt-get install -y jshon
 
