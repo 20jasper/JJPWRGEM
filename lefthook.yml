@@ -14,7 +14,7 @@ pre-push:
         - "**/*.{rs,md,yml}"
     - run: cargo shear
     - run: dist plan
-    - run: just verify-readmes
+    - run: just readmes-check
     - run: cargo test
       glob: "**/*.rs"
 
@@ -26,8 +26,8 @@ pre-commit:
         - "justfile"
         - "**/*.{rs,md,yml}"
       stage_fixed: true
-    - run: just generate-readmes && git add "**/readme.md" readme.md
+    - run: just readmes && git add "**/*.md" *.md
       glob:
-        - "**/readme.md"
+        - "**/*.md"
         - "xtask/templates/**"
       stage_fixed: true

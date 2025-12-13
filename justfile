@@ -34,12 +34,12 @@ test-snapshot:
     cargo insta test --unreferenced auto 
     cargo insta review
 
-# generate README files from templates
-generate-readmes:
+# generate markdown files from templates
+readmes:
     cargo run -p xtask -q -- generate-readmes
 
-# verify that README.md files match generated templates
-verify-readmes:
+# verify markdown files match generated templates
+readmes-check:
     cargo run -p xtask -q -- verify-readmes
 
 watch:
@@ -75,7 +75,7 @@ bench:
         jjp-benchmark
     npx -y prettier './xtask/bench/output/*.md' --write
     just plot-bench
-    just generate-readmes
+    just readmes
 
 plot-bench:
     cargo run -p xtask -- plot-benchmarks

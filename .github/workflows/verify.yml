@@ -48,7 +48,7 @@ jobs:
         run: cargo shear
       - name: lint
         run: just lint
-      - run: just verify-readmes
+      - run: just readmes-check
 
   build-test:
     runs-on: ubuntu-latest
