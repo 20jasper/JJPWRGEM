@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0](https://github.com/20jasper/JJPWRGEM/releases/tag/jjpwrgem-v0.5.0) - 2025-12-13
+
+### Added
+
+- preferred width
+
+### Documentation
+
+- *perf*: npm installation overhead
+- *perf*: add benchmarks docs and include throughput and speed benchmarks
+
+### Performance
+- benchmarks for uglification and prettifying with various CLI tools
+
 ## [0.4.0](https://github.com/20jasper/JJPWRGEM/releases/tag/jjpwrgem-v0.4.0) - 2025-12-10
 
 ### Changed
