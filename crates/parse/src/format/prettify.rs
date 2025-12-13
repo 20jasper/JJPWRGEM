@@ -3,6 +3,7 @@ use core::iter;
 use crate::{
     Result,
     ast::{Value, parse_str},
+    format::LineEnding,
     tokens::{FALSE, NULL, TRUE},
 };
 
@@ -10,27 +11,27 @@ use crate::{
 pub struct FormatOptions {
     key_val_delimiter: Option<(char, usize)>,
     indent: Option<(char, usize)>,
-    eol: Option<(char, usize)>,
+    line_ending: LineEnding,
 }
 
 impl FormatOptions {
     pub fn new(
         key_val_delimiter: Option<(char, usize)>,
         indent: Option<(char, usize)>,
-        eol: Option<(char, usize)>,
+        line_ending: LineEnding,
     ) -> Self {
         Self {
             key_val_delimiter,
             indent,
-            eol,
+            line_ending,
         }
     }
 
-    pub fn prettify() -> Self {
+    pub fn prettify(line_ending: LineEnding) -> Self {
         Self {
             key_val_delimiter: Some((' ', 1)),
             indent: Some((' ', 2)),
-            eol: Some(('\n', 1)),
+            line_ending,
         }
     }
 }
@@ -83,7 +84,7 @@ impl FormatBuf {
     }
 
     pub fn write_eol(&mut self) {
-        self.write_spec(self.opts.eol);
+        self.push_str(self.opts.line_ending.as_str());
         self.line_start = self.buf.len();
     }
 
@@ -225,12 +226,16 @@ pub fn format_value(val: &Value, options: &FormatOptions, preferred_width: usize
     buf.into_inner()
 }
 
-pub fn prettify_str(json: &str, preferred_width: usize) -> Result<'_, String> {
-    format_str(json, FormatOptions::prettify(), preferred_width)
+pub fn prettify_str(
+    json: &str,
+    preferred_width: usize,
+    line_ending: LineEnding,
+) -> Result<'_, String> {
+    format_str(json, FormatOptions::prettify(line_ending), preferred_width)
 }
 
-pub fn prettify_value(val: &Value, preferred_width: usize) -> String {
-    format_value(val, &FormatOptions::prettify(), preferred_width)
+pub fn prettify_value(val: &Value, preferred_width: usize, line_ending: LineEnding) -> String {
+    format_value(val, &FormatOptions::prettify(line_ending), preferred_width)
 }
 
 mod len {

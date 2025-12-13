@@ -61,22 +61,6 @@ fn uglify(#[case] (name, input): (&str, &str)) {
     assert_snapshot!(format!("uglify_{name}"), output.snapshot_display());
 }
 
-#[test]
-fn uglify_removes_whitespace_object() {
-    let output = exec_cmd(
-        cli().args(["format", "--uglify"]),
-        Some(MULTIKEY_OBJECT_WITH_LOTS_OF_WHITESPACE.as_bytes().to_vec()),
-    );
-    assert!(output.status.success());
-
-    assert!(
-        output.stdout.trim() == r#"{"hello hi":null,"by":"hello"}"#
-            || output.stdout.trim() == r#"{"by":"hello","hello hi":null}"#,
-        "unexpected uglify result: {}",
-        output.stdout
-    );
-}
-
 #[rstest::rstest]
 #[case(22, "below_threshold")]
 #[case(23, "above_threshold")]
@@ -95,6 +79,24 @@ fn preferred_width_threshold(#[case] preferred_width: usize, #[case] label: &str
     );
 }
 
+// Snapshots normalize newlines to LF, so we assert directly to preserve each line ending.
+#[rstest::rstest]
+#[case(&["--end-of-line", "lf"], "[\n  null\n]\n")]
+#[case(&["--end-of-line", "crlf"], "[\r\n  null\r\n]\n")]
+#[case(&["--end-of-line", "cr"], "[\r  null\r]\n")]
+#[case(&["--eol", "lf"], "[\n  null\n]\n")]
+#[case(&["--eol", "crlf"], "[\r\n  null\r\n]\n")]
+#[case(&["--eol", "cr"], "[\r  null\r]\n")]
+fn preferred_line_endings(#[case] args: &[&str], #[case] expected: &str) {
+    let mut cmd = cli();
+    cmd.args(["format", "--preferred-width", "0"]);
+    cmd.args(args.iter().copied());
+
+    let output = exec_cmd(&mut cmd, Some(b"[null]".to_vec()));
+    assert!(output.status.success(), "{}", output.snapshot_display());
+    assert_eq!(expected, output.stdout);
+}
+
 #[rstest::rstest]
 #[case(&["--preferred-width=-1"], "negative")]
 #[case(&["--preferred-width"], "missing")]
@@ -110,6 +112,20 @@ fn preferred_width_invalid_args(#[case] args: &[&str], #[case] label: &str) {
         format!("preferred_width_invalid_{label}"),
         output.snapshot_display()
     );
+}
+
+#[rstest::rstest]
+#[case(&["--eol"], "missing")]
+#[case(&["--eol=what"], "wrong")]
+#[case(&["--eol=899889"], "number")]
+fn eol_invalid_args(#[case] args: &[&str], #[case] label: &str) {
+    let mut cmd = cli();
+    cmd.args(std::iter::once("format").chain(args.iter().copied()));
+
+    let output = exec_cmd(&mut cmd, None);
+    assert!(!output.status.success());
+
+    assert_snapshot!(format!("eol_invalid_{label}"), output.snapshot_display());
 }
 
 #[test]
