@@ -1,0 +1,46 @@
+---
+source: tests/integration/commands/format.rs
+expression: output.snapshot_display()
+---
+args: ["format", "--uglify"]
+status: 0
+success: true
+stdin ---
+
+{
+  "compilerOptions": {
+    "target": "ES6",
+    "module": "CommonJS",
+    "lib": [
+      "ES2020",
+      "DOM",
+      "DOM.Iterable"
+    ],
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "noImplicitAny": true,
+    "removeComments": true,
+    "preserveConstEnums": true,
+    "sourceMap": true
+  },
+  "include": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "**/*.spec.ts",
+    "**/*.test.ts",
+    "dist",
+    "temp",
+    "examples"
+  ]
+}
+
+stdout ---
+{"compilerOptions":{"target":"ES6","module":"CommonJS","lib":["ES2020","DOM","DOM.Iterable"],"strict":true,"esModuleInterop":true,"skipLibCheck":true,"forceConsistentCasingInFileNames":true,"outDir":"./dist","rootDir":"./src","noImplicitAny":true,"removeComments":true,"preserveConstEnums":true,"sourceMap":true},"include":["src/**/*"],"exclude":["node_modules","**/*.spec.ts","**/*.test.ts","dist","temp","examples"]}
+
+stderr ---

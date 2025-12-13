@@ -35,9 +35,14 @@ pub enum Commands {
         indent(strip_front_matter(get_docs_snapshot!("format_uglify"))),
     ))]
     Format {
-        /// Removes all insignificant whitespace instead of pretty printing, also known as minifying
-        #[arg(short, long)]
+        /// Removes all insignificant whitespace instead of pretty printing,
+        /// also known as minifying. Cannot be combined with --preferred-width
+        #[arg(short, long, conflicts_with = "preferred_width")]
         uglify: bool,
+
+        /// Preferred maximum line width. Note this is not a hard maximum width
+        #[arg(long, default_value_t = 80, conflicts_with = "uglify")]
+        preferred_width: usize,
     },
     #[command(after_help = format!(
         "Examples:\n{}\n\n{}",

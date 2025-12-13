@@ -1,0 +1,58 @@
+---
+source: tests/integration/commands/format.rs
+expression: output.snapshot_display()
+---
+args: ["format"]
+status: 0
+success: true
+stdin ---
+ 
+{
+    "obj": { "obj": { "obj": { "obj": { "obj": { "obj": { "obj": { "obj": { "obj": { "obj": { "obj": { "obj": { "obj": { "obj": { "obj": { "obj": { "obj": { "obj": {
+                    "slkdfjlsdfjsdsldkjflsfljdflksdjksdfljksdfjlkdflksjfdkl": ["hello"]
+                } } } } } } } } } } } } } } } } } } }
+
+stdout ---
+{
+  "obj": {
+    "obj": {
+      "obj": {
+        "obj": {
+          "obj": {
+            "obj": {
+              "obj": {
+                "obj": {
+                  "obj": {
+                    "obj": {
+                      "obj": {
+                        "obj": {
+                          "obj": {
+                            "obj": {
+                              "obj": {
+                                "obj": {
+                                  "obj": {
+                                    "obj": {
+                                      "slkdfjlsdfjsdsldkjflsfljdflksdjksdfljksdfjlkdflksjfdkl": [
+                                        "hello"
+                                      ]
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+stderr ---

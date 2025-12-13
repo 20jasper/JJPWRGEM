@@ -27,10 +27,7 @@ stdout ---
   {
     "id": 1,
     "name": "alpha",
-    "flags": [
-      true,
-      false
-    ],
+    "flags": [true, false],
     "meta": {
       "info": "level1"
     },
@@ -39,10 +36,7 @@ stdout ---
   {
     "id": 2,
     "name": "beta",
-    "flags": [
-      false,
-      true
-    ],
+    "flags": [false, true],
     "meta": {
       "info": "level2"
     },

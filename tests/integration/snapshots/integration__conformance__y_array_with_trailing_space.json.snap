@@ -8,8 +8,6 @@ success: true
 stdin ---
 [2] 
 stdout ---
-[
-  2
-]
+[2]
 
 stderr ---

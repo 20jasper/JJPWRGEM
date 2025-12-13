@@ -36,10 +36,7 @@ stdout ---
   {
     "id": 42,
     "name": "nested",
-    "flags": [
-      true,
-      false
-    ],
+    "flags": [true, false],
     "meta": {
       "note": "varied keys"
     }

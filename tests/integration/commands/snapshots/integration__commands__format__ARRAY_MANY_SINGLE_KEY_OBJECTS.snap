@@ -28,11 +28,7 @@ stdout ---
     "delta": "value"
   },
   {
-    "epsilon": [
-      1,
-      2,
-      3
-    ]
+    "epsilon": [1, 2, 3]
   }
 ]
 

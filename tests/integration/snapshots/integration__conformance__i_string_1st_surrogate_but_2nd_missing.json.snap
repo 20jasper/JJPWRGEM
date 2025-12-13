@@ -8,8 +8,6 @@ success: true
 stdin ---
 ["\uDADA"]
 stdout ---
-[
-  "\uDADA"
-]
+["\uDADA"]
 
 stderr ---

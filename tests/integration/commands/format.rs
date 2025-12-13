@@ -33,6 +33,10 @@ use insta::assert_snapshot;
 #[case(crate::fixture_tuple!(MIXED_ARRAY_WITH_LONG_STRINGS))]
 #[case(crate::fixture_tuple!(STANDALONE_STRING_WS))]
 #[case(crate::fixture_tuple!(DEEPLY_NESTED))]
+#[case(crate::fixture_tuple!(OBJECT_WITH_LONG_KEY_AND_ARR_VAL))]
+#[case(crate::fixture_tuple!(OBJECT_WITH_EXPANDED_AND_NON_EXPANDED_ARR))]
+#[case(crate::fixture_tuple!(DEEPLY_NESTED_OBJECT_WITH_ARR_VALUES))]
+#[case(crate::fixture_tuple!(TSCONFIG))]
 fn format_template(#[case] (name, input): (&str, &str)) {}
 
 #[rstest_reuse::apply(format_template)]
@@ -41,9 +45,9 @@ fn prettify(#[case] (name, input): (&str, &str)) {
     cmd.args(["format"]);
 
     let output = exec_cmd(&mut cmd, Some(input.as_bytes().to_vec()));
-    assert!(output.status.success());
 
     assert_snapshot!(name.to_string(), output.snapshot_display());
+    assert!(output.status.success());
 }
 
 #[rstest_reuse::apply(format_template)]
@@ -70,6 +74,68 @@ fn uglify_removes_whitespace_object() {
             || output.stdout.trim() == r#"{"by":"hello","hello hi":null}"#,
         "unexpected uglify result: {}",
         output.stdout
+    );
+}
+
+#[rstest::rstest]
+#[case(22, "below_threshold")]
+#[case(23, "above_threshold")]
+fn preferred_width_threshold(#[case] preferred_width: usize, #[case] label: &str) {
+    let mut cmd = cli();
+    cmd.args(["format", "--preferred-width"]);
+    let width_arg = preferred_width.to_string();
+    cmd.arg(&width_arg);
+
+    let output = exec_cmd(&mut cmd, Some(ARRAY_WITH_LONG_STRING.as_bytes().to_vec()));
+    assert!(output.status.success(), "{}", output.snapshot_display());
+
+    assert_snapshot!(
+        format!("preferred_width_{label}"),
+        output.snapshot_display()
+    );
+}
+
+#[rstest::rstest]
+#[case(&["--preferred-width=-1"], "negative")]
+#[case(&["--preferred-width"], "missing")]
+#[case(&["--preferred-width=abc"], "letters")]
+fn preferred_width_invalid_args(#[case] args: &[&str], #[case] label: &str) {
+    let mut cmd = cli();
+    cmd.args(std::iter::once("format").chain(args.iter().copied()));
+
+    let output = exec_cmd(&mut cmd, None);
+    assert!(!output.status.success());
+
+    assert_snapshot!(
+        format!("preferred_width_invalid_{label}"),
+        output.snapshot_display()
+    );
+}
+
+#[test]
+fn preferred_width_conflicts_with_uglify() {
+    let mut cmd = cli();
+    cmd.args(["format", "--uglify", "--preferred-width", "24"]);
+
+    let output = exec_cmd(&mut cmd, None);
+    assert!(!output.status.success());
+
+    assert_snapshot!("preferred_width_conflict", output.snapshot_display());
+}
+
+#[rstest::rstest]
+#[case(&["--uglify", "--preferred-width", "24"], "uglify_then_width")]
+#[case(&["--preferred-width", "24", "--uglify"], "width_then_uglify")]
+fn preferred_width_conflict_cases(#[case] args: &[&str], #[case] label: &str) {
+    let mut cmd = cli();
+    cmd.args(std::iter::once("format").chain(args.iter().copied()));
+
+    let output = exec_cmd(&mut cmd, None);
+    assert!(!output.status.success());
+
+    assert_snapshot!(
+        format!("preferred_width_conflict_{label}"),
+        output.snapshot_display()
     );
 }
 

@@ -8,8 +8,6 @@ success: true
 stdin ---
 ["\\n"]
 stdout ---
-[
-  "\\n"
-]
+["\\n"]
 
 stderr ---

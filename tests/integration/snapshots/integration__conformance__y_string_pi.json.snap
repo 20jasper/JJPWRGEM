@@ -8,8 +8,6 @@ success: true
 stdin ---
 ["π"]
 stdout ---
-[
-  "π"
-]
+["π"]
 
 stderr ---

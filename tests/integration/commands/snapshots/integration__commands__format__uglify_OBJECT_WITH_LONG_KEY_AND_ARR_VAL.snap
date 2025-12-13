@@ -1,0 +1,17 @@
+---
+source: tests/integration/commands/format.rs
+expression: output.snapshot_display()
+---
+args: ["format", "--uglify"]
+status: 0
+success: true
+stdin ---
+
+{
+    "reallllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllyyy-long-key": ["should expand"]
+}
+
+stdout ---
+{"reallllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllyyy-long-key":["should expand"]}
+
+stderr ---

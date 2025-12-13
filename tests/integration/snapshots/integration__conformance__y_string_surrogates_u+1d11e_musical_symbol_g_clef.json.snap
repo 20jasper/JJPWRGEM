@@ -8,8 +8,6 @@ success: true
 stdin ---
 ["\uD834\uDd1e"]
 stdout ---
-[
-  "\uD834\uDd1e"
-]
+["\uD834\uDd1e"]
 
 stderr ---

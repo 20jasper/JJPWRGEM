@@ -1,0 +1,20 @@
+---
+source: tests/integration/commands/format.rs
+expression: output.snapshot_display()
+---
+args: ["format", "--preferred-width", "22"]
+status: 0
+success: true
+stdin ---
+[1,2,3,4,5,"helllllllooooooo"]
+stdout ---
+[
+  1,
+  2,
+  3,
+  4,
+  5,
+  "helllllllooooooo"
+]
+
+stderr ---

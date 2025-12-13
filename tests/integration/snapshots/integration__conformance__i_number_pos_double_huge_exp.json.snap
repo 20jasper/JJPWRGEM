@@ -8,8 +8,6 @@ success: true
 stdin ---
 [1.5e+9999]
 stdout ---
-[
-  1.5e+9999
-]
+[1.5e+9999]
 
 stderr ---

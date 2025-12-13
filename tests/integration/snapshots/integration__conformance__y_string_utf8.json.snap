@@ -8,8 +8,6 @@ success: true
 stdin ---
 ["€𝄞"]
 stdout ---
-[
-  "€𝄞"
-]
+["€𝄞"]
 
 stderr ---

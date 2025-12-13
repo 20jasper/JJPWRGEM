@@ -38,11 +38,7 @@ stdout ---
   [
     {
       "arrayKey": {
-        "nestedArray": [
-          true,
-          false,
-          null
-        ]
+        "nestedArray": [true, false, null]
       }
     }
   ]

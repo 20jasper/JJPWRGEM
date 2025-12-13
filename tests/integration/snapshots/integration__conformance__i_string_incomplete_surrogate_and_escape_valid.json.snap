@@ -8,8 +8,6 @@ success: true
 stdin ---
 ["\uD800\n"]
 stdout ---
-[
-  "\uD800\n"
-]
+["\uD800\n"]
 
 stderr ---

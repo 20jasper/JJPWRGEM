@@ -1,0 +1,15 @@
+---
+source: tests/integration/commands/format.rs
+expression: output.snapshot_display()
+---
+args: ["format", "--preferred-width=abc"]
+status: 2
+success: false
+stdin ---
+<no stdin passed>
+stdout ---
+
+stderr ---
+error: invalid value 'abc' for '--preferred-width <PREFERRED_WIDTH>': invalid digit found in string
+
+For more information, try '--help'.
