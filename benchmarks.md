@@ -10,6 +10,8 @@ It can parse and pretty print a 1.7MB JSON file in around ~11ms[^prettyCitm] and
 
 [^throughputBench]: #parsing-and-stringification-throughput
 
+These benchmarks are run with `AMD Ryzen 5 5600X 6-Core Processor (3.70 GHz)`
+
 Please show me any other tools I should benchmark against!
 
 ## comparison with other CLI tools
