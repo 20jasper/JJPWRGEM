@@ -7,7 +7,7 @@ use crate::{Error, ErrorKind, Result};
 use core::ops::Range;
 use std::borrow::Cow;
 
-#[derive(Debug, PartialEq, Eq, Clone, Default)]
+#[derive(Debug, Clone, Default, Eq)]
 pub struct ObjectEntries<'a>(pub Vec<(&'a str, Value<'a>)>);
 
 impl<'a> ObjectEntries<'a> {
@@ -35,6 +35,16 @@ impl<'a> ObjectEntries<'a> {
 impl<'a> From<Vec<(&'a str, Value<'a>)>> for ObjectEntries<'a> {
     fn from(value: Vec<(&'a str, Value<'a>)>) -> Self {
         ObjectEntries(value)
+    }
+}
+
+impl<'a> PartialEq for ObjectEntries<'a> {
+    fn eq(&self, other: &Self) -> bool {
+        if self.0.len() != other.0.len() {
+            return false;
+        }
+
+        self.0.iter().all(|(k, v)| other.get(k) == Some(v))
     }
 }
 
