@@ -8,8 +8,16 @@ publish = false
 [dependencies]
 displaydoc = { workspace = true }
 itertools = "0.14.0"
+serde = { version = "1.0.228", optional = true }
+serde_json = { version = "1.0.145", features = [
+  "arbitrary_precision",
+  "preserve_order",
+], optional = true }
 thiserror = { workspace = true }
 
 [dev-dependencies]
 rstest = { workspace = true }
 rstest_reuse = { workspace = true }
+
+[features]
+serde = ["dep:serde", "dep:serde_json"]
