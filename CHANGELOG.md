@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.1](https://github.com/20jasper/JJPWRGEM/releases/tag/jjpwrgem-v0.5.1) - 2025-12-14
+
+### Added
+
+- end of line option
+
 ## [0.5.0](https://github.com/20jasper/JJPWRGEM/releases/tag/jjpwrgem-v0.5.0) - 2025-12-13
 
 ### Added
