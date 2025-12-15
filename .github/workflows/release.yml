@@ -278,10 +278,21 @@ jobs:
 
           gh release create "${{ needs.plan.outputs.tag }}" --target "$RELEASE_COMMIT" $PRERELEASE_FLAG --title "$ANNOUNCEMENT_TITLE" --notes-file "$RUNNER_TEMP/notes.txt" artifacts/*
 
+  custom-host-npm:
+    needs:
+      - plan
+      - build-local-artifacts
+      - build-global-artifacts
+    uses: ./.github/workflows/host-npm.yml
+    with:
+      plan: ${{ needs.plan.outputs.val }}
+    secrets: inherit
+
   custom-publish-npm:
     needs:
       - plan
       - host
+      - custom-host-npm
     if: ${{ !fromJson(needs.plan.outputs.val).announcement_is_prerelease || fromJson(needs.plan.outputs.val).publish_prereleases }}
     uses: ./.github/workflows/publish-npm.yml
     with:
@@ -297,6 +308,7 @@ jobs:
       - plan
       - host
       - custom-publish-npm
+      - custom-host-npm
     # use "always() && ..." to allow us to wait for all publish jobs while
     # still allowing individual publish jobs to skip themselves (for prereleases).
     # "host" however must run to completion, no skipping allowed!

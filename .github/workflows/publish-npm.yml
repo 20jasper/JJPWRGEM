@@ -10,7 +10,7 @@ on:
 
 permissions:
   id-token: write
-  contents: read
+
 jobs:
   publish:
     name: Publish npm package
@@ -18,24 +18,25 @@ jobs:
     env:
       PLAN: ${{ inputs.plan }}
     steps:
-      - uses: actions/checkout@v6
-        with:
-          persist-credentials: false
-
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Install just
-        uses: taiki-e/install-action@just
-      - name: Generate npm package manifest
-        run: just package-json
-
       - name: Setup Node
         uses: actions/setup-node@v6
         with:
           node-version: "24.x"
           registry-url: "https://registry.npmjs.org"
-
+      - run: npm i -g npm@latest
+      - name: Download npm package artifact
+        uses: actions/download-artifact@v7
+        with:
+          name: ${{ github.ref_name }}-npm-package.tar.gz
+          path: ./npm
+      - name: Untar npm package
+        run: |
+          # Find the .tar.gz file inside the downloaded artifact directory and extract it
+          PKG_TAR=$(find ./npm -name '*.tar.gz' | head -n1)
+          echo "Found tarball: $PKG_TAR"
+          tar -xzf "$PKG_TAR" -C ./npm
       - name: Publish npm package
-        working-directory: npm-template
-        run: npm publish --access public
+        working-directory: npm
+        run: npm publish --access public --provenance
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

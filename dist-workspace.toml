@@ -21,5 +21,7 @@ targets = [
 install-path = "CARGO_HOME"
 # Whether to install an updater program
 install-updater = false
-# Publish jobs to run in CI
+
+# https://axodotdev.github.io/cargo-dist/book/ci/customizing.html
+host-jobs = ["./host-npm"]
 publish-jobs = ["./publish-npm"]
