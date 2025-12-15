@@ -1,6 +1,6 @@
 use clap::{Parser, Subcommand};
-use std::process::ExitCode;
 
+mod npm;
 mod plot;
 mod template;
 
@@ -19,30 +19,20 @@ enum Commands {
     VerifyReadmes,
     /// Generate candlestick charts for all benchmark datasets
     PlotBenchmarks,
+    /// Generate npm package.json
+    GenerateNpmPackage,
 }
 
-fn main() -> ExitCode {
+fn main() -> anyhow::Result<()> {
     let cli = Cli::parse();
 
     match cli.cmd {
         Commands::GenerateReadmes => {
             template::write_readmes();
-            println!("Wrote README files");
+            Ok(())
         }
-        Commands::VerifyReadmes => {
-            if let Err(e) = template::are_readmes_updated() {
-                eprintln!("{e}");
-                return ExitCode::FAILURE;
-            }
-        }
-        Commands::PlotBenchmarks => match plot::plot_all_benchmarks() {
-            Ok(()) => println!("Wrote candlestick charts for all benchmarks"),
-            Err(err) => {
-                eprintln!("failed to plot candlestick charts: {err}");
-                return ExitCode::FAILURE;
-            }
-        },
-    };
-
-    ExitCode::SUCCESS
+        Commands::VerifyReadmes => template::are_readmes_updated(),
+        Commands::PlotBenchmarks => plot::plot_all_benchmarks(),
+        Commands::GenerateNpmPackage => npm::write_package_json(),
+    }
 }

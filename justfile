@@ -21,7 +21,7 @@ format-check:
     npx -y prettier './**/*.{md,yaml,yml}' --check
 
 lint:
-    RUSTFLAGS=-Dwarnings cargo clippy --all-targets --all-features 
+    RUSTFLAGS=-Dwarnings cargo clippy --all-targets --all-features --workspace
 
 test_flags := "--all-features --workspace --all-targets"
 
@@ -48,6 +48,20 @@ readmes:
 # verify markdown files match generated templates
 readmes-check:
     {{ xtask-command }} verify-readmes
+
+npm-markdown:
+    cp -f readme.md npm-template/README.md
+    cp -f CHANGELOG.md npm-template/CHANGELOG.md
+
+# updates everything related to the package.json
+package-json: npm-markdown
+    {{ xtask-command }} generate-npm-package
+    cd ./npm-template && npm i && npm shrinkwrap
+
+# regenerated npm package metadata and checks for changes
+package-json-check: package-json
+    git diff --exit-code -- npm-template/npm-shrinkwrap.json
+    npm pack ./npm-template --dry-run
 
 # install jjp into your path (watch)
 install-watch:

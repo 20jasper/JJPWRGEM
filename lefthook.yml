@@ -15,6 +15,7 @@ pre-push:
     - run: cargo shear
     - run: dist plan
     - run: just readmes-check
+    - run: just package-json-check
     - run: cargo test
       glob: "**/*.rs"
 
@@ -31,3 +32,8 @@ pre-commit:
         - "**/*.md"
         - "xtask/templates/**"
       stage_fixed: true
+    - run: just package-json
+      glob:
+        - "xtask/"
+        - "Cargo.toml"
+        - "dist-workspace.toml"

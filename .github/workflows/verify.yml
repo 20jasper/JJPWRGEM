@@ -49,6 +49,7 @@ jobs:
       - name: lint
         run: just lint
       - run: just readmes-check
+      - run: just package-json-check
 
   build-test:
     runs-on: ubuntu-latest
