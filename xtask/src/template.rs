@@ -4,6 +4,8 @@ use std::{
     process::{Command, Stdio},
 };
 
+use anyhow::bail;
+
 fn strip_front_matter(raw: &str) -> &str {
     const FRONT_MATTER_SEP: &str = "\n---\n";
     raw.split_once(FRONT_MATTER_SEP)
@@ -143,17 +145,17 @@ pub fn write_readmes() {
     fs::write(BENCH_OUT_PATH_STR, bench_rendered).unwrap();
 }
 
-pub fn are_readmes_updated() -> Result<(), &'static str> {
+pub fn are_readmes_updated() -> anyhow::Result<()> {
     let root_rendered = render_template(JJPWREGEM_TEMPLATE, &[]).unwrap();
     let parse_rendered = render_template(JJPWREGEM_PARSE_TEMPLATE, &[]).unwrap();
     let bench_rendered = render_template(BENCH_TEMPLATE, &BENCH_TABLE_REPLACEMENTS).unwrap();
 
     if EXISTING_ROOT != root_rendered {
-        Err("readme.md out of date (root)")
+        bail!("readme.md out of date (root)")
     } else if EXISTING_PARSE != parse_rendered {
-        Err("crates/parse/readme.md out of date")
+        bail!("crates/parse/readme.md out of date")
     } else if EXISTING_BENCH != bench_rendered {
-        Err("xtask/bench/readme.md out of date")
+        bail!("xtask/bench/readme.md out of date")
     } else {
         Ok(())
     }
