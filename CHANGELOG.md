@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.2](https://github.com/20jasper/JJPWRGEM/releases/tag/jjpwrgem-v0.5.2) - 2025-12-15
+
+### Added
+
+- use custom npm package builder and release instead of dists'
+
+### Removed
+
+- unused console.table in npm installer
+
 ## [0.5.1](https://github.com/20jasper/JJPWRGEM/releases/tag/jjpwrgem-v0.5.1) - 2025-12-14
 
 ### Added
