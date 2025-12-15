@@ -56,7 +56,7 @@ npm-markdown:
 # updates everything related to the package.json
 package-json: npm-markdown
     {{ xtask-command }} generate-npm-package
-    cd ./npm-template && npm i && npm shrinkwrap
+    cd ./npm-template && npm i --ignore-scripts && npm shrinkwrap && git add npm-shrinkwrap.json
 
 # regenerated npm package metadata and checks for changes
 package-json-check: package-json
