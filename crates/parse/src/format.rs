@@ -1,4 +1,6 @@
 mod prettify;
+#[cfg(feature = "serde")]
+pub mod serde;
 mod uglify;
 
 pub use prettify::{FormatOptions, format_str, format_value, prettify_str, prettify_value};
