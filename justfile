@@ -23,27 +23,39 @@ format-check:
 lint:
     RUSTFLAGS=-Dwarnings cargo clippy --all-targets --all-features 
 
+test_flags := "--all-features --workspace --all-targets"
+
+test:
+    cargo test {{ test_flags }}
+
 test-cov:
-    cargo llvm-cov --workspace
+    cargo llvm-cov {{ test_flags }}
 
 test-cov-open:
-    cargo llvm-cov --workspace --open
+    cargo llvm-cov {{ test_flags }} --open
 
 # deletes snapshots locally and rejects in CI
 test-snapshot:
-    cargo insta test --unreferenced auto 
+    cargo insta test {{ test_flags }} --unreferenced auto 
     cargo insta review
+
+xtask-command := "cargo run -p xtask -q --"
 
 # generate markdown files from templates
 readmes:
-    cargo run -p xtask -q -- generate-readmes
+    {{ xtask-command }} generate-readmes
 
 # verify markdown files match generated templates
 readmes-check:
-    cargo run -p xtask -q -- verify-readmes
+    {{ xtask-command }} verify-readmes
 
-watch:
+# install jjp into your path (watch)
+install-watch:
     cargo watch -q -c -x "install --path ."
+
+# install jjp into your path
+install:
+    cargo install --path .
 
 # removes unnecessary files from crates before publishing
 diet:
