@@ -27,16 +27,19 @@ jobs:
       - name: Download npm package artifact
         uses: actions/download-artifact@v7
         with:
-          name: ${{ github.ref_name }}-npm-package.tar.gz
+          name: ${{ github.ref_name }}-npm-package.tgz
           path: ./npm
-      - name: Untar npm package
-        run: |
-          # Find the .tar.gz file inside the downloaded artifact directory and extract it
-          PKG_TAR=$(find ./npm -name '*.tar.gz' | head -n1)
-          echo "Found tarball: $PKG_TAR"
-          tar -xzf "$PKG_TAR" -C ./npm
       - name: Publish npm package
         working-directory: npm
-        run: npm publish --access public --provenance
+        run: |
+          set -euo pipefail
+          tarball=$(ls -1 *.tgz 2>/dev/null | head -n1 || true)
+          if [ -z "${tarball}" ]; then
+            echo "No tarball (*.tgz) found in $(pwd)"
+            ls -la
+            exit 1
+          fi
+          echo "Publishing ${tarball}"
+          npm publish --access public --provenance "${tarball}"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

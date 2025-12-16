@@ -33,12 +33,13 @@ jobs:
           node-version: "24.x"
           registry-url: "https://registry.npmjs.org"
 
-      - name: Tar npm package
-        working-directory: npm-template
-        run: tar -czvf ../npm-package.tar.gz .
+      - name: Pack npm
+        run: |
+          mkdir -p ./npm
+          npm pack ./npm-template --pack-destination ./npm
 
       - name: Upload npm package artifact
         uses: actions/upload-artifact@v6
         with:
-          name: ${{ github.ref_name }}-npm-package.tar.gz
-          path: npm-package.tar.gz
+          name: ${{ github.ref_name }}-npm-package.tgz
+          path: ./npm/*.tgz
