@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.3](https://github.com/20jasper/JJPWRGEM/releases/tag/jjpwrgem-v0.5.2) - 2025-12-15
+
+### fixed
+
+- removed tarball from npm release
+
 ## [0.5.2](https://github.com/20jasper/JJPWRGEM/releases/tag/jjpwrgem-v0.5.2) - 2025-12-15
 
 ### Added
