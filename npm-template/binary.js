@@ -52,7 +52,7 @@ const getPlatform = () => {
       osType = "unknown-linux-musl-dynamic";
     } else if (libc.isNonGlibcLinuxSync()) {
       console.warn(
-        "Your libc is neither glibc nor musl; trying static musl binary instead"
+        "Your libc is neither glibc nor musl; trying static musl binary instead",
       );
       osType = "unknown-linux-musl-static";
     } else {
@@ -67,7 +67,7 @@ const getPlatform = () => {
         // We can't run the glibc binaries, but we can run the static musl ones
         // if they exist
         console.warn(
-          "Your glibc isn't compatible; trying static musl binary instead"
+          "Your glibc isn't compatible; trying static musl binary instead",
         );
         osType = "unknown-linux-musl-static";
       }
@@ -82,8 +82,8 @@ const getPlatform = () => {
   if (!platform) {
     error(
       `Platform with type "${rawOsType}" and architecture "${rawArchitecture}" is not supported by ${name}.\nYour system must be one of the following:\n\n${Object.keys(
-        supportedPlatforms
-      ).join(",")}`
+        supportedPlatforms,
+      ).join(",")}`,
     );
   }
 
