@@ -13,6 +13,7 @@ env:
   RUSTFLAGS: "-Dwarnings"
   CARGO_TERM_COLOR: always
   TOOLCHAIN: stable
+  CI: true
 
 jobs:
   format:
@@ -51,7 +52,7 @@ jobs:
       - run: just readmes-check
       - run: just package-json-check
 
-  build-test:
+  test-cli:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -67,3 +68,27 @@ jobs:
         run: cargo build --release --verbose
       - name: test
         run: cargo test --workspace --verbose
+
+  test-vscode:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: true
+      - name: update rust
+        run: rustup update ${{ env.TOOLCHAIN }} && rustup default ${{ env.TOOLCHAIN }}
+      - name: Install just
+        uses: taiki-e/install-action@just
+      - name: Configure Dependency Caching
+        uses: Swatinem/rust-cache@v2
+      - name: build
+        run: just vscode-bin
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+          run_install: true
+      - run: /usr/bin/Xvfb :99 -screen 0 1024x768x24 > /dev/null 2>&1 & echo "Started xvfb"
+        shell: bash
+      - run: pnpm --filter jjpwrgem-vscode test
+        env:
+          DISPLAY: ":99.0"
