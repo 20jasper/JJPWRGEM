@@ -11,7 +11,7 @@ pre-push:
     - run: just format-check
       glob:
         - "justfile"
-        - "**/*.{rs,md,yml}"
+        - "**/*.{rs,md,yml,ts,js}"
     - run: cargo shear
     - run: dist plan
     - run: just readmes-check
@@ -25,7 +25,7 @@ pre-commit:
     - run: just format
       glob:
         - "justfile"
-        - "**/*.{rs,md,yml}"
+        - "**/*.{rs,md,yml,ts,js}"
       stage_fixed: true
     - run: just readmes && git add "**/*.md" *.md
       glob:

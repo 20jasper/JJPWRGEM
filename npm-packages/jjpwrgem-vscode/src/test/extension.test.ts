@@ -9,7 +9,7 @@ suite("Extension Smoke Tests", function () {
 
   test("Extension should be present and activate", async () => {
     const extension = vscode.extensions.all.find(
-      (ext) => ext.packageJSON && ext.packageJSON.name === "jjpwrgem-vscode"
+      (ext) => ext.packageJSON && ext.packageJSON.name === "jjpwrgem-vscode",
     );
     assert.ok(extension, "jjpwrgem-vscode extension should be installed");
     if (!extension!.isActive) {
@@ -31,7 +31,7 @@ suite("Extension Smoke Tests", function () {
     assert.strictEqual(
       editor.document.languageId,
       "json",
-      "File should be recognized as json"
+      "File should be recognized as json",
     );
 
     const edits = await vscode.commands.executeCommand<
@@ -51,7 +51,7 @@ suite("Extension Smoke Tests", function () {
     assert.equal(
       formatted.trim(),
       '{\n  "foo": "bar"\n}',
-      "Formatted document should contain expected JSON keys"
+      "Formatted document should contain expected JSON keys",
     );
 
     await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
