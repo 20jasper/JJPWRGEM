@@ -24,6 +24,7 @@ format-check:
 
 lint:
     RUSTFLAGS=-Dwarnings cargo clippy --all-targets --all-features --workspace
+    pnpm --if-present lint 
 
 test_flags := "--all-features --workspace --all-targets"
 
