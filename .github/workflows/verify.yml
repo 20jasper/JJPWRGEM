@@ -38,6 +38,10 @@ jobs:
       - uses: actions/checkout@v6
       - name: update rust
         run: rustup update ${{ env.TOOLCHAIN }} && rustup default ${{ env.TOOLCHAIN }}
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+          run_install: true
       - name: Install just
         uses: taiki-e/install-action@just
       - name: Install cargo-shear
