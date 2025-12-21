@@ -1,0 +1,15 @@
+---
+source: tests/integration/conformance.rs
+expression: output.snapshot_display()
+---
+args: ["format", "--uglify"]
+status: 1
+success: false
+stdin ---
+raw bytes: [91, 34, 252, 131, 191, 191, 191, 191, 34, 93]
+stdout ---
+
+stderr ---
+error: source did not contain valid utf8
+ --> stdin
+  |

@@ -1,0 +1,25 @@
+---
+source: tests/integration/conformance.rs
+expression: output.snapshot_display()
+---
+args: ["format", "--uglify"]
+status: 1
+success: false
+stdin ---
+{"x": true,
+stdout ---
+
+stderr ---
+error: expected key, found no significant characters
+ --> stdin:1:11
+  |
+1 | {"x": true,
+  |           ^
+  |           |
+  |           expected due to `,`
+  |
+help: consider replacing the trailing comma with a closed curly brace
+  |
+1 - {"x": true,
+1 + {"x": true}
+  |

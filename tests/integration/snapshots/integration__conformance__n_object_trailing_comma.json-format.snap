@@ -1,0 +1,25 @@
+---
+source: tests/integration/conformance.rs
+expression: output.snapshot_display()
+---
+args: ["format"]
+status: 1
+success: false
+stdin ---
+{"id":0,}
+stdout ---
+
+stderr ---
+error: expected key, found `}`
+ --> stdin:1:9
+  |
+1 | {"id":0,}
+  |        -^
+  |        |
+  |        expected due to `,`
+  |
+help: consider removing the trailing comma
+  |
+1 - {"id":0,}
+1 + {"id":0}
+  |

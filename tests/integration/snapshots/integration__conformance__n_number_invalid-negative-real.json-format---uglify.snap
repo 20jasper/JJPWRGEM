@@ -1,0 +1,17 @@
+---
+source: tests/integration/conformance.rs
+expression: output.snapshot_display()
+---
+args: ["format", "--uglify"]
+status: 1
+success: false
+stdin ---
+[-123.123foo]
+stdout ---
+
+stderr ---
+error: unexpected character `f`. expected start of a json value
+ --> stdin:1:10
+  |
+1 | [-123.123foo]
+  |          ^

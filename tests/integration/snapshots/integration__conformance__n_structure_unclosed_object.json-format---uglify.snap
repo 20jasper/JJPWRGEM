@@ -1,0 +1,25 @@
+---
+source: tests/integration/conformance.rs
+expression: output.snapshot_display()
+---
+args: ["format", "--uglify"]
+status: 1
+success: false
+stdin ---
+{"asd":"asd"
+stdout ---
+
+stderr ---
+error: expected comma or closed curly brace, found no significant characters
+ --> stdin:1:12
+  |
+1 | {"asd":"asd"
+  | -     -----^
+  | |     |
+  | |     expected due to the preceding key/value pair
+  | object opened here by `{`
+  |
+help: insert the missing closed brace
+  |
+1 | {"asd":"asd"}
+  |             +

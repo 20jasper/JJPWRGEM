@@ -1,0 +1,20 @@
+---
+source: tests/integration/conformance.rs
+expression: output.snapshot_display()
+---
+args: ["format", "--uglify"]
+status: 1
+success: false
+stdin ---
+["\u00A"]
+stdout ---
+
+stderr ---
+error: expected hex digit 4 of 4 in escape, found `"`
+ --> stdin:1:8
+  |
+1 | ["\u00A"]
+  |  ---   ^
+  |  ||
+  |  |\u escape started here
+  |  opening quote found here

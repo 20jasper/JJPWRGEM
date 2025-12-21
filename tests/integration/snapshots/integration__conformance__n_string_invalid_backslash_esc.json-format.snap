@@ -1,0 +1,27 @@
+---
+source: tests/integration/conformance.rs
+expression: output.snapshot_display()
+---
+args: ["format"]
+status: 1
+success: false
+stdin ---
+["\a"]
+stdout ---
+
+stderr ---
+error: expected escapable sequence, found `a`.
+       valid escapes are `\"`, `\\`, `\/`, `\b`, `\f`, `\n`, `\r`, `\t` or `\uXXXX` (4 hex digits)
+ --> stdin:1:4
+  |
+1 | ["\a"]
+  |  --^
+  |  ||
+  |  |escape slash found here
+  |  opening quote found here
+  |
+help: remove unnecessary escape slash
+  |
+1 - ["\a"]
+1 + ["a"]
+  |

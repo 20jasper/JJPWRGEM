@@ -1,0 +1,24 @@
+---
+source: tests/integration/conformance.rs
+expression: output.snapshot_display()
+---
+args: ["format", "--uglify"]
+status: 1
+success: false
+stdin ---
+{"x", null}
+stdout ---
+
+stderr ---
+error: expected colon after key, found `,`
+ --> stdin:1:5
+  |
+1 | {"x", null}
+  |  ---^
+  |  |
+  |  expected due to `"x"`
+  |
+help: insert colon and placeholder value
+  |
+1 | {"x": "🐟🛹", null}
+  |     ++++++++

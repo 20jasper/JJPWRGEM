@@ -1,0 +1,13 @@
+---
+source: tests/integration/conformance.rs
+expression: output.snapshot_display()
+---
+args: ["format", "--uglify"]
+status: 0
+success: true
+stdin ---
+{"asd":"sdf", "dfg":"fgh"}
+stdout ---
+{"asd":"sdf","dfg":"fgh"}
+
+stderr ---

@@ -1,0 +1,17 @@
+---
+source: tests/integration/conformance.rs
+expression: output.snapshot_display()
+---
+args: ["format"]
+status: 1
+success: false
+stdin ---
+[nul]
+stdout ---
+
+stderr ---
+error: unexpected character `n`. expected start of a json value
+ --> stdin:1:2
+  |
+1 | [nul]
+  |  ^

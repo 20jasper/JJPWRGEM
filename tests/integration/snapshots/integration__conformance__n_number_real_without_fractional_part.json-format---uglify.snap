@@ -1,0 +1,20 @@
+---
+source: tests/integration/conformance.rs
+expression: output.snapshot_display()
+---
+args: ["format", "--uglify"]
+status: 1
+success: false
+stdin ---
+[1.]
+stdout ---
+
+stderr ---
+error: expected fraction digit following dot, found `]`
+ --> stdin:1:4
+  |
+1 | [1.]
+  |  --^
+  |  ||
+  |  |decimal point found here
+  |  number found here
