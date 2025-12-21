@@ -1,0 +1,13 @@
+---
+source: tests/integration/conformance.rs
+expression: output.snapshot_display()
+---
+args: ["format", "--uglify"]
+status: 0
+success: true
+stdin ---
+["\u2064"]
+stdout ---
+["\u2064"]
+
+stderr ---

@@ -1,0 +1,17 @@
+---
+source: tests/integration/conformance.rs
+expression: output.snapshot_display()
+---
+args: ["format"]
+status: 1
+success: false
+stdin ---
+2@
+stdout ---
+
+stderr ---
+error: unexpected character `@`. expected start of a json value
+ --> stdin:1:2
+  |
+1 | 2@
+  |  ^

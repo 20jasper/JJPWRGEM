@@ -1,0 +1,13 @@
+---
+source: tests/integration/conformance.rs
+expression: output.snapshot_display()
+---
+args: ["format", "--uglify"]
+status: 0
+success: true
+stdin ---
+["\uD800\n"]
+stdout ---
+["\uD800\n"]
+
+stderr ---

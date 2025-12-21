@@ -1,0 +1,24 @@
+---
+source: tests/integration/conformance.rs
+expression: output.snapshot_display()
+---
+args: ["format"]
+status: 1
+success: false
+stdin ---
+"
+stdout ---
+
+stderr ---
+error: expected closing quote
+ --> stdin:1:1
+  |
+1 | "
+  | ^
+  | |
+  | opening quote found here
+  |
+help: insert the missing closing quote
+  |
+1 | ""
+  |  +

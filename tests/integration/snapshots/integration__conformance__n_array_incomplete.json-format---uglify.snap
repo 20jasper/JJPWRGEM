@@ -1,0 +1,24 @@
+---
+source: tests/integration/conformance.rs
+expression: output.snapshot_display()
+---
+args: ["format", "--uglify"]
+status: 1
+success: false
+stdin ---
+["x"
+stdout ---
+
+stderr ---
+error: expected entry or closed delimiter `]`, found no significant characters
+ --> stdin:1:4
+  |
+1 | ["x"
+  | -  ^
+  | |
+  | expected due to `[`
+  |
+help: insert the missing closed delimiter `]`
+  |
+1 | ["x"]
+  |     +

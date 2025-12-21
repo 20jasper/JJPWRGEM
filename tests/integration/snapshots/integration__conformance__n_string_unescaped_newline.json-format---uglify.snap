@@ -1,0 +1,25 @@
+---
+source: tests/integration/conformance.rs
+expression: output.snapshot_display()
+---
+args: ["format", "--uglify"]
+status: 1
+success: false
+stdin ---
+["new
+line"]
+stdout ---
+
+stderr ---
+error: unexpected unescaped control character `\n` in string literal
+ --> stdin:1:6
+  |
+1 |   ["new
+  |  ______^
+2 | | line"]
+  | |_^
+  |
+help: replace the control character with its escaped form
+  |
+1 | ["new\nline"]
+  |      ++

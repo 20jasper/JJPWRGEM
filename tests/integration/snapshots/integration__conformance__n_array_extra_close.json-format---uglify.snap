@@ -1,0 +1,23 @@
+---
+source: tests/integration/conformance.rs
+expression: output.snapshot_display()
+---
+args: ["format", "--uglify"]
+status: 1
+success: false
+stdin ---
+["x"]]
+stdout ---
+
+stderr ---
+error: unexpected token `]` after json finished
+ --> stdin:1:6
+  |
+1 | ["x"]]
+  |      ^
+  |
+help: consider removing the trailing content (starting with `]`)
+  |
+1 - ["x"]]
+1 + ["x"]
+  |

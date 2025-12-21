@@ -1,0 +1,25 @@
+---
+source: tests/integration/conformance.rs
+expression: output.snapshot_display()
+---
+args: ["format"]
+status: 1
+success: false
+stdin ---
+[1 000.0]
+stdout ---
+
+stderr ---
+error: unexpected leading zero
+ --> stdin:1:4
+  |
+1 | [1 000.0]
+  |    -^^
+  |    |
+  |    first zero found here
+  |
+help: remove the leading zeros
+  |
+1 - [1 000.0]
+1 + [1 0.0]
+  |

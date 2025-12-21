@@ -1,0 +1,27 @@
+---
+source: tests/integration/conformance.rs
+expression: output.snapshot_display()
+---
+args: ["format"]
+status: 1
+success: false
+stdin ---
+["\
+stdout ---
+
+stderr ---
+error: expected escapable sequence, found no significant characters.
+       valid escapes are `\"`, `\\`, `\/`, `\b`, `\f`, `\n`, `\r`, `\t` or `\uXXXX` (4 hex digits)
+ --> stdin:1:3
+  |
+1 | ["\
+  |  -^
+  |  ||
+  |  |escape slash found here
+  |  opening quote found here
+  |
+help: remove unnecessary escape slash
+  |
+1 - ["\
+1 + ["
+  |

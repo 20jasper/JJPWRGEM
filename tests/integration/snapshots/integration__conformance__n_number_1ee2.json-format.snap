@@ -1,0 +1,20 @@
+---
+source: tests/integration/conformance.rs
+expression: output.snapshot_display()
+---
+args: ["format"]
+status: 1
+success: false
+stdin ---
+[1eE2]
+stdout ---
+
+stderr ---
+error: expected +/- or digit after exponent indicator, found `E`
+ --> stdin:1:4
+  |
+1 | [1eE2]
+  |  --^
+  |  ||
+  |  |exponent indicator found here
+  |  number with exponent found here

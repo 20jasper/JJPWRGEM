@@ -1,0 +1,13 @@
+---
+source: tests/integration/conformance.rs
+expression: output.snapshot_display()
+---
+args: ["format", "--uglify"]
+status: 0
+success: true
+stdin ---
+{ "min": -1.0e+28, "max": 1.0e+28 }
+stdout ---
+{"min":-1.0e+28,"max":1.0e+28}
+
+stderr ---

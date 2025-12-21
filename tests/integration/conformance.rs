@@ -81,8 +81,10 @@ fn get_tests() -> (Vec<Case>, usize, usize) {
 
 mod common {}
 
-#[test]
-fn feature() {
+#[rstest::rstest]
+#[case(&["format"])]
+#[case(&["format", "--uglify"])]
+fn feature(#[case] args: &[&str]) {
     let (mut cases, total, rest) = get_tests();
     assert_eq!(rest, 313);
     assert_eq!(total, 318);
@@ -90,9 +92,12 @@ fn feature() {
     cases.sort_by(|a, b| a.file_name.cmp(&b.file_name));
 
     for case in cases {
-        let output = exec_cmd(cli().arg("format"), Some(case.text));
+        let output = exec_cmd(cli().args(args), Some(case.text));
 
-        assert_snapshot!(case.file_name.clone(), output.snapshot_display());
+        assert_snapshot!(
+            case.file_name.clone() + "-" + &args.join("-"),
+            output.snapshot_display()
+        );
 
         assert!(
             case.expected != JsonResult::Fail || !output.status.success(),

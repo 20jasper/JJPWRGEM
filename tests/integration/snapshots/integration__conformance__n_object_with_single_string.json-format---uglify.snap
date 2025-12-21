@@ -1,0 +1,24 @@
+---
+source: tests/integration/conformance.rs
+expression: output.snapshot_display()
+---
+args: ["format", "--uglify"]
+status: 1
+success: false
+stdin ---
+{ "foo" : "bar", "a" }
+stdout ---
+
+stderr ---
+error: expected colon after key, found `}`
+ --> stdin:1:22
+  |
+1 | { "foo" : "bar", "a" }
+  |                  --- ^
+  |                  |
+  |                  expected due to `"a"`
+  |
+help: insert colon and placeholder value
+  |
+1 | { "foo" : "bar", "a": "🐟🛹" }
+  |                     ++++++++

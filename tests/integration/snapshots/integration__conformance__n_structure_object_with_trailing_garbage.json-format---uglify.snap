@@ -1,0 +1,23 @@
+---
+source: tests/integration/conformance.rs
+expression: output.snapshot_display()
+---
+args: ["format", "--uglify"]
+status: 1
+success: false
+stdin ---
+{"a": true} "x"
+stdout ---
+
+stderr ---
+error: unexpected token `"x"` after json finished
+ --> stdin:1:13
+  |
+1 | {"a": true} "x"
+  |             ^^^
+  |
+help: consider removing the trailing content (starting with `"x"`)
+  |
+1 - {"a": true} "x"
+1 + {"a": true} 
+  |

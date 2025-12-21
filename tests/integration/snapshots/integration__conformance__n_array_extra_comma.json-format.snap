@@ -1,0 +1,25 @@
+---
+source: tests/integration/conformance.rs
+expression: output.snapshot_display()
+---
+args: ["format"]
+status: 1
+success: false
+stdin ---
+["",]
+stdout ---
+
+stderr ---
+error: expected json value, found `]`
+ --> stdin:1:5
+  |
+1 | ["",]
+  |    -^
+  |    |
+  |    expected due to `,`
+  |
+help: consider removing the trailing comma
+  |
+1 - ["",]
+1 + [""]
+  |

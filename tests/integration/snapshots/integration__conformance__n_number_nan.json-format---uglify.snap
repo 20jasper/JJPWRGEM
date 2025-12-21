@@ -1,0 +1,17 @@
+---
+source: tests/integration/conformance.rs
+expression: output.snapshot_display()
+---
+args: ["format", "--uglify"]
+status: 1
+success: false
+stdin ---
+[NaN]
+stdout ---
+
+stderr ---
+error: unexpected character `N`. expected start of a json value
+ --> stdin:1:2
+  |
+1 | [NaN]
+  |  ^

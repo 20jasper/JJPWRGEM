@@ -1,0 +1,14 @@
+---
+source: tests/integration/conformance.rs
+expression: output.snapshot_display()
+---
+args: ["format", "--uglify"]
+status: 0
+success: true
+stdin ---
+["a"]
+
+stdout ---
+["a"]
+
+stderr ---

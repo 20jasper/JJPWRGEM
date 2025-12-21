@@ -1,0 +1,20 @@
+---
+source: tests/integration/conformance.rs
+expression: output.snapshot_display()
+---
+args: ["format"]
+status: 1
+success: false
+stdin ---
+["\uD800\u"]
+stdout ---
+
+stderr ---
+error: expected hex digit 1 of 4 in escape, found `"`
+ --> stdin:1:11
+  |
+1 | ["\uD800\u"]
+  |  -      --^
+  |  |      |
+  |  |      \u escape started here
+  |  opening quote found here

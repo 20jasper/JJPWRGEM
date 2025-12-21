@@ -1,0 +1,19 @@
+---
+source: tests/integration/conformance.rs
+expression: output.snapshot_display()
+---
+args: ["format"]
+status: 1
+success: false
+stdin ---
+[-Infinity]
+stdout ---
+
+stderr ---
+error: expected digit following minus sign, found `I`
+ --> stdin:1:2
+  |
+1 | [-Infinity]
+  |  ^
+  |  |
+  |  minus sign found here
