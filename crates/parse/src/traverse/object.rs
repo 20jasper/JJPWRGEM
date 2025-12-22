@@ -85,20 +85,23 @@ impl<'a> ObjectState<'a> {
                             ..
                         },
                     ),
-                ) => ObjectState::Key {
-                    comma_ctx,
-                    open_ctx,
-                },
+                ) => {
+                    visitor.on_item_delim();
+                    ObjectState::Key {
+                        comma_ctx,
+                        open_ctx,
+                    }
+                }
                 (
                     None,
                     Some(
                         key_ctx @ TokenWithContext {
-                            token: Token::String(_),
+                            token: Token::String(key),
                             ..
                         },
                     ),
                 ) => {
-                    visitor.on_object_key(key_ctx.clone());
+                    visitor.on_object_key(key);
                     ObjectState::Colon { key_ctx, open_ctx }
                 }
                 (Some(pair_span), maybe_token) => {
@@ -130,11 +133,11 @@ impl<'a> ObjectState<'a> {
             } => match tokens.next_token()? {
                 Some(
                     key_ctx @ TokenWithContext {
-                        token: Token::String(_),
+                        token: Token::String(key),
                         ..
                     },
                 ) => {
-                    visitor.on_object_key(key_ctx.clone());
+                    visitor.on_object_key(key);
                     ObjectState::Colon { key_ctx, open_ctx }
                 }
                 maybe_token => {
@@ -151,11 +154,14 @@ impl<'a> ObjectState<'a> {
                         token: Token::Colon,
                         ..
                     },
-                ) => ObjectState::Value {
-                    key_ctx,
-                    colon_ctx,
-                    open_ctx,
-                },
+                ) => {
+                    visitor.on_object_key_val_delim();
+                    ObjectState::Value {
+                        key_ctx,
+                        colon_ctx,
+                        open_ctx,
+                    }
+                }
                 maybe_token => {
                     return Err(Error::from_maybe_token_with_context(
                         |tok| ErrorKind::ExpectedColon(key_ctx.clone(), tok),
