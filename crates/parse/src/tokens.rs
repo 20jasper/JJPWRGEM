@@ -34,6 +34,13 @@ impl<'a> Token<'a> {
                 | Token::Number(_)
         )
     }
+
+    pub fn is_scalar(&self) -> bool {
+        matches!(
+            self,
+            Token::String(_) | Token::Null | Token::Boolean(_) | Token::Number(_)
+        )
+    }
 }
 
 impl Display for Token<'_> {
