@@ -121,6 +121,7 @@ impl<'a> ArrayState<'a> {
                     },
                 ) => {
                     tokens.next_token()?;
+                    visitor.on_item_delim();
                     ArrayState::Value {
                         open_ctx,
                         expect_ctx: comma_ctx,

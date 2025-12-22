@@ -1,0 +1,27 @@
+use crate::tokens::TokenWithContext;
+use crate::{
+    Result,
+    tokens::TokenStream,
+    traverse::{ParseVisitor, parse_tokens},
+};
+use core::ops::Range;
+
+#[derive(Debug)]
+pub struct NoopVisitor;
+
+impl<'a> ParseVisitor<'a> for NoopVisitor {
+    fn on_object_open(&mut self, _open_ctx: TokenWithContext<'a>) {}
+    fn on_object_key(&mut self, _key: &'a str) {}
+    fn on_object_close(&mut self, _range: Range<usize>) {}
+    fn on_array_open(&mut self, _open_ctx: TokenWithContext<'a>) {}
+    fn on_array_close(&mut self, _range: Range<usize>) {}
+    fn on_scalar(&mut self, _token_ctx: TokenWithContext<'a>) {}
+    fn on_object_key_val_delim(&mut self) {}
+    fn on_item_delim(&mut self) {}
+}
+
+pub fn validate_str<'a>(json: &'a str) -> Result<'a, ()> {
+    let mut visitor = NoopVisitor;
+    parse_tokens(&mut TokenStream::new(json), json, true, &mut visitor)?;
+    Ok(())
+}

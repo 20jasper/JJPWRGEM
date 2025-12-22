@@ -68,7 +68,7 @@ pub fn parse_str<'a>(json: &'a str) -> Result<'a, Value<'a>> {
 mod visitor {
     use crate::{
         ast::{ObjectEntries, Value, token_as_scalar_value},
-        tokens::{Token, TokenWithContext},
+        tokens::TokenWithContext,
         traverse::ParseVisitor,
     };
     use core::ops::Range;
@@ -132,11 +132,9 @@ mod visitor {
             });
         }
 
-        fn on_object_key(&mut self, key_ctx: TokenWithContext<'a>) {
-            if let Token::String(s) = key_ctx.token
-                && let Some(AstFrame::Object { current_key, .. }) = self.stack.last_mut()
-            {
-                *current_key = Some(s);
+        fn on_object_key(&mut self, key: &'a str) {
+            if let Some(AstFrame::Object { current_key, .. }) = self.stack.last_mut() {
+                *current_key = Some(key);
             }
         }
 
@@ -169,6 +167,9 @@ mod visitor {
                 token_as_scalar_value(token_ctx.token).expect("traverser should only pass scalars");
             self.emit_value(v);
         }
+
+        fn on_object_key_val_delim(&mut self) {}
+        fn on_item_delim(&mut self) {}
     }
 }
 

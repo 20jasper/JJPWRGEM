@@ -5,9 +5,9 @@ pub use error::{Error, Result};
 
 use clap::Parser;
 use jjpwrgem_parse::{
-    ast::parse_str,
     error::diagnostics::{self, Diagnostic, Source},
     format::{self, LineEnding},
+    validate_str,
 };
 use jjpwrgem_ui::{Color, Style};
 use std::io::{IsTerminal, Read};
@@ -97,7 +97,7 @@ pub fn format(
 }
 
 pub fn check(json: String, style: Style) -> Output {
-    match parse_str(&json) {
+    match validate_str(&json) {
         Ok(_) => Output::success(""),
         Err(error) => Output::failure_diagnostic(Diagnostic::from(&error), style),
     }
