@@ -1,11 +1,10 @@
-mod array;
-mod object;
-
-use crate::ast::{array::parse_array, object::parse_object};
-use crate::tokens::{Token, TokenStream, TokenWithContext};
-use crate::{Error, ErrorKind, Result};
-use core::ops::Range;
+use crate::{
+    Result,
+    tokens::{Token, TokenStream},
+    traverse::parse_tokens,
+};
 use std::borrow::Cow;
+use visitor::AstVisitor;
 
 #[derive(Debug, Clone, Default, Eq)]
 pub struct ObjectEntries<'a>(pub Vec<(&'a str, Value<'a>)>);
@@ -58,7 +57,122 @@ pub enum Value<'a> {
     Boolean(bool),
 }
 
-fn token_to_value<'a>(token: Token<'a>) -> Option<Value<'a>> {
+pub fn parse_str<'a>(json: &'a str) -> Result<'a, Value<'a>> {
+    let mut ast = AstVisitor::new();
+    parse_tokens(&mut TokenStream::new(json), json, true, &mut ast)?;
+    Ok(ast
+        .finish()
+        .expect("visitor should error if empty or unfinished"))
+}
+
+mod visitor {
+    use crate::{
+        ast::{ObjectEntries, Value, token_as_scalar_value},
+        tokens::{Token, TokenWithContext},
+        traverse::ParseVisitor,
+    };
+    use core::ops::Range;
+
+    #[derive(Debug, Default)]
+    pub struct AstVisitor<'a> {
+        stack: Vec<AstFrame<'a>>,
+        result: Option<Value<'a>>,
+    }
+
+    #[derive(Debug)]
+    enum AstFrame<'a> {
+        Object {
+            entries: ObjectEntries<'a>,
+            current_key: Option<&'a str>,
+        },
+        Array {
+            items: Vec<Value<'a>>,
+        },
+    }
+
+    impl<'a> AstVisitor<'a> {
+        pub fn new() -> Self {
+            Self {
+                stack: Vec::new(),
+                result: None,
+            }
+        }
+
+        fn emit_value(&mut self, value: Value<'a>) {
+            match self.stack.last_mut() {
+                // top-level value
+                None => {
+                    self.result = Some(value);
+                }
+                Some(frame) => match frame {
+                    AstFrame::Array { items } => items.push(value),
+                    AstFrame::Object {
+                        entries,
+                        current_key,
+                    } => {
+                        let k = current_key
+                            .take()
+                            .expect("the traverser should not emit a value before the key");
+                        entries.push(k, value);
+                    }
+                },
+            }
+        }
+
+        pub fn finish(self) -> Option<Value<'a>> {
+            self.result
+        }
+    }
+
+    impl<'a> ParseVisitor<'a> for AstVisitor<'a> {
+        fn on_object_open(&mut self, _open_ctx: TokenWithContext<'a>) {
+            self.stack.push(AstFrame::Object {
+                entries: ObjectEntries::new(),
+                current_key: None,
+            });
+        }
+
+        fn on_object_key(&mut self, key_ctx: TokenWithContext<'a>) {
+            if let Token::String(s) = key_ctx.token
+                && let Some(AstFrame::Object { current_key, .. }) = self.stack.last_mut()
+            {
+                *current_key = Some(s);
+            }
+        }
+
+        fn on_object_close(&mut self, _range: Range<usize>) {
+            let frame = self
+                .stack
+                .pop()
+                .expect("traverser will not emit unbalanced brackets");
+            if let AstFrame::Object { entries, .. } = frame {
+                self.emit_value(Value::Object(entries));
+            }
+        }
+
+        fn on_array_open(&mut self, _open_ctx: TokenWithContext<'a>) {
+            self.stack.push(AstFrame::Array { items: Vec::new() });
+        }
+
+        fn on_array_close(&mut self, _range: Range<usize>) {
+            let frame = self
+                .stack
+                .pop()
+                .expect("traverser will not emit unbalanced brackets");
+            if let AstFrame::Array { items } = frame {
+                self.emit_value(Value::Array(items));
+            }
+        }
+
+        fn on_scalar(&mut self, token_ctx: TokenWithContext<'a>) {
+            let v =
+                token_as_scalar_value(token_ctx.token).expect("traverser should only pass scalars");
+            self.emit_value(v);
+        }
+    }
+}
+
+fn token_as_scalar_value<'a>(token: Token<'a>) -> Option<Value<'a>> {
     Some(match token {
         Token::String(s) => Value::String(s),
         Token::Null => Value::Null,
@@ -68,86 +182,6 @@ fn token_to_value<'a>(token: Token<'a>) -> Option<Value<'a>> {
     })
 }
 
-#[derive(Debug, PartialEq, Eq, Clone)]
-pub struct ValueWithContext<'a> {
-    value: Value<'a>,
-    range: Range<usize>,
-}
-
-impl<'a> ValueWithContext<'a> {
-    pub fn new(value: Value<'a>, range: Range<usize>) -> Self {
-        Self { value, range }
-    }
-}
-
-pub fn parse_str<'a>(json: &'a str) -> Result<'a, Value<'a>> {
-    Ok(parse_tokens(&mut TokenStream::new(json), json, true)?.value)
-}
-
-pub fn parse_tokens<'a>(
-    tokens: &mut TokenStream<'a>,
-    text: &'a str,
-    fail_on_multiple_value: bool,
-) -> Result<'a, ValueWithContext<'a>> {
-    let Some(peeked) = tokens.peek_token()? else {
-        return Err(Error::from_maybe_token_with_context(
-            |tok| ErrorKind::ExpectedValue(None, tok),
-            None,
-            text,
-        ));
-    };
-    let val = match &peeked.token {
-        Token::OpenCurlyBrace => parse_object(tokens, text)?,
-        Token::OpenSquareBracket => parse_array(tokens, text)?,
-        Token::Null | Token::String(_) | Token::Boolean(_) | Token::Number(_) => {
-            let TokenWithContext { token, range } = tokens
-                .next_token()?
-                .expect("peek guaranteed a value for scalar token");
-            ValueWithContext {
-                value: token_to_value(token).expect("token should be valid json value"),
-                range,
-            }
-        }
-        invalid => {
-            return Err(Error::new(
-                ErrorKind::ExpectedValue(None, Some(invalid.clone()).into()),
-                peeked.range.clone(),
-                text,
-            ));
-        }
-    };
-
-    if fail_on_multiple_value
-        && let Some(TokenWithContext { token, range }) = tokens.peek_token()?
-    {
-        return Err(Error::new(
-            ErrorKind::TokenAfterEnd(token.clone()),
-            range.clone(),
-            text,
-        ));
-    }
-
-    Ok(val)
-}
-
-fn validate_start_of_value<'a>(
-    text: &'a str,
-    expect_ctx: TokenWithContext<'a>,
-    maybe_token: Option<TokenWithContext<'a>>,
-) -> Result<'a, ()> {
-    if !maybe_token
-        .as_ref()
-        .is_some_and(|ctx| ctx.token.is_start_of_value())
-    {
-        Err(Error::from_maybe_token_with_context(
-            |tok| ErrorKind::ExpectedValue(Some(expect_ctx.clone()), tok),
-            maybe_token,
-            text,
-        ))
-    } else {
-        Ok(())
-    }
-}
 #[cfg(test)]
 mod tests {
     use super::*;

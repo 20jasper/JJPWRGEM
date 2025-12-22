@@ -1,7 +1,7 @@
 use crate::{
-    ast::{Value, ValueWithContext, parse_tokens, validate_start_of_value},
     error::{Error, ErrorKind, Result},
     tokens::{Token, TokenStream, TokenWithContext},
+    traverse::{ParseVisitor, parse_tokens, validate_start_of_value},
 };
 use std::ops::Range;
 
@@ -9,24 +9,26 @@ use std::ops::Range;
 pub enum ArrayState<'a> {
     Open,
     ValueOrEnd {
-        items: Vec<Value<'a>>,
         open_ctx: TokenWithContext<'a>,
     },
     Value {
-        items: Vec<Value<'a>>,
         open_ctx: TokenWithContext<'a>,
         expect_ctx: TokenWithContext<'a>,
     },
     CommaOrEnd {
-        items: Vec<Value<'a>>,
         open_ctx: TokenWithContext<'a>,
         last_value_range: Range<usize>,
     },
-    End(ValueWithContext<'a>),
+    End(Range<usize>),
 }
 
 impl<'a> ArrayState<'a> {
-    pub fn process(self, tokens: &mut TokenStream<'a>, text: &'a str) -> Result<'a, Self> {
+    pub fn process<H: ParseVisitor<'a>>(
+        self,
+        tokens: &mut TokenStream<'a>,
+        text: &'a str,
+        visitor: &mut H,
+    ) -> Result<'a, Self> {
         let next_state = match self {
             ArrayState::Open => match tokens.next_token()? {
                 Some(
@@ -34,10 +36,10 @@ impl<'a> ArrayState<'a> {
                         token: Token::OpenSquareBracket,
                         ..
                     },
-                ) => ArrayState::ValueOrEnd {
-                    items: Vec::new(),
-                    open_ctx,
-                },
+                ) => {
+                    visitor.on_array_open(open_ctx.clone());
+                    ArrayState::ValueOrEnd { open_ctx }
+                }
                 maybe_token => {
                     return Err(Error::from_maybe_token_with_context(
                         |tok| ErrorKind::ExpectedOpenBrace {
@@ -51,20 +53,18 @@ impl<'a> ArrayState<'a> {
                 }
             },
 
-            ArrayState::ValueOrEnd { items, open_ctx } => match tokens.peek_token()?.cloned() {
+            ArrayState::ValueOrEnd { open_ctx } => match tokens.peek_token()?.cloned() {
                 Some(TokenWithContext {
                     token: Token::ClosedSquareBracket,
                     range: closed_range,
                     ..
                 }) => {
                     tokens.next_token()?;
-                    ArrayState::End(ValueWithContext::new(
-                        Value::Array(items),
-                        open_ctx.range.start..closed_range.end,
-                    ))
+                    let range = open_ctx.range.start..closed_range.end;
+                    visitor.on_array_close(range.clone());
+                    ArrayState::End(range)
                 }
                 Some(token_ctx) if token_ctx.token.is_start_of_value() => ArrayState::Value {
-                    items,
                     open_ctx: open_ctx.clone(),
                     expect_ctx: open_ctx.clone(),
                 },
@@ -91,33 +91,28 @@ impl<'a> ArrayState<'a> {
             },
 
             ArrayState::Value {
-                mut items,
                 open_ctx,
                 expect_ctx,
             } => {
                 validate_start_of_value(text, expect_ctx, tokens.peek_token()?.cloned())?;
 
-                let ValueWithContext { value, range } = parse_tokens(tokens, text, false)?;
-                items.push(value);
+                let value_range = parse_tokens(tokens, text, false, visitor)?;
                 ArrayState::CommaOrEnd {
-                    items,
                     open_ctx,
-                    last_value_range: range,
+                    last_value_range: value_range,
                 }
             }
 
-            ArrayState::CommaOrEnd {
-                items, open_ctx, ..
-            } => match tokens.peek_token()?.cloned() {
+            ArrayState::CommaOrEnd { open_ctx, .. } => match tokens.peek_token()?.cloned() {
                 Some(TokenWithContext {
                     token: Token::ClosedSquareBracket,
                     range: closed_range,
                 }) => {
                     tokens.next_token()?;
-                    ArrayState::End(ValueWithContext::new(
-                        Value::Array(items),
-                        open_ctx.range.start..closed_range.end,
-                    ))
+
+                    let range = open_ctx.range.start..closed_range.end;
+                    visitor.on_array_close(range.clone());
+                    ArrayState::End(range)
                 }
                 Some(
                     comma_ctx @ TokenWithContext {
@@ -127,7 +122,6 @@ impl<'a> ArrayState<'a> {
                 ) => {
                     tokens.next_token()?;
                     ArrayState::Value {
-                        items,
                         open_ctx,
                         expect_ctx: comma_ctx,
                     }
@@ -153,14 +147,15 @@ impl<'a> ArrayState<'a> {
     }
 }
 
-pub fn parse_array<'a>(
+pub fn parse_array<'a, H: ParseVisitor<'a>>(
     tokens: &mut TokenStream<'a>,
     text: &'a str,
-) -> Result<'a, ValueWithContext<'a>> {
+    visitor: &mut H,
+) -> Result<'a, Range<usize>> {
     let mut state = ArrayState::Open;
 
     loop {
-        state = state.process(tokens, text)?;
+        state = state.process(tokens, text, visitor)?;
         if let ArrayState::End(result) = state {
             break Ok(result);
         }

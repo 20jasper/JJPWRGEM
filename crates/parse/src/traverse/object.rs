@@ -1,7 +1,7 @@
 use crate::{
     Error, ErrorKind, Result,
-    ast::{ObjectEntries, Value, ValueWithContext, parse_tokens, validate_start_of_value},
     tokens::{Token, TokenOption, TokenStream, TokenWithContext},
+    traverse::{ParseVisitor, parse_tokens, validate_start_of_value},
 };
 use core::ops::Range;
 
@@ -9,31 +9,32 @@ use core::ops::Range;
 enum ObjectState<'a> {
     Open,
     KeyOrEnd {
-        map: ObjectEntries<'a>,
         open_ctx: TokenWithContext<'a>,
         last_pair: Option<Range<usize>>,
     },
     Key {
-        map: ObjectEntries<'a>,
         comma_ctx: TokenWithContext<'a>,
         open_ctx: TokenWithContext<'a>,
     },
     Colon {
         key_ctx: TokenWithContext<'a>,
-        map: ObjectEntries<'a>,
         open_ctx: TokenWithContext<'a>,
     },
     Value {
         key_ctx: TokenWithContext<'a>,
         colon_ctx: TokenWithContext<'a>,
-        map: ObjectEntries<'a>,
         open_ctx: TokenWithContext<'a>,
     },
-    End(ObjectEntries<'a>, Range<usize>),
+    End(Range<usize>),
 }
 
 impl<'a> ObjectState<'a> {
-    fn process(self, tokens: &mut TokenStream<'a>, text: &'a str) -> Result<'a, Self> {
+    fn process(
+        self,
+        tokens: &mut TokenStream<'a>,
+        text: &'a str,
+        visitor: &mut impl ParseVisitor<'a>,
+    ) -> Result<'a, Self> {
         let res = match self {
             ObjectState::Open => match tokens.next_token()? {
                 Some(
@@ -41,11 +42,13 @@ impl<'a> ObjectState<'a> {
                         token: Token::OpenCurlyBrace,
                         ..
                     },
-                ) => ObjectState::KeyOrEnd {
-                    map: ObjectEntries::new(),
-                    open_ctx: ctx,
-                    last_pair: None,
-                },
+                ) => {
+                    visitor.on_object_open(ctx.clone());
+                    ObjectState::KeyOrEnd {
+                        open_ctx: ctx,
+                        last_pair: None,
+                    }
+                }
                 maybe_token => {
                     return Err(Error::from_maybe_token_with_context(
                         |tok| ErrorKind::ExpectedOpenBrace {
@@ -60,7 +63,6 @@ impl<'a> ObjectState<'a> {
             },
 
             ObjectState::KeyOrEnd {
-                map,
                 open_ctx,
                 last_pair,
             } => match (last_pair, tokens.next_token()?) {
@@ -70,7 +72,11 @@ impl<'a> ObjectState<'a> {
                         token: Token::ClosedCurlyBrace,
                         range: closed_range,
                     }),
-                ) => ObjectState::End(map, open_ctx.range.start..closed_range.end),
+                ) => {
+                    let range = open_ctx.range.start..closed_range.end;
+                    visitor.on_object_close(range.clone());
+                    ObjectState::End(range)
+                }
                 (
                     Some(_),
                     Some(
@@ -80,7 +86,6 @@ impl<'a> ObjectState<'a> {
                         },
                     ),
                 ) => ObjectState::Key {
-                    map,
                     comma_ctx,
                     open_ctx,
                 },
@@ -92,11 +97,10 @@ impl<'a> ObjectState<'a> {
                             ..
                         },
                     ),
-                ) => ObjectState::Colon {
-                    key_ctx,
-                    map,
-                    open_ctx,
-                },
+                ) => {
+                    visitor.on_object_key(key_ctx.clone());
+                    ObjectState::Colon { key_ctx, open_ctx }
+                }
                 (Some(pair_span), maybe_token) => {
                     return Err(Error::from_maybe_token_with_context(
                         |tok| ErrorKind::ExpectedCommaOrClosedCurlyBrace {
@@ -121,7 +125,6 @@ impl<'a> ObjectState<'a> {
             },
 
             ObjectState::Key {
-                map,
                 comma_ctx,
                 open_ctx,
             } => match tokens.next_token()? {
@@ -130,11 +133,10 @@ impl<'a> ObjectState<'a> {
                         token: Token::String(_),
                         ..
                     },
-                ) => ObjectState::Colon {
-                    key_ctx,
-                    map,
-                    open_ctx,
-                },
+                ) => {
+                    visitor.on_object_key(key_ctx.clone());
+                    ObjectState::Colon { key_ctx, open_ctx }
+                }
                 maybe_token => {
                     return Err(Error::from_maybe_token_with_context(
                         |tok: TokenOption| ErrorKind::ExpectedKey(comma_ctx.clone(), tok),
@@ -143,18 +145,13 @@ impl<'a> ObjectState<'a> {
                     ));
                 }
             },
-            ObjectState::Colon {
-                map,
-                key_ctx,
-                open_ctx,
-            } => match tokens.next_token()? {
+            ObjectState::Colon { key_ctx, open_ctx } => match tokens.next_token()? {
                 Some(
                     colon_ctx @ TokenWithContext {
                         token: Token::Colon,
                         ..
                     },
                 ) => ObjectState::Value {
-                    map,
                     key_ctx,
                     colon_ctx,
                     open_ctx,
@@ -169,30 +166,24 @@ impl<'a> ObjectState<'a> {
             },
 
             ObjectState::Value {
-                mut map,
                 key_ctx,
                 colon_ctx,
                 open_ctx,
             } => {
                 validate_start_of_value(text, colon_ctx.clone(), tokens.peek_token()?.cloned())?;
 
-                let Token::String(key) = key_ctx.token else {
+                let Token::String(_) = key_ctx.token else {
                     unreachable!("key context should always be a string");
                 };
 
-                let ValueWithContext {
-                    value: json_value,
-                    range: json_range,
-                } = parse_tokens(tokens, text, false)?;
-                map.push(key, json_value);
+                let value_range = parse_tokens(tokens, text, false, visitor)?;
 
                 ObjectState::KeyOrEnd {
-                    map,
                     open_ctx,
-                    last_pair: Some(colon_ctx.range.start..json_range.end),
+                    last_pair: Some(colon_ctx.range.start..value_range.end),
                 }
             }
-            ObjectState::End(map, range) => ObjectState::End(map, range),
+            ObjectState::End(range) => ObjectState::End(range),
         };
 
         Ok(res)
@@ -202,13 +193,14 @@ impl<'a> ObjectState<'a> {
 pub fn parse_object<'a>(
     tokens: &mut TokenStream<'a>,
     text: &'a str,
-) -> Result<'a, ValueWithContext<'a>> {
+    visitor: &mut impl ParseVisitor<'a>,
+) -> Result<'a, Range<usize>> {
     let mut state = ObjectState::Open;
 
     loop {
-        state = state.process(tokens, text)?;
-        if let ObjectState::End(map, range) = state {
-            break Ok(ValueWithContext::new(Value::Object(map), range));
+        state = state.process(tokens, text, visitor)?;
+        if let ObjectState::End(range) = state {
+            break Ok(range);
         }
     }
 }
