@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.4](https://github.com/20jasper/JJPWRGEM/releases/tag/jjpwrgem-v0.5.4) - 2025-12-23
+
+### Added
+
+- experimental vscode extension
+
+### Performance
+
+- don't build ast when validating syntax
+- don't build ast when uglifying
+
+```bash
+Summary
+  jjp format -u  < xtask/bench/data/json-benchmark/data/canada.json ran
+    1.50 ± 0.05 times faster than jjpv0.5.3 format -u  < xtask/bench/data/json-benchmark/data/canada.json
+  jjp check  < xtask/bench/data/json-benchmark/data/canada.json ran
+    1.64 ± 0.04 times faster than jjpv0.5.3 check  < xtask/bench/data/json-benchmark/data/canada.json
+  jjpv0.5.3 format   < xtask/bench/data/json-benchmark/data/canada.json ran
+    1.00 ± 0.03 times faster than jjp format  < xtask/bench/data/json-benchmark/data/canada.json
+```
+
 ## [0.5.3](https://github.com/20jasper/JJPWRGEM/releases/tag/jjpwrgem-v0.5.2) - 2025-12-15
 
 ### fixed
