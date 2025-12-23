@@ -1,8 +1,7 @@
 ARG RUST_VERSION=1.91.1
 ARG APP_NAME=jjp
 
-FROM rust:${RUST_VERSION}-slim-bullseye AS build
-ARG APP_NAME
+FROM rust:${RUST_VERSION}-slim-bullseye AS cargo-formatters
 WORKDIR /app
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -22,9 +21,23 @@ RUN set -eux; \
 RUN cargo binstall sjq -y \
     && cargo binstall jsonxf -y \
     && cargo binstall jsonformat-cli -y \
+    && cargo binstall json-pp-rust -y \
+    && cargo binstall jsonice -y \
     && cargo binstall hyperfine -y
 
 RUN cargo install dprint --locked
+FROM rust:${RUST_VERSION}-slim-bullseye AS build
+ARG APP_NAME
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    clang \
+    lld \
+    musl-dev \
+    git \
+    curl \
+    ca-certificates
+
 
 RUN --mount=type=bind,source=crates,target=crates \
     --mount=type=bind,source=xtask,target=xtask \
@@ -86,7 +99,7 @@ COPY ${BENCHMARK_PATH}/data/json-benchmark/data/ ./data
 RUN chmod +x benchmark.sh
 
 # Copy all cargo-binstalled binaries from the build stage.
-COPY --from=build /usr/local/cargo/bin/ /usr/local/bin/
+COPY --from=cargo-formatters /usr/local/cargo/bin/ /usr/local/bin/
 
 ENV OUTPUT_DIR=/benchmark/output
 

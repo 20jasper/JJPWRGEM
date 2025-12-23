@@ -2,7 +2,7 @@
 
 Is jjpwrgem blazingly fast? Yes. Is it the blazingly fastest? Depends on your definition
 
-It can parse and pretty print a 1.7MB JSON file in around ~11ms[^prettyCitm] and the average package.json in ~500 microseconds—the fastest I could find for CLIs that validate syntax. jjpwrgem is best in its class for stringification speed, with Gigabytes of througput for minification[^throughputBench]. There's faster out there for parsing speed, but it does the job!
+It can parse and pretty print a 1.7MB JSON file in around ~11ms[^prettyCitm] and the average package.json in ~500 microseconds. Also see [the throughput benchmarks](^throughputBench)
 
 [^prettyCitm]: #pretty-citm-catalog
 
@@ -70,7 +70,9 @@ note: `jsonxf` and `jsonformat` don't validate syntax
 
 ## parsing and stringification throughput
 
-jjpwrgem consistently had the highest stringification speed for twitter.json and citg catalog and canada.json, but this was the most pronounced difference
+Note that these are benches for String to AST and AST to String. As of 0.5.4, jjpwrgem skips AST creation for many operations for a ~50% speedup
+
+jjpwrgem consistently had the highest stringification speed for twitter.json and citg catalog and canada.json, but of course unless you are going from AST to String, the parsing speed holds it back
 
 ### ugly canada throughput
 
