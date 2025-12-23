@@ -132,6 +132,8 @@ mod visitor {
         fn on_object_key(&mut self, key: &'a str) {
             if let Some(AstFrame::Object { current_key, .. }) = self.stack.last_mut() {
                 *current_key = Some(key);
+            } else {
+                unreachable!("must be in object for object key")
             }
         }
 
@@ -142,6 +144,8 @@ mod visitor {
                 .expect("traverser will not emit unbalanced brackets");
             if let AstFrame::Object { entries, .. } = frame {
                 self.emit_value(Value::Object(entries));
+            } else {
+                unreachable!("must be an object to close object")
             }
         }
 
@@ -156,6 +160,8 @@ mod visitor {
                 .expect("traverser will not emit unbalanced brackets");
             if let AstFrame::Array { items } = frame {
                 self.emit_value(Value::Array(items));
+            } else {
+                unreachable!("must be an array to close array")
             }
         }
 
