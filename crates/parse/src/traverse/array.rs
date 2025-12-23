@@ -148,10 +148,10 @@ impl<'a> ArrayState<'a> {
     }
 }
 
-pub fn parse_array<'a, H: ParseVisitor<'a>>(
+pub fn parse_array<'a>(
     tokens: &mut TokenStream<'a>,
     text: &'a str,
-    visitor: &mut H,
+    visitor: &mut impl ParseVisitor<'a>,
 ) -> Result<'a, Range<usize>> {
     let mut state = ArrayState::Open;
 
