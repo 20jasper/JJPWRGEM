@@ -1,23 +1,23 @@
-use crate::tokens::TokenWithContext;
+use std::borrow;
+
 use crate::{
     Result,
     tokens::TokenStream,
-    traverse::{ParseVisitor, parse_tokens},
+    traverse::{Visitor, parse_tokens},
 };
-use core::ops::Range;
 
 #[derive(Debug)]
 pub struct NoopVisitor;
 
-impl<'a> ParseVisitor<'a> for NoopVisitor {
-    fn on_object_open(&mut self, _open_ctx: TokenWithContext<'a>) {}
+impl<'a> Visitor<'a> for NoopVisitor {
+    fn on_object_open(&mut self) {}
     fn on_object_key(&mut self, _key: &'a str) {}
-    fn on_object_close(&mut self, _range: Range<usize>) {}
-    fn on_array_open(&mut self, _open_ctx: TokenWithContext<'a>) {}
-    fn on_array_close(&mut self, _range: Range<usize>) {}
+    fn on_object_close(&mut self) {}
+    fn on_array_open(&mut self) {}
+    fn on_array_close(&mut self) {}
     fn on_null(&mut self) {}
     fn on_string(&mut self, _value: &'a str) {}
-    fn on_number(&mut self, _value: std::borrow::Cow<'a, str>) {}
+    fn on_number(&mut self, _value: borrow::Cow<'a, str>) {}
     fn on_boolean(&mut self, _value: bool) {}
     fn on_object_key_val_delim(&mut self) {}
     fn on_item_delim(&mut self) {}

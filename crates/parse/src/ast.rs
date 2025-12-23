@@ -64,10 +64,8 @@ pub fn parse_str<'a>(json: &'a str) -> Result<'a, Value<'a>> {
 mod visitor {
     use crate::{
         ast::{ObjectEntries, Value},
-        tokens::TokenWithContext,
-        traverse::ParseVisitor,
+        traverse::Visitor,
     };
-    use core::ops::Range;
     use std::borrow::Cow;
 
     #[derive(Debug, Default)]
@@ -121,8 +119,8 @@ mod visitor {
         }
     }
 
-    impl<'a> ParseVisitor<'a> for AstVisitor<'a> {
-        fn on_object_open(&mut self, _open_ctx: TokenWithContext<'a>) {
+    impl<'a> Visitor<'a> for AstVisitor<'a> {
+        fn on_object_open(&mut self) {
             self.stack.push(AstFrame::Object {
                 entries: ObjectEntries::new(),
                 current_key: None,
@@ -137,7 +135,7 @@ mod visitor {
             }
         }
 
-        fn on_object_close(&mut self, _range: Range<usize>) {
+        fn on_object_close(&mut self) {
             let frame = self
                 .stack
                 .pop()
@@ -149,11 +147,10 @@ mod visitor {
             }
         }
 
-        fn on_array_open(&mut self, _open_ctx: TokenWithContext<'a>) {
+        fn on_array_open(&mut self) {
             self.stack.push(AstFrame::Array { items: Vec::new() });
         }
-
-        fn on_array_close(&mut self, _range: Range<usize>) {
+        fn on_array_close(&mut self) {
             let frame = self
                 .stack
                 .pop()
