@@ -15,7 +15,10 @@ impl<'a> ParseVisitor<'a> for NoopVisitor {
     fn on_object_close(&mut self, _range: Range<usize>) {}
     fn on_array_open(&mut self, _open_ctx: TokenWithContext<'a>) {}
     fn on_array_close(&mut self, _range: Range<usize>) {}
-    fn on_scalar(&mut self, _token_ctx: TokenWithContext<'a>) {}
+    fn on_null(&mut self) {}
+    fn on_string(&mut self, _value: &'a str) {}
+    fn on_number(&mut self, _value: std::borrow::Cow<'a, str>) {}
+    fn on_boolean(&mut self, _value: bool) {}
     fn on_object_key_val_delim(&mut self) {}
     fn on_item_delim(&mut self) {}
 }

@@ -10,6 +10,7 @@ mod parse {
         traverse::{array::parse_array, object::parse_object},
     };
     use core::ops::Range;
+    use std::borrow::Cow;
 
     pub trait ParseVisitor<'a> {
         fn on_object_open(&mut self, open_ctx: TokenWithContext<'a>);
@@ -18,7 +19,10 @@ mod parse {
         fn on_object_close(&mut self, range: Range<usize>);
         fn on_array_open(&mut self, open_ctx: TokenWithContext<'a>);
         fn on_array_close(&mut self, range: Range<usize>);
-        fn on_scalar(&mut self, token_ctx: TokenWithContext<'a>);
+        fn on_null(&mut self);
+        fn on_string(&mut self, value: &'a str);
+        fn on_number(&mut self, value: Cow<'a, str>);
+        fn on_boolean(&mut self, value: bool);
         fn on_item_delim(&mut self);
     }
 
@@ -28,21 +32,30 @@ mod parse {
         fail_on_multiple_value: bool,
         visitor: &mut impl ParseVisitor<'a>,
     ) -> Result<'a, Range<usize>> {
-        let Some(peeked) = tokens.peek_token()? else {
+        let peeked = tokens.peek_token()?.cloned();
+        let Some(peeked) = peeked else {
             return Err(Error::from_maybe_token_with_context(
                 |tok| ErrorKind::ExpectedValue(None, tok),
                 None,
                 text,
             ));
         };
-        let range = match &peeked.token {
+        let range = match peeked.token {
             Token::OpenCurlyBrace => parse_object(tokens, text, visitor)?,
             Token::OpenSquareBracket => parse_array(tokens, text, visitor)?,
             t if t.is_scalar() => {
                 let token_ctx = tokens
                     .next_token()?
                     .expect("peek guaranteed a value for scalar token");
-                visitor.on_scalar(token_ctx.clone());
+
+                match t {
+                    Token::String(s) => visitor.on_string(s),
+                    Token::Number(cow) => visitor.on_number(cow),
+                    Token::Null => visitor.on_null(),
+                    Token::Boolean(b) => visitor.on_boolean(b),
+                    _ => unreachable!("guard prevents non scalars"),
+                };
+
                 token_ctx.range.clone()
             }
             invalid => {
