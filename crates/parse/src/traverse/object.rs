@@ -21,7 +21,6 @@ enum ObjectState<'a> {
         open_ctx: TokenWithContext<'a>,
     },
     Value {
-        key_ctx: TokenWithContext<'a>,
         colon_ctx: TokenWithContext<'a>,
         open_ctx: TokenWithContext<'a>,
     },
@@ -157,7 +156,6 @@ impl<'a> ObjectState<'a> {
                 ) => {
                     visitor.on_object_key_val_delim();
                     ObjectState::Value {
-                        key_ctx,
                         colon_ctx,
                         open_ctx,
                     }
@@ -172,15 +170,10 @@ impl<'a> ObjectState<'a> {
             },
 
             ObjectState::Value {
-                key_ctx,
                 colon_ctx,
                 open_ctx,
             } => {
                 validate_start_of_value(text, colon_ctx.clone(), tokens.peek_token()?.cloned())?;
-
-                let Token::String(_) = key_ctx.token else {
-                    unreachable!("key context should always be a string");
-                };
 
                 let value_range = parse_tokens(tokens, text, false, visitor)?;
 
