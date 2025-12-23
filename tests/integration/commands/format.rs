@@ -1,43 +1,6 @@
-use crate::common::{cli, exec_cmd};
+use crate::common::{cli, exec_cmd, format_template};
 use crate::test_json::*;
 use insta::assert_snapshot;
-
-#[rstest_reuse::template]
-#[rstest::rstest]
-#[case(crate::fixture_tuple!(VALID_FRACTION))]
-#[case(crate::fixture_tuple!(VALID_NEGATIVE_FRACTION))]
-#[case(crate::fixture_tuple!(VALID_INTEGER))]
-#[case(crate::fixture_tuple!(VALID_NEGATIVE_INTEGER))]
-#[case(crate::fixture_tuple!(LONG_INTEGER))]
-#[case(crate::fixture_tuple!(LONG_FRACTION))]
-#[case(crate::fixture_tuple!(EXPONENT_WITH_PLUS_SIGN))]
-#[case(crate::fixture_tuple!(EXPONENT_WITH_MINUS_SIGN))]
-#[case(crate::fixture_tuple!(NEGATIVE_FLOAT_WITH_EXPONENT))]
-#[case(crate::fixture_tuple!(ARRAY_EMPTY))]
-#[case(crate::fixture_tuple!(ARRAY_SINGLE))]
-#[case(crate::fixture_tuple!(ARRAY_MANY))]
-#[case(crate::fixture_tuple!(ARRAY_SUBARRAYS))]
-#[case(crate::fixture_tuple!(ARRAY_OBJECTS_WITH_INCREASING_KEYS))]
-#[case(crate::fixture_tuple!(ARRAY_MULTIPLE_EMPTY_OBJECTS))]
-#[case(crate::fixture_tuple!(ARRAY_MANY_SINGLE_KEY_OBJECTS))]
-#[case(crate::fixture_tuple!(ARRAY_MANY_TWO_KEY_OBJECTS))]
-#[case(crate::fixture_tuple!(ARRAY_MANY_FIVE_KEY_OBJECTS))]
-#[case(crate::fixture_tuple!(ARRAYS_NESTED_FIVE_LEVELS_WITH_OBJECT))]
-#[case(crate::fixture_tuple!(STANDALONE_NULL))]
-#[case(crate::fixture_tuple!(STANDALONE_FALSE))]
-#[case(crate::fixture_tuple!(STANDALONE_TRUE))]
-#[case(crate::fixture_tuple!(STANDALONE_STRING))]
-#[case(crate::fixture_tuple!(NESTED_OBJECT_SINGLE_KEY))]
-#[case(crate::fixture_tuple!(OBJECT_WITH_LONG_KEYS))]
-#[case(crate::fixture_tuple!(ARRAY_WITH_NESTED_OBJECTS))]
-#[case(crate::fixture_tuple!(MIXED_ARRAY_WITH_LONG_STRINGS))]
-#[case(crate::fixture_tuple!(STANDALONE_STRING_WS))]
-#[case(crate::fixture_tuple!(DEEPLY_NESTED))]
-#[case(crate::fixture_tuple!(OBJECT_WITH_LONG_KEY_AND_ARR_VAL))]
-#[case(crate::fixture_tuple!(OBJECT_WITH_EXPANDED_AND_NON_EXPANDED_ARR))]
-#[case(crate::fixture_tuple!(DEEPLY_NESTED_OBJECT_WITH_ARR_VALUES))]
-#[case(crate::fixture_tuple!(TSCONFIG))]
-fn format_template(#[case] (name, input): (&str, &str)) {}
 
 #[rstest_reuse::apply(format_template)]
 fn prettify(#[case] (name, input): (&str, &str)) {

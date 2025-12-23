@@ -1,0 +1,5 @@
+---
+source: tests/integration/format_ast.rs
+expression: out
+---
+[[[[[{"depth":5,"payload":["text",42,{"inner":true},[null,false]],"meta":{"notes":"deep array"}}]]]]]

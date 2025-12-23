@@ -1,0 +1,5 @@
+---
+source: tests/integration/format_ast.rs
+expression: out
+---
+{"compilerOptions":{"target":"ES6","module":"CommonJS","lib":["ES2020","DOM","DOM.Iterable"],"strict":true,"esModuleInterop":true,"skipLibCheck":true,"forceConsistentCasingInFileNames":true,"outDir":"./dist","rootDir":"./src","noImplicitAny":true,"removeComments":true,"preserveConstEnums":true,"sourceMap":true},"include":["src/**/*"],"exclude":["node_modules","**/*.spec.ts","**/*.test.ts","dist","temp","examples"]}

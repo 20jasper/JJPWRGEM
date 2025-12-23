@@ -1,0 +1,5 @@
+---
+source: tests/integration/format_ast.rs
+expression: out
+---
+["a long string value that includes\nline breaks\nand\ttabs",{"outer":{"inner":[1,2,{"deep":"value"}]}},[{"arrayKey":{"nestedArray":[true,false,null]}}]]

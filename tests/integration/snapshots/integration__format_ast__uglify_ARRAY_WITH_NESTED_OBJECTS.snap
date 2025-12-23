@@ -1,0 +1,5 @@
+---
+source: tests/integration/format_ast.rs
+expression: out
+---
+[{"level1":{"level2":{"level3":"value"}}},{"another":[{"deep":{"key":1}},{"deep":{"key":2}}]}]
