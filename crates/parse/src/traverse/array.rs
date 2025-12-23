@@ -23,11 +23,11 @@ pub enum ArrayState<'a> {
 }
 
 impl<'a> ArrayState<'a> {
-    pub fn process<H: ParseVisitor<'a>>(
+    pub fn process(
         self,
         tokens: &mut TokenStream<'a>,
         text: &'a str,
-        visitor: &mut H,
+        visitor: &mut impl ParseVisitor<'a>,
     ) -> Result<'a, Self> {
         let next_state = match self {
             ArrayState::Open => match tokens.next_token()? {
