@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use crate::{
     Result,
     ast::Value,
@@ -113,15 +115,20 @@ impl ParseVisitor<'_> for UglifyEmitVisitor {
         self.emit_array_close();
     }
 
-    fn on_scalar(&mut self, token_ctx: crate::tokens::TokenWithContext<'_>) {
-        use crate::tokens::Token;
-        match token_ctx.token {
-            Token::Null => self.emit_null(),
-            Token::Boolean(b) => self.emit_boolean(b),
-            Token::String(s) => self.emit_string(s),
-            Token::Number(n) => self.emit_number(n.as_ref()),
-            _ => unreachable!(),
-        }
+    fn on_null(&mut self) {
+        self.emit_null();
+    }
+
+    fn on_string(&mut self, s: &str) {
+        self.emit_string(s);
+    }
+
+    fn on_number(&mut self, n: Cow<'_, str>) {
+        self.emit_number(&n);
+    }
+
+    fn on_boolean(&mut self, b: bool) {
+        self.emit_boolean(b);
     }
 
     fn on_item_delim(&mut self) {

@@ -1,8 +1,4 @@
-use crate::{
-    Result,
-    tokens::{Token, TokenStream},
-    traverse::parse_tokens,
-};
+use crate::{Result, tokens::TokenStream, traverse::parse_tokens};
 use std::borrow::Cow;
 use visitor::AstVisitor;
 
@@ -67,11 +63,12 @@ pub fn parse_str<'a>(json: &'a str) -> Result<'a, Value<'a>> {
 
 mod visitor {
     use crate::{
-        ast::{ObjectEntries, Value, token_as_scalar_value},
+        ast::{ObjectEntries, Value},
         tokens::TokenWithContext,
         traverse::ParseVisitor,
     };
     use core::ops::Range;
+    use std::borrow::Cow;
 
     #[derive(Debug, Default)]
     pub struct AstVisitor<'a> {
@@ -162,25 +159,25 @@ mod visitor {
             }
         }
 
-        fn on_scalar(&mut self, token_ctx: TokenWithContext<'a>) {
-            let v =
-                token_as_scalar_value(token_ctx.token).expect("traverser should only pass scalars");
-            self.emit_value(v);
+        fn on_null(&mut self) {
+            self.emit_value(Value::Null);
+        }
+
+        fn on_string(&mut self, s: &'a str) {
+            self.emit_value(Value::String(s));
+        }
+
+        fn on_number(&mut self, n: Cow<'a, str>) {
+            self.emit_value(Value::Number(n));
+        }
+
+        fn on_boolean(&mut self, b: bool) {
+            self.emit_value(Value::Boolean(b));
         }
 
         fn on_object_key_val_delim(&mut self) {}
         fn on_item_delim(&mut self) {}
     }
-}
-
-fn token_as_scalar_value<'a>(token: Token<'a>) -> Option<Value<'a>> {
-    Some(match token {
-        Token::String(s) => Value::String(s),
-        Token::Null => Value::Null,
-        Token::Boolean(b) => Value::Boolean(b),
-        Token::Number(n) => Value::Number(n),
-        _ => return None,
-    })
 }
 
 #[cfg(test)]
