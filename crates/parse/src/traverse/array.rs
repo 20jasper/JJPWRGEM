@@ -1,7 +1,7 @@
 use crate::{
     error::{Error, ErrorKind, Result},
     tokens::{Token, TokenStream, TokenWithContext},
-    traverse::{ParseVisitor, parse_tokens, validate_start_of_value},
+    traverse::{Visitor, parse_tokens, validate_start_of_value},
 };
 use std::ops::Range;
 
@@ -27,7 +27,7 @@ impl<'a> ArrayState<'a> {
         self,
         tokens: &mut TokenStream<'a>,
         text: &'a str,
-        visitor: &mut impl ParseVisitor<'a>,
+        visitor: &mut impl Visitor<'a>,
     ) -> Result<'a, Self> {
         let next_state = match self {
             ArrayState::Open => match tokens.next_token()? {
@@ -37,7 +37,7 @@ impl<'a> ArrayState<'a> {
                         ..
                     },
                 ) => {
-                    visitor.on_array_open(open_ctx.clone());
+                    visitor.on_array_open();
                     ArrayState::ValueOrEnd { open_ctx }
                 }
                 maybe_token => {
@@ -60,9 +60,8 @@ impl<'a> ArrayState<'a> {
                     ..
                 }) => {
                     tokens.next_token()?;
-                    let range = open_ctx.range.start..closed_range.end;
-                    visitor.on_array_close(range.clone());
-                    ArrayState::End(range)
+                    visitor.on_array_close();
+                    ArrayState::End(open_ctx.range.start..closed_range.end)
                 }
                 Some(token_ctx) if token_ctx.token.is_start_of_value() => ArrayState::Value {
                     open_ctx: open_ctx.clone(),
@@ -110,9 +109,8 @@ impl<'a> ArrayState<'a> {
                 }) => {
                     tokens.next_token()?;
 
-                    let range = open_ctx.range.start..closed_range.end;
-                    visitor.on_array_close(range.clone());
-                    ArrayState::End(range)
+                    visitor.on_array_close();
+                    ArrayState::End(open_ctx.range.start..closed_range.end)
                 }
                 Some(
                     comma_ctx @ TokenWithContext {
@@ -151,7 +149,7 @@ impl<'a> ArrayState<'a> {
 pub fn parse_array<'a>(
     tokens: &mut TokenStream<'a>,
     text: &'a str,
-    visitor: &mut impl ParseVisitor<'a>,
+    visitor: &mut impl Visitor<'a>,
 ) -> Result<'a, Range<usize>> {
     let mut state = ArrayState::Open;
 

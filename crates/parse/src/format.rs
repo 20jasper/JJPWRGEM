@@ -3,6 +3,7 @@ mod prettify;
 pub mod serde;
 mod uglify;
 
+use crate::tokens::{FALSE, NULL, TRUE};
 pub use prettify::{FormatOptions, format_str, format_value, prettify_str, prettify_value};
 pub use uglify::{uglify_str, uglify_value};
 
@@ -51,5 +52,48 @@ impl LineEnding {
             Self::CrLf => "\r\n",
             Self::Cr => "\r",
         }
+    }
+}
+
+pub trait Emitter {
+    fn push(&mut self, c: char);
+    fn push_str(&mut self, s: &str);
+
+    // defaults
+    fn push_quoted(&mut self, s: &str) {
+        self.push('"');
+        self.push_str(s);
+        self.push('"');
+    }
+
+    fn emit_null(&mut self) {
+        self.push_str(NULL);
+    }
+    fn emit_string(&mut self, s: &str) {
+        self.push_quoted(s);
+    }
+    fn emit_number(&mut self, n: &str) {
+        self.push_str(n);
+    }
+    fn emit_boolean(&mut self, b: bool) {
+        self.push_str(if b { TRUE } else { FALSE });
+    }
+    fn emit_item_delim(&mut self) {
+        self.push(',');
+    }
+    fn emit_array_open(&mut self) {
+        self.push('[');
+    }
+    fn emit_array_close(&mut self) {
+        self.push(']');
+    }
+    fn emit_object_open(&mut self) {
+        self.push('{');
+    }
+    fn emit_object_close(&mut self) {
+        self.push('}');
+    }
+    fn emit_key_val_delim(&mut self) {
+        self.push(':');
     }
 }

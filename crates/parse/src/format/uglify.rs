@@ -1,11 +1,11 @@
-use std::borrow::Cow;
-
 use crate::{
     Result,
     ast::Value,
-    tokens::{FALSE, NULL, TRUE, TokenStream},
-    traverse::{ParseVisitor, ValueVisitor, parse_tokens, parse_value},
+    format::Emitter,
+    tokens::TokenStream,
+    traverse::{Visitor, parse_tokens, parse_value},
 };
+use std::borrow::Cow;
 
 pub fn uglify_str(json: &str) -> Result<'_, String> {
     let mut visitor = UglifyEmitVisitor::default();
@@ -18,80 +18,18 @@ pub struct UglifyEmitVisitor {
     pub buf: String,
 }
 
-fn push_quoted(buf: &mut String, value: &str) {
-    buf.push('"');
-    buf.push_str(value);
-    buf.push('"');
-}
+impl Emitter for UglifyEmitVisitor {
+    fn push(&mut self, c: char) {
+        self.buf.push(c);
+    }
 
-impl UglifyEmitVisitor {
-    fn emit_null(&mut self) {
-        self.buf.push_str(NULL);
-    }
-    fn emit_string(&mut self, s: &str) {
-        push_quoted(&mut self.buf, s);
-    }
-    fn emit_number(&mut self, n: &str) {
-        self.buf.push_str(n);
-    }
-    fn emit_boolean(&mut self, b: bool) {
-        self.buf.push_str(if b { TRUE } else { FALSE });
-    }
-    fn emit_item_delim(&mut self) {
-        self.buf.push(',');
-    }
-    fn emit_array_open(&mut self) {
-        self.buf.push('[');
-    }
-    fn emit_array_close(&mut self) {
-        self.buf.push(']');
-    }
-    fn emit_object_open(&mut self) {
-        self.buf.push('{');
-    }
-    fn emit_object_close(&mut self) {
-        self.buf.push('}');
-    }
-    fn emit_key_val_delim(&mut self) {
-        self.buf.push(':');
+    fn push_str(&mut self, s: &str) {
+        self.buf.push_str(s);
     }
 }
 
-impl ValueVisitor<'_> for UglifyEmitVisitor {
-    fn on_null(&mut self) {
-        self.emit_null();
-    }
-    fn on_string(&mut self, s: &str) {
-        self.emit_string(s);
-    }
-    fn on_number(&mut self, n: &str) {
-        self.emit_number(n);
-    }
-    fn on_boolean(&mut self, b: bool) {
-        self.emit_boolean(b);
-    }
-    fn on_item_delim(&mut self) {
-        self.emit_item_delim();
-    }
-    fn on_array_open(&mut self) {
-        self.emit_array_open();
-    }
-    fn on_array_close(&mut self) {
-        self.emit_array_close();
-    }
+impl<'a> Visitor<'a> for UglifyEmitVisitor {
     fn on_object_open(&mut self) {
-        self.emit_object_open();
-    }
-    fn on_object_close(&mut self) {
-        self.emit_object_close();
-    }
-    fn on_object_key_val_delim(&mut self) {
-        self.emit_key_val_delim();
-    }
-}
-
-impl ParseVisitor<'_> for UglifyEmitVisitor {
-    fn on_object_open(&mut self, _open_ctx: crate::tokens::TokenWithContext<'_>) {
         self.emit_object_open();
     }
 
@@ -103,15 +41,15 @@ impl ParseVisitor<'_> for UglifyEmitVisitor {
         self.emit_key_val_delim();
     }
 
-    fn on_object_close(&mut self, _range: std::ops::Range<usize>) {
+    fn on_object_close(&mut self) {
         self.emit_object_close();
     }
 
-    fn on_array_open(&mut self, _open_ctx: crate::tokens::TokenWithContext<'_>) {
+    fn on_array_open(&mut self) {
         self.emit_array_open();
     }
 
-    fn on_array_close(&mut self, _range: std::ops::Range<usize>) {
+    fn on_array_close(&mut self) {
         self.emit_array_close();
     }
 

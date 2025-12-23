@@ -1,7 +1,7 @@
 use crate::{
     Error, ErrorKind, Result,
     tokens::{Token, TokenOption, TokenStream, TokenWithContext},
-    traverse::{ParseVisitor, parse_tokens, validate_start_of_value},
+    traverse::{Visitor, parse_tokens, validate_start_of_value},
 };
 use core::ops::Range;
 
@@ -32,7 +32,7 @@ impl<'a> ObjectState<'a> {
         self,
         tokens: &mut TokenStream<'a>,
         text: &'a str,
-        visitor: &mut impl ParseVisitor<'a>,
+        visitor: &mut impl Visitor<'a>,
     ) -> Result<'a, Self> {
         let res = match self {
             ObjectState::Open => match tokens.next_token()? {
@@ -42,7 +42,7 @@ impl<'a> ObjectState<'a> {
                         ..
                     },
                 ) => {
-                    visitor.on_object_open(ctx.clone());
+                    visitor.on_object_open();
                     ObjectState::KeyOrEnd {
                         open_ctx: ctx,
                         last_pair: None,
@@ -72,9 +72,8 @@ impl<'a> ObjectState<'a> {
                         range: closed_range,
                     }),
                 ) => {
-                    let range = open_ctx.range.start..closed_range.end;
-                    visitor.on_object_close(range.clone());
-                    ObjectState::End(range)
+                    visitor.on_object_close();
+                    ObjectState::End(open_ctx.range.start..closed_range.end)
                 }
                 (
                     Some(_),
@@ -192,7 +191,7 @@ impl<'a> ObjectState<'a> {
 pub fn parse_object<'a>(
     tokens: &mut TokenStream<'a>,
     text: &'a str,
-    visitor: &mut impl ParseVisitor<'a>,
+    visitor: &mut impl Visitor<'a>,
 ) -> Result<'a, Range<usize>> {
     let mut state = ObjectState::Open;
 
