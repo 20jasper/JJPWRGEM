@@ -33,6 +33,10 @@ bench() {
     --export-json "$pretty_json" \
     --command-name "jjp" \
       "jjp format < $FILE_PATH" \
+    --command-name "json-pp-rust" \
+      "json-pp-rust < $FILE_PATH" \
+    --command-name "jsonice" \
+      "jsonice < $FILE_PATH" \
     --command-name "jello" \
       "jello < $FILE_PATH" \
     --command-name "prettier" \
