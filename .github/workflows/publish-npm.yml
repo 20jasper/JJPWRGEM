@@ -25,7 +25,7 @@ jobs:
           registry-url: "https://registry.npmjs.org"
       - run: npm i -g npm@latest
       - name: Download npm package artifact
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: ${{ github.ref_name }}-npm-package.tgz
           path: ./npm

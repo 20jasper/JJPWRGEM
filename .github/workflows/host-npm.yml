@@ -39,7 +39,7 @@ jobs:
           npm pack ./npm-template --pack-destination ./npm
 
       - name: Upload npm package artifact
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ github.ref_name }}-npm-package.tgz
           path: ./npm/*.tgz
