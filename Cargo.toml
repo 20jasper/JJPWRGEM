@@ -35,7 +35,7 @@ clap = { version = "4.5.53", features = ["derive"] }
 itertools = "0.14.0"
 
 [dependencies]
-anstream = "0.6.21"
+anstream = "1"
 clap = { workspace = true }
 displaydoc = { workspace = true }
 jjpwrgem-parse = { workspace = true }
