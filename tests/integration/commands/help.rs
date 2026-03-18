@@ -13,5 +13,7 @@ fn check_help_snapshot(#[case] args: Vec<&str>, #[case] name: &str) {
 
     let output = exec_cmd(&mut cmd, None);
 
-    assert_snapshot!(name, output.snapshot_display());
+    insta::with_settings!({snapshot_path => "../snapshots"}, {
+        assert_snapshot!(name, output.snapshot_display());
+    });
 }

@@ -117,7 +117,7 @@ mod docs {
         ($name:literal) => {
             include_str!(concat!(
                 env!("CARGO_MANIFEST_DIR"),
-                "/tests/integration/commands/docs/snapshots/",
+                "/tests/integration/snapshots/",
                 $name,
                 ".snap"
             ))

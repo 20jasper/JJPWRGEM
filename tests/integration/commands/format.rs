@@ -9,7 +9,9 @@ fn prettify(#[case] (name, input): (&str, &str)) {
 
     let output = exec_cmd(&mut cmd, Some(input.as_bytes().to_vec()));
 
-    assert_snapshot!(name.to_string(), output.snapshot_display());
+    insta::with_settings!({snapshot_path => "../snapshots"}, {
+        assert_snapshot!(name.to_string(), output.snapshot_display());
+    });
     assert!(output.status.success());
 }
 
@@ -21,7 +23,9 @@ fn uglify(#[case] (name, input): (&str, &str)) {
     let output = exec_cmd(&mut cmd, Some(input.as_bytes().to_vec()));
     assert!(output.status.success());
 
-    assert_snapshot!(format!("uglify_{name}"), output.snapshot_display());
+    insta::with_settings!({snapshot_path => "../snapshots"}, {
+        assert_snapshot!(format!("uglify_{name}"), output.snapshot_display());
+    });
 }
 
 #[rstest::rstest]
@@ -36,10 +40,12 @@ fn preferred_width_threshold(#[case] preferred_width: usize, #[case] label: &str
     let output = exec_cmd(&mut cmd, Some(ARRAY_WITH_LONG_STRING.as_bytes().to_vec()));
     assert!(output.status.success(), "{}", output.snapshot_display());
 
-    assert_snapshot!(
-        format!("preferred_width_{label}"),
-        output.snapshot_display()
-    );
+    insta::with_settings!({snapshot_path => "../snapshots"}, {
+        assert_snapshot!(
+            format!("preferred_width_{label}"),
+            output.snapshot_display()
+        );
+    });
 }
 
 // Snapshots normalize newlines to LF, so we assert directly to preserve each line ending.
@@ -71,10 +77,12 @@ fn preferred_width_invalid_args(#[case] args: &[&str], #[case] label: &str) {
     let output = exec_cmd(&mut cmd, None);
     assert!(!output.status.success());
 
-    assert_snapshot!(
-        format!("preferred_width_invalid_{label}"),
-        output.snapshot_display()
-    );
+    insta::with_settings!({snapshot_path => "../snapshots"}, {
+        assert_snapshot!(
+            format!("preferred_width_invalid_{label}"),
+            output.snapshot_display()
+        );
+    });
 }
 
 #[rstest::rstest]
@@ -88,7 +96,9 @@ fn eol_invalid_args(#[case] args: &[&str], #[case] label: &str) {
     let output = exec_cmd(&mut cmd, None);
     assert!(!output.status.success());
 
-    assert_snapshot!(format!("eol_invalid_{label}"), output.snapshot_display());
+    insta::with_settings!({snapshot_path => "../snapshots"}, {
+        assert_snapshot!(format!("eol_invalid_{label}"), output.snapshot_display());
+    });
 }
 
 #[test]
@@ -99,7 +109,9 @@ fn preferred_width_conflicts_with_uglify() {
     let output = exec_cmd(&mut cmd, None);
     assert!(!output.status.success());
 
-    assert_snapshot!("preferred_width_conflict", output.snapshot_display());
+    insta::with_settings!({snapshot_path => "../snapshots"}, {
+        assert_snapshot!("preferred_width_conflict", output.snapshot_display());
+    });
 }
 
 #[rstest::rstest]
@@ -112,10 +124,12 @@ fn preferred_width_conflict_cases(#[case] args: &[&str], #[case] label: &str) {
     let output = exec_cmd(&mut cmd, None);
     assert!(!output.status.success());
 
-    assert_snapshot!(
-        format!("preferred_width_conflict_{label}"),
-        output.snapshot_display()
-    );
+    insta::with_settings!({snapshot_path => "../snapshots"}, {
+        assert_snapshot!(
+            format!("preferred_width_conflict_{label}"),
+            output.snapshot_display()
+        );
+    });
 }
 
 #[test]
@@ -126,7 +140,9 @@ fn help_subcommand() {
     let output = exec_cmd(&mut cmd, None);
     assert!(output.status.success(), "{}", output.snapshot_display());
 
-    assert_snapshot!("format_help", output.snapshot_display());
+    insta::with_settings!({snapshot_path => "../snapshots"}, {
+        assert_snapshot!("format_help", output.snapshot_display());
+    });
 }
 
 #[test]
@@ -137,7 +153,9 @@ fn no_stdin() {
     let output = exec_cmd(&mut cmd, None);
     assert!(!output.status.success(), "{}", output.snapshot_display());
 
-    assert_snapshot!(output.snapshot_display());
+    insta::with_settings!({snapshot_path => "../snapshots"}, {
+        assert_snapshot!(output.snapshot_display());
+    });
 }
 
 #[rstest::rstest]
@@ -145,7 +163,7 @@ fn no_stdin() {
 #[case(&["--uglify"], r#"{ "shoppingList": ["cheese", "slushy machine"]   } "#, "uglify")]
 fn docs(#[case] args: &[&str], #[case] input: &str, #[case] postfix: &str) {
     insta::with_settings!({
-        snapshot_path => "docs/snapshots",
+        snapshot_path => "../snapshots",
         prepend_module_to_snapshot => false,
     }, {
         let mut cmd = cli();

@@ -14,7 +14,7 @@ fn strip_front_matter(raw: &str) -> &str {
 }
 const CHECK_EXAMPLE: &str = include_str!(concat!(
     env!("CARGO_MANIFEST_DIR"),
-    "/../tests/integration/commands/docs/snapshots/check_failure.snap"
+    "/../tests/integration/snapshots/check_failure.snap"
 ));
 
 const BANNER: &str = "<!-- GENERATED FILE - update the templates in the xtask -->\n\n";
