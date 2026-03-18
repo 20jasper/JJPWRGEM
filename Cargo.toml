@@ -42,9 +42,9 @@ jjpwrgem-parse = { workspace = true }
 jjpwrgem-ui = { workspace = true }
 thiserror = { workspace = true }
 
-# temporary since clippy gets mad at the latest version with 1.92.0
+# fixes erroneous clippy warnings in 1.92
 [patch.crates-io]
-displaydoc = { git = "https://github.com/20jasper/displaydoc", branch = "add-allow-for-unused-assigments" }
+displaydoc = { git = "https://github.com/yaahc/displaydoc", rev = "14f7acdba7a15e40097ec57034a3ddd7195286cd" }
 
 [dev-dependencies]
 insta = "1.44.3"
