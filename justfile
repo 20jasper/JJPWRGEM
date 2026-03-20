@@ -13,12 +13,12 @@ prettier_glob := "./**/*.{md,yaml,yml,ts,js}"
 
 # format rust, justfile, and markdown
 format:
-    cargo fmt --all
+    cargo +nightly fmt --all
     just --fmt --unstable
     npx -y prettier {{ prettier_glob }} --write
 
 format-check:
-    cargo fmt --all -- --check
+    cargo +nightly fmt --all -- --check
     just --fmt --unstable --check
     npx -y prettier {{ prettier_glob }} --check
 

@@ -1,11 +1,12 @@
 use core::{iter::Peekable, str::CharIndices};
 
-use crate::tokens::{
-    CharWithContext, Token, TokenWithContext, lexical::JsonChar, number::parse_num,
-    string::parse_string,
+use crate::{
+    Error, ErrorKind, Result,
+    tokens::{
+        CharWithContext, FALSE, NULL, TRUE, Token, TokenWithContext, lexical::JsonChar,
+        number::parse_num, string::parse_string,
+    },
 };
-use crate::tokens::{FALSE, NULL, TRUE};
-use crate::{Error, ErrorKind, Result};
 
 #[derive(Debug, Clone)]
 struct CharsWithContext<'a> {

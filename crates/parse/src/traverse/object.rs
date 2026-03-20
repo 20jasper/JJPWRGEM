@@ -1,9 +1,10 @@
+use core::ops::Range;
+
 use crate::{
     Error, ErrorKind, Result,
     tokens::{Token, TokenOption, TokenStream, TokenWithContext},
     traverse::{Visitor, parse_tokens, validate_start_of_value},
 };
-use core::ops::Range;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 enum ObjectState<'a> {

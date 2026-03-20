@@ -1,9 +1,10 @@
+use core::ops::Range;
+use std::{borrow::Cow, path::Path};
+
 use crate::{
     Error, ErrorKind,
     tokens::{JsonCharOption, Token, TokenOption, TokenWithContext, lexical::JsonChar},
 };
-use core::ops::Range;
-use std::{borrow::Cow, path::Path};
 pub const EXPECTED_COMMA_OR_CLOSED_CURLY_MESSAGE: &str = "the preceding key/value pair";
 pub const INSERT_MISSING_CLOSED_BRACE_HELP: &str = "insert the missing closed brace";
 

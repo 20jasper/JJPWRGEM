@@ -1,7 +1,7 @@
-use crate::message::BasicErrorMessage;
 use annotate_snippets::{Renderer, renderer::DecorStyle};
-
 pub use jjpwrgem_parse::error::diagnostics::Diagnostic;
+
+use crate::message::BasicErrorMessage;
 
 mod pretty;
 

@@ -1,8 +1,10 @@
-use crate::common::cli;
-use crate::common::exec_cmd;
-use crate::test_json::*;
 use insta::assert_snapshot;
 use rstest::rstest;
+
+use crate::{
+    common::{cli, exec_cmd},
+    test_json::*,
+};
 
 #[rstest]
 #[case(crate::fixture_tuple!(OBJECT_MISSING_COLON_WITH_COMMA))]

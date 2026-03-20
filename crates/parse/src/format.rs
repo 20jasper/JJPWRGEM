@@ -3,9 +3,10 @@ mod prettify;
 pub mod serde;
 mod uglify;
 
-use crate::tokens::{FALSE, NULL, TRUE};
 pub use prettify::{FormatOptions, format_str, format_value, prettify_str, prettify_value};
 pub use uglify::{uglify_str, uglify_value};
+
+use crate::tokens::{FALSE, NULL, TRUE};
 
 /// writes formatted delimiters between formatted items
 ///
@@ -16,7 +17,9 @@ pub use uglify::{uglify_str, uglify_value};
 /// # use std::fmt::Write as _;
 ///
 /// let mut buf = String::new();
-/// join_into(&mut buf, [1,2,3,4],
+/// join_into(
+///     &mut buf,
+///     [1, 2, 3, 4],
 ///     |buf, x| write!(buf, "{}", x * 2).unwrap(),
 ///     |buf, _| write!(buf, ",").unwrap(),
 /// );

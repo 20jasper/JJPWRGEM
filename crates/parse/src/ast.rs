@@ -1,6 +1,8 @@
-use crate::{Result, tokens::TokenStream, traverse::parse_tokens};
 use std::borrow::Cow;
+
 use visitor::AstVisitor;
+
+use crate::{Result, tokens::TokenStream, traverse::parse_tokens};
 
 #[derive(Debug, Clone, Default, Eq)]
 pub struct ObjectEntries<'a>(pub Vec<(&'a str, Value<'a>)>);
@@ -62,11 +64,12 @@ pub fn parse_str<'a>(json: &'a str) -> Result<'a, Value<'a>> {
 }
 
 mod visitor {
+    use std::borrow::Cow;
+
     use crate::{
         ast::{ObjectEntries, Value},
         traverse::Visitor,
     };
-    use std::borrow::Cow;
 
     #[derive(Debug, Default)]
     pub struct AstVisitor<'a> {

@@ -1,6 +1,9 @@
-use crate::common::{cli, exec_cmd, format_template};
-use crate::test_json::*;
 use insta::assert_snapshot;
+
+use crate::{
+    common::{cli, exec_cmd, format_template},
+    test_json::*,
+};
 
 #[rstest_reuse::apply(format_template)]
 fn prettify(#[case] (name, input): (&str, &str)) {

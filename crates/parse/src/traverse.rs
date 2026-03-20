@@ -1,14 +1,15 @@
 mod array;
 mod object;
 
+use core::ops::Range;
+use std::borrow::Cow;
+
 use crate::{
     Error, ErrorKind, Result,
     ast::{ObjectEntries, Value},
     tokens::{Token, TokenStream, TokenWithContext},
     traverse::{array::parse_array, object::parse_object},
 };
-use core::ops::Range;
-use std::borrow::Cow;
 
 pub trait Visitor<'a> {
     fn on_object_open(&mut self);

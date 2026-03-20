@@ -1,9 +1,10 @@
+use core::ops::Range;
+use std::iter::Peekable;
+
 use crate::{
     Error, ErrorKind, Result,
     tokens::{CharWithContext, JsonChar, Token, TokenWithContext},
 };
-use core::ops::Range;
-use std::iter::Peekable;
 
 enum StringState<'a> {
     Open,

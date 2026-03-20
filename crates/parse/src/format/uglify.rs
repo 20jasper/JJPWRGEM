@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use crate::{
     Result,
     ast::Value,
@@ -5,7 +7,6 @@ use crate::{
     tokens::TokenStream,
     traverse::{Visitor, parse_tokens, parse_value},
 };
-use std::borrow::Cow;
 
 pub fn uglify_str(json: &str) -> Result<'_, String> {
     let mut visitor = UglifyEmitVisitor::default();

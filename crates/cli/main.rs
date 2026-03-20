@@ -1,20 +1,22 @@
 mod commands;
 mod error;
 mod output;
-pub use error::{Error, Result};
+
+use std::{
+    io::{IsTerminal, Read},
+    process::ExitCode,
+};
 
 use clap::Parser;
+pub use error::{Error, Result};
 use jjpwrgem_parse::{
     error::diagnostics::{self, Diagnostic, Source},
     format::{self, LineEnding},
     validate_str,
 };
 use jjpwrgem_ui::{Color, Style};
-use std::io::{IsTerminal, Read};
-use std::process::ExitCode;
 
-use crate::commands::Commands;
-use crate::output::Output;
+use crate::{commands::Commands, output::Output};
 
 fn main() -> ExitCode {
     let cli = commands::Cli::parse();

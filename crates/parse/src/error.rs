@@ -1,12 +1,17 @@
 pub mod diagnostics;
 
-use crate::tokens::CharWithContext;
-use crate::tokens::lexical::trim_end_whitespace;
-use crate::tokens::{JsonCharOption, Token, TokenOption, TokenWithContext, lexical::JsonChar};
-use core::fmt::Display;
-use core::ops::{Deref, Range};
+use core::{
+    fmt::Display,
+    ops::{Deref, Range},
+};
+
 use displaydoc::Display;
 use thiserror::Error;
+
+use crate::tokens::{
+    CharWithContext, JsonCharOption, Token, TokenOption, TokenWithContext,
+    lexical::{JsonChar, trim_end_whitespace},
+};
 
 pub type Result<'a, T> = std::result::Result<T, Error<'a>>;
 

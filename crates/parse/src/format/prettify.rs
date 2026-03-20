@@ -124,7 +124,9 @@ pub fn format_str<'a>(
 /// # use std::fmt::Write as _;
 ///
 /// let mut buf = String::new();
-/// join_into(&mut buf, [1,2,3,4],
+/// join_into(
+///     &mut buf,
+///     [1, 2, 3, 4],
 ///     |buf, x| write!(buf, "{}", x * 2).unwrap(),
 ///     |buf, _| write!(buf, ",").unwrap(),
 /// );

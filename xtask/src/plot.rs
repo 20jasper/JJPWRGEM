@@ -1,13 +1,17 @@
-use std::cmp::Ordering;
-use std::path::{Path, PathBuf};
-use std::sync::OnceLock;
+use std::{
+    cmp::Ordering,
+    path::{Path, PathBuf},
+    sync::OnceLock,
+};
 
 use anyhow::{Context, Error, Result, anyhow, bail};
 use base64::{Engine as _, engine::general_purpose::STANDARD};
 use jjpwrgem_parse::ast::{self, Value};
-use plotters::coord::Shift;
-use plotters::prelude::*;
-use plotters::style::{FontStyle, register_font};
+use plotters::{
+    coord::Shift,
+    prelude::*,
+    style::{FontStyle, register_font},
+};
 
 const CHART_WIDTH: u32 = 1280;
 const CHART_HEIGHT: u32 = 720;

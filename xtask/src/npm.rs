@@ -1,10 +1,11 @@
 mod metadata;
 
+use std::{collections::HashMap, fs};
+
 use anyhow::{Context, Ok, Result};
 use itertools::Itertools as _;
 use jjpwrgem_parse::format::LineEnding;
 use package_json::PackageJson;
-use std::{collections::HashMap, fs};
 
 use crate::npm::metadata::{
     PackageMetadata, PlatformConfig, build_platforms_from_targets,

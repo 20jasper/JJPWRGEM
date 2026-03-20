@@ -1,9 +1,10 @@
+use std::ops::Range;
+
 use crate::{
     error::{Error, ErrorKind, Result},
     tokens::{Token, TokenStream, TokenWithContext},
     traverse::{Visitor, parse_tokens, validate_start_of_value},
 };
-use std::ops::Range;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum ArrayState<'a> {

@@ -1,7 +1,7 @@
-use crate::common::format_template;
-use crate::test_json::*;
 use insta::assert_snapshot;
 use jjpwrgem_parse::{ast::parse_str, format::uglify_value};
+
+use crate::{common::format_template, test_json::*};
 
 #[rstest_reuse::apply(format_template)]
 fn uglify(#[case] (name, input): (&str, &str)) {

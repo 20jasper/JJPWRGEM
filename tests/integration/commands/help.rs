@@ -1,7 +1,7 @@
 use insta::assert_snapshot;
+use rstest::rstest;
 
 use crate::common::{cli, exec_cmd};
-use rstest::rstest;
 
 #[rstest]
 #[case(vec![], "no_args")]

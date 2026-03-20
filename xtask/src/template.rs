@@ -1,6 +1,6 @@
-use std::io::Write as _;
 use std::{
     fs,
+    io::Write as _,
     process::{Command, Stdio},
 };
 

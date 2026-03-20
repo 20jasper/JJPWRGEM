@@ -100,8 +100,9 @@ impl From<char> for JsonChar {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use rstest::rstest;
+
+    use super::*;
 
     #[rstest]
     #[case('\u{0008}', r"\b")]

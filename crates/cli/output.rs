@@ -1,7 +1,8 @@
 use core::fmt::Debug;
+use std::process::ExitCode;
+
 use jjpwrgem_parse::error::diagnostics::Diagnostic;
 use jjpwrgem_ui::Style;
-use std::process::ExitCode;
 
 pub struct Output {
     pub stdout: Option<String>,

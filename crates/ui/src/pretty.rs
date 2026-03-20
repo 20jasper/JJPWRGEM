@@ -57,8 +57,9 @@ mod diagnostic {
 }
 
 mod message {
-    use crate::message::BasicErrorMessage;
     use annotate_snippets::{Group, Level};
+
+    use crate::message::BasicErrorMessage;
 
     pub fn report_message<'a>(message: BasicErrorMessage) -> Vec<Group<'a>> {
         let error = Some(Level::ERROR.primary_title(message.error));

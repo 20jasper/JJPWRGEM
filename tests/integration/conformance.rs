@@ -1,8 +1,8 @@
-use crate::common::cli;
-use crate::common::exec_cmd;
+use std::{ffi::OsStr, fs};
+
 use insta::assert_snapshot;
-use std::ffi::OsStr;
-use std::fs;
+
+use crate::common::{cli, exec_cmd};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum JsonResult {

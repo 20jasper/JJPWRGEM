@@ -50,10 +50,12 @@ pub fn uglify_value(val: serde_json::Value) -> String {
 /// ```
 /// # use std::collections::HashMap;
 /// # use jjpwrgem_parse::format::serde::uglify_serializable;
-/// let map: HashMap<String, String> = HashMap::from([
-///     ("rust is a must".to_string(), "🦀".to_string()),
-/// ]);
-/// assert_eq!(uglify_serializable(map).unwrap(), r#"{"rust is a must":"🦀"}"#);
+/// let map: HashMap<String, String> =
+///     HashMap::from([("rust is a must".to_string(), "🦀".to_string())]);
+/// assert_eq!(
+///     uglify_serializable(map).unwrap(),
+///     r#"{"rust is a must":"🦀"}"#
+/// );
 /// ```
 pub fn uglify_serializable(val: impl serde::Serialize) -> serde_json::Result<String> {
     Ok(uglify_value(serde_json::to_value(val)?))
@@ -90,13 +92,15 @@ pub fn prettify_value(
 /// # use std::collections::HashMap;
 /// # use jjpwrgem_parse::format::LineEnding;
 /// # use jjpwrgem_parse::format::serde::prettify_serializable;
-/// let map: HashMap<String, String> = HashMap::from([
-///     ("rust is a must".to_string(), "🦀".to_string()),
-/// ]);
+/// let map: HashMap<String, String> =
+///     HashMap::from([("rust is a must".to_string(), "🦀".to_string())]);
 /// let expected = r#"{
 ///   "rust is a must": "🦀"
 /// }"#;
-/// assert_eq!(prettify_serializable(map, 80, LineEnding::Lf).unwrap(), expected);
+/// assert_eq!(
+///     prettify_serializable(map, 80, LineEnding::Lf).unwrap(),
+///     expected
+/// );
 /// ```
 pub fn prettify_serializable(
     val: impl serde::Serialize,
@@ -119,9 +123,8 @@ pub fn prettify_serializable(
 /// # use std::collections::HashMap;
 /// # use jjpwrgem_parse::format::{FormatOptions, LineEnding};
 /// # use jjpwrgem_parse::format::serde::format_serializable;
-/// let map: HashMap<String, String> = HashMap::from([
-///     ("rust is a must".to_string(), "🦀".to_string()),
-/// ]);
+/// let map: HashMap<String, String> =
+///     HashMap::from([("rust is a must".to_string(), "🦀".to_string())]);
 /// let out = format_serializable(map, FormatOptions::prettify(LineEnding::Lf), 80).unwrap();
 /// let expected = r#"{
 ///   "rust is a must": "🦀"

@@ -3,10 +3,12 @@ mod number;
 mod stream;
 mod string;
 
-use crate::tokens::lexical::JsonChar;
 use core::{fmt::Display, ops::Range};
 use std::borrow::Cow;
+
 pub use stream::TokenStream;
+
+use crate::tokens::lexical::JsonChar;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Token<'a> {
@@ -170,9 +172,8 @@ impl From<f64> for Token<'_> {
 
 #[cfg(test)]
 mod tests {
-    use crate::{Error, ErrorKind, Result};
-
     use super::*;
+    use crate::{Error, ErrorKind, Result};
 
     fn str_to_tokens<'a>(s: &'a str) -> Result<'a, Vec<TokenWithContext<'a>>> {
         stream::TokenStream::new(s).collect()
