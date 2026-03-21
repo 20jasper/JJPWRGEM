@@ -5,13 +5,13 @@ submodules:
     git submodule update --init --recursive
 
 dev-install:
-    cargo binstall cargo-watch -y
-    cargo binstall cargo-llvm-cov -y
-    cargo binstall cargo-insta -y
-    cargo binstall cargo-shear -y
-    cargo binstall cargo-diet -y
-    cargo binstall cargo-dist -y
-    cargo binstall release-plz -y
+    cargo binstall cargo-watch@8.5 -y
+    cargo binstall cargo-llvm-cov@0.8 -y
+    cargo binstall cargo-insta@1.46 -y
+    cargo binstall cargo-shear@1.11 -y
+    cargo binstall cargo-diet@1.2 -y
+    cargo binstall cargo-dist@0.31.0 -y
+    cargo binstall release-plz@0.3 -y
     cargo binstall cargo-rdme@1.5 -y
 
 prettier := "pnpm exec oxfmt"

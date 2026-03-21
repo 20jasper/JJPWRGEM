@@ -31,7 +31,9 @@ jobs:
           version: 10
           run_install: true
       - name: Install just
-        uses: taiki-e/install-action@just
+        uses: taiki-e/install-action@v2.69.6
+        with:
+          tool: just@1.47
       - name: Configure Dependency Caching
         uses: Swatinem/rust-cache@v2
 
@@ -51,9 +53,13 @@ jobs:
           version: 10
           run_install: true
       - name: Install just
-        uses: taiki-e/install-action@just
+        uses: taiki-e/install-action@v2.69.6
+        with:
+          tool: just@1.47
       - name: Install cargo-shear
-        uses: taiki-e/install-action@cargo-shear
+        uses: taiki-e/install-action@v2.69.6
+        with:
+          tool: cargo-shear@1.11
       - name: Install cargo-rdme
         uses: taiki-e/install-action@v2.69.6
         with:
@@ -77,7 +83,9 @@ jobs:
       - name: update rust
         run: rustup update ${{ env.TOOLCHAIN }} && rustup default ${{ env.TOOLCHAIN }}
       - name: Install just
-        uses: taiki-e/install-action@just
+        uses: taiki-e/install-action@v2.69.6
+        with:
+          tool: just@1.47
       - name: Configure Dependency Caching
         uses: Swatinem/rust-cache@v2
       - name: build
@@ -92,7 +100,9 @@ jobs:
       - name: update rust
         run: rustup update ${{ env.TOOLCHAIN }} && rustup default ${{ env.TOOLCHAIN }}
       - name: Install just
-        uses: taiki-e/install-action@just
+        uses: taiki-e/install-action@v2.69.6
+        with:
+          tool: just@1.47
       - name: Configure Dependency Caching
         uses: Swatinem/rust-cache@v2
       - name: publish dry-run (bytes2chars only)
@@ -107,7 +117,9 @@ jobs:
       - name: update rust
         run: rustup update ${{ env.TOOLCHAIN }} && rustup default ${{ env.TOOLCHAIN }}
       - name: Install just
-        uses: taiki-e/install-action@just
+        uses: taiki-e/install-action@v2.69.6
+        with:
+          tool: just@1.47
       - name: Configure Dependency Caching
         uses: Swatinem/rust-cache@v2
       - name: build
