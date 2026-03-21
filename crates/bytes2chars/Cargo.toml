@@ -1,6 +1,6 @@
 [package]
 name = "bytes2chars"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2024"
 rust-version = "1.85"
 description = "lazy utf-8 decoder iterator with rich errors"
