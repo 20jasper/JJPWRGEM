@@ -571,6 +571,7 @@ name = "jjpwrgem"
 version = "0.5.4"
 dependencies = [
  "anstream",
+ "bytes2chars",
  "clap",
  "displaydoc",
  "insta",

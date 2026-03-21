@@ -3,3 +3,4 @@ mod common;
 mod conformance;
 mod format_ast;
 mod test_json;
+mod utf8_conformance;

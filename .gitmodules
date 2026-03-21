@@ -4,3 +4,6 @@
 [submodule "xtask/bench/data/json-benchmark"]
 	path = xtask/bench/data/json-benchmark
 	url = https://github.com/serde-rs/json-benchmark
+[submodule "tests/conformance/utf8tests"]
+	path = tests/conformance/utf8tests
+	url = https://github.com/flenniken/utf8tests

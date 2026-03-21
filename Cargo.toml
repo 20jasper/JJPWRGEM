@@ -47,6 +47,7 @@ thiserror = { workspace = true }
 displaydoc = { git = "https://github.com/yaahc/displaydoc", rev = "14f7acdba7a15e40097ec57034a3ddd7195286cd" }
 
 [dev-dependencies]
+bytes2chars = { path = "crates/bytes2chars" }
 insta = "1.44.3"
 rstest = { workspace = true }
 rstest_reuse = { workspace = true }
