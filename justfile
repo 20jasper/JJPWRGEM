@@ -14,18 +14,19 @@ dev-install:
     cargo binstall release-plz -y
     cargo binstall cargo-rdme@1.5 -y
 
+prettier := "pnpm exec prettier"
 prettier_glob := "./**/*.{md,yaml,yml,ts,js}"
 
 # format rust, justfile, and markdown
 format:
     cargo +nightly fmt --all
     just --fmt --unstable
-    npx -y prettier {{ prettier_glob }} --write
+    {{ prettier }} {{ prettier_glob }} --write
 
 format-check:
     cargo +nightly fmt --all -- --check
     just --fmt --unstable --check
-    npx -y prettier {{ prettier_glob }} --check
+    {{ prettier }} {{ prettier_glob }} --check
 
 lint:
     RUSTFLAGS=-Dwarnings cargo clippy --all-targets --all-features --workspace
@@ -49,7 +50,7 @@ test-snapshot:
 
 xtask-command := "cargo run -p xtask -q --"
 rdme-command := "cargo rdme --workspace-project bytes2chars"
-prettier-bytes2chars := "npx -y prettier crates/bytes2chars/README.md"
+prettier-bytes2chars := prettier + " crates/bytes2chars/README.md"
 
 bytes2chars-readme:
     cargo +nightly fmt -p bytes2chars
@@ -162,7 +163,7 @@ bench:
         -u "$(id -u):$(id -g)" \
         -v "$(pwd)/xtask/bench/output:/benchmark/output" \
         jjp-benchmark
-    npx -y prettier './xtask/bench/output/*.md' --write
+    {{ prettier }} './xtask/bench/output/*.md' --write
     just plot-bench
     just readmes
 
