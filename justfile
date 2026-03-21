@@ -1,5 +1,9 @@
 set working-directory := "."
 
+# initialize and update all submodules
+submodules:
+    git submodule update --init --recursive
+
 dev-install:
     cargo binstall cargo-watch -y
     cargo binstall cargo-llvm-cov -y
