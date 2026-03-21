@@ -8,6 +8,6 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "prettier": "3.8.1"
+    "oxfmt": "^0.41.0"
   }
 }

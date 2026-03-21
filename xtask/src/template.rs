@@ -92,26 +92,21 @@ const BENCH_TABLE_REPLACEMENTS: [(&str, &str); 6] = [
     ),
 ];
 
-fn prettier_format(input: &str) -> Result<String, Box<dyn std::error::Error>> {
-    let mut child = Command::new("npx")
-        .arg("prettier")
-        .arg("--parser")
-        .arg("markdown")
+fn oxfmt_format(input: &str) -> Result<String, Box<dyn std::error::Error>> {
+    let mut child = Command::new("pnpm")
+        .args(["exec", "oxfmt", "--stdin-filepath", "file.md"])
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .spawn()?;
 
     {
-        let stdin = child
-            .stdin
-            .as_mut()
-            .ok_or("failed to open prettier stdin")?;
+        let stdin = child.stdin.as_mut().ok_or("failed to open oxfmt stdin")?;
         stdin.write_all(input.as_bytes())?;
     }
 
     let output = child.wait_with_output()?;
     if !output.status.success() {
-        return Err(format!("prettier failed: {}", output.status).into());
+        return Err(format!("oxfmt failed: {}", output.status).into());
     }
 
     let formatted = String::from_utf8(output.stdout)?;
@@ -131,7 +126,7 @@ fn render_template(
     }
 
     let with_banner = format!("{}{}", BANNER, processed);
-    let formatted = prettier_format(&with_banner)?;
+    let formatted = oxfmt_format(&with_banner)?;
     Ok(formatted)
 }
 

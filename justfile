@@ -14,7 +14,7 @@ dev-install:
     cargo binstall release-plz -y
     cargo binstall cargo-rdme@1.5 -y
 
-prettier := "pnpm exec prettier"
+prettier := "pnpm exec oxfmt"
 prettier_glob := "./**/*.{md,yaml,yml,ts,js}"
 
 # format rust, justfile, and markdown
