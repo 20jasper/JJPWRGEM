@@ -1,7 +1,13 @@
 [workspace]
+release = false
 publish = false
 git_tag_enable = true
 changelog_update = true
+
+[[package]]
+name = "bytes2chars"
+release = true
+publish = true
 
 [changelog]
 commit_parsers = [

@@ -129,6 +129,9 @@ prepublish:
     just lint
     just diet
 
+publish-dry-run crate:
+    cargo publish --dry-run -p {{ crate }}
+
 release-binary:
     release-plz update
     cargo release --no-publish --tag-prefix=jjpwrgem- --execute

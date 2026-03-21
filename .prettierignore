@@ -1,6 +1,6 @@
 tests/conformance/JSONTestSuite
 xtask/bench/data
-.github/workflows/release.yml
+.github/workflows/jjp-release.yml
 CHANGELOG.md
 pnpm-lock.yaml
 out

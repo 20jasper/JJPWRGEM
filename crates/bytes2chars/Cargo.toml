@@ -5,6 +5,7 @@ edition = "2024"
 rust-version = "1.85"
 description = "lazy utf-8 decoder iterator with rich errors"
 license = "MIT"
+readme = "README.md"
 repository = "https://github.com/20jasper/jjpwrgem"
 documentation = "https://docs.rs/bytes2chars"
 keywords = ["utf8", "unicode", "iterator", "decoder"]

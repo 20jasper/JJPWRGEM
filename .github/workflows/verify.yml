@@ -77,6 +77,19 @@ jobs:
       - name: test
         run: cargo test --workspace --verbose
 
+  publish-dry-run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: update rust
+        run: rustup update ${{ env.TOOLCHAIN }} && rustup default ${{ env.TOOLCHAIN }}
+      - name: Install just
+        uses: taiki-e/install-action@just
+      - name: Configure Dependency Caching
+        uses: Swatinem/rust-cache@v2
+      - name: publish dry-run (bytes2chars only)
+        run: just publish-dry-run bytes2chars
+
   test-vscode:
     runs-on: ubuntu-latest
     steps:
