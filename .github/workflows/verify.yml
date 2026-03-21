@@ -50,6 +50,10 @@ jobs:
         uses: taiki-e/install-action@just
       - name: Install cargo-shear
         uses: taiki-e/install-action@cargo-shear
+      - name: Install cargo-rdme
+        uses: taiki-e/install-action@v2.69.6
+        with:
+          tool: cargo-rdme@1.5
       - name: Configure Dependency Caching
         uses: Swatinem/rust-cache@v2
 

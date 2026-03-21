@@ -31,6 +31,7 @@ pre-commit:
       glob:
         - "**/*.md"
         - "xtask/templates/**"
+        - "crates/bytes2chars/src/**"
       stage_fixed: true
     - run: just package-json
       glob:

@@ -12,6 +12,7 @@ dev-install:
     cargo binstall cargo-diet -y
     cargo binstall cargo-dist -y
     cargo binstall release-plz -y
+    cargo binstall cargo-rdme@1.5 -y
 
 prettier_glob := "./**/*.{md,yaml,yml,ts,js}"
 
@@ -47,14 +48,27 @@ test-snapshot:
     cargo insta review
 
 xtask-command := "cargo run -p xtask -q --"
+rdme-command := "cargo rdme --workspace-project bytes2chars"
+prettier-bytes2chars := "npx -y prettier crates/bytes2chars/README.md"
+
+bytes2chars-readme:
+    cargo +nightly fmt -p bytes2chars
+    {{ rdme-command }} --force
+    {{ prettier-bytes2chars }} --write
+
+bytes2chars-readme-check:
+    {{ rdme-command }} --check
+    {{ prettier-bytes2chars }} --check
 
 # generate markdown files from templates
 readmes:
     {{ xtask-command }} generate-readmes
+    just bytes2chars-readme
 
 # verify markdown files match generated templates
 readmes-check:
     {{ xtask-command }} verify-readmes
+    just bytes2chars-readme-check
 
 npm-markdown:
     cp -f readme.md npm-template/README.md
