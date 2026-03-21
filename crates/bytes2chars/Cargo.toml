@@ -1,0 +1,29 @@
+[package]
+name = "bytes2chars"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.85"
+description = "lazy utf-8 decoder iterator with rich errors"
+license = "MIT"
+repository = "https://github.com/20jasper/jjpwrgem"
+documentation = "https://docs.rs/bytes2chars"
+keywords = ["utf8", "unicode", "iterator", "decoder"]
+categories = ["encoding", "no-std"]
+
+[lints.rust]
+missing_debug_implementations = "warn"
+missing_docs = "warn"
+
+[lints.rustdoc]
+broken_intra_doc_links = "warn"
+
+[lints.clippy]
+cast_lossless = "warn"
+doc_markdown = "warn"
+missing_errors_doc = "warn"
+missing_panics_doc = "warn"
+undocumented_unsafe_blocks = "warn"
+unreadable_literal = "warn"
+
+[dependencies]
+displaydoc.workspace = true
