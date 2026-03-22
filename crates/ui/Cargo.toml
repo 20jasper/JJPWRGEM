@@ -5,6 +5,10 @@ edition = "2024"
 license = "MIT"
 publish = false
 
+[lib]
+test = false
+doctest = false
+
 [dependencies]
 annotate-snippets = "0.12.8"
 jjpwrgem-parse = { workspace = true }
