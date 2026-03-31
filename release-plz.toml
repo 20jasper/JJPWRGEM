@@ -11,14 +11,14 @@ publish = true
 
 [changelog]
 commit_parsers = [
-  { message = "^(feat|feature):", group = "added" },
-  { message = "^changed:", group = "changed" },
-  { message = "^deprecated:", group = "deprecated" },
-  { message = "^fix:", group = "fixed" },
-  { message = "^security:", group = "security" },
-  { message = "^perf:", group = "performance" },
+  { message = "^(feat|feature)", group = "added" },
+  { message = "^changed", group = "changed" },
+  { message = "^deprecated", group = "deprecated" },
+  { message = "^fix", group = "fixed" },
+  { message = "^security", group = "security" },
+  { message = "^perf", group = "performance" },
   { message = "^docs", group = "documentation" },
-  { message = "^chore:", skip = true },
-  { message = "^test:", skip = true },
+  { message = "^chore", skip = true },
+  { message = "^test", skip = true },
   { message = "^.*", skip = true },
 ]
