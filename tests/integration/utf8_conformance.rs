@@ -110,6 +110,10 @@ fn run_conformance_cases(cases: &[&Utf8Case]) {
     }
 }
 
+// utf8[verify encoding.ascii]
+// utf8[verify encoding.two-byte]
+// utf8[verify encoding.three-byte]
+// utf8[verify encoding.four-byte]
 #[test]
 fn conformance_valid() {
     let cases: Vec<_> = CASES
@@ -119,6 +123,13 @@ fn conformance_valid() {
     run_conformance_cases(&cases);
 }
 
+// utf8[verify validate.invalid-lead]
+// utf8[verify validate.max-sequence-length]
+// utf8[verify validate.expected-continuation]
+// utf8[verify validate.no-surrogates]
+// utf8[verify validate.no-overlong]
+// utf8[verify validate.max-codepoint]
+// utf8[verify validate.unfinished]
 #[test]
 fn conformance_invalid() {
     let cases: Vec<_> = CASES

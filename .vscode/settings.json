@@ -1,4 +1,18 @@
 {
+  "glspc.server.command": "tracey",
+  "glspc.server.commandArguments": ["lsp"],
+  "glspc.server.languageId": [
+    "rust",
+    "typescript",
+    "typescriptreact",
+    "javascript",
+    "javascriptreact",
+    "python",
+    "go",
+    "swift",
+    "java",
+    "markdown"
+  ],
   "files.watcherExclude": {
     "tests/conformance/JSONTestSuite": true
   },

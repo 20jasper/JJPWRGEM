@@ -1,0 +1,16 @@
+specs (
+    {
+        name utf8
+        include (spec/utf8.md)
+        impls (
+            {
+                name rust
+                include (
+                    crates/bytes2chars/**/*.rs
+                    tests/integration/utf8_conformance.rs
+                )
+                exclude (target/**)
+            }
+        )
+    }
+)

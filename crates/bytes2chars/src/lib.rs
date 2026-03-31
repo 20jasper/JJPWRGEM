@@ -86,6 +86,17 @@
 //! # }
 //! ```
 //!
+//! ## rfc 3629 conformance
+//!
+//! decoding requirements are formally specified in [`spec/utf8.md`][spec],
+//! derived from [RFC 3629](https://datatracker.ietf.org/doc/html/rfc3629). requirements are linked to implementation and tests using [Tracey][tracey]
+//!
+//! conformance is validated against the [flenniken utf-8 test suite][utf8tests]
+//!
+//! [spec]: ../../spec/utf8.md
+//! [tracey]: https://tracey.bearcove.eu/
+//! [utf8tests]: https://github.com/flenniken/utf8tests
+//!
 //! ## alternatives
 //!
 //! ### [`std::str::from_utf8`](https://doc.rust-lang.org/std/str/fn.from_utf8.html)

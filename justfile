@@ -13,6 +13,7 @@ dev-install:
     cargo binstall cargo-dist@0.31.0 -y
     cargo binstall release-plz@0.3 -y
     cargo binstall cargo-rdme@1.5 -y
+    cargo binstall tracey@1.3.0 -y
 
 prettier := "pnpm exec oxfmt"
 prettier_glob := "./**/*.{md,yaml,yml,ts,js}"
@@ -139,10 +140,15 @@ diet:
     	(cd $x && cargo diet -r); \
     done
 
+# verify spec rules have version bumps for any changed rule text
+tracey-check:
+    tracey pre-commit
+
 prepublish:
     just format-check
     just lint
     just diet
+    just tracey-check
 
 publish-dry-run crate:
     cargo publish --dry-run -p {{ crate }}

@@ -11,15 +11,21 @@ mod inner {
 
     type Utf8Result<T> = core::result::Result<T, ErrorKind>;
 
+    // utf8[depends validate.expected-continuation]
     const CONTINUATION_MASK: u8 = 0b1100_0000;
     const CONTINUATION_PREFIX: u8 = 0b1000_0000;
     const CONTINUATION_PAYLOAD_MASK: u8 = 0b0011_1111;
+    // utf8[depends encoding.two-byte]
     const TWO_BYTE_LEAD_PAYLOAD_MASK: u8 = 0b0001_1111;
+    // utf8[depends encoding.three-byte]
     const THREE_BYTE_LEAD_PAYLOAD_MASK: u8 = 0b0000_1111;
+    // utf8[depends encoding.four-byte]
     const FOUR_BYTE_LEAD_PAYLOAD_MASK: u8 = 0b0000_0111;
 
+    // utf8[depends validate.no-surrogates]
     const SURROGATE_RANGE: RangeInclusive<u32> = 0xD800..=0xDFFF;
 
+    // utf8[depends validate.max-codepoint]
     const MAX_CODEPOINT: u32 = 0x0010_FFFF;
 
     trait Utf8ByteExt: Copy {
@@ -28,6 +34,7 @@ mod inner {
     }
 
     impl Utf8ByteExt for u8 {
+        // utf8[depends validate.expected-continuation]
         fn is_utf8_continuation(self) -> bool {
             self & CONTINUATION_MASK == CONTINUATION_PREFIX
         }
@@ -37,13 +44,13 @@ mod inner {
                 0x00..=0x7F => unreachable!(
                     "ASCII bytes are handled in Utf8Decoder::push before utf8_seq_len is called"
                 ),
-                0x80..=0xBF => Err(ErrorKind::InvalidLead(self)),
-                0xC0..=0xC1 => Err(ErrorKind::InvalidLead(self)),
-                0xC2..=0xDF => Ok(2),
-                0xE0..=0xEF => Ok(3),
-                0xF0..=0xF4 => Ok(4),
-                0xF5..=0xF7 => Err(ErrorKind::InvalidLead(self)),
-                0xF8..=0xFF => Err(ErrorKind::InvalidSequenceLength(self)),
+                0x80..=0xBF => Err(ErrorKind::InvalidLead(self)), // utf8[impl validate.invalid-lead]
+                0xC0..=0xC1 => Err(ErrorKind::InvalidLead(self)), // utf8[impl validate.no-overlong]
+                0xC2..=0xDF => Ok(2),                             // utf8[impl encoding.two-byte]
+                0xE0..=0xEF => Ok(3),                             // utf8[impl encoding.three-byte]
+                0xF0..=0xF4 => Ok(4),                             // utf8[impl encoding.four-byte]
+                0xF5..=0xF7 => Err(ErrorKind::InvalidLead(self)), // utf8[impl validate.max-codepoint]
+                0xF8..=0xFF => Err(ErrorKind::InvalidSequenceLength(self)), // utf8[impl validate.max-sequence-length]
             }
         }
     }
@@ -122,6 +129,7 @@ mod inner {
                     }
                 }
                 Utf8State::Expecting(mut state) => {
+                    // utf8[impl validate.expected-continuation]
                     if !b.is_utf8_continuation() {
                         return Err(ErrorKind::ExpectedContinuation(b));
                     }
@@ -150,14 +158,17 @@ mod inner {
     fn validate_utf8_sequence(bytes: &UtfStateInner) -> Utf8Result<()> {
         let codepoint = bytes.codepoint;
 
+        // utf8[impl validate.no-surrogates]
         if SURROGATE_RANGE.contains(&codepoint) {
             return Err(ErrorKind::InvalidSurrogate(codepoint));
         }
 
+        // utf8[impl validate.max-codepoint]
         if codepoint > MAX_CODEPOINT {
             return Err(ErrorKind::OutOfRange(codepoint));
         }
 
+        // utf8[impl validate.no-overlong]
         if bytes.bytes != min_bytes_for_code_point(codepoint) {
             return Err(ErrorKind::Overlong(codepoint));
         }
@@ -165,14 +176,16 @@ mod inner {
         Ok(())
     }
 
-    /// See the UTF‑8 encoding lengths defined by RFC 3629:
-    /// <https://www.ietf.org/rfc/rfc3629.txt>
+    // utf8[depends validate.no-overlong]
     fn min_bytes_for_code_point(cp: u32) -> u8 {
         match cp {
-            0x0000..=0x007F => 1,
-            0x0080..=0x07FF => 2,
-            0x0800..=0xFFFF => 3,
-            _ => 4,
+            0x0000..=0x007F => 1,       // utf8[depends encoding.ascii]
+            0x0080..=0x07FF => 2,       // utf8[depends encoding.two-byte]
+            0x0800..=0xFFFF => 3,       // utf8[depends encoding.three-byte]
+            0x10000..=0x0010_FFFF => 4, // utf8[depends encoding.four-byte]
+            _ => unreachable!(
+                "code points above U+10FFFF are rejected by validate.max-codepoint before reaching this function"
+            ),
         }
     }
 }
@@ -259,6 +272,7 @@ impl Utf8Decoder {
         self.offset += 1;
 
         if matches!(self.state, Utf8State::Idle) {
+            // utf8[impl encoding.ascii]
             if b.is_ascii() {
                 return Some(Ok((curr_idx, char::from(b))));
             }
@@ -307,6 +321,7 @@ impl Utf8Decoder {
     /// );
     /// ```
     pub fn finish(self) -> Result<usize> {
+        // utf8[impl validate.unfinished]
         if matches!(self.state, Utf8State::Expecting(_)) {
             Err(Error {
                 range: self.sequence_offset..self.offset,
@@ -342,16 +357,19 @@ mod tests {
             .collect()
     }
 
+    // utf8[verify encoding.ascii]
     #[test]
     fn ascii() {
         assert_eq!(collect_from_bytes(b"a"), Vec::from([Ok((0, 'a'))]));
     }
 
+    // utf8[verify encoding.two-byte]
     #[test]
     fn valid_2byte() {
         assert_eq!(collect_from_bytes(&[0xC3, 0xA9]), Vec::from([Ok((0, 'é'))]));
     }
 
+    // utf8[verify encoding.three-byte]
     #[test]
     fn valid_3byte() {
         assert_eq!(
@@ -360,6 +378,7 @@ mod tests {
         );
     }
 
+    // utf8[verify encoding.four-byte]
     #[test]
     fn valid_4byte() {
         assert_eq!(
@@ -368,6 +387,7 @@ mod tests {
         );
     }
 
+    // utf8[verify validate.invalid-lead]
     #[test]
     fn invalid_lead_byte() {
         assert_eq!(
@@ -379,6 +399,7 @@ mod tests {
         );
     }
 
+    // utf8[verify validate.max-sequence-length]
     #[test]
     fn five_plus_byte_lead() {
         assert_eq!(
@@ -405,6 +426,7 @@ mod tests {
         );
     }
 
+    // utf8[verify validate.expected-continuation]
     #[test]
     fn invalid_continuation() {
         assert_eq!(
@@ -416,6 +438,7 @@ mod tests {
         );
     }
 
+    // utf8[verify validate.no-overlong]
     #[test]
     fn e0_overlong() {
         assert_eq!(
@@ -427,14 +450,7 @@ mod tests {
         );
     }
 
-    #[test]
-    fn e0_valid_lower_bound() {
-        assert_eq!(
-            collect_from_bytes(&[0xE0, 0xA0, 0x80]),
-            Vec::from([Ok((0, '\u{0800}'))])
-        );
-    }
-
+    // utf8[verify validate.no-surrogates]
     #[test]
     fn ed_surrogate_rejected() {
         assert_eq!(
@@ -446,14 +462,7 @@ mod tests {
         );
     }
 
-    #[test]
-    fn ed_valid_upper_bound() {
-        assert_eq!(
-            collect_from_bytes(&[0xED, 0x9F, 0xBF]),
-            Vec::from([Ok((0, '\u{D7FF}'))])
-        );
-    }
-
+    // utf8[verify validate.no-overlong]
     #[test]
     fn f0_overlong() {
         assert_eq!(
@@ -465,14 +474,7 @@ mod tests {
         );
     }
 
-    #[test]
-    fn f0_valid_lower_bound() {
-        assert_eq!(
-            collect_from_bytes(&[0xF0, 0x90, 0x80, 0x80]),
-            Vec::from([Ok((0, '\u{10000}'))])
-        );
-    }
-
+    // utf8[verify validate.max-codepoint]
     #[test]
     fn f4_out_of_range() {
         assert_eq!(
@@ -484,18 +486,11 @@ mod tests {
         );
     }
 
+    // utf8[verify validate.unfinished]
     #[test]
-    fn f4_valid_max() {
-        assert_eq!(
-            collect_from_bytes(&[0xF4, 0x8F, 0xBF, 0xBF]),
-            Vec::from([Ok((0, '\u{10FFFF}'))])
-        );
-    }
-
-    #[test]
-    fn incomplete_sequence_stays_expecting() {
+    fn incomplete_sequence_errors_on_finish() {
         let mut decoder = Utf8Decoder::new(0);
-        assert!(decoder.push(0xC3).is_none());
+        assert!(decoder.push(0xC3).is_none()); // 2-byte sequence start
         assert_eq!(
             decoder.finish(),
             Err(Error {
@@ -503,12 +498,9 @@ mod tests {
                 kind: ErrorKind::UnfinishedSequence
             })
         );
-    }
 
-    #[test]
-    fn incomplete_sequence_treated_as_error_on_finish() {
         let mut decoder = Utf8Decoder::new(0);
-        assert!(decoder.push(0xF0).is_none());
+        assert!(decoder.push(0xF0).is_none()); // 4-byte sequence start
         assert_eq!(
             decoder.finish(),
             Err(Error {

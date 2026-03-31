@@ -83,7 +83,7 @@ where
 
     fn size_hint(&self) -> (usize, Option<usize>) {
         let (lower, upper) = self.bytes.size_hint();
-        (lower / 4, upper)
+        (lower / 4, upper) // utf8[depends encoding.four-byte]
     }
 }
 

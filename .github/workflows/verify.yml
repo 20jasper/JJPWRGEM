@@ -51,7 +51,7 @@ jobs:
           run_install: true
       - uses: taiki-e/install-action@06203676c62f0d3c765be3f2fcfbebbcb02d09f5 # v2.69.6
         with:
-          tool: just@1.47, cargo-shear@1.11, cargo-rdme@1.5
+          tool: just@1.47, cargo-shear@1.11, cargo-rdme@1.5, tracey@1.3.0
       - name: Configure Dependency Caching
         uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4 # v2.9.1
       - name: check unused dependencies
@@ -59,6 +59,7 @@ jobs:
       - run: just lint
       - run: just readmes-check
       - run: just package-json-check
+      - run: just tracey-check
 
   test-cli:
     runs-on: ubuntu-latest
