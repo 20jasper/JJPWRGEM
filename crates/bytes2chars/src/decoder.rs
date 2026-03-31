@@ -5,17 +5,12 @@ use inner::Utf8State;
 use crate::{Error, ErrorKind, Result};
 
 mod inner {
+    use core::ops::RangeInclusive;
+
     use crate::ErrorKind;
 
     type Utf8Result<T> = core::result::Result<T, ErrorKind>;
 
-    // UTF-8 byte patterns (RFC 3629):
-    // - continuation bytes are 10xxxxxx
-    // - lead bytes indicate length:
-    //     0xxxxxxx   (1)
-    //     110xxxxx   (2)
-    //     1110xxxx   (3)
-    //     11110xxx   (4)
     const CONTINUATION_MASK: u8 = 0b1100_0000;
     const CONTINUATION_PREFIX: u8 = 0b1000_0000;
     const CONTINUATION_PAYLOAD_MASK: u8 = 0b0011_1111;
@@ -23,17 +18,13 @@ mod inner {
     const THREE_BYTE_LEAD_PAYLOAD_MASK: u8 = 0b0000_1111;
     const FOUR_BYTE_LEAD_PAYLOAD_MASK: u8 = 0b0000_0111;
 
-    /// The inclusive range of UTF-16 surrogate code points, which are forbidden
-    /// in UTF-8. See [RFC 3629 §3](https://datatracker.ietf.org/doc/html/rfc3629#section-3).
-    const SURROGATE_RANGE: core::ops::RangeInclusive<u32> = 0xD800..=0xDFFF;
+    const SURROGATE_RANGE: RangeInclusive<u32> = 0xD800..=0xDFFF;
 
-    /// The maximum valid Unicode code point.
-    /// See [RFC 3629 §3](https://datatracker.ietf.org/doc/html/rfc3629#section-3).
     const MAX_CODEPOINT: u32 = 0x0010_FFFF;
 
     trait Utf8ByteExt: Copy {
         fn is_utf8_continuation(self) -> bool;
-        fn utf8_seq_len(self) -> Option<u8>;
+        fn utf8_seq_len(self) -> Utf8Result<u8>;
     }
 
     impl Utf8ByteExt for u8 {
@@ -41,15 +32,18 @@ mod inner {
             self & CONTINUATION_MASK == CONTINUATION_PREFIX
         }
 
-        fn utf8_seq_len(self) -> Option<u8> {
+        fn utf8_seq_len(self) -> Utf8Result<u8> {
             match self {
-                0x00..=0x7F => Some(1),
-                // C0/C1 excluded (overlong)
-                0xC2..=0xDF => Some(2),
-                0xE0..=0xEF => Some(3),
-                // F5+ excluded (out of Unicode range)
-                0xF0..=0xF4 => Some(4),
-                _ => None,
+                0x00..=0x7F => unreachable!(
+                    "ASCII bytes are handled in Utf8Decoder::push before utf8_seq_len is called"
+                ),
+                0x80..=0xBF => Err(ErrorKind::InvalidLead(self)),
+                0xC0..=0xC1 => Err(ErrorKind::InvalidLead(self)),
+                0xC2..=0xDF => Ok(2),
+                0xE0..=0xEF => Ok(3),
+                0xF0..=0xF4 => Ok(4),
+                0xF5..=0xF7 => Err(ErrorKind::InvalidLead(self)),
+                0xF8..=0xFF => Err(ErrorKind::InvalidSequenceLength(self)),
             }
         }
     }
@@ -121,11 +115,10 @@ mod inner {
         pub(super) fn process(self, b: u8) -> Utf8Result<Self> {
             match self {
                 Utf8State::Idle => {
-                    let seq_len = b.utf8_seq_len().ok_or(ErrorKind::InvalidLead(b))?;
+                    let seq_len = b.utf8_seq_len()?;
                     match seq_len {
-                        1 => unreachable!("ASCII bytes are handled before `process` is called"),
                         2..=4 => Ok(Utf8State::Expecting(UtfStateInner::from_byte(b, seq_len))),
-                        _ => unreachable!("`utf8_seq_len` only returns 1..=4"),
+                        _ => unreachable!("`utf8_seq_len` only returns 2..=4 for non-ASCII bytes"),
                     }
                 }
                 Utf8State::Expecting(mut state) => {
@@ -384,18 +377,15 @@ mod tests {
                 kind: ErrorKind::InvalidLead(0x80),
             })])
         );
+    }
+
+    #[test]
+    fn five_plus_byte_lead() {
         assert_eq!(
-            collect_from_bytes(&[0xC0]),
+            collect_from_bytes(&[0xF8]),
             Vec::from([Err(Error {
                 range: 0..1,
-                kind: ErrorKind::InvalidLead(0xC0),
-            })])
-        );
-        assert_eq!(
-            collect_from_bytes(&[0xC1]),
-            Vec::from([Err(Error {
-                range: 0..1,
-                kind: ErrorKind::InvalidLead(0xC1),
+                kind: ErrorKind::InvalidSequenceLength(0xF8),
             })])
         );
     }

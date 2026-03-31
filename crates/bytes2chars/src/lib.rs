@@ -116,6 +116,8 @@ mod error {
     pub enum ErrorKind {
         /// byte 0x{_0:02X} cannot start a UTF-8 sequence
         InvalidLead(u8),
+        /// byte 0x{_0:02X} would start a sequence of 5 or more bytes
+        InvalidSequenceLength(u8),
         /// expected a continuation byte, found 0x{_0:02X}
         ExpectedContinuation(u8),
         /// invalid surrogate code point U+{_0:04X}
