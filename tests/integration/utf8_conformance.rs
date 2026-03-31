@@ -1,12 +1,21 @@
+use std::sync::LazyLock;
+
 use bytes2chars::{ErrorKind, Utf8CharIndices};
 
 const UTF8TESTS_PATH: &str = "./tests/conformance/utf8tests/utf8tests.txt";
 
+enum CaseExpectation {
+    Valid,
+    Invalid,
+}
+
 struct Utf8Case {
     id: String,
-    valid: bool,
+    expectation: CaseExpectation,
     bytes: Vec<u8>,
 }
+
+static CASES: LazyLock<Vec<Utf8Case>> = LazyLock::new(load_cases);
 
 /// Parse hex bytes from a string that may contain pairs without spaces
 /// (e.g. "8081 8283" or "C2 A9" or "EFBFBD").
@@ -21,7 +30,7 @@ fn parse_hex_bytes(s: &str) -> Vec<u8> {
         .collect()
 }
 
-fn get_cases() -> Vec<Utf8Case> {
+fn load_cases() -> Vec<Utf8Case> {
     let content = std::fs::read_to_string(UTF8TESTS_PATH).unwrap();
     let mut cases = Vec::new();
 
@@ -41,34 +50,22 @@ fn get_cases() -> Vec<Utf8Case> {
         }
         let kind = parts[1].trim();
         let hex_field = parts[2].trim();
-        let (valid, bytes) = match kind {
-            "valid" => (true, hex_field.as_bytes().to_vec()),
-            "valid hex" => (true, parse_hex_bytes(hex_field)),
-            "invalid hex" => (false, parse_hex_bytes(hex_field)),
+        let (bytes, expectation) = match kind {
+            "valid" => (hex_field.as_bytes().to_vec(), CaseExpectation::Valid),
+            "valid hex" => (parse_hex_bytes(hex_field), CaseExpectation::Valid),
+            "invalid hex" => (parse_hex_bytes(hex_field), CaseExpectation::Invalid),
             _ => continue,
         };
-        cases.push(Utf8Case { id, valid, bytes });
+        cases.push(Utf8Case {
+            id,
+            expectation,
+            bytes,
+        });
     }
     cases
 }
 
-/// Predicate over error kinds for invalid cases where we can assert specifically.
-/// Returns `None` for cases where any error is acceptable.
-fn expected_kind(id: &str) -> Option<fn(ErrorKind) -> bool> {
-    // Surrogate code points (U+D800..=U+DFFF) — codepoint varies, use wildcard
-    if id.starts_with("24.") || id.starts_with("25.") {
-        return Some(|k| matches!(k, ErrorKind::InvalidSurrogate(_)));
-    }
-    // Sequences truncated at end-of-stream
-    if matches!(id, "18.1" | "18.2" | "19.0" | "19.1" | "19.5") {
-        return Some(|k| k == ErrorKind::UnfinishedSequence);
-    }
-    None
-}
-
-#[test]
-fn utf8_conformance() {
-    let cases = get_cases();
+fn run_conformance_cases(cases: &[&Utf8Case]) {
     assert!(
         !cases.is_empty(),
         "no test cases parsed from {UTF8TESTS_PATH}"
@@ -76,39 +73,29 @@ fn utf8_conformance() {
 
     let mut failures = Vec::new();
 
-    for case in &cases {
+    for case in cases {
         let stream = Utf8CharIndices::from(case.bytes.iter().copied());
         let results: Vec<_> = stream.collect();
-
         let errors: Vec<ErrorKind> = results
             .iter()
             .filter_map(|r| r.as_ref().err().map(|e| e.kind))
             .collect();
 
-        if case.valid {
-            if let Some(&err) = errors.first() {
-                failures.push(format!(
-                    "VALID   {} {:02X?} -> unexpected error {:?}",
-                    case.id, case.bytes, err
-                ));
-            }
-        } else {
-            match expected_kind(&case.id) {
-                Some(pred) => {
-                    if !errors.iter().copied().any(pred) {
-                        failures.push(format!(
-                            "INVALID {} {:02X?} -> no matching error kind, got {errors:?}",
-                            case.id, case.bytes
-                        ));
-                    }
+        match case.expectation {
+            CaseExpectation::Valid => {
+                if let Some(&err) = errors.first() {
+                    failures.push(format!(
+                        "VALID   {} {:02X?} -> unexpected error {:?}",
+                        case.id, case.bytes, err
+                    ));
                 }
-                None => {
-                    if errors.is_empty() {
-                        failures.push(format!(
-                            "INVALID {} {:02X?} -> expected an error but got none",
-                            case.id, case.bytes
-                        ));
-                    }
+            }
+            CaseExpectation::Invalid => {
+                if errors.is_empty() {
+                    failures.push(format!(
+                        "INVALID {} {:02X?} -> expected an error but got none",
+                        case.id, case.bytes
+                    ));
                 }
             }
         }
@@ -121,4 +108,22 @@ fn utf8_conformance() {
             failures.join("\n")
         );
     }
+}
+
+#[test]
+fn conformance_valid() {
+    let cases: Vec<_> = CASES
+        .iter()
+        .filter(|c| matches!(c.expectation, CaseExpectation::Valid))
+        .collect();
+    run_conformance_cases(&cases);
+}
+
+#[test]
+fn conformance_invalid() {
+    let cases: Vec<_> = CASES
+        .iter()
+        .filter(|c| matches!(c.expectation, CaseExpectation::Invalid))
+        .collect();
+    run_conformance_cases(&cases);
 }
