@@ -1,3 +1,4 @@
+crates/bytes2chars/README.md
 tests/conformance/JSONTestSuite
 xtask/bench/data
 .github/workflows/jjp-release.yml

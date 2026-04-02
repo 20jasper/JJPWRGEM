@@ -1,0 +1,17 @@
+[package]
+name = "benches"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+
+[dev-dependencies]
+bytes2chars = { path = "../crates/bytes2chars" }
+criterion = { version = "0.8.2", features = ["html_reports"] }
+utf8-decode = "2.0.0"
+bstr = "1"
+
+[[bench]]
+name = "bytes2chars"
+harness = false

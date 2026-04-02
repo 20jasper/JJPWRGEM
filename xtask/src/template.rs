@@ -31,6 +31,10 @@ const BENCH_TEMPLATE: &str = include_str!(concat!(
     env!("CARGO_MANIFEST_DIR"),
     "/templates/bench.template.md"
 ));
+const BYTES2CHARS_BENCH_TEMPLATE: &str = include_str!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/templates/bytes2chars-bench.template.md"
+));
 const SHARED_FRAGMENT: &str = include_str!(concat!(
     env!("CARGO_MANIFEST_DIR"),
     "/templates/indeterminate_handling.md"
@@ -39,6 +43,10 @@ const SHARED_FRAGMENT: &str = include_str!(concat!(
 const ROOT_OUT_PATH_STR: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/../readme.md");
 const PARSE_OUT_PATH_STR: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/../crates/parse/readme.md");
 const BENCH_OUT_PATH_STR: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/../benchmarks.md");
+const BYTES2CHARS_BENCH_OUT_PATH_STR: &str = concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/../crates/bytes2chars/BENCHMARKS.md"
+);
 
 const EXISTING_ROOT: &str = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../readme.md"));
 const EXISTING_PARSE: &str = include_str!(concat!(
@@ -46,6 +54,18 @@ const EXISTING_PARSE: &str = include_str!(concat!(
     "/../crates/parse/readme.md"
 ));
 const EXISTING_BENCH: &str = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../benchmarks.md"));
+const EXISTING_BYTES2CHARS_BENCH: &str = include_str!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/../crates/bytes2chars/BENCHMARKS.md"
+));
+
+const BYTES2CHARS_BENCH_TABLE_REPLACEMENTS: [(&str, &str); 1] = [(
+    "{{BYTES2CHARS_BENCH_TABLE}}",
+    include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../benches/output/bytes2chars.md"
+    )),
+)];
 
 const BENCH_TABLE_REPLACEMENTS: [(&str, &str); 6] = [
     (
@@ -125,8 +145,7 @@ fn render_template(
         processed = processed.replace(needle, replacement.trim());
     }
 
-    let with_banner = format!("{}{}", BANNER, processed);
-    let formatted = oxfmt_format(&with_banner)?;
+    let formatted = oxfmt_format(&format!("{}{}", BANNER, processed))?;
     Ok(formatted)
 }
 
@@ -134,16 +153,27 @@ pub fn write_readmes() {
     let root_rendered = render_template(JJPWREGEM_TEMPLATE, &[]).unwrap();
     let parse_rendered = render_template(JJPWREGEM_PARSE_TEMPLATE, &[]).unwrap();
     let bench_rendered = render_template(BENCH_TEMPLATE, &BENCH_TABLE_REPLACEMENTS).unwrap();
+    let bytes2chars_bench_rendered = render_template(
+        BYTES2CHARS_BENCH_TEMPLATE,
+        &BYTES2CHARS_BENCH_TABLE_REPLACEMENTS,
+    )
+    .unwrap();
 
     fs::write(ROOT_OUT_PATH_STR, root_rendered).unwrap();
     fs::write(PARSE_OUT_PATH_STR, parse_rendered).unwrap();
     fs::write(BENCH_OUT_PATH_STR, bench_rendered).unwrap();
+    fs::write(BYTES2CHARS_BENCH_OUT_PATH_STR, bytes2chars_bench_rendered).unwrap();
 }
 
 pub fn are_readmes_updated() -> anyhow::Result<()> {
     let root_rendered = render_template(JJPWREGEM_TEMPLATE, &[]).unwrap();
     let parse_rendered = render_template(JJPWREGEM_PARSE_TEMPLATE, &[]).unwrap();
     let bench_rendered = render_template(BENCH_TEMPLATE, &BENCH_TABLE_REPLACEMENTS).unwrap();
+    let bytes2chars_bench_rendered = render_template(
+        BYTES2CHARS_BENCH_TEMPLATE,
+        &BYTES2CHARS_BENCH_TABLE_REPLACEMENTS,
+    )
+    .unwrap();
 
     if EXISTING_ROOT != root_rendered {
         bail!("readme.md out of date (root)")
@@ -151,6 +181,8 @@ pub fn are_readmes_updated() -> anyhow::Result<()> {
         bail!("crates/parse/readme.md out of date")
     } else if EXISTING_BENCH != bench_rendered {
         bail!("xtask/bench/readme.md out of date")
+    } else if EXISTING_BYTES2CHARS_BENCH != bytes2chars_bench_rendered {
+        bail!("crates/bytes2chars/BENCHMARKS.md out of date")
     } else {
         Ok(())
     }

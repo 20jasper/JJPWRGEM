@@ -22,7 +22,13 @@ path = "tests/integration/main.rs"
 
 
 [workspace]
-members = ["crates/ui", "crates/parse", "xtask", "crates/bytes2chars"]
+members = [
+  "crates/ui",
+  "crates/parse",
+  "xtask",
+  "crates/bytes2chars",
+  "benches",
+]
 
 [workspace.dependencies]
 jjpwrgem-parse = { path = "crates/parse", version = "0.3.0" }

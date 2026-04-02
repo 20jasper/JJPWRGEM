@@ -11,6 +11,11 @@
 //! [utf8-chars]: https://docs.rs/bytes2chars/latest/bytes2chars/struct.Utf8Chars.html
 //! [utf8-char-indices]: https://docs.rs/bytes2chars/latest/bytes2chars/struct.Utf8CharIndices.html
 //! [utf8-decoder]: https://docs.rs/bytes2chars/latest/bytes2chars/struct.Utf8Decoder.html
+//! ## installation
+//!
+//! ```shell
+//! cargo add bytes2chars
+//! ```
 //!
 //! ## design goals
 //!
@@ -46,41 +51,25 @@
 //! # }
 //! ```
 //!
-//! ### error handling
-//!
-//! ```rust
-//! # use bytes2chars::{Error, ErrorKind, Result, Utf8Chars};
-//! # fn main() -> Result<()> {
-//! let err = Utf8Chars::from(b"hello \x80 world".iter().copied())
-//!     .collect::<Result<String>>()
-//!     .unwrap_err();
-//!
-//! assert_eq!(
-//!     err,
-//!     Error {
-//!         range: 6..7,
-//!         kind: ErrorKind::InvalidLead(0x80)
-//!     }
-//! );
-//! assert_eq!(
-//!     err.to_string(),
-//!     "invalid utf-8 at bytes 6..7: byte 0x80 cannot start a UTF-8 sequence"
-//! );
-//! # Ok(())
-//! # }
-//! ```
 //!
 //! ### push based decoder
 //!
 //! ```rust
 //! # use bytes2chars::Utf8Decoder;
+//! # use bytes2chars::ErrorKind;
+//! # use bytes2chars::Error;
 //! # fn main() -> bytes2chars::Result<()> {
 //! let mut decoder = Utf8Decoder::new(0);
 //! assert_eq!(decoder.push(0xF0), None); // accumulating
 //! assert_eq!(decoder.push(0x9F), None);
 //! assert_eq!(decoder.push(0xA6), None);
 //! assert_eq!(decoder.push(0x80), Some(Ok((0, '🦀')))); // complete
-//! decoder.finish()?; // check for truncated sequence
+//! assert_eq!(decoder.push(0xF0), None); // start new sequence
+//! let err = Error {
+//!     range: 4..5,
+//!     kind: ErrorKind::UnfinishedSequence,
+//! };
+//! assert_eq!(decoder.finish(), Err(err)); // check for truncated sequence
 //!
 //! # Ok(())
 //! # }
@@ -97,7 +86,13 @@
 //! [tracey]: https://tracey.bearcove.eu/
 //! [utf8tests]: https://github.com/flenniken/utf8tests
 //!
-//! ## alternatives
+//!
+//!
+//! ## comparison with alternatives
+//!
+//! the unique benefit `bytes2chars` provides is rich error context
+//!
+//! see [BENCHMARKS.md](../BENCHMARKS.md) for throughput comparisons. `bytes2chars` still has a ways to go with perf!
 //!
 //! ### [`std::str::from_utf8`](https://doc.rust-lang.org/std/str/fn.from_utf8.html)
 //!
@@ -106,6 +101,10 @@
 //! ### [`utf8-decode`](https://docs.rs/utf8-decode/latest/utf8_decode/index.html)
 //!
 //! also lazy. error provides a range but not a particular cause. does not provide a push based decoder
+//!
+//! ### [`bstr::ByteSlice::chars`](https://docs.rs/utf8-decode/latest/utf8_decode/index.html)
+//!
+//! also lazy. swallows errors. does not provide a push based decoder. really fast
 
 mod decoder;
 mod iter;

@@ -14,6 +14,7 @@ dev-install:
     cargo binstall release-plz@0.3 -y
     cargo binstall cargo-rdme@1.5 -y
     cargo binstall tracey@1.3.0 -y
+    cargo binstall cargo-criterion@1.1.0 -y
 
 prettier := "pnpm exec oxfmt"
 prettier_glob := "./**/*.{md,yaml,yml,ts,js}"
@@ -51,16 +52,13 @@ test-snapshot:
 
 xtask-command := "cargo run -p xtask -q --"
 rdme-command := "cargo rdme --workspace-project bytes2chars"
-prettier-bytes2chars := prettier + " crates/bytes2chars/README.md"
 
 bytes2chars-readme:
     cargo +nightly fmt -p bytes2chars
     {{ rdme-command }} --force
-    {{ prettier-bytes2chars }} --write
 
 bytes2chars-readme-check:
     {{ rdme-command }} --check
-    {{ prettier-bytes2chars }} --check
 
 # generate markdown files from templates
 readmes:
@@ -161,8 +159,17 @@ release-binary:
 release-notes:
     dist host --steps=create --output-format=json | jq -r .announcement_github_body
 
+# run criterion benchmarks for a named bench (e.g. `just bench bytes2chars`)
+bench name:
+    cargo bench -p benches --bench {{ name }}
+
+# run bytes2chars benchmarks and regenerate benches/output/bytes2chars.md
+bench-md:
+    cargo criterion -p benches --bench bytes2chars --message-format=json | cargo run -p xtask -q -- bench-table > benches/output/bytes2chars.md
+    just readmes
+
 # runs perf tests against 10+ cli tools and regenerates outputs and embeds in readmes
-bench:
+bench-docker:
     mkdir -p xtask/bench/output
     docker build -t jjp-benchmark .
     docker run --rm \
