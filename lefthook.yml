@@ -13,7 +13,7 @@ pre-push:
         - "justfile"
         - "**/*.{rs,md,yml,ts,js}"
     - run: cargo shear
-    - run: dist plan
+    - run: dist plan > /dev/null
     - run: just publish-dry-run bytes2chars
       glob: "crates/bytes2chars/**"
     - run: just readmes-check

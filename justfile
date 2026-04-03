@@ -41,14 +41,14 @@ format-check:
 
 [group('lint')]
 lint:
-    RUSTFLAGS=-Dwarnings cargo clippy --all-targets --all-features --workspace
-    pnpm --if-present lint
+    RUSTFLAGS=-Dwarnings cargo clippy -q --all-targets --all-features --workspace
+    pnpm --if-present lint > /dev/null
 
 test_flags := "--all-features --workspace --all-targets"
 
 [group('test')]
 test *args="":
-    cargo test {{ test_flags }} {{ args }}
+    cargo test -q {{ test_flags }} {{ args }}
 
 # common flag: --open
 [group('test')]
@@ -91,13 +91,13 @@ npm-markdown:
 [group('npm')]
 package-json: npm-markdown
     cargo xtask generate-npm-package
-    cd ./npm-template && npm i --ignore-scripts && npm shrinkwrap && git add npm-shrinkwrap.json
+    cd ./npm-template && npm i --ignore-scripts --no-fund && npm shrinkwrap && git add npm-shrinkwrap.json
 
 # regenerated npm package metadata and checks for changes
 [group('npm')]
 package-json-check: package-json
     git diff --exit-code -- npm-template/npm-shrinkwrap.json
-    npm pack ./npm-template --dry-run
+    npm pack ./npm-template --dry-run --quiet
 
 install := "install --path ."
 
@@ -157,8 +157,9 @@ vscode-test-wsl: vscode-bin
 [group('lint')]
 diet:
     for x in ./crates/* ./xtask ./benches .; do \
+    	[ -f "$x/Cargo.toml" ] || continue; \
     	echo "dieting $x"; \
-    	(cd $x && cargo diet -r); \
+    	(cd $x && cargo diet -r > /dev/null); \
     done
 
 # verify spec rules have version bumps for any changed rule text
@@ -175,7 +176,7 @@ prepublish:
 
 [group('release')]
 publish-dry-run crate:
-    cargo publish --dry-run -p {{ crate }}
+    cargo publish -q --dry-run -p {{ crate }}
 
 [group('release')]
 release-binary:
