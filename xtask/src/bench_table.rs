@@ -66,7 +66,7 @@ fn format_throughput(bytes_per_iter: f64, ns: f64) -> String {
 }
 
 // group -> param -> bench -> (time_ns, bytes_per_iter)
-type Data = BTreeMap<String, BTreeMap<String, BTreeMap<String, (f64, f64)>>>;
+type Data = BTreeMap<String, BTreeMap<String, BTreeMap<String, (f64, Option<f64>)>>>;
 
 pub fn write_bench_table() -> anyhow::Result<()> {
     let mut data: Data = BTreeMap::new();
@@ -88,7 +88,7 @@ pub fn write_bench_table() -> anyhow::Result<()> {
         let Some((group, bench, param)) = parse_id(&id) else {
             continue;
         };
-        let bytes = throughput.first().map(|t| t.per_iteration).unwrap_or(0.0);
+        let bytes = throughput.first().map(|t| t.per_iteration);
         data.entry(group.to_owned())
             .or_default()
             .entry(param.to_owned())
@@ -127,6 +127,11 @@ pub fn write_bench_table() -> anyhow::Result<()> {
 
         println!("\n{header}");
         println!("{sep}");
+        let has_throughput = params
+            .values()
+            .flat_map(|benches| benches.values())
+            .any(|&(_, bytes)| bytes.is_some());
+
         for (param, benches) in params {
             let size = format_size(param);
             let mut time_row = format!("| time ({size}) |");
@@ -134,14 +139,20 @@ pub fn write_bench_table() -> anyhow::Result<()> {
             for bench in &bench_names {
                 if let Some(&(ns, bytes)) = benches.get(bench) {
                     time_row.push_str(&format!(" {} |", format_time(ns)));
-                    throughput_row.push_str(&format!(" {} |", format_throughput(bytes, ns)));
+                    if let Some(bytes) = bytes {
+                        throughput_row.push_str(&format!(" {} |", format_throughput(bytes, ns)));
+                    } else {
+                        throughput_row.push_str(" — |");
+                    }
                 } else {
                     time_row.push_str(" — |");
                     throughput_row.push_str(" — |");
                 }
             }
             println!("{time_row}");
-            println!("{throughput_row}");
+            if has_throughput {
+                println!("{throughput_row}");
+            }
         }
     }
 

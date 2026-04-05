@@ -187,15 +187,46 @@ release-binary:
 release-notes:
     dist host --steps=create --output-format=json | jq -r .announcement_github_body
 
-# e.g. `just bench bytes2chars`
+json-benches := "json_deser json_prettify json_uglify"
+
+# e.g. `just bench bytes2chars` or `just bench json_prettify --sample-size 50`
 [group('bench')]
 bench name *args="":
-    cargo criterion -p benches --bench {{ name }} {{ args }}
+    mkdir -p benches/output
+    tmp="$(mktemp)"; \
+    trap 'rm -f "$tmp"' EXIT; \
+    cargo criterion -p benches --bench {{ name }} --message-format=json {{ args }} > "$tmp"; \
+    cargo xtask bench-table < "$tmp" > benches/output/{{ name }}.md
+    just readmes
 
 [group('bench')]
-bench-md:
-    just bench bytes2chars --message-format=json | cargo xtask bench-table > benches/output/bytes2chars.md
-    just readmes
+bench-json-raw benches=json-benches impl="" fixture="" *args="":
+    just _bench-json-raw "{{ benches }}" "{{ impl }}" "{{ fixture }}" {{ args }}
+
+# e.g. `just bench-jjp json_prettify canada --sample-size 50`
+[group('bench')]
+bench-jjp benches=json-benches fixture="" *args="":
+    just _bench-json-raw "{{ benches }}" "jjpwrgem" "{{ fixture }}" {{ args }}
+
+[private]
+_bench-json-raw benches impl fixture *args="":
+    for bench in {{ benches }}; do \
+        env_args=""; \
+        if [ -n "{{ impl }}" ]; then \
+            env_args="$env_args JJP_JSON_IMPL={{ impl }}"; \
+        fi; \
+        if [ -n "{{ fixture }}" ]; then \
+            env_args="$env_args JJP_JSON_INPUT={{ fixture }}"; \
+        fi; \
+        env $env_args cargo criterion -p benches --bench "$bench" {{ args }}; \
+    done
+
+# run the full json benchmark suite and regenerate readmes
+[group('bench')]
+bench-json *args="":
+    just bench json_deser {{ args }}
+    just bench json_prettify {{ args }}
+    just bench json_uglify {{ args }}
 
 # runs perf tests against 10+ cli tools and regenerates outputs and embeds in readmes
 [group('bench')]
@@ -210,6 +241,7 @@ bench-docker:
     just plot-bench
     just readmes
 
+# plots docker benches
 [group('bench')]
 plot-bench:
     cargo xtask plot-benchmarks

@@ -35,6 +35,10 @@ const BYTES2CHARS_BENCH_TEMPLATE: &str = include_str!(concat!(
     env!("CARGO_MANIFEST_DIR"),
     "/templates/bytes2chars-bench.template.md"
 ));
+const JSON_BENCH_TEMPLATE: &str = include_str!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/templates/json-bench.template.md"
+));
 const SHARED_FRAGMENT: &str = include_str!(concat!(
     env!("CARGO_MANIFEST_DIR"),
     "/templates/indeterminate_handling.md"
@@ -47,6 +51,8 @@ const BYTES2CHARS_BENCH_OUT_PATH_STR: &str = concat!(
     env!("CARGO_MANIFEST_DIR"),
     "/../crates/bytes2chars/BENCHMARKS.md"
 );
+const JSON_BENCH_OUT_PATH_STR: &str =
+    concat!(env!("CARGO_MANIFEST_DIR"), "/../benches/BENCHMARKS.md");
 
 const EXISTING_ROOT: &str = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../readme.md"));
 const EXISTING_PARSE: &str = include_str!(concat!(
@@ -58,6 +64,10 @@ const EXISTING_BYTES2CHARS_BENCH: &str = include_str!(concat!(
     env!("CARGO_MANIFEST_DIR"),
     "/../crates/bytes2chars/BENCHMARKS.md"
 ));
+const EXISTING_JSON_BENCH: &str = include_str!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/../benches/BENCHMARKS.md"
+));
 
 const BYTES2CHARS_BENCH_TABLE_REPLACEMENTS: [(&str, &str); 1] = [(
     "{{BYTES2CHARS_BENCH_TABLE}}",
@@ -66,6 +76,30 @@ const BYTES2CHARS_BENCH_TABLE_REPLACEMENTS: [(&str, &str); 1] = [(
         "/../benches/output/bytes2chars.md"
     )),
 )];
+
+const JSON_BENCH_TABLE_REPLACEMENTS: [(&str, &str); 3] = [
+    (
+        "{{JSON_DESER_BENCH_TABLE}}",
+        include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../benches/output/json_deser.md"
+        )),
+    ),
+    (
+        "{{JSON_PRETTIFY_BENCH_TABLE}}",
+        include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../benches/output/json_prettify.md"
+        )),
+    ),
+    (
+        "{{JSON_UGLIFY_BENCH_TABLE}}",
+        include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../benches/output/json_uglify.md"
+        )),
+    ),
+];
 
 const BENCH_TABLE_REPLACEMENTS: [(&str, &str); 6] = [
     (
@@ -158,11 +192,14 @@ pub fn write_readmes() {
         &BYTES2CHARS_BENCH_TABLE_REPLACEMENTS,
     )
     .unwrap();
+    let json_bench_rendered =
+        render_template(JSON_BENCH_TEMPLATE, &JSON_BENCH_TABLE_REPLACEMENTS).unwrap();
 
     fs::write(ROOT_OUT_PATH_STR, root_rendered).unwrap();
     fs::write(PARSE_OUT_PATH_STR, parse_rendered).unwrap();
     fs::write(BENCH_OUT_PATH_STR, bench_rendered).unwrap();
     fs::write(BYTES2CHARS_BENCH_OUT_PATH_STR, bytes2chars_bench_rendered).unwrap();
+    fs::write(JSON_BENCH_OUT_PATH_STR, json_bench_rendered).unwrap();
 }
 
 pub fn are_readmes_updated() -> anyhow::Result<()> {
@@ -174,15 +211,19 @@ pub fn are_readmes_updated() -> anyhow::Result<()> {
         &BYTES2CHARS_BENCH_TABLE_REPLACEMENTS,
     )
     .unwrap();
+    let json_bench_rendered =
+        render_template(JSON_BENCH_TEMPLATE, &JSON_BENCH_TABLE_REPLACEMENTS).unwrap();
 
     if EXISTING_ROOT != root_rendered {
         bail!("readme.md out of date (root)")
     } else if EXISTING_PARSE != parse_rendered {
         bail!("crates/parse/readme.md out of date")
     } else if EXISTING_BENCH != bench_rendered {
-        bail!("xtask/bench/readme.md out of date")
+        bail!("benchmarks.md out of date")
     } else if EXISTING_BYTES2CHARS_BENCH != bytes2chars_bench_rendered {
         bail!("crates/bytes2chars/BENCHMARKS.md out of date")
+    } else if EXISTING_JSON_BENCH != json_bench_rendered {
+        bail!("benches/BENCHMARKS.md out of date")
     } else {
         Ok(())
     }

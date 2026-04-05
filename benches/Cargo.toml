@@ -10,9 +10,25 @@ include = []
 [dev-dependencies]
 bytes2chars = { path = "../crates/bytes2chars" }
 criterion = { version = "0.8.2", features = ["html_reports"] }
+jjpwrgem-parse = { path = "../crates/parse" }
+serde_json = "1"
+simd-json = "0.17"
+sonic-rs = "0.5"
 utf8-decode = "2.0.0"
 bstr = "1"
 
 [[bench]]
 name = "bytes2chars"
+harness = false
+
+[[bench]]
+name = "json_deser"
+harness = false
+
+[[bench]]
+name = "json_prettify"
+harness = false
+
+[[bench]]
+name = "json_uglify"
 harness = false
