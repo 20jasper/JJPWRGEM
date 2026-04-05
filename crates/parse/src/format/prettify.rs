@@ -240,6 +240,21 @@ pub fn prettify_value(val: &Value, preferred_width: usize, line_ending: LineEndi
     format_value(val, &FormatOptions::prettify(line_ending), preferred_width)
 }
 
+pub fn prettify_value_into(
+    buf: &mut String,
+    val: &Value,
+    preferred_width: usize,
+    line_ending: LineEnding,
+) {
+    let mut fmt_buf = FormatBuf::new(
+        std::mem::take(buf),
+        FormatOptions::prettify(line_ending),
+        preferred_width,
+    );
+    format_value_into(&mut fmt_buf, val, 0);
+    *buf = fmt_buf.into_inner();
+}
+
 mod len {
     use crate::{
         ast::Value,

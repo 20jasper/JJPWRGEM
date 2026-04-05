@@ -80,3 +80,11 @@ pub fn uglify_value(val: &Value) -> String {
     parse_value(val, &mut visitor);
     visitor.buf
 }
+
+pub fn uglify_value_into(buf: &mut String, val: &Value) {
+    let mut visitor = UglifyEmitVisitor {
+        buf: std::mem::take(buf),
+    };
+    parse_value(val, &mut visitor);
+    *buf = visitor.buf;
+}

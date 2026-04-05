@@ -3,8 +3,10 @@ mod prettify;
 pub mod serde;
 mod uglify;
 
-pub use prettify::{FormatOptions, format_str, format_value, prettify_str, prettify_value};
-pub use uglify::{uglify_str, uglify_value};
+pub use prettify::{
+    FormatOptions, format_str, format_value, prettify_str, prettify_value, prettify_value_into,
+};
+pub use uglify::{uglify_str, uglify_value, uglify_value_into};
 
 use crate::tokens::{FALSE, NULL, TRUE};
 
