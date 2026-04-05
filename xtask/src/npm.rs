@@ -2,7 +2,7 @@ mod metadata;
 
 use std::{collections::HashMap, fs};
 
-use anyhow::{Context, Ok, Result};
+use anyhow::{Context, Ok, Result, anyhow};
 use itertools::Itertools as _;
 use jjpwrgem_parse::format::LineEnding;
 use package_json::PackageJson;
@@ -78,11 +78,13 @@ impl Default for NpmPackageConfig {
 }
 
 pub fn write_package_json() -> Result<()> {
-    let formatted_json = jjpwrgem_parse::format::serde::prettify_serializable(
-        &package_json_from_env()?,
-        80,
-        LineEnding::Lf,
-    )?;
+    // it's a bit silly to reparse like this, but it's for a dev only script, so
+    // I don't mind so much
+    let compact_json =
+        jjpwrgem_parse::format::serde::uglify_serializable(&package_json_from_env()?)?;
+    let ast =
+        jjpwrgem_parse::ast::parse_str(&compact_json).map_err(|err| anyhow!(err.to_string()))?;
+    let formatted_json = jjpwrgem_parse::format::prettify_value(&ast, 80, LineEnding::Lf);
 
     let static_path = concat!(env!("CARGO_MANIFEST_DIR"), "/../npm-template/package.json");
     fs::write(static_path, formatted_json)?;

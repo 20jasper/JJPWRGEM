@@ -20,5 +20,7 @@
     "tests/conformance/JSONTestSuite": true
   },
   "coverage-gutters.coverageBaseDir": "./target/llvm-cov",
-  "rust-analyzer.cargo.features": ["jjpwrgem-parse/serde"]
+  "rust-analyzer.cargo.features": [
+    "jjpwrgem-parse/serde",
+  ]
 }

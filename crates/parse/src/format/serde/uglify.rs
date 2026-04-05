@@ -5,6 +5,7 @@ use serde::ser::{
     SerializeTupleStruct, SerializeTupleVariant,
 };
 
+use super::error::Error;
 use crate::{
     format::{Emitter, uglify::UglifyEmitVisitor},
     tokens::{NULL, lexical::JsonChar},
@@ -39,7 +40,7 @@ fn emit_json_string(emitter: &mut impl Emitter, s: &str) {
 }
 
 impl UglifyEmitVisitor {
-    fn serialize_number<N: Display>(&mut self, number: N) -> serde_json::Result<()> {
+    fn serialize_number<N: Display>(&mut self, number: N) -> Result<(), Error> {
         write!(&mut self.buf, "{number}").expect("write to string");
         Ok(())
     }
@@ -52,15 +53,15 @@ fn emit_item_prefix(first: &mut bool, emitter: &mut impl Emitter) {
     *first = false;
 }
 
-fn map_key_bytes_error() -> serde_json::Error {
+fn map_key_bytes_error() -> Error {
     ser::Error::custom("JSON object keys cannot be byte arrays")
 }
 
-fn map_key_enum_error() -> serde_json::Error {
+fn map_key_enum_error() -> Error {
     ser::Error::custom("JSON object keys cannot be enum objects")
 }
 
-fn map_key_scalar_error() -> serde_json::Error {
+fn map_key_scalar_error() -> Error {
     ser::Error::custom("JSON object keys must be scalars")
 }
 
@@ -78,7 +79,7 @@ macro_rules! impl_seq_like {
     ($trait_name:ident, $method_name:ident) => {
         impl $trait_name for SeqSerializer<'_> {
             type Ok = ();
-            type Error = serde_json::Error;
+            type Error = Error;
 
             fn $method_name<T>(&mut self, value: &T) -> Result<(), Self::Error>
             where
@@ -116,7 +117,7 @@ macro_rules! impossible_map_key_methods {
 
 impl<'a> ser::Serializer for &'a mut UglifyEmitVisitor {
     type Ok = ();
-    type Error = serde_json::Error;
+    type Error = Error;
     type SerializeSeq = SeqSerializer<'a>;
     type SerializeTuple = SeqSerializer<'a>;
     type SerializeTupleStruct = SeqSerializer<'a>;
@@ -319,7 +320,7 @@ pub struct SeqSerializer<'a> {
 }
 
 impl SeqSerializer<'_> {
-    fn serialize_item<T>(&mut self, value: &T) -> serde_json::Result<()>
+    fn serialize_item<T>(&mut self, value: &T) -> Result<(), Error>
     where
         T: ?Sized + serde::Serialize,
     {
@@ -327,7 +328,7 @@ impl SeqSerializer<'_> {
         value.serialize(&mut *self.serializer)
     }
 
-    fn end_array(self) -> serde_json::Result<()> {
+    fn end_array(self) -> Result<(), Error> {
         self.serializer.emit_array_close();
         Ok(())
     }
@@ -344,7 +345,7 @@ pub struct TupleVariantSerializer<'a> {
 
 impl SerializeTupleVariant for TupleVariantSerializer<'_> {
     type Ok = ();
-    type Error = serde_json::Error;
+    type Error = Error;
 
     fn serialize_field<T>(&mut self, value: &T) -> Result<(), Self::Error>
     where
@@ -373,7 +374,7 @@ impl MapSerializer<'_> {
         self.serializer.emit_key_val_delim();
     }
 
-    fn end_object(self) -> serde_json::Result<()> {
+    fn end_object(self) -> Result<(), Error> {
         self.serializer.emit_object_close();
         Ok(())
     }
@@ -381,7 +382,7 @@ impl MapSerializer<'_> {
 
 impl SerializeMap for MapSerializer<'_> {
     type Ok = ();
-    type Error = serde_json::Error;
+    type Error = Error;
 
     fn serialize_key<T>(&mut self, key: &T) -> Result<(), Self::Error>
     where
@@ -406,7 +407,7 @@ impl SerializeMap for MapSerializer<'_> {
 
 impl SerializeStruct for MapSerializer<'_> {
     type Ok = ();
-    type Error = serde_json::Error;
+    type Error = Error;
 
     fn serialize_field<T>(&mut self, key: &'static str, value: &T) -> Result<(), Self::Error>
     where
@@ -428,7 +429,7 @@ pub struct StructVariantSerializer<'a> {
 
 impl SerializeStructVariant for StructVariantSerializer<'_> {
     type Ok = ();
-    type Error = serde_json::Error;
+    type Error = Error;
 
     fn serialize_field<T>(&mut self, key: &'static str, value: &T) -> Result<(), Self::Error>
     where
@@ -451,14 +452,14 @@ struct MapKeySerializer;
 
 impl ser::Serializer for MapKeySerializer {
     type Ok = String;
-    type Error = serde_json::Error;
-    type SerializeSeq = ser::Impossible<String, serde_json::Error>;
-    type SerializeTuple = ser::Impossible<String, serde_json::Error>;
-    type SerializeTupleStruct = ser::Impossible<String, serde_json::Error>;
-    type SerializeTupleVariant = ser::Impossible<String, serde_json::Error>;
-    type SerializeMap = ser::Impossible<String, serde_json::Error>;
-    type SerializeStruct = ser::Impossible<String, serde_json::Error>;
-    type SerializeStructVariant = ser::Impossible<String, serde_json::Error>;
+    type Error = Error;
+    type SerializeSeq = ser::Impossible<String, Error>;
+    type SerializeTuple = ser::Impossible<String, Error>;
+    type SerializeTupleStruct = ser::Impossible<String, Error>;
+    type SerializeTupleVariant = ser::Impossible<String, Error>;
+    type SerializeMap = ser::Impossible<String, Error>;
+    type SerializeStruct = ser::Impossible<String, Error>;
+    type SerializeStructVariant = ser::Impossible<String, Error>;
 
     map_key_scalar_to_string!(
         serialize_bool: bool,
