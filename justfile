@@ -15,7 +15,7 @@ tools-install:
     cargo binstall cargo-llvm-cov@0.8 -y
     cargo binstall cargo-insta@1.46 -y
     cargo binstall cargo-shear@1.11 -y
-    cargo binstall cargo-diet@1.2 -y
+    cargo binstall cargo-diet@1.3.0 -y
     cargo binstall cargo-dist@0.31.0 -y
     cargo binstall release-plz@0.3 -y
     cargo binstall cargo-rdme@1.5 -y
@@ -159,7 +159,7 @@ diet:
     for x in ./crates/* ./xtask ./benches .; do \
     	[ -f "$x/Cargo.toml" ] || continue; \
     	echo "dieting $x"; \
-    	(cd $x && cargo diet -r > /dev/null); \
+    	(cd $x && cargo diet -r -q); \
     done
 
 # verify spec rules have version bumps for any changed rule text
