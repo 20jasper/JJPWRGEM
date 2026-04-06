@@ -232,7 +232,10 @@ bench-json *args="":
 [group('bench')]
 bench-docker:
     mkdir -p xtask/bench/output
-    docker build -t jjp-benchmark .
+    GITHUB_TOKEN="$(gh auth token 2>/dev/null || true)" \
+        docker build -t jjp-benchmark \
+            --secret id=gh_token,env=GITHUB_TOKEN \
+            .
     docker run --rm \
         -u "$(id -u):$(id -g)" \
         -v "$(pwd)/xtask/bench/output:/benchmark/output" \

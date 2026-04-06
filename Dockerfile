@@ -1,4 +1,4 @@
-ARG RUST_VERSION=1.91.1
+ARG RUST_VERSION=1.94.1
 ARG APP_NAME=jjp
 
 FROM rust:${RUST_VERSION}-slim-bullseye AS cargo-formatters
@@ -18,10 +18,14 @@ RUN set -eux; \
     tar -xzf /tmp/cargo-binstall.tgz -C /tmp; \
     install -m755 /tmp/cargo-binstall /usr/local/cargo/bin/cargo-binstall; \
     rm -f /tmp/cargo-binstall /tmp/cargo-binstall.tgz
+
+# layer 1: streaming formatters
 RUN cargo binstall sjq -y \
     && cargo binstall jsonxf -y \
-    && cargo binstall jsonformat-cli -y \
-    && cargo binstall json-pp-rust -y \
+    && cargo binstall jsonformat-cli -y
+
+# layer 2: parsing formatters + benchmark runner
+RUN cargo binstall json-pp-rust -y \
     && cargo binstall jsonice -y \
     && cargo binstall hyperfine -y
 
@@ -42,6 +46,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN --mount=type=bind,source=crates,target=crates \
     --mount=type=bind,source=xtask,target=xtask \
     --mount=type=bind,source=tests,target=tests \
+    --mount=type=bind,source=benches,target=benches \
     --mount=type=bind,source=axolotl.txt,target=axolotl.txt \
     --mount=type=bind,source=Cargo.toml,target=Cargo.toml \
     --mount=type=bind,source=Cargo.lock,target=Cargo.lock \
@@ -65,7 +70,19 @@ ENV PATH="/mise/shims:$PATH"
 RUN curl https://mise.run | sh
 
 RUN mise trust -y
-RUN MISE_JOBS=1 mise install
+
+# layer 1: heavy runtimes + npm/pipx tools (slow to install, rarely change)
+RUN MISE_JOBS=1 mise install bun python uv 'npm:json-minify' 'npm:prettier' 'npm:oxfmt' 'pipx:jello'
+
+# layer 2: lightweight binary tools + github releases (use token to avoid rate limits)
+RUN --mount=type=secret,id=gh_token \
+    GITHUB_TOKEN="$(cat /run/secrets/gh_token 2>/dev/null || true)" \
+    MISE_JOBS=1 mise install jaq gojq jq 'github:caarlos0/jsonfmt' 'github:swaggest/json-cli' 'github:tdewolff/minify' 'github:tidwall/jj'
+
+# fallback: install anything in mise.toml not already covered above (mise skips installed tools)
+RUN --mount=type=secret,id=gh_token \
+    GITHUB_TOKEN="$(cat /run/secrets/gh_token 2>/dev/null || true)" \
+    MISE_JOBS=1 mise install
 
 FROM node:24-bullseye AS final
 
@@ -98,11 +115,11 @@ COPY ${BENCHMARK_PATH}/data/json-benchmark/data/ ./data
 
 RUN chmod +x benchmark.sh
 
-# Copy all cargo-binstalled binaries from the build stage.
+# Copy cargo-binstalled formatters and the jjp binary.
 COPY --from=cargo-formatters /usr/local/cargo/bin/ /usr/local/bin/
+COPY --from=build /usr/local/cargo/bin/jjp /usr/local/bin/jjp
 
 ENV OUTPUT_DIR=/benchmark/output
 
 # Default command runs both benchmarks
 CMD ["bash", "-c", "./benchmark.sh"]
-

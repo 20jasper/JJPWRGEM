@@ -62,7 +62,9 @@ bench() {
     --command-name "jsonxf" \
       "jsonxf < $FILE_PATH" \
     --command-name "jsonformat" \
-      "jsonformat < $FILE_PATH" 
+      "jsonformat < $FILE_PATH" \
+    --command-name "oxfmt" \
+      "oxfmt --stdin-filepath foo.json < $FILE_PATH"
 
   # uglify
   hyperfine --warmup 3 --sort mean-time \
