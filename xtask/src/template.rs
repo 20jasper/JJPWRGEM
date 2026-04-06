@@ -39,34 +39,64 @@ const JSON_BENCH_TEMPLATE: &str = include_str!(concat!(
     env!("CARGO_MANIFEST_DIR"),
     "/templates/json-bench.template.md"
 ));
+const CLI_BENCH_TEMPLATE: &str = include_str!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/templates/cli-formatter-bench.template.md"
+));
 const SHARED_FRAGMENT: &str = include_str!(concat!(
     env!("CARGO_MANIFEST_DIR"),
     "/templates/indeterminate_handling.md"
 ));
+const BENCH_SUMMARY: &str = include_str!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/templates/bench_summary.md"
+));
+const BENCH_INPUTS: &str = include_str!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/templates/bench_inputs.md"
+));
+const BENCH_HARDWARE: &str = include_str!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/templates/bench_hardware.md"
+));
+const FIXTURE_CANADA: &str = include_str!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/templates/fixture_canada.md"
+));
+const FIXTURE_CITM_CATALOG: &str = include_str!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/templates/fixture_citm_catalog.md"
+));
+const FIXTURE_TWITTER: &str = include_str!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/templates/fixture_twitter.md"
+));
 
 const ROOT_OUT_PATH_STR: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/../readme.md");
 const PARSE_OUT_PATH_STR: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/../crates/parse/readme.md");
-const BENCH_OUT_PATH_STR: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/../benchmarks.md");
-const BYTES2CHARS_BENCH_OUT_PATH_STR: &str = concat!(
-    env!("CARGO_MANIFEST_DIR"),
-    "/../crates/bytes2chars/BENCHMARKS.md"
-);
-const JSON_BENCH_OUT_PATH_STR: &str =
-    concat!(env!("CARGO_MANIFEST_DIR"), "/../benches/BENCHMARKS.md");
+const BENCH_OUT_PATH_STR: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/../benches/BENCHMARKS.md");
+const BYTES2CHARS_BENCH_OUT_PATH_STR: &str =
+    concat!(env!("CARGO_MANIFEST_DIR"), "/../benches/utf8.md");
+const JSON_BENCH_OUT_PATH_STR: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/../benches/json.md");
+const CLI_BENCH_OUT_PATH_STR: &str =
+    concat!(env!("CARGO_MANIFEST_DIR"), "/../benches/cli-formatter.md");
 
 const EXISTING_ROOT: &str = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../readme.md"));
 const EXISTING_PARSE: &str = include_str!(concat!(
     env!("CARGO_MANIFEST_DIR"),
     "/../crates/parse/readme.md"
 ));
-const EXISTING_BENCH: &str = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../benchmarks.md"));
-const EXISTING_BYTES2CHARS_BENCH: &str = include_str!(concat!(
-    env!("CARGO_MANIFEST_DIR"),
-    "/../crates/bytes2chars/BENCHMARKS.md"
-));
-const EXISTING_JSON_BENCH: &str = include_str!(concat!(
+const EXISTING_BENCH: &str = include_str!(concat!(
     env!("CARGO_MANIFEST_DIR"),
     "/../benches/BENCHMARKS.md"
+));
+const EXISTING_BYTES2CHARS_BENCH: &str =
+    include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../benches/utf8.md"));
+const EXISTING_JSON_BENCH: &str =
+    include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../benches/json.md"));
+const EXISTING_CLI_BENCH: &str = include_str!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/../benches/cli-formatter.md"
 ));
 
 const BYTES2CHARS_BENCH_TABLE_REPLACEMENTS: [(&str, &str); 1] = [(
@@ -173,7 +203,13 @@ fn render_template(
 ) -> Result<String, Box<dyn std::error::Error>> {
     let mut processed = template
         .replace("{{IND}}", SHARED_FRAGMENT)
-        .replace("{{CHECK_EXAMPLE}}", strip_front_matter(CHECK_EXAMPLE));
+        .replace("{{CHECK_EXAMPLE}}", strip_front_matter(CHECK_EXAMPLE))
+        .replace("{{BENCH_SUMMARY}}", BENCH_SUMMARY)
+        .replace("{{BENCH_INPUTS}}", BENCH_INPUTS)
+        .replace("{{BENCH_HARDWARE}}", BENCH_HARDWARE)
+        .replace("{{FIXTURE_CANADA}}", FIXTURE_CANADA)
+        .replace("{{FIXTURE_CITM_CATALOG}}", FIXTURE_CITM_CATALOG)
+        .replace("{{FIXTURE_TWITTER}}", FIXTURE_TWITTER);
 
     for (needle, replacement) in replacements {
         processed = processed.replace(needle, replacement.trim());
@@ -186,7 +222,9 @@ fn render_template(
 pub fn write_readmes() {
     let root_rendered = render_template(JJPWREGEM_TEMPLATE, &[]).unwrap();
     let parse_rendered = render_template(JJPWREGEM_PARSE_TEMPLATE, &[]).unwrap();
-    let bench_rendered = render_template(BENCH_TEMPLATE, &BENCH_TABLE_REPLACEMENTS).unwrap();
+    let bench_rendered = render_template(BENCH_TEMPLATE, &[]).unwrap();
+    let cli_bench_rendered =
+        render_template(CLI_BENCH_TEMPLATE, &BENCH_TABLE_REPLACEMENTS).unwrap();
     let bytes2chars_bench_rendered = render_template(
         BYTES2CHARS_BENCH_TEMPLATE,
         &BYTES2CHARS_BENCH_TABLE_REPLACEMENTS,
@@ -198,6 +236,7 @@ pub fn write_readmes() {
     fs::write(ROOT_OUT_PATH_STR, root_rendered).unwrap();
     fs::write(PARSE_OUT_PATH_STR, parse_rendered).unwrap();
     fs::write(BENCH_OUT_PATH_STR, bench_rendered).unwrap();
+    fs::write(CLI_BENCH_OUT_PATH_STR, cli_bench_rendered).unwrap();
     fs::write(BYTES2CHARS_BENCH_OUT_PATH_STR, bytes2chars_bench_rendered).unwrap();
     fs::write(JSON_BENCH_OUT_PATH_STR, json_bench_rendered).unwrap();
 }
@@ -205,7 +244,9 @@ pub fn write_readmes() {
 pub fn are_readmes_updated() -> anyhow::Result<()> {
     let root_rendered = render_template(JJPWREGEM_TEMPLATE, &[]).unwrap();
     let parse_rendered = render_template(JJPWREGEM_PARSE_TEMPLATE, &[]).unwrap();
-    let bench_rendered = render_template(BENCH_TEMPLATE, &BENCH_TABLE_REPLACEMENTS).unwrap();
+    let bench_rendered = render_template(BENCH_TEMPLATE, &[]).unwrap();
+    let cli_bench_rendered =
+        render_template(CLI_BENCH_TEMPLATE, &BENCH_TABLE_REPLACEMENTS).unwrap();
     let bytes2chars_bench_rendered = render_template(
         BYTES2CHARS_BENCH_TEMPLATE,
         &BYTES2CHARS_BENCH_TABLE_REPLACEMENTS,
@@ -219,11 +260,13 @@ pub fn are_readmes_updated() -> anyhow::Result<()> {
     } else if EXISTING_PARSE != parse_rendered {
         bail!("crates/parse/readme.md out of date")
     } else if EXISTING_BENCH != bench_rendered {
-        bail!("benchmarks.md out of date")
-    } else if EXISTING_BYTES2CHARS_BENCH != bytes2chars_bench_rendered {
-        bail!("crates/bytes2chars/BENCHMARKS.md out of date")
-    } else if EXISTING_JSON_BENCH != json_bench_rendered {
         bail!("benches/BENCHMARKS.md out of date")
+    } else if EXISTING_CLI_BENCH != cli_bench_rendered {
+        bail!("benches/cli-formatter.md out of date")
+    } else if EXISTING_BYTES2CHARS_BENCH != bytes2chars_bench_rendered {
+        bail!("benches/utf8.md out of date")
+    } else if EXISTING_JSON_BENCH != json_bench_rendered {
+        bail!("benches/json.md out of date")
     } else {
         Ok(())
     }

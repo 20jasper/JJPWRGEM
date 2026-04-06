@@ -10,7 +10,6 @@ repository = "https://github.com/20jasper/jjpwrgem"
 documentation = "https://docs.rs/bytes2chars"
 keywords = ["utf8", "unicode", "iterator", "decoder"]
 categories = ["encoding", "no-std"]
-include = ["src/**/*", "README.md", "CHANGELOG.md"]
 
 [lints.rust]
 missing_debug_implementations = "warn"

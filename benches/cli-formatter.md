@@ -1,32 +1,23 @@
 <!-- GENERATED FILE - update the templates in the xtask -->
 
-# jjpwrgem benchmarks
+# jjpwrgem CLI formatter and minifier benchmarks
 
-Is jjpwrgem blazingly fast? Yes. Is it the blazingly fastest? Depends on your definition
-
-It can parse and pretty print a 1.7MB JSON file in around ~11ms[^prettyCitm] and the average package.json in ~500 microseconds. Also see [the throughput benchmarks](^throughputBench)
-
-[^prettyCitm]: #pretty-citm-catalog
-
-[^throughputBench]: #parsing-and-stringification-throughput
-
+Wall-clock timing against jq, prettier, dprint, and others via hyperfine. Run locally with `just bench-docker`
 These benchmarks are run with `AMD Ryzen 5 5600X 6-Core Processor (3.70 GHz)`
 
-Please show me any other tools I should benchmark against!
+The following JSON fixtures are used across benchmarks:
 
-## comparison with other CLI tools
+- [canada.json](/xtask/bench/data/json-benchmark/data/canada.json) — 2.2MB, lots of lightly nested arrays, no strings
 
-These benchmarks are available to run locally via `just bench`
+- [citm_catalog.json](/xtask/bench/data/json-benchmark/data/citm_catalog.json) — 1.7MB, lots of lightly nested long objects, ASCII strings
 
-note: the goal of many tools is not to format—`jq` is far better at filtering JSON than `jjp`!
+- [twitter.json](/xtask/bench/data/json-benchmark/data/twitter.json) — 0.6MB, lots of lightly nested short objects, multibyte strings
 
-note: `jsonxf` and `jsonformat` don't validate syntax
+## canada
 
-### canada
+[canada.json](/xtask/bench/data/json-benchmark/data/canada.json) — 2.2MB, lots of lightly nested arrays, no strings
 
-2.2MB JSON file with lots of lightly nested arrays. See [canada.json](https://github.com/serde-rs/json-benchmark/blob/master/data/canada.json)
-
-#### pretty canada
+### pretty canada
 
 ![candlestick benchmark for pretty printing canada.json](/xtask/bench/output/pretty-canada.png)
 
@@ -49,7 +40,7 @@ note: `jsonxf` and `jsonformat` don't validate syntax
 | `dprint`       |  667.8 ± 22.8 |    642.4 |    712.3 | 55.61 ± 2.25 |
 | `prettier`     | 1154.8 ± 41.3 |   1108.1 |   1227.5 | 96.17 ± 4.02 |
 
-#### ugly canada
+### ugly canada
 
 ![candlestick benchmark for ugly printing canada.json](/xtask/bench/output/ugly-canada.png)
 
@@ -68,11 +59,11 @@ note: `jsonxf` and `jsonformat` don't validate syntax
 | `jello`       | 308.7 ± 1.5 |    307.6 |    312.4 | 25.55 ± 0.41 |
 | `sjq`         | 357.6 ± 1.5 |    355.1 |    359.7 | 29.60 ± 0.47 |
 
-### citm catalog
+## citm catalog
 
-1.7MB JSON file with lots of lightly nested, long objects. See [citm_catalog.json](https://github.com/serde-rs/json-benchmark/blob/master/data/citm_catalog.json)
+[citm_catalog.json](/xtask/bench/data/json-benchmark/data/citm_catalog.json) — 1.7MB, lots of lightly nested long objects, ASCII strings
 
-#### pretty citm catalog
+### pretty citm catalog
 
 ![candlestick benchmark for pretty printing citm-catalog.json](/xtask/bench/output/pretty-citm_catalog.png)
 
@@ -95,7 +86,7 @@ note: `jsonxf` and `jsonformat` don't validate syntax
 | `jello`        | 309.6 ± 1.1 |    308.0 |    311.7 |  68.48 ± 1.53 |
 | `prettier`     | 554.8 ± 3.9 |    549.3 |    562.3 | 122.72 ± 2.83 |
 
-#### ugly citm catalog
+### ugly citm catalog
 
 ![candlestick benchmark for ugly printing citm-catalog.json](/xtask/bench/output/ugly-citm_catalog.png)
 
@@ -114,11 +105,11 @@ note: `jsonxf` and `jsonformat` don't validate syntax
 | `python`      | 135.1 ± 1.0 |    133.8 |    136.8 | 29.88 ± 0.79 |
 | `jello`       | 306.8 ± 1.2 |    304.5 |    308.6 | 67.83 ± 1.74 |
 
-### twitter
+## twitter
 
-.6MB JSON file with lots of lightly nested, short objects. See [twitter.json](https://github.com/serde-rs/json-benchmark/blob/master/data/twitter.json)
+[twitter.json](/xtask/bench/data/json-benchmark/data/twitter.json) — 0.6MB, lots of lightly nested short objects, multibyte strings
 
-#### pretty twitter
+### pretty twitter
 
 ![candlestick benchmark for pretty printing twitter.json](/xtask/bench/output/pretty-twitter.png)
 
@@ -141,7 +132,7 @@ note: `jsonxf` and `jsonformat` don't validate syntax
 | `jello`        | 257.6 ± 0.8 |    256.8 |    259.4 | 124.98 ± 5.55 |
 | `prettier`     | 336.4 ± 2.3 |    333.1 |    339.2 | 163.20 ± 7.32 |
 
-#### ugly twitter
+### ugly twitter
 
 ![candlestick benchmark for ugly printing twitter.json](/xtask/bench/output/ugly-twitter.png)
 
@@ -159,48 +150,3 @@ note: `jsonxf` and `jsonformat` don't validate syntax
 | `json-minify` |  55.6 ± 1.5 |     53.9 |     59.8 |  26.76 ± 1.30 |
 | `python`      | 111.5 ± 0.9 |    110.5 |    114.2 |  53.67 ± 2.23 |
 | `jello`       | 256.5 ± 1.0 |    255.1 |    258.6 | 123.50 ± 5.06 |
-
-## parsing and stringification throughput
-
-Note that these are benches for String to AST and AST to String. As of 0.5.4, jjpwrgem skips AST creation for many operations for a ~50% speedup
-
-jjpwrgem consistently had the highest stringification speed for twitter.json and citg catalog and canada.json, but of course unless you are going from AST to String, the parsing speed holds it back
-
-### ugly canada throughput
-
-See [canada.json](https://github.com/serde-rs/json-benchmark/blob/master/data/canada.json)
-
-![Bar chart comparing the average parse and stringify speeds (in MB/s) of four JSON libraries for canada.json: serde_json1.0.228, rustc_serialize0.3.25, simd-json0.17.0, and jjpwrgem0.3.3. The blue bars represent the average parse speed, while the red bars represent the average stringify speed. jjpwrgem0.3.3 has the fastest stringify speed but the lowest parse speed](/xtask/bench/output/ugly-json-canada-throughput.png)
-
-| name                  | Parse Average MB/s | Stringify Average MB/s |
-| --------------------- | -----------------: | ---------------------: |
-| serde_json1.0.228     |             435.56 |                 601.11 |
-| rustc_serialize0.3.25 |             230.00 |                 128.89 |
-| simd-json0.17.0       |             483.33 |                 635.56 |
-| jjpwrgem0.3.3         |             158.89 |               2,678.89 |
-
-### ugly twitter throughput
-
-See [twitter.json](https://github.com/serde-rs/json-benchmark/blob/master/data/twitter.json)
-
-![Bar chart comparing the average parse and stringify speeds (in MB/s) of four JSON libraries for twitter.json: serde_json1.0.228, rustc_serialize0.3.25, simd-json0.17.0, and jjpwrgem0.3.3. The blue bars represent the average parse speed, while the red bars represent the average stringify speed. jjpwrgem0.3.3 has the fastest stringify speed but the second lowest parse speed](/xtask/bench/output/ugly-json-twitter-throughput.png)
-
-| name                  | Parse Average MB/s | Stringify Average MB/s |
-| --------------------- | -----------------: | ---------------------: |
-| serde_json1.0.228     |             520.00 |               1,425.00 |
-| rustc_serialize0.3.25 |             190.00 |                 511.00 |
-| simd-json0.17.0       |           1,236.00 |               1,383.00 |
-| jjpwrgem0.3.3         |             271.00 |               3,542.00 |
-
-### ugly citm throughput
-
-See [citm_catalog.json](https://github.com/serde-rs/json-benchmark/blob/master/data/citm_catalog.json)
-
-![Bar chart comparing the average parse and stringify speeds (in MB/s) of four JSON libraries for citm.json: serde_json1.0.228, rustc_serialize0.3.25, simd-json0.17.0, and jjpwrgem0.3.3. The blue bars represent the average parse speed, while the red bars represent the average stringify speed. jjpwrgem0.3.3 has the fastest stringify speed but a close lowest parse speed](/xtask/bench/output/ugly-json-citm-throughput.png)
-
-| name                  | Parse Average MB/s | Stringify Average MB/s |
-| --------------------- | -----------------: | ---------------------: |
-| serde_json1.0.228     |             683.33 |               1,056.67 |
-| rustc_serialize0.3.25 |             383.33 |                 288.89 |
-| simd-json0.17.0       |           1,272.22 |               1,143.33 |
-| jjpwrgem0.3.3         |             280.00 |               2,007.78 |

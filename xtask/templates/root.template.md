@@ -50,9 +50,9 @@ JJPWRGEM is in its infancy and extremely likely to have breaking changes (proper
 
 Axolotls can't walk so fast, so skateboards are pretty fast 🛹🐟
 
-jjpwrgem can parse and pretty print a 1.7MB JSON file in around ~11ms and the average package.json in ~500 microseconds
+Without caching, jjpwrgem can parse and pretty print a 1.7MB JSON file in around 11ms and the average package.json in 500 microseconds
 
-See the [benchmarks](/benchmarks.md) for more info!
+See the [benchmarks](/benches/BENCHMARKS.md)
 
 ## FAQ
 
