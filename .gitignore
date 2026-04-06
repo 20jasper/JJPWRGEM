@@ -1,3 +1,7 @@
 /target
 node_modules
-/benches/output/
+/benches/output/*
+!/benches/output/bytes2chars.md
+!/benches/output/json_deser.md
+!/benches/output/json_prettify.md
+!/benches/output/json_uglify.md
