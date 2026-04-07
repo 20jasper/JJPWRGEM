@@ -11,6 +11,7 @@ use crate::{
 fn skip_whitespace(bytes: &[u8]) -> usize {
     bytes
         .iter()
+        // TODO: create and use ByteWithContext
         .position(|&b| !matches!(b, b' ' | b'\t' | b'\n' | b'\r'))
         .unwrap_or(bytes.len())
 }
