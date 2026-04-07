@@ -1,3 +1,4 @@
+#![feature(portable_simd)]
 pub mod ast;
 mod check;
 pub mod error;

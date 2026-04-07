@@ -9,11 +9,31 @@ use crate::{
 };
 
 fn skip_whitespace(bytes: &[u8]) -> usize {
-    bytes
+    use std::simd::{cmp::SimdPartialEq as _, u8x32};
+
+    let space = u8x32::splat(b' ');
+    let horizontal_tab = u8x32::splat(b'\t');
+    let line_feed = u8x32::splat(b'\n');
+    let carriage_return = u8x32::splat(b'\r');
+
+    let mut i = 0;
+    while i + 32 <= bytes.len() {
+        let chunk = u8x32::from_slice(&bytes[i..i + 32]);
+        let is_whitespace = chunk.simd_eq(space)
+            | chunk.simd_eq(horizontal_tab)
+            | chunk.simd_eq(line_feed)
+            | chunk.simd_eq(carriage_return);
+        let whitespace_count = is_whitespace.to_bitmask().trailing_ones() as usize;
+        i += whitespace_count;
+        if whitespace_count < 32 {
+            return i;
+        }
+    }
+
+    i + bytes[i..]
         .iter()
-        // TODO: create and use ByteWithContext
         .position(|&b| !matches!(b, b' ' | b'\t' | b'\n' | b'\r'))
-        .unwrap_or(bytes.len())
+        .unwrap_or(bytes.len().saturating_sub(i))
 }
 
 #[derive(Debug, Clone)]
