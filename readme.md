@@ -6,8 +6,6 @@ JJPWRGEM JSON Parser With Really Good Error Messages
 
 An RFC 8259 compliant JSON Parser and formatter!
 
-![A logo of an axolotl riding a skateboard](./logo.webp)
-
 ```
 $ echo -en "{\"coolKey\"}" | jjp check
 error: expected colon after key, found `}`
@@ -24,6 +22,8 @@ help: insert colon and placeholder value
   |           ++++++++
 
 ```
+
+![A logo of an axolotl riding a skateboard](./logo.webp)
 
 ## Table of contents
 
@@ -49,15 +49,19 @@ Note: node adds ~60ms of overhead
 npm install -g jjpwrgem
 ```
 
+#### Requirements
+
+x86-64 binaries require a CPU with AVX2 support (Intel Haswell 2013+, AMD Ryzen 2017+). ARM binaries have no special requirements
+
 ### From source
 
 ```bash
-cargo install --path .
+RUSTFLAGS="-C target-cpu=native" cargo install --path .
 ```
 
 ## Stability
 
-JJPWRGEM is in its infancy and extremely likely to have breaking changes (properly marked with semver of course!)
+JJPWRGEM's CLI is pretty stable. Internal libraries are likely unstable
 
 ## Indeterminate Handling
 
