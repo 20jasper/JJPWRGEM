@@ -10,6 +10,8 @@ raw bytes: [91, 34, 230, 151, 165, 209, 136, 250, 34, 93]
 stdout ---
 
 stderr ---
-error: source did not contain valid utf8
- --> stdin
+error: byte 0xFA would start a sequence of 5 or more bytes
+ --> stdin:1:5
   |
+1 | ["日ш�"]
+  |      ^

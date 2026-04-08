@@ -10,6 +10,8 @@ raw bytes: [123, 34, 185, 34, 58, 34, 48, 34, 44, 125]
 stdout ---
 
 stderr ---
-error: source did not contain valid utf8
- --> stdin
+error: byte 0xB9 cannot start a UTF-8 sequence
+ --> stdin:1:3
   |
+1 | {"�":"0",}
+  |   ^

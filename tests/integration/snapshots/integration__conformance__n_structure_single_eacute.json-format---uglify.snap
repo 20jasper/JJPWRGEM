@@ -10,6 +10,8 @@ raw bytes: [233]
 stdout ---
 
 stderr ---
-error: source did not contain valid utf8
- --> stdin
+error: unfinished multi-byte sequence
+ --> stdin:1:1
   |
+1 | �
+  | ^

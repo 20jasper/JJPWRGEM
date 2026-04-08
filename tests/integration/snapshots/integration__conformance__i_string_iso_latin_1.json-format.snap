@@ -10,6 +10,8 @@ raw bytes: [91, 34, 233, 34, 93]
 stdout ---
 
 stderr ---
-error: source did not contain valid utf8
- --> stdin
+error: expected a continuation byte, found 0x22
+ --> stdin:1:3
   |
+1 | ["�"]
+  |   ^

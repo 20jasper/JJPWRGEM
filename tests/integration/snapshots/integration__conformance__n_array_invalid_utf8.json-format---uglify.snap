@@ -10,6 +10,8 @@ raw bytes: [91, 255, 93]
 stdout ---
 
 stderr ---
-error: source did not contain valid utf8
- --> stdin
+error: byte 0xFF would start a sequence of 5 or more bytes
+ --> stdin:1:2
   |
+1 | [�]
+  |  ^
