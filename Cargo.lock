@@ -840,6 +840,7 @@ dependencies = [
 name = "jjpwrgem-parse"
 version = "0.4.0"
 dependencies = [
+ "bytes2chars",
  "displaydoc",
  "itertools 0.14.0",
  "rstest",

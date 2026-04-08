@@ -300,8 +300,7 @@ impl<'a> From<&'a Error<'a>> for Vec<Patch<'a>> {
             } => Vec::new(),
             ErrorKind::UnexpectedCharacter(_) => Vec::new(),
             ErrorKind::ExpectedHexDigit { .. } => Vec::new(),
-            // unreachable
-            ErrorKind::InvalidEncoding => Vec::new(),
+            ErrorKind::InvalidEncoding(_) => Vec::new(),
             ErrorKind::ExpectedOpenBrace { .. } => Vec::new(),
             ErrorKind::ExpectedMinusOrDigit(_) => Vec::new(),
             ErrorKind::ExpectedKey(_, _) => Vec::new(),
@@ -408,8 +407,7 @@ impl<'a> From<&'a Error<'a>> for Vec<Context<'a>> {
             ErrorKind::UnexpectedCharacter(_) => Vec::new(),
             ErrorKind::UnexpectedControlCharacterInString(_) => Vec::new(),
             ErrorKind::TokenAfterEnd(_) => Vec::new(),
-            // unreachable
-            ErrorKind::InvalidEncoding => Vec::new(),
+            ErrorKind::InvalidEncoding(_) => Vec::new(),
             ErrorKind::ExpectedMinusOrDigit(_) => Vec::new(),
             ErrorKind::ExpectedOpenBrace { context: None, .. } => Vec::new(),
         }
@@ -425,15 +423,5 @@ impl<'a> From<&'a Error<'a>> for Diagnostic<'a> {
             patches: error.into(),
             source: error_source(error),
         }
-    }
-}
-
-pub fn invalid_encoding<'a>(source: Source<'a>) -> Diagnostic<'a> {
-    Diagnostic {
-        message: ErrorKind::InvalidEncoding.to_string(),
-        source,
-        range: None,
-        patches: vec![],
-        context: vec![],
     }
 }

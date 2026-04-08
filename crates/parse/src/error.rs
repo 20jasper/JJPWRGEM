@@ -98,8 +98,8 @@ pub enum ErrorKind<'a> {
     },
 
     // misc
-    /// source did not contain valid utf8
-    InvalidEncoding,
+    /// {_0}
+    InvalidEncoding(bytes2chars::ErrorKind),
     /// unexpected character `{0}`. expected start of a json value
     UnexpectedCharacter(JsonChar),
     /// unexpected token {0} after json finished
@@ -188,6 +188,31 @@ impl<'a> Error<'a> {
         // TODO handle multibyte characters properly
         // text.char_indices().rev()
         Self::new(kind, trimmed.len().saturating_sub(1)..trimmed.len(), text)
+    }
+
+    /// # Panics
+    /// if bytes are valid at the location reported by [std::str::Utf8Error]
+    pub fn from_utf8_error_slice(e: std::str::Utf8Error, bytes: &[u8]) -> Error<'static> {
+        use bytes2chars::Utf8CharIndices;
+        const LOSSY_BYTE_LENGTH: usize = '\u{FFFD}'.len_utf8();
+        let b2c_err =
+            Utf8CharIndices::new(bytes[e.valid_up_to()..].iter().copied(), e.valid_up_to())
+                .next()
+                .and_then(|r| r.err())
+                .expect("a Utf8Error was returned so this must be an error");
+
+        let source_text = String::from_utf8_lossy(bytes).into_owned();
+        let range = e.valid_up_to()..e.valid_up_to() + LOSSY_BYTE_LENGTH;
+        let (line, column) = get_line_and_column(&source_text, range.clone());
+        ErrorInner {
+            kind: ErrorKind::InvalidEncoding(b2c_err.kind),
+            range,
+            line,
+            column,
+            source_text,
+            source_name: "stdin".into(),
+        }
+        .into()
     }
 
     pub fn from_maybe_token_with_context<F>(

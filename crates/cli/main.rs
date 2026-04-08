@@ -10,7 +10,7 @@ use std::{
 use clap::Parser;
 pub use error::{Error, Result};
 use jjpwrgem_parse::{
-    error::diagnostics::{self, Diagnostic, Source},
+    error::diagnostics::Diagnostic,
     format::{self, LineEnding},
     validate_str,
 };
@@ -50,11 +50,9 @@ fn main() -> ExitCode {
         buf
     };
     let json = match String::from_utf8(buf) {
-        Err(_) => {
-            anstream::eprintln!(
-                "{}",
-                style.render_diagnostic(diagnostics::invalid_encoding(Source::Stdin("")))
-            );
+        Err(e) => {
+            let err = jjpwrgem_parse::Error::from_utf8_error_slice(e.utf8_error(), e.as_bytes());
+            anstream::eprintln!("{}", style.render_diagnostic(Diagnostic::from(&err)));
             return ExitCode::FAILURE;
         }
         Ok(s) => s,
