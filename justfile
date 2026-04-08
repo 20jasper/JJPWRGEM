@@ -1,4 +1,5 @@
 set working-directory := "."
+set quiet := true
 
 default:
     just --list
@@ -44,16 +45,17 @@ lint:
     RUSTFLAGS=-Dwarnings cargo clippy -q --all-targets --all-features --workspace
     pnpm --if-present lint > /dev/null
 
-test_flags := "--all-features --workspace --all-targets"
+test_flags := "--all-features --workspace --all-targets -q"
 
 [group('test')]
 test *args="":
-    cargo test -q {{ test_flags }} {{ args }}
+    cargo test {{ test_flags }} {{ args }} > /dev/null
+    echo "tests passed!"
 
 # common flag: --open
 [group('test')]
 test-cov *args="":
-    cargo llvm-cov {{ test_flags }} {{ args }}
+    cargo llvm-cov --exclude xtask {{ test_flags }} {{ args }} > /dev/null
 
 # deletes snapshots locally and rejects in CI
 [group('test')]
@@ -158,7 +160,6 @@ vscode-test-wsl: vscode-bin
 diet:
     for x in ./crates/* ./xtask ./benches .; do \
     	[ -f "$x/Cargo.toml" ] || continue; \
-    	echo "dieting $x"; \
     	(cd $x && cargo diet -r -q); \
     done
 

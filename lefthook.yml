@@ -18,7 +18,7 @@ pre-push:
       glob: "crates/bytes2chars/**"
     - run: just readmes-check
     - run: just package-json-check
-    - run: cargo test
+    - run: just test
       glob: "**/*.rs"
 
 pre-commit:
