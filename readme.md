@@ -23,6 +23,8 @@ help: insert colon and placeholder value
 
 ```
 
+![coverage: 87.3%](https://img.shields.io/badge/coverage-87.3%25-green)
+
 ![A logo of an axolotl riding a skateboard](./logo.webp)
 
 ## Table of contents

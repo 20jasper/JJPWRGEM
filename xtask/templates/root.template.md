@@ -8,6 +8,8 @@ An RFC 8259 compliant JSON Parser and formatter!
 {{CHECK_EXAMPLE}}
 ```
 
+{{COVERAGE_BADGE}}
+
 ![A logo of an axolotl riding a skateboard](./logo.webp)
 
 ## Table of contents

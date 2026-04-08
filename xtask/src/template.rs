@@ -72,6 +72,27 @@ const FIXTURE_TWITTER: &str = include_str!(concat!(
     "/templates/fixture_twitter.md"
 ));
 
+const COVERAGE: &str = include_str!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/../benches/output/coverage.txt"
+));
+
+fn coverage_badge(pct_str: &str) -> String {
+    let pct: f64 = pct_str.trim().parse().unwrap_or(0.0);
+    let color = match pct as u32 {
+        90..=100 => "brightgreen",
+        80..=89 => "green",
+        70..=79 => "yellowgreen",
+        60..=69 => "yellow",
+        50..=59 => "orange",
+        _ => "red",
+    };
+    format!(
+        "![coverage: {:.1}%](https://img.shields.io/badge/coverage-{:.1}%25-{})",
+        pct, pct, color
+    )
+}
+
 const ROOT_OUT_PATH_STR: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/../readme.md");
 const PARSE_OUT_PATH_STR: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/../crates/parse/readme.md");
 const BENCH_OUT_PATH_STR: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/../benches/BENCHMARKS.md");
@@ -220,7 +241,9 @@ fn render_template(
 }
 
 pub fn write_readmes() {
-    let root_rendered = render_template(JJPWREGEM_TEMPLATE, &[]).unwrap();
+    let badge = coverage_badge(COVERAGE);
+    let root_rendered =
+        render_template(JJPWREGEM_TEMPLATE, &[("{{COVERAGE_BADGE}}", &badge)]).unwrap();
     let parse_rendered = render_template(JJPWREGEM_PARSE_TEMPLATE, &[]).unwrap();
     let bench_rendered = render_template(BENCH_TEMPLATE, &[]).unwrap();
     let cli_bench_rendered =
@@ -242,7 +265,9 @@ pub fn write_readmes() {
 }
 
 pub fn are_readmes_updated() -> anyhow::Result<()> {
-    let root_rendered = render_template(JJPWREGEM_TEMPLATE, &[]).unwrap();
+    let badge = coverage_badge(COVERAGE);
+    let root_rendered =
+        render_template(JJPWREGEM_TEMPLATE, &[("{{COVERAGE_BADGE}}", &badge)]).unwrap();
     let parse_rendered = render_template(JJPWREGEM_PARSE_TEMPLATE, &[]).unwrap();
     let bench_rendered = render_template(BENCH_TEMPLATE, &[]).unwrap();
     let cli_bench_rendered =

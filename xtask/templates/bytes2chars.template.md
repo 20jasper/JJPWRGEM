@@ -1,5 +1,8 @@
 # bytes2chars
 
+[![crates.io](https://img.shields.io/crates/v/bytes2chars)](https://crates.io/crates/bytes2chars)
+[![docs.rs](https://img.shields.io/docsrs/bytes2chars)](https://docs.rs/bytes2chars)
+
 lazily decodes utf-8 [`char`]s from bytes
 
 provides lazy, fallible analogs to [`str::Chars`] ([`Utf8Chars`]) and [`str::CharIndices`] ([`Utf8CharIndices`]), as well as a lower-level push-based [`Utf8Decoder`]

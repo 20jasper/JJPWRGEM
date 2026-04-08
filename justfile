@@ -55,7 +55,8 @@ test *args="":
 # common flag: --open
 [group('test')]
 test-cov *args="":
-    cargo llvm-cov --exclude xtask {{ test_flags }} {{ args }} > /dev/null
+    cargo llvm-cov --exclude xtask {{ test_flags }} --json --summary-only {{ args }} \
+        | jq -r '(.data[0].totals.lines.percent * 10 | round) / 10' > benches/output/coverage.txt
 
 # deletes snapshots locally and rejects in CI
 [group('test')]
