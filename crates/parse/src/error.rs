@@ -141,14 +141,10 @@ impl<'a> Display for Error<'a> {
 }
 
 #[derive(Debug, PartialEq, Eq, Display, Error, Clone)]
-/// {kind} at line {line} column {column}
+/// {kind}
 pub struct ErrorInner<'a> {
     kind: ErrorKind<'a>,
     range: Range<usize>,
-    /// 1 indexed line number
-    line: usize,
-    /// 1 indexed column number
-    column: usize,
     source_text: String,
     source_name: String,
 }
@@ -168,15 +164,25 @@ impl<'a> Deref for Error<'a> {
 }
 
 impl<'a> Error<'a> {
+    pub fn message(&self) -> String {
+        self.0.kind.to_string()
+    }
+
+    pub fn source_text(&self) -> &str {
+        &self.source_text
+    }
+
+    /// byte range
+    pub fn range(&self) -> &Range<usize> {
+        &self.0.range
+    }
+
     pub fn new(kind: ErrorKind<'a>, range: Range<usize>, text: &'a str) -> Self {
         // TODO take this as a param or have some sort of context
         let source_name = "stdin".into();
-        let (line, column) = get_line_and_column(text, range.clone());
         ErrorInner {
             kind,
             range,
-            line,
-            column,
             source_text: text.into(),
             source_name,
         }
@@ -203,12 +209,9 @@ impl<'a> Error<'a> {
 
         let source_text = String::from_utf8_lossy(bytes).into_owned();
         let range = e.valid_up_to()..e.valid_up_to() + LOSSY_BYTE_LENGTH;
-        let (line, column) = get_line_and_column(&source_text, range.clone());
         ErrorInner {
             kind: ErrorKind::InvalidEncoding(b2c_err.kind),
             range,
-            line,
-            column,
             source_text,
             source_name: "stdin".into(),
         }
@@ -243,40 +246,5 @@ impl<'a> Error<'a> {
         } else {
             Error::from_unterminated(f(None.into()), text)
         }
-    }
-}
-
-fn get_line_and_column(text: &str, range: Range<usize>) -> (usize, usize) {
-    let to_search = if let Some(to_search) = text.get(..=range.start) {
-        to_search
-    } else {
-        return (1, 1);
-    };
-
-    let lines = to_search.lines().count();
-    let column = to_search
-        .lines()
-        .last()
-        .expect("to_search will never be empty")
-        .chars()
-        .count();
-    (lines, column)
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[rstest::rstest]
-    #[case("", 0..0, (1,1))]
-    #[case("1\n2\n3", 0..1, (1,1))]
-    #[case("1\n2\n3", 2..3, (2,1))]
-    #[case("1\n234", 3..4, (2,2))]
-    fn gets_line_and_column(
-        #[case] text: &str,
-        #[case] range: Range<usize>,
-        #[case] expected: (usize, usize),
-    ) {
-        assert_eq!(get_line_and_column(text, range), expected);
     }
 }
