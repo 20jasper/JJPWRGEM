@@ -1,0 +1,13 @@
+---
+source: tests/integration/commands/format.rs
+expression: output.snapshot_display()
+---
+args: ["format", "--uglify"]
+status: 0
+success: true
+stdin ---
+"\uD83D\uDE00"
+stdout ---
+"\uD83D\uDE00"
+
+stderr ---

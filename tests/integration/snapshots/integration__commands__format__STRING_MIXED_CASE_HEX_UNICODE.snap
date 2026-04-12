@@ -1,0 +1,13 @@
+---
+source: tests/integration/commands/format.rs
+expression: output.snapshot_display()
+---
+args: ["format"]
+status: 0
+success: true
+stdin ---
+"\u0123\u4567\u89AB\uCDEF\uabcd\uef4A"
+stdout ---
+"\u0123\u4567\u89AB\uCDEF\uabcd\uef4A"
+
+stderr ---

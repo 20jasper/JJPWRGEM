@@ -1,0 +1,18 @@
+---
+source: tests/integration/commands/format.rs
+expression: output.snapshot_display()
+---
+args: ["format", "--uglify"]
+status: 0
+success: true
+stdin ---
+{
+    "string": "stringstringstringstringstringstringstringstringstringstringstringstringstringstringstring",
+    "stringstringstringstringstringstringstringstring": "stringstringstringstringstringstringstringstring",
+    "stringstringstringstringstringstringstringstringstringstringstringstringstringstringstring": "string"
+}
+
+stdout ---
+{"string":"stringstringstringstringstringstringstringstringstringstringstringstringstringstringstring","stringstringstringstringstringstringstringstring":"stringstringstringstringstringstringstringstring","stringstringstringstringstringstringstringstringstringstringstringstringstringstringstring":"string"}
+
+stderr ---

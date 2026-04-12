@@ -1,0 +1,17 @@
+---
+source: tests/integration/commands/format.rs
+expression: output.snapshot_display()
+---
+args: ["format"]
+status: 0
+success: true
+stdin ---
+[1,2 , 3
+
+,
+
+4 , 5        ,          6           ,7        ]
+stdout ---
+[1, 2, 3, 4, 5, 6, 7]
+
+stderr ---

@@ -1,3 +1,5 @@
+use const_format::str_repeat;
+
 pub const OBJECT_MISSING_COLON_WITH_COMMA: &str = r#"{"hi", "#;
 pub const OBJECT_MISSING_COLON_WITH_NULL: &str = r#"{"hi" null "#;
 pub const OBJECT_MISSING_COLON_WITH_CLOSED_CURLY: &str = r#"{"hi" }"#;
@@ -23,6 +25,7 @@ pub const LEADING_ZERO_MINUS_SIGN_ZERO: &str = "-000";
 pub const LEADING_ZERO_ZERO: &str = "000";
 pub const LEADING_ZERO_MINUS_SIGN_NONZERO: &str = "-012";
 pub const LEADING_ZERO_NON_ZERO: &str = "012";
+pub const VALID_TRAILING_ZEROS_FRACTION: &str = "1.0000";
 pub const UNEXPECTED_LETTER_IN_NEGATIVE: &str = "-abcd";
 pub const UNEXPECTED_LETTER_IN_NUMBER: &str = "1a";
 // pub const FRACTION_MISSING_INTEGER: &str = ".29";
@@ -182,6 +185,72 @@ pub const DEEPLY_NESTED_OBJECT_WITH_ARR_VALUES: &str = r#"
                     "slkdfjlsdfjsdsldkjflsfljdflksdjksdfljksdfjlkdflksjfdkl": ["hello"]
                 } } } } } } } } } } } } } } } } } } }
 "#;
+pub const STRING_ESCAPED_SOLIDUS: &str = r#""\/""#;
+pub const STRING_UNICODE_ESCAPE_PRINTABLE: &str = r#""\u0041""#;
+pub const STRING_UNICODE_ESCAPE_CONTROL: &str = r#""\u0000""#;
+pub const STRING_SURROGATE_PAIR: &str = r#""\uD83D\uDE00""#;
+pub const STRING_UNESCAPED_UNICODE: &str = "\"中文\"";
+pub const OBJECT_KEY_UNICODE_ESCAPE: &str = r#"{"\u006bey": "value"}"#;
+
+pub const NEGATIVE_ZERO: &str = "-0";
+pub const FLOAT_WITH_TRAILING_ZERO: &str = "1.0";
+pub const ZERO: &str = "0";
+pub const ZERO_FLOAT: &str = "0.0";
+pub const EXPONENT_ZERO: &str = "1e0";
+pub const EXPONENT_UPPERCASE_E: &str = "429E6";
+pub const EXPONENT_UPPERCASE_E_PLUS: &str = "1E+10";
+pub const EXPONENT_LEADING_ZEROS: &str = "10e000010000";
+
+pub const STRING_BACKSPACE_ESCAPE: &str = r#""\b""#;
+pub const STRING_FORM_FEED_ESCAPE: &str = r#""\f""#;
+pub const STRING_UNICODE_SPACE_ESCAPE: &str = r#""\u0020""#;
+pub const STRING_ALL_BASIC_ESCAPES: &str = r#""\"\\\/\n\r\t\b\f""#;
+
+pub const ARRAY_THREE_NEWLINES_BETWEEN_ITEMS: &str = "[1,\n\n\n2,\n\n\n3]";
+pub const OBJECT_BLANK_LINES_BETWEEN_KEYS: &str = "{ \"hi\": \"hi\",\n\n\n\"bye\": \"Bye\"\n\n}";
+pub const OBJECT_ONLY_NEWLINE: &str = "{\n}";
+pub const OBJECT_LEADING_NEWLINE: &str = "{\n\"key\": \"val\"}";
+
+pub const OBJECT_WITH_80_CHAR_STRING_ARRAY_VAL: &str = r#"{"key":["aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"]}"#;
+
+pub const OBJECT_EMPTY_STRING_KEY: &str = r#"{"": "value"}"#;
+pub const OBJECT_DUPLICATE_KEYS: &str = r#"{"a": 1, "a": 2}"#;
+pub const OBJECT_NUMERIC_STRING_KEY: &str = r#"{"1": "a"}"#;
+pub const OBJECT_SINGLE_KEY_ROOT: &str = r#"{"k": "v"}"#;
+pub const ARRAY_SINGLE_OBJECT: &str = r#"[{"single": "object"}]"#;
+pub const ARRAY_STRING_LONGER_THAN_PRINT_WIDTH: &str =
+    r#"["this string is way way way way way way way way way way way way way way too long"]"#;
+pub const ARRAY_OVER_80_CHARS: &str =
+    const_format::concatcp!(r#"["#, str_repeat!("1234567890, ", 14), r#"1234567890]"#);
+
+pub const ARRAY_OBJECT_ELEMENT_INLINE_77: &str =
+    const_format::concatcp!(r#"[{"k": ""#, str_repeat!("a", 64), r#""}]"#);
+pub const ARRAY_OBJECT_ELEMENT_INLINE_80: &str =
+    const_format::concatcp!(r#"[{"k": ""#, str_repeat!("a", 67), r#""}]"#);
+pub const ARRAY_OBJECT_ELEMENT_INLINE_83: &str =
+    const_format::concatcp!(r#"[{"k": ""#, str_repeat!("a", 70), r#""}]"#);
+pub const ARRAY_OBJECT_CRAB_EMOJI_INLINE: &str =
+    const_format::concatcp!(r#"[{"k": ""#, str_repeat!("🦀", 20), r#""}]"#);
+
+// valid subset of prettier's JSON format test suite
+pub const PRETTIER_KEY_VALUE: &str =
+    include_str!("../conformance/prettier/tests/format/json/json/key-value.json");
+pub const PRETTIER_MULTI_LINE: &str =
+    include_str!("../conformance/prettier/tests/format/json/json/multi-line.json");
+pub const PRETTIER_SINGLE_LINE: &str =
+    include_str!("../conformance/prettier/tests/format/json/json/single-line.json");
+pub const PRETTIER_PASS1: &str =
+    include_str!("../conformance/prettier/tests/format/json/json/pass1.json");
+pub const PRETTIER_ARRAY: &str = "[[1, null], [null], [0], [false], [\"\"]]";
+
+pub const STRING_MIXED_CASE_HEX_UNICODE: &str = r#""\u0123\u4567\u89AB\uCDEF\uabcd\uef4A""#;
+pub const EXPONENT_ZERO_PADDED: &str = "1e00";
+pub const EXPONENT_ZERO_PADDED_PLUS: &str = "2e+00";
+pub const EXPONENT_ZERO_PADDED_MINUS: &str = "2e-00";
+pub const ARRAY_BLANK_LINES_AND_EXTRA_WHITESPACE: &str =
+    "[1,2 , 3\n\n,\n\n4 , 5        ,          6           ,7        ]";
+pub const OBJECT_KEY_COMPLEX_ESCAPES: &str = r#"{"\/\\\"\uCAFE\uBABE\uAB98\uFCDE\ubcda\uef4A\b\f\n\r\t`1~!@#$%^&*()_+-=[]{}|;:',./<>?": "A key can be any string"}"#;
+
 pub const TSCONFIG: &str = r#"
 {
   "compilerOptions": {

@@ -1,0 +1,15 @@
+---
+source: tests/integration/commands/format.rs
+expression: output.snapshot_display()
+---
+args: ["format"]
+status: 0
+success: true
+stdin ---
+{"\u006bey": "value"}
+stdout ---
+{
+  "\u006bey": "value"
+}
+
+stderr ---

@@ -24,11 +24,11 @@ fn uglify(#[case] (name, input): (&str, &str)) {
     cmd.args(["format", "--uglify"]);
 
     let output = exec_cmd(&mut cmd, Some(input.as_bytes().to_vec()));
-    assert!(output.status.success());
 
     insta::with_settings!({snapshot_path => "../snapshots"}, {
         assert_snapshot!(format!("uglify_{name}"), output.snapshot_display());
     });
+    assert!(output.status.success());
 }
 
 #[rstest::rstest]

@@ -1,5 +1,5 @@
 crates/bytes2chars/README.md
-tests/conformance/JSONTestSuite
+tests/conformance
 xtask/bench/data
 .github/workflows/jjp-release.yml
 CHANGELOG.md

@@ -1,0 +1,5 @@
+---
+source: tests/integration/format_ast.rs
+expression: out
+---
+{"string":"stringstringstringstringstringstringstringstringstringstringstringstringstringstringstring","stringstringstringstringstringstringstringstring":"stringstringstringstringstringstringstringstring","stringstringstringstringstringstringstringstringstringstringstringstringstringstringstring":"string"}

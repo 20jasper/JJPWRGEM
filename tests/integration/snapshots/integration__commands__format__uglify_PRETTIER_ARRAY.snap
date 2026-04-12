@@ -1,0 +1,13 @@
+---
+source: tests/integration/commands/format.rs
+expression: output.snapshot_display()
+---
+args: ["format", "--uglify"]
+status: 0
+success: true
+stdin ---
+[[1, null], [null], [0], [false], [""]]
+stdout ---
+[[1,null],[null],[0],[false],[""]]
+
+stderr ---

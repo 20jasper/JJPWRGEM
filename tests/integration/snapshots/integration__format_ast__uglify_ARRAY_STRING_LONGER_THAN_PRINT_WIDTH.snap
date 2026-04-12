@@ -1,0 +1,5 @@
+---
+source: tests/integration/format_ast.rs
+expression: out
+---
+["this string is way way way way way way way way way way way way way way too long"]

@@ -1,0 +1,15 @@
+---
+source: tests/integration/commands/format.rs
+expression: output.snapshot_display()
+---
+args: ["format", "--uglify"]
+status: 0
+success: true
+stdin ---
+{"key1":[true,false,null],"key2":{"key3":[1,2,"3",
+1e10,1e-3]}}
+
+stdout ---
+{"key1":[true,false,null],"key2":{"key3":[1,2,"3",1e10,1e-3]}}
+
+stderr ---

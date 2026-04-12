@@ -7,3 +7,6 @@
 [submodule "tests/conformance/utf8tests"]
 	path = tests/conformance/utf8tests
 	url = https://github.com/flenniken/utf8tests
+[submodule "tests/conformance/prettier"]
+	path = tests/conformance/prettier
+	url = https://github.com/prettier/prettier.git

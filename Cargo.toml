@@ -55,6 +55,7 @@ displaydoc = { git = "https://github.com/yaahc/displaydoc", rev = "14f7acdba7a15
 
 [dev-dependencies]
 bytes2chars = { workspace = true }
+const_format = "0.2.35"
 
 insta = "1.44.3"
 rstest = { workspace = true }
