@@ -33,6 +33,7 @@ jobs:
         working-directory: npm
         run: |
           set -euo pipefail
+          rm -f ~/.npmrc
           tarball=$(ls -1 *.tgz 2>/dev/null | head -n1 || true)
           if [ -z "${tarball}" ]; then
             echo "No tarball (*.tgz) found in $(pwd)"
@@ -41,5 +42,3 @@ jobs:
           fi
           echo "Publishing ${tarball}"
           npm publish --access public --provenance "${tarball}"
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

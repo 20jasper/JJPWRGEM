@@ -21,3 +21,4 @@ tag-namespace = "jjp"
 host-jobs = ["./host-npm"]
 # Publish jobs to run in CI
 publish-jobs = ["./publish-npm"]
+publish-prereleases = true
