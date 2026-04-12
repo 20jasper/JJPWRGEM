@@ -33,7 +33,7 @@ jobs:
         working-directory: npm
         run: |
           set -euo pipefail
-          rm -f ~/.npmrc
+          unset NODE_AUTH_TOKEN
           tarball=$(ls -1 *.tgz 2>/dev/null | head -n1 || true)
           if [ -z "${tarball}" ]; then
             echo "No tarball (*.tgz) found in $(pwd)"
