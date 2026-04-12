@@ -56,12 +56,7 @@ impl Default for NpmPackageConfig {
         NpmPackageConfig {
             bin_name: BIN_NAME.to_string(),
             bin_path: BIN_PATH.to_string(),
-            dependencies: vec![
-                ("axios".to_string(), "^1.12.2".to_string()),
-                ("axios-proxy-builder".to_string(), "^0.1.2".to_string()),
-                ("detect-libc".to_string(), "^2.1.2".to_string()),
-                ("rimraf".to_string(), "^6.0.1".to_string()),
-            ],
+            dependencies: vec![("detect-libc".to_string(), "^2.1.2".to_string())],
             dev_dependencies: vec![],
             scripts: vec![(
                 SCRIPTS_POSTINSTALL.to_string(),
@@ -237,10 +232,6 @@ mod tests {
             "postinstall": "node ./install.js"
           },
           "dependencies": {
-            "axios-proxy-builder": "^0.1.2",
-            "console.table": "^0.10.0",
-            "axios": "^1.12.2",
-            "rimraf": "^6.0.1",
             "detect-libc": "^2.1.2"
           },
           "devDependencies": {},
@@ -393,13 +384,7 @@ mod tests {
         let package_config = NpmPackageConfig {
             bin_name: BIN_NAME.to_string(),
             bin_path: BIN_PATH.to_string(),
-            dependencies: vec![
-                ("axios-proxy-builder".into(), "^0.1.2".into()),
-                ("console.table".into(), "^0.10.0".into()),
-                ("axios".into(), "^1.12.2".into()),
-                ("rimraf".into(), "^6.0.1".into()),
-                ("detect-libc".into(), "^2.1.2".into()),
-            ],
+            dependencies: vec![("detect-libc".into(), "^2.1.2".into())],
             dev_dependencies: Vec::new(),
             scripts: vec![(SCRIPTS_POSTINSTALL.to_string(), "node ./install.js".into())],
             engines: vec![("node".into(), ">=14".into()), ("npm".into(), ">=6".into())],
