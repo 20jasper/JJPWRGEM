@@ -8,6 +8,6 @@ success: true
 stdin ---
 1e00
 stdout ---
-1e00
+1
 
 stderr ---

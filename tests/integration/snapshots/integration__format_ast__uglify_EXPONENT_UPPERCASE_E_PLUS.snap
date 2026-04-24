@@ -2,4 +2,4 @@
 source: tests/integration/format_ast.rs
 expression: out
 ---
-1E+10
+1e10

@@ -8,6 +8,6 @@ success: true
 stdin ---
 429e+6
 stdout ---
-429e+6
+429e6
 
 stderr ---

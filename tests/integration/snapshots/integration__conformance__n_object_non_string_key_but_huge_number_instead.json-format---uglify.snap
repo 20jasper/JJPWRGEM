@@ -10,10 +10,10 @@ stdin ---
 stdout ---
 
 stderr ---
-error: expected entry or closed delimiter `}`, found `9999E9999`
+error: expected entry or closed delimiter `}`, found `9999`
  --> stdin:1:2
   |
 1 | {9999E9999:1}
-  | -^^^^^^^^^
+  | -^^^^
   | |
   | expected due to `{`

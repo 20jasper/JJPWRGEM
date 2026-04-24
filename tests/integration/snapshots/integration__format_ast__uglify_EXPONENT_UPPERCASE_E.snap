@@ -2,4 +2,4 @@
 source: tests/integration/format_ast.rs
 expression: out
 ---
-429E6
+429e6
