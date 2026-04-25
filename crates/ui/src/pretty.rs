@@ -2,7 +2,7 @@ mod diagnostic {
     use annotate_snippets::{Annotation, AnnotationKind, Group, Level, Snippet};
     use jjpwrgem_parse::error::diagnostics::{Context, Diagnostic, Patch, Source};
     fn patch_to_patch<'a>(patch: Patch<'a>) -> annotate_snippets::Patch<'a> {
-        annotate_snippets::Patch::new(patch.span, patch.replacement)
+        annotate_snippets::Patch::new(patch.span.into(), patch.replacement)
     }
 
     fn source_to_snippet<'a, T: Clone>(val: Source<'a>) -> Snippet<'a, T> {
@@ -23,7 +23,7 @@ mod diagnostic {
             span,
             source: _,
         } = ctx;
-        AnnotationKind::Context.span(span).label(message)
+        AnnotationKind::Context.span(span.into()).label(message)
     }
 
     pub fn report_diagnostic<'a>(
@@ -36,7 +36,7 @@ mod diagnostic {
         }: Diagnostic<'a>,
     ) -> Vec<Group<'a>> {
         let annotations = if let Some(range) = range {
-            std::iter::once(AnnotationKind::Primary.span(range))
+            std::iter::once(AnnotationKind::Primary.span(range.into()))
                 .chain(context.into_iter().map(context_to_annotation))
                 .collect()
         } else {

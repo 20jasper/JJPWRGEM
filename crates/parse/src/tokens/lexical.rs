@@ -1,4 +1,4 @@
-use core::{fmt::Display, ops::RangeInclusive};
+use core::{fmt::Display, range::RangeInclusive};
 
 use crate::tokens::CharWithContext;
 

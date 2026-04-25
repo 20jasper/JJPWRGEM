@@ -1,4 +1,4 @@
-use core::ops::Range;
+use core::range::Range;
 
 use crate::{
     Error, ErrorKind, Result,
@@ -106,7 +106,7 @@ impl<'a> ObjectState<'a> {
                 (Some(pair_span), maybe_token) => {
                     return Err(Error::from_maybe_token_with_context(
                         |tok| ErrorKind::ExpectedCommaOrClosedCurlyBrace {
-                            range: pair_span.clone(),
+                            range: pair_span,
                             open_ctx: open_ctx.clone(),
                             found: tok,
                         },

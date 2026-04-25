@@ -1,4 +1,4 @@
-use core::ops::Range;
+use core::range::Range;
 use std::iter::Peekable;
 
 use crate::{
@@ -41,8 +41,8 @@ impl<'a> StringState<'a> {
                 };
 
                 StringState::CharOrEscapeOrEnd {
-                    string_range: starting_quote.clone(),
-                    quote_range: starting_quote.clone(),
+                    string_range: starting_quote,
+                    quote_range: starting_quote,
                 }
             }
             StringState::CharOrEscapeOrEnd {
@@ -52,7 +52,7 @@ impl<'a> StringState<'a> {
                 Some(CharWithContext(r, JsonChar('\\'))) => StringState::Escape {
                     string_range: string_range.start..r.end,
                     quote_range,
-                    slash_range: r.clone(),
+                    slash_range: r,
                 },
                 Some(CharWithContext(r, JsonChar('"'))) => StringState::End(TokenWithContext {
                     token: Token::String(input[quote_range.end..r.start].into()),
@@ -72,8 +72,8 @@ impl<'a> StringState<'a> {
                 None => {
                     return Err(Error::from_unterminated(
                         ErrorKind::ExpectedQuote {
-                            open_range: quote_range.clone(),
-                            string_range: string_range.clone(),
+                            open_range: quote_range,
+                            string_range,
                         },
                         input,
                     ));
@@ -101,9 +101,9 @@ impl<'a> StringState<'a> {
                     return Err(Error::from_maybe_json_char_with_context(
                         |c| ErrorKind::ExpectedEscape {
                             maybe_c: c,
-                            slash_range: slash_range.clone(),
-                            string_range: string_range.clone(),
-                            quote_range: quote_range.clone(),
+                            slash_range,
+                            string_range,
+                            quote_range,
                         },
                         maybe_c,
                         input,
@@ -138,9 +138,9 @@ impl<'a> StringState<'a> {
                 maybe_c => {
                     return Err(Error::from_maybe_json_char_with_context(
                         |c| ErrorKind::ExpectedHexDigit {
-                            quote_range: quote_range.clone(),
-                            slash_range: slash_range.clone(),
-                            u_range: u_range.clone(),
+                            quote_range,
+                            slash_range,
+                            u_range,
                             maybe_c: c,
                             digit_idx: digits_seen + 1,
                         },

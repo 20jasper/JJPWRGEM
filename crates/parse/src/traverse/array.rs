@@ -1,4 +1,4 @@
-use std::ops::Range;
+use core::range::Range;
 
 use crate::{
     error::{Error, ErrorKind, Result},

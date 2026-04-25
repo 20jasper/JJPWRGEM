@@ -93,7 +93,7 @@ impl<'a> Iterator for TokenStreamInner<'a> {
         self.consume_whitespace();
         let ctx = self.chars.peek()?;
 
-        let CharWithContext(r, JsonChar(c)) = ctx.clone();
+        let CharWithContext(r, JsonChar(c)) = *ctx;
         if let Some(tok) = ctx.as_token_with_context() {
             self.chars.next();
             return Some(Ok(tok));
@@ -133,14 +133,14 @@ impl<'a> Iterator for TokenStreamInner<'a> {
                 } else {
                     Err(Error::new(
                         ErrorKind::UnexpectedCharacter(c.into()),
-                        r.clone(),
+                        r,
                         self.input,
                     ))
                 }
             }
             _ => Err(Error::new(
                 ErrorKind::UnexpectedCharacter(c.into()),
-                r.clone(),
+                r,
                 self.input,
             )),
         };

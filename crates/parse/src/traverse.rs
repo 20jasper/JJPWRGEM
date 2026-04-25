@@ -1,7 +1,7 @@
 mod array;
 mod object;
 
-use core::ops::Range;
+use core::range::Range;
 use std::borrow::Cow;
 
 use crate::{
@@ -55,12 +55,12 @@ pub fn parse_tokens<'a>(
                 _ => unreachable!("guard prevents non scalars"),
             };
 
-            token_ctx.range.clone()
+            token_ctx.range
         }
         invalid => {
             return Err(Error::new(
                 ErrorKind::ExpectedValue(None, Some(invalid.clone()).into()),
-                peeked.range.clone(),
+                peeked.range,
                 text,
             ));
         }
@@ -71,7 +71,7 @@ pub fn parse_tokens<'a>(
     {
         return Err(Error::new(
             ErrorKind::TokenAfterEnd(token.clone()),
-            range.clone(),
+            *range,
             text,
         ));
     }

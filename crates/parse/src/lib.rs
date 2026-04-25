@@ -1,4 +1,4 @@
-#![feature(portable_simd)]
+#![feature(portable_simd, new_range)]
 pub mod ast;
 mod check;
 pub mod error;

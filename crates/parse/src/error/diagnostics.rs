@@ -1,4 +1,4 @@
-use core::ops::Range;
+use core::range::Range;
 use std::{borrow::Cow, path::Path};
 
 use crate::{
@@ -103,7 +103,7 @@ impl<'a> From<&'a Error<'a>> for Vec<Patch<'a>> {
             ) => {
                 vec![Patch::new(
                     "consider removing the trailing comma",
-                    range.clone(),
+                    *range,
                     source,
                     "",
                 )]
@@ -117,7 +117,7 @@ impl<'a> From<&'a Error<'a>> for Vec<Patch<'a>> {
             ) => {
                 vec![Patch::new(
                     "consider replacing the trailing comma with a closed curly brace",
-                    range.clone(),
+                    *range,
                     source,
                     "}",
                 )]
@@ -177,7 +177,7 @@ impl<'a> From<&'a Error<'a>> for Vec<Patch<'a>> {
                     Some(Token::ClosedSquareBracket),
                 ) => vec![Patch::new(
                     "consider removing the trailing comma",
-                    range.clone(),
+                    *range,
                     source,
                     "",
                 )],
@@ -197,7 +197,7 @@ impl<'a> From<&'a Error<'a>> for Vec<Patch<'a>> {
             },
             ErrorKind::UnexpectedControlCharacterInString(escaped) => vec![Patch::new(
                 "replace the control character with its escaped form",
-                error.range.clone(),
+                error.range,
                 source,
                 escaped.to_string(),
             )],
@@ -226,12 +226,9 @@ impl<'a> From<&'a Error<'a>> for Vec<Patch<'a>> {
                     )]
                 }
             }
-            ErrorKind::UnexpectedLeadingZero { extra, .. } => vec![Patch::new(
-                "remove the leading zeros",
-                extra.clone(),
-                source,
-                "",
-            )],
+            ErrorKind::UnexpectedLeadingZero { extra, .. } => {
+                vec![Patch::new("remove the leading zeros", *extra, source, "")]
+            }
             ErrorKind::ExpectedDigitAfterDot {
                 maybe_c: JsonCharOption(None),
                 number_range,
@@ -284,7 +281,7 @@ impl<'a> From<&'a Error<'a>> for Vec<Patch<'a>> {
                 _ => {
                     vec![Patch::new(
                         "remove unnecessary escape slash",
-                        slash_range.clone(),
+                        *slash_range,
                         source,
                         "",
                     )]
@@ -320,7 +317,7 @@ impl<'a> From<&'a Error<'a>> for Vec<Context<'a>> {
                 context: Some(ctx), ..
             } => vec![Context::new(
                 format!("expected due to {}", ctx.token),
-                ctx.range.clone(),
+                ctx.range,
                 source,
             )],
             ErrorKind::ExpectedCommaOrClosedCurlyBrace {
@@ -328,32 +325,28 @@ impl<'a> From<&'a Error<'a>> for Vec<Context<'a>> {
             } => vec![
                 Context::new(
                     format!("expected due to {EXPECTED_COMMA_OR_CLOSED_CURLY_MESSAGE}"),
-                    range.clone(),
+                    *range,
                     source,
                 ),
                 Context::new(
                     format!("object opened here by {}", open_ctx.token),
-                    open_ctx.range.clone(),
+                    open_ctx.range,
                     source,
                 ),
             ],
             ErrorKind::ExpectedDigitFollowingMinus(range, _) => {
-                vec![Context::new("minus sign found here", range.clone(), source)]
+                vec![Context::new("minus sign found here", *range, source)]
             }
             ErrorKind::UnexpectedLeadingZero { initial, .. } => {
-                vec![Context::new(
-                    "first zero found here",
-                    initial.clone(),
-                    source,
-                )]
+                vec![Context::new("first zero found here", *initial, source)]
             }
             ErrorKind::ExpectedDigitAfterDot {
                 dot_range,
                 number_range,
                 ..
             } => vec![
-                Context::new("decimal point found here", dot_range.clone(), source),
-                Context::new("number found here", number_range.clone(), source),
+                Context::new("decimal point found here", *dot_range, source),
+                Context::new("number found here", *number_range, source),
             ],
             ErrorKind::ExpectedDigitAfterE {
                 number_range,
@@ -365,20 +358,12 @@ impl<'a> From<&'a Error<'a>> for Vec<Context<'a>> {
                 e_range: exponent_range,
                 maybe_c: _,
             } => vec![
-                Context::new(
-                    "number with exponent found here",
-                    number_range.clone(),
-                    source,
-                ),
-                Context::new(
-                    "exponent indicator found here",
-                    exponent_range.clone(),
-                    source,
-                ),
+                Context::new("number with exponent found here", *number_range, source),
+                Context::new("exponent indicator found here", *exponent_range, source),
             ],
             ErrorKind::ExpectedQuote { open_range, .. } => vec![Context::new(
                 "opening quote found here",
-                open_range.clone(),
+                *open_range,
                 source,
             )],
             ErrorKind::ExpectedEscape {
@@ -386,8 +371,8 @@ impl<'a> From<&'a Error<'a>> for Vec<Context<'a>> {
                 quote_range,
                 ..
             } => vec![
-                Context::new("escape slash found here", slash_range.clone(), source),
-                Context::new("opening quote found here", quote_range.clone(), source),
+                Context::new("escape slash found here", *slash_range, source),
+                Context::new("opening quote found here", *quote_range, source),
             ],
 
             ErrorKind::ExpectedHexDigit {
@@ -396,7 +381,7 @@ impl<'a> From<&'a Error<'a>> for Vec<Context<'a>> {
                 u_range,
                 ..
             } => vec![
-                Context::new("opening quote found here", quote_range.clone(), source),
+                Context::new("opening quote found here", *quote_range, source),
                 Context::new(
                     "\\u escape started here",
                     slash_range.start..u_range.end,
@@ -418,7 +403,7 @@ impl<'a> From<&'a Error<'a>> for Diagnostic<'a> {
     fn from(error: &'a Error<'a>) -> Self {
         Diagnostic {
             message: error.kind.to_string(),
-            range: Some(error.range.clone()),
+            range: Some(error.range),
             context: error.into(),
             patches: error.into(),
             source: error_source(error),

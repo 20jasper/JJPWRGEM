@@ -1,9 +1,6 @@
 pub mod diagnostics;
 
-use core::{
-    fmt::Display,
-    ops::{Deref, Range},
-};
+use core::{fmt::Display, ops::Deref, range::Range};
 
 use displaydoc::Display;
 use thiserror::Error;

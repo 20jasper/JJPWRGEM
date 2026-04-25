@@ -3,7 +3,7 @@ mod number;
 mod stream;
 mod string;
 
-use core::{fmt::Display, ops::Range};
+use core::{fmt::Display, range::Range};
 use std::borrow::Cow;
 
 pub use stream::TokenStream;
@@ -83,7 +83,7 @@ impl<'a> From<Option<Token<'a>>> for TokenOption<'a> {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct JsonCharOption(pub Option<JsonChar>);
 
 impl Display for JsonCharOption {
@@ -111,7 +111,7 @@ pub const NULL: &str = "null";
 pub const FALSE: &str = "false";
 pub const TRUE: &str = "true";
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct CharWithContext(pub Range<usize>, pub JsonChar);
 impl From<(usize, char)> for CharWithContext {
     fn from((i, c): (usize, char)) -> Self {
@@ -134,7 +134,7 @@ impl CharWithContext {
                 };
                 Some(TokenWithContext {
                     token,
-                    range: range.clone(),
+                    range: *range,
                 })
             }
         }
