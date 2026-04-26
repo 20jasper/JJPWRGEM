@@ -53,15 +53,9 @@ impl<'a> TryFrom<&Value<'a>> for BenchmarkResult {
             .iter()
             .enumerate()
             .map(|(time_index, time_value)| -> Result<f64> {
-                let ast::Value::Number(number) = time_value else {
-                    bail!("times[{time_index}] must be a number");
-                };
-                let parsed = number.as_ref().parse::<f64>().with_context(|| {
-                    format!(
-                        "times[{time_index}] value '{}' is not a valid number",
-                        number
-                    )
-                })?;
+                let parsed = time_value
+                    .to_f64()
+                    .with_context(|| format!("times[{time_index}] must be a number"))?;
                 Ok(parsed)
             })
             .collect::<Result<Vec<_>>>()?;
