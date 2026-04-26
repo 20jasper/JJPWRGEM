@@ -21,8 +21,15 @@ tools-install:
     cargo binstall release-plz@0.3 -y
     cargo binstall cargo-rdme@1.5 -y
     cargo binstall tracey@1.3.0 -y
-    cargo binstall cargo-criterion@1.1.0 -y
     cargo binstall cargo-release@0.25 -y
+    just tools-install-bench
+
+# install bench devtools (also requires valgrind, kcachegrind, and callgrind from system package manager)
+[group('dev')]
+tools-install-bench:
+    cargo binstall cargo-criterion@1.1.0 -y
+    cargo binstall gungraun-runner@0.18.1 -y
+    cargo binstall rustfilt@0.2.1 -y
 
 prettier := "pnpm exec oxfmt"
 prettier_glob := "./**/*.{md,yaml,yml,ts,js}"
@@ -250,3 +257,20 @@ bench-docker:
 [group('bench')]
 plot-bench:
     cargo xtask plot-benchmarks
+
+[group('bench')]
+bench-iai *args="":
+    cargo bench -p benches --bench json_iai {{ args }}
+
+[group('bench')]
+kcachegrind bench="deser" fixture="citm":
+    #!/usr/bin/env sh
+    out="target/gungraun/benches/json_iai/{{ bench }}_group/bench_{{ bench }}.{{ fixture }}/callgrind.bench_{{ bench }}.{{ fixture }}.out"
+    rustfilt < "$out" > "${out%.out}.demangled.out"
+    kcachegrind "${out%.out}.demangled.out" &
+
+[group('bench')]
+iai-annotate bench="deser" fixture="citm":
+    callgrind_annotate \
+        target/gungraun/benches/json_iai/{{ bench }}_group/bench_{{ bench }}.{{ fixture }}/callgrind.bench_{{ bench }}.{{ fixture }}.out \
+        2>/dev/null | rustfilt | head -60
