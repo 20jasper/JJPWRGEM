@@ -90,6 +90,23 @@ impl JsonChar {
     pub fn is_whitespace(&self) -> bool {
         matches!(self.0, ' ' | '\t' | '\n' | '\r')
     }
+
+    /// See [RFC 8259, Section 2](https://datatracker.ietf.org/doc/html/rfc8259#section-2):
+    ///
+    /// ```abnf
+    /// structural-character = begin-array / begin-object / end-array /
+    ///                        end-object / name-separator / value-separator
+    ///
+    /// begin-array     = ws %x5B ws  ; [ left square bracket
+    /// begin-object    = ws %x7B ws  ; { left curly bracket
+    /// end-array       = ws %x5D ws  ; ] right square bracket
+    /// end-object      = ws %x7D ws  ; } right curly bracket
+    /// name-separator  = ws %x3A ws  ; : colon
+    /// value-separator = ws %x2C ws  ; , comma
+    /// ```
+    pub fn is_structural(&self) -> bool {
+        matches!(self.0, '{' | '}' | '[' | ']' | ':' | ',')
+    }
 }
 
 impl Display for JsonChar {

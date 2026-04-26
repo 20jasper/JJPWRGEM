@@ -7,6 +7,9 @@ use crate::{
 };
 pub const EXPECTED_COMMA_OR_CLOSED_CURLY_MESSAGE: &str = "the preceding key/value pair";
 pub const INSERT_MISSING_CLOSED_BRACE_HELP: &str = "insert the missing closed brace";
+pub const REMOVE_EXPONENT_HELP: &str = "remove the exponent";
+pub const INSERT_EXPONENT_PLACEHOLDER_DIGIT_HELP: &str = "insert a placeholder digit";
+pub const EXPONENT_PLACEHOLDER_DIGIT: &str = "5";
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Context<'a> {
@@ -88,6 +91,21 @@ fn error_source<'a>(error: &'a Error<'a>) -> Source<'a> {
             path: Path::new(error.source_name.as_str()),
         }
     }
+}
+
+fn exponent_patch_suggestions<'a>(
+    exponent_range: Range<usize>,
+    source: Source<'a>,
+) -> Vec<Patch<'a>> {
+    vec![
+        Patch::new(REMOVE_EXPONENT_HELP, exponent_range, source, ""),
+        Patch::new(
+            INSERT_EXPONENT_PLACEHOLDER_DIGIT_HELP,
+            exponent_range.end..exponent_range.end,
+            source,
+            EXPONENT_PLACEHOLDER_DIGIT,
+        ),
+    ]
 }
 
 impl<'a> From<&'a Error<'a>> for Vec<Patch<'a>> {
@@ -240,25 +258,26 @@ impl<'a> From<&'a Error<'a>> for Vec<Patch<'a>> {
                 "0",
             )],
             ErrorKind::ExpectedPlusOrMinusOrDigitAfterE {
-                e_range,
-                maybe_c: JsonCharOption(None),
-                ..
-            } => vec![Patch::new(
-                "add placeholder exponent digits",
-                e_range.end..e_range.end,
-                source,
-                "+1",
-            )],
+                e_range, maybe_c, ..
+            } => {
+                if maybe_c.0.is_none_or(|c| c.is_structural()) {
+                    exponent_patch_suggestions(*e_range, source)
+                } else {
+                    Vec::new()
+                }
+            }
             ErrorKind::ExpectedDigitAfterE {
-                maybe_c: JsonCharOption(None),
+                exponent_range,
                 number_range,
+                maybe_c,
                 ..
-            } => vec![Patch::new(
-                "add a digit after the exponent sign",
-                number_range.end..number_range.end,
-                source,
-                "0",
-            )],
+            } => {
+                if maybe_c.0.is_none_or(|c| c.is_structural()) {
+                    exponent_patch_suggestions(exponent_range.start..number_range.end, source)
+                } else {
+                    Vec::new()
+                }
+            }
             ErrorKind::ExpectedQuote { string_range, .. } => vec![Patch::new(
                 "insert the missing closing quote",
                 string_range.end..string_range.end,
@@ -288,9 +307,7 @@ impl<'a> From<&'a Error<'a>> for Vec<Patch<'a>> {
                 }
             },
 
-            ErrorKind::ExpectedDigitAfterE { .. } => Vec::new(),
             ErrorKind::ExpectedDigitAfterDot { .. } => Vec::new(),
-            ErrorKind::ExpectedPlusOrMinusOrDigitAfterE { .. } => Vec::new(),
             ErrorKind::ExpectedEntryOrClosedDelimiter {
                 found: TokenOption(Some(_)),
                 ..
@@ -349,18 +366,17 @@ impl<'a> From<&'a Error<'a>> for Vec<Context<'a>> {
                 Context::new("number found here", *number_range, source),
             ],
             ErrorKind::ExpectedDigitAfterE {
-                number_range,
                 exponent_range,
-                maybe_c: _,
-            }
-            | ErrorKind::ExpectedPlusOrMinusOrDigitAfterE {
                 number_range,
-                e_range: exponent_range,
-                maybe_c: _,
-            } => vec![
-                Context::new("number with exponent found here", *number_range, source),
-                Context::new("exponent indicator found here", *exponent_range, source),
-            ],
+                ..
+            } => vec![Context::new(
+                "exponent found here",
+                exponent_range.start..number_range.end,
+                source,
+            )],
+            ErrorKind::ExpectedPlusOrMinusOrDigitAfterE { e_range, .. } => {
+                vec![Context::new("exponent found here", *e_range, source)]
+            }
             ErrorKind::ExpectedQuote { open_range, .. } => vec![Context::new(
                 "opening quote found here",
                 *open_range,
