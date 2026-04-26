@@ -14,7 +14,6 @@ error: expected digit after exponent indicator, found `-`
  --> stdin:1:5
   |
 1 | [0e+-1]
-  |  ---^
-  |  ||
-  |  |exponent indicator found here
-  |  number with exponent found here
+  |   --^
+  |   |
+  |   exponent found here

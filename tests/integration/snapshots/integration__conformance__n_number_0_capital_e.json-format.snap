@@ -14,7 +14,16 @@ error: expected +/- or digit after exponent indicator, found `]`
  --> stdin:1:4
   |
 1 | [0E]
-  |  --^
-  |  ||
-  |  |exponent indicator found here
-  |  number with exponent found here
+  |   -^
+  |   |
+  |   exponent found here
+  |
+help: remove the exponent
+  |
+1 - [0E]
+1 + [0]
+  |
+help: insert a placeholder digit
+  |
+1 | [0E5]
+  |    +

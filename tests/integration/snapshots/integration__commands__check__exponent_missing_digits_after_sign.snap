@@ -1,6 +1,6 @@
 ---
 source: tests/integration/commands/check.rs
-expression: output
+expression: output.snapshot_display()
 ---
 args: ["check"]
 status: 1
@@ -14,12 +14,16 @@ error: expected digit after exponent indicator, found no significant characters
  --> stdin:1:4
   |
 1 | 98e+
-  | ---^
-  | | |
-  | | exponent indicator found here
-  | number with exponent found here
+  |   -^
+  |   |
+  |   exponent found here
   |
-help: add a digit after the exponent sign
+help: remove the exponent
   |
-1 | 98e+0
+1 - 98e+
+1 + 98
+  |
+help: insert a placeholder digit
+  |
+1 | 98e+5
   |     +
