@@ -107,7 +107,7 @@ impl<'a> ObjectState<'a> {
                     return Err(Error::from_maybe_token_with_context(
                         |tok| ErrorKind::ExpectedCommaOrClosedCurlyBrace {
                             range: pair_span,
-                            open_ctx: open_ctx.clone(),
+                            open_ctx,
                             found: tok,
                         },
                         maybe_token,
@@ -117,7 +117,7 @@ impl<'a> ObjectState<'a> {
                 (None, maybe_token) => {
                     return Err(Error::from_maybe_token_with_context(
                         |tok: TokenOption| {
-                            ErrorKind::expected_entry_or_closed_delimiter(open_ctx.clone(), tok)
+                            ErrorKind::expected_entry_or_closed_delimiter(open_ctx, tok)
                                 .expect("object should open with a curly brace")
                         },
                         maybe_token,
@@ -141,7 +141,7 @@ impl<'a> ObjectState<'a> {
                 }
                 maybe_token => {
                     return Err(Error::from_maybe_token_with_context(
-                        |tok: TokenOption| ErrorKind::ExpectedKey(comma_ctx.clone(), tok),
+                        |tok: TokenOption| ErrorKind::ExpectedKey(comma_ctx, tok),
                         maybe_token,
                         text,
                     ));
@@ -162,7 +162,7 @@ impl<'a> ObjectState<'a> {
                 }
                 maybe_token => {
                     return Err(Error::from_maybe_token_with_context(
-                        |tok| ErrorKind::ExpectedColon(key_ctx.clone(), tok),
+                        |tok| ErrorKind::ExpectedColon(key_ctx, tok),
                         maybe_token,
                         text,
                     ));
@@ -173,7 +173,7 @@ impl<'a> ObjectState<'a> {
                 colon_ctx,
                 open_ctx,
             } => {
-                validate_start_of_value(text, colon_ctx.clone(), tokens.peek_token()?.cloned())?;
+                validate_start_of_value(text, colon_ctx, tokens.peek_token()?.copied())?;
 
                 let value_range = parse_tokens(tokens, text, false, visitor)?;
 

@@ -54,7 +54,7 @@ impl<'a> ArrayState<'a> {
                 }
             },
 
-            ArrayState::ValueOrEnd { open_ctx } => match tokens.peek_token()?.cloned() {
+            ArrayState::ValueOrEnd { open_ctx } => match tokens.peek_token()?.copied() {
                 Some(TokenWithContext {
                     token: Token::ClosedSquareBracket,
                     range: closed_range,
@@ -65,13 +65,13 @@ impl<'a> ArrayState<'a> {
                     ArrayState::End(open_ctx.range.start..closed_range.end)
                 }
                 Some(token_ctx) if token_ctx.token.is_start_of_value() => ArrayState::Value {
-                    open_ctx: open_ctx.clone(),
-                    expect_ctx: open_ctx.clone(),
+                    open_ctx,
+                    expect_ctx: open_ctx,
                 },
                 Some(_) => {
                     return Err(Error::from_maybe_token_with_context(
                         |tok| {
-                            ErrorKind::expected_entry_or_closed_delimiter(open_ctx.clone(), tok)
+                            ErrorKind::expected_entry_or_closed_delimiter(open_ctx, tok)
                                 .expect("array should open with a square bracket")
                         },
                         tokens.next_token()?,
@@ -81,7 +81,7 @@ impl<'a> ArrayState<'a> {
                 None => {
                     return Err(Error::from_maybe_token_with_context(
                         |tok| {
-                            ErrorKind::expected_entry_or_closed_delimiter(open_ctx.clone(), tok)
+                            ErrorKind::expected_entry_or_closed_delimiter(open_ctx, tok)
                                 .expect("array should open with a square bracket")
                         },
                         None,
@@ -94,7 +94,7 @@ impl<'a> ArrayState<'a> {
                 open_ctx,
                 expect_ctx,
             } => {
-                validate_start_of_value(text, expect_ctx, tokens.peek_token()?.cloned())?;
+                validate_start_of_value(text, expect_ctx, tokens.peek_token()?.copied())?;
 
                 let value_range = parse_tokens(tokens, text, false, visitor)?;
                 ArrayState::CommaOrEnd {
@@ -103,7 +103,7 @@ impl<'a> ArrayState<'a> {
                 }
             }
 
-            ArrayState::CommaOrEnd { open_ctx, .. } => match tokens.peek_token()?.cloned() {
+            ArrayState::CommaOrEnd { open_ctx, .. } => match tokens.peek_token()?.copied() {
                 Some(TokenWithContext {
                     token: Token::ClosedSquareBracket,
                     range: closed_range,
@@ -129,7 +129,7 @@ impl<'a> ArrayState<'a> {
                 _ => {
                     return Err(Error::from_maybe_token_with_context(
                         |tok| {
-                            ErrorKind::expected_entry_or_closed_delimiter(open_ctx.clone(), tok)
+                            ErrorKind::expected_entry_or_closed_delimiter(open_ctx, tok)
                                 .expect("array should open with a square bracket")
                         },
                         tokens.next_token()?,

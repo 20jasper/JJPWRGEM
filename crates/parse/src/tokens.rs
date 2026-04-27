@@ -4,13 +4,12 @@ mod stream;
 mod string;
 
 use core::{fmt::Display, range::Range};
-use std::borrow::Cow;
 
 pub use stream::TokenStream;
 
 use crate::tokens::lexical::JsonChar;
 
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum Token<'a> {
     OpenCurlyBrace,
     ClosedCurlyBrace,
@@ -19,7 +18,8 @@ pub enum Token<'a> {
     OpenSquareBracket,
     ClosedSquareBracket,
     String(&'a str),
-    Number(Cow<'a, str>),
+    Mantissa(&'a str),
+    Exponent(&'a str),
     Null,
     Boolean(bool),
 }
@@ -33,38 +33,44 @@ impl<'a> Token<'a> {
                 | Token::String(_)
                 | Token::Null
                 | Token::Boolean(_)
-                | Token::Number(_)
+                | Token::Mantissa(_)
         )
     }
 
     pub fn is_scalar(&self) -> bool {
         matches!(
             self,
-            Token::String(_) | Token::Null | Token::Boolean(_) | Token::Number(_)
+            Token::String(_) | Token::Null | Token::Boolean(_) | Token::Mantissa(_)
         )
     }
 }
 
 impl Display for Token<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let val = match self {
-            Token::OpenCurlyBrace => "{",
-            Token::ClosedCurlyBrace => "}",
-            Token::Colon => ":",
-            Token::Comma => ",",
-            Token::OpenSquareBracket => "[",
-            Token::ClosedSquareBracket => "]",
-            Token::String(x) => &format!("{x:?}"),
-            Token::Number(x) => x.as_ref(),
-            Token::Boolean(x) => &format!("{x:?}"),
-            Token::Null => NULL,
-        };
-        write!(f, "`{val}`")
+        match self {
+            Token::Exponent(exponent) => write!(f, "`e{exponent}`"),
+            Token::Mantissa(mantissa) => write!(f, "`{mantissa}`"),
+            other => {
+                let val = match other {
+                    Token::OpenCurlyBrace => "{",
+                    Token::ClosedCurlyBrace => "}",
+                    Token::Colon => ":",
+                    Token::Comma => ",",
+                    Token::OpenSquareBracket => "[",
+                    Token::ClosedSquareBracket => "]",
+                    Token::String(x) => &format!("{x:?}"),
+                    Token::Boolean(x) => &format!("{x:?}"),
+                    Token::Null => NULL,
+                    Token::Mantissa(_) | Token::Exponent(_) => unreachable!(),
+                };
+                write!(f, "`{val}`")
+            }
+        }
     }
 }
 
 const NO_SIGNIFICANT_CHARACTERS: &str = "no significant characters";
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct TokenOption<'a>(pub(crate) Option<Token<'a>>);
 
 impl Display for TokenOption<'_> {
@@ -101,7 +107,7 @@ impl From<Option<JsonChar>> for JsonCharOption {
         Self(value)
     }
 }
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct TokenWithContext<'a> {
     pub token: Token<'a>,
     pub range: Range<usize>,
@@ -153,22 +159,6 @@ impl From<bool> for Token<'_> {
         Token::Boolean(value)
     }
 }
-// TODO macro for every num type
-impl From<usize> for Token<'_> {
-    fn from(value: usize) -> Self {
-        Token::Number(value.to_string().into())
-    }
-}
-impl From<i32> for Token<'_> {
-    fn from(value: i32) -> Self {
-        Token::Number(value.to_string().into())
-    }
-}
-impl From<f64> for Token<'_> {
-    fn from(value: f64) -> Self {
-        Token::Number(value.to_string().into())
-    }
-}
 
 #[cfg(test)]
 mod tests {
@@ -214,13 +204,6 @@ mod tests {
     #[case("false", Token::Boolean(false))]
     #[case("\"burger\"", Token::String("burger"))]
     #[case(r#""\"burger\"""#, Token::String(r#"\"burger\""#))]
-    #[case(r#"0"#, 0.into())]
-    #[case(r#"12389"#, 12389.into())]
-    #[case(r#"-12389"#, (-12389).into())]
-    #[case(r#"5.8888"#, 5.8888.into())]
-    #[case(r#"-0"#, Token::Number("-0".into()))]
-    #[case(r#"-1e5"#, Token::Number("-1e5".into()))]
-    #[case(r#"-1.48e50"#, Token::Number("-1.48e50".into()))]
     fn primitive_template(#[case] json: &str, #[case] expected: Token) {}
 
     #[rstest_reuse::apply(primitive_template)]

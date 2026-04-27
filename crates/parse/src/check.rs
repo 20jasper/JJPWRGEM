@@ -1,5 +1,3 @@
-use std::borrow;
-
 use crate::{
     Result,
     tokens::TokenStream,
@@ -17,7 +15,8 @@ impl<'a> Visitor<'a> for NoopVisitor {
     fn on_array_close(&mut self) {}
     fn on_null(&mut self) {}
     fn on_string(&mut self, _value: &'a str) {}
-    fn on_number(&mut self, _value: borrow::Cow<'a, str>) {}
+    fn on_mantissa(&mut self, _mantissa: &'a str) {}
+    fn on_exponent(&mut self, _exponent: &'a str) {}
     fn on_boolean(&mut self, _value: bool) {}
     fn on_object_key_val_delim(&mut self) {}
     fn on_item_delim(&mut self) {}

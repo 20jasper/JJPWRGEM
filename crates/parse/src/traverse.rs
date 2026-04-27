@@ -2,7 +2,6 @@ mod array;
 mod object;
 
 use core::range::Range;
-use std::borrow::Cow;
 
 use crate::{
     Error, ErrorKind, Result,
@@ -20,7 +19,8 @@ pub trait Visitor<'a> {
     fn on_array_close(&mut self);
     fn on_null(&mut self);
     fn on_string(&mut self, value: &'a str);
-    fn on_number(&mut self, value: Cow<'a, str>);
+    fn on_mantissa(&mut self, mantissa: &'a str);
+    fn on_exponent(&mut self, exponent: &'a str);
     fn on_boolean(&mut self, value: bool);
     fn on_item_delim(&mut self);
 }
@@ -31,7 +31,7 @@ pub fn parse_tokens<'a>(
     fail_on_multiple_value: bool,
     visitor: &mut impl Visitor<'a>,
 ) -> Result<'a, Range<usize>> {
-    let peeked = tokens.peek_token()?.cloned();
+    let peeked = tokens.peek_token()?.copied();
     let Some(peeked) = peeked else {
         return Err(Error::from_maybe_token_with_context(
             |tok| ErrorKind::ExpectedValue(None, tok),
@@ -49,7 +49,19 @@ pub fn parse_tokens<'a>(
 
             match t {
                 Token::String(s) => visitor.on_string(s),
-                Token::Number(cow) => visitor.on_number(cow),
+                Token::Mantissa(m) => {
+                    visitor.on_mantissa(m);
+                    if let Some(TokenWithContext {
+                        token: Token::Exponent(_),
+                        ..
+                    }) = tokens.peek_token()?
+                    {
+                        let exp_ctx = tokens.next_token()?.expect("peek guaranteed");
+                        if let Token::Exponent(e) = exp_ctx.token {
+                            visitor.on_exponent(e);
+                        }
+                    }
+                }
                 Token::Null => visitor.on_null(),
                 Token::Boolean(b) => visitor.on_boolean(b),
                 _ => unreachable!("guard prevents non scalars"),
@@ -59,7 +71,7 @@ pub fn parse_tokens<'a>(
         }
         invalid => {
             return Err(Error::new(
-                ErrorKind::ExpectedValue(None, Some(invalid.clone()).into()),
+                ErrorKind::ExpectedValue(None, Some(invalid).into()),
                 peeked.range,
                 text,
             ));
@@ -67,13 +79,9 @@ pub fn parse_tokens<'a>(
     };
 
     if fail_on_multiple_value
-        && let Some(TokenWithContext { token, range }) = tokens.peek_token()?
+        && let Some(TokenWithContext { token, range }) = tokens.peek_token()?.copied()
     {
-        return Err(Error::new(
-            ErrorKind::TokenAfterEnd(token.clone()),
-            *range,
-            text,
-        ));
+        return Err(Error::new(ErrorKind::TokenAfterEnd(token), range, text));
     }
 
     Ok(range)
@@ -84,12 +92,9 @@ pub fn validate_start_of_value<'a>(
     expect_ctx: TokenWithContext<'a>,
     maybe_token: Option<TokenWithContext<'a>>,
 ) -> Result<'a, ()> {
-    if !maybe_token
-        .as_ref()
-        .is_some_and(|ctx| ctx.token.is_start_of_value())
-    {
+    if !maybe_token.is_some_and(|ctx| ctx.token.is_start_of_value()) {
         Err(Error::from_maybe_token_with_context(
-            |tok| ErrorKind::ExpectedValue(Some(expect_ctx.clone()), tok),
+            |tok| ErrorKind::ExpectedValue(Some(expect_ctx), tok),
             maybe_token,
             text,
         ))
@@ -118,7 +123,12 @@ pub fn parse_value<'a>(val: &'a Value, visitor: &mut impl Visitor<'a>) {
     match val {
         Value::Null => visitor.on_null(),
         Value::String(s) => visitor.on_string(s),
-        Value::Number(n) => visitor.on_number(n.clone()),
+        Value::Number { mantissa, exponent } => {
+            visitor.on_mantissa(mantissa);
+            if !exponent.is_empty() {
+                visitor.on_exponent(exponent);
+            }
+        }
         Value::Boolean(b) => visitor.on_boolean(*b),
         Value::Object(ObjectEntries(items)) => {
             visitor.on_object_open();
@@ -164,7 +174,8 @@ mod tests {
         ArrayClose,
         Null,
         String(&'a str),
-        Number(Cow<'a, str>),
+        Mantissa(&'a str),
+        Exponent(&'a str),
         Boolean(bool),
         ItemDelim,
     }
@@ -207,8 +218,12 @@ mod tests {
             self.events.push(Event::String(value));
         }
 
-        fn on_number(&mut self, value: Cow<'a, str>) {
-            self.events.push(Event::Number(value));
+        fn on_mantissa(&mut self, mantissa: &'a str) {
+            self.events.push(Event::Mantissa(mantissa));
+        }
+
+        fn on_exponent(&mut self, exponent: &'a str) {
+            self.events.push(Event::Exponent(exponent));
         }
 
         fn on_boolean(&mut self, value: bool) {
@@ -222,7 +237,7 @@ mod tests {
 
     #[test]
     fn parse_value_matches_token_traversal_events() {
-        let json = r#"{"a":["b",{"c":1}],"d":true}"#;
+        let json = r#"{"a":["b",{"c":1e5}],"d":true}"#;
         let expected = vec![
             Event::ObjectOpen,
             Event::ObjectKey("a"),
@@ -233,7 +248,8 @@ mod tests {
             Event::ObjectOpen,
             Event::ObjectKey("c"),
             Event::ObjectKeyValDelim,
-            Event::Number("1".into()),
+            Event::Mantissa("1"),
+            Event::Exponent("5"),
             Event::ObjectClose,
             Event::ArrayClose,
             Event::ItemDelim,

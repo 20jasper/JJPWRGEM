@@ -152,7 +152,13 @@ fn format_value_into(buf: &mut FormatBuf, val: &Value, depth: usize) {
     match val {
         Value::Null => buf.push_str(NULL),
         Value::String(s) => buf.push_quoted(s),
-        Value::Number(s) => buf.push_str(s.as_ref()),
+        Value::Number { mantissa, exponent } => {
+            buf.push_str(mantissa);
+            if !exponent.is_empty() {
+                buf.push('e');
+                buf.push_str(exponent);
+            }
+        }
         Value::Object(entries) if entries.0.is_empty() => buf.push_str("{}"),
         Value::Object(entries) => {
             buf.push('{');
@@ -274,7 +280,14 @@ mod len {
         let len = match val {
             Value::Null => NULL.len(),
             Value::String(s) => s.len(),
-            Value::Number(s) => s.len(),
+            Value::Number { mantissa, exponent } => {
+                mantissa.len()
+                    + if exponent.is_empty() {
+                        0
+                    } else {
+                        1 + exponent.len()
+                    }
+            }
             Value::Object(entries) => {
                 if entries.is_empty() {
                     2

@@ -1,5 +1,3 @@
-use std::borrow::Cow;
-
 use visitor::AstVisitor;
 
 use crate::{Result, tokens::TokenStream, traverse::parse_tokens};
@@ -49,10 +47,26 @@ impl<'a> PartialEq for ObjectEntries<'a> {
 pub enum Value<'a> {
     Null,
     String(&'a str),
-    Number(Cow<'a, str>),
+    Number {
+        mantissa: &'a str,
+        exponent: &'a str,
+    },
     Object(ObjectEntries<'a>),
     Array(Vec<Value<'a>>),
     Boolean(bool),
+}
+
+impl Value<'_> {
+    pub fn to_f64(&self) -> Option<f64> {
+        let Value::Number { mantissa, exponent } = self else {
+            return None;
+        };
+        if exponent.is_empty() {
+            mantissa.parse().ok()
+        } else {
+            format!("{mantissa}e{exponent}").parse().ok()
+        }
+    }
 }
 
 pub fn parse_str<'a>(json: &'a str) -> Result<'a, Value<'a>> {
@@ -64,8 +78,6 @@ pub fn parse_str<'a>(json: &'a str) -> Result<'a, Value<'a>> {
 }
 
 mod visitor {
-    use std::borrow::Cow;
-
     use crate::{
         ast::{ObjectEntries, Value},
         traverse::Visitor,
@@ -93,6 +105,16 @@ mod visitor {
             Self {
                 stack: Vec::new(),
                 result: None,
+            }
+        }
+
+        fn last_emitted_mut(&mut self) -> &mut Value<'a> {
+            match self.stack.last_mut() {
+                None => self.result.as_mut().expect("must have emitted a value"),
+                Some(AstFrame::Array { items }) => items.last_mut().expect("must have item"),
+                Some(AstFrame::Object { entries, .. }) => {
+                    &mut entries.0.last_mut().expect("must have entry").1
+                }
             }
         }
 
@@ -153,6 +175,7 @@ mod visitor {
         fn on_array_open(&mut self) {
             self.stack.push(AstFrame::Array { items: Vec::new() });
         }
+
         fn on_array_close(&mut self) {
             let frame = self
                 .stack
@@ -173,8 +196,18 @@ mod visitor {
             self.emit_value(Value::String(s));
         }
 
-        fn on_number(&mut self, n: Cow<'a, str>) {
-            self.emit_value(Value::Number(n));
+        fn on_mantissa(&mut self, mantissa: &'a str) {
+            self.emit_value(Value::Number {
+                mantissa,
+                exponent: "",
+            });
+        }
+
+        fn on_exponent(&mut self, exponent: &'a str) {
+            let Value::Number { exponent: e, .. } = self.last_emitted_mut() else {
+                unreachable!("exponent must follow mantissa")
+            };
+            *e = exponent;
         }
 
         fn on_boolean(&mut self, b: bool) {

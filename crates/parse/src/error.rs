@@ -40,7 +40,7 @@ pub enum ErrorKind<'a> {
         found: TokenOption<'a>,
     },
 
-    // number
+    // mantissa
     /// expected digit following minus sign, found {1}
     ExpectedDigitFollowingMinus(Range<usize>, JsonCharOption),
     /// expected '-' or digit to start number, found {0}
@@ -56,15 +56,15 @@ pub enum ErrorKind<'a> {
         dot_range: Range<usize>,
         maybe_c: JsonCharOption,
     },
+
+    // exponent
     /// expected +/- or digit after exponent indicator, found {maybe_c}
     ExpectedPlusOrMinusOrDigitAfterE {
-        number_range: Range<usize>,
         e_range: Range<usize>,
         maybe_c: JsonCharOption,
     },
     /// expected digit after exponent indicator, found {maybe_c}
     ExpectedDigitAfterE {
-        number_range: Range<usize>,
         exponent_range: Range<usize>,
         maybe_c: JsonCharOption,
     },

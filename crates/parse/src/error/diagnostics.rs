@@ -268,12 +268,11 @@ impl<'a> From<&'a Error<'a>> for Vec<Patch<'a>> {
             }
             ErrorKind::ExpectedDigitAfterE {
                 exponent_range,
-                number_range,
                 maybe_c,
                 ..
             } => {
                 if maybe_c.0.is_none_or(|c| c.is_structural()) {
-                    exponent_patch_suggestions(exponent_range.start..number_range.end, source)
+                    exponent_patch_suggestions(*exponent_range, source)
                 } else {
                     Vec::new()
                 }
@@ -365,15 +364,9 @@ impl<'a> From<&'a Error<'a>> for Vec<Context<'a>> {
                 Context::new("decimal point found here", *dot_range, source),
                 Context::new("number found here", *number_range, source),
             ],
-            ErrorKind::ExpectedDigitAfterE {
-                exponent_range,
-                number_range,
-                ..
-            } => vec![Context::new(
-                "exponent found here",
-                exponent_range.start..number_range.end,
-                source,
-            )],
+            ErrorKind::ExpectedDigitAfterE { exponent_range, .. } => {
+                vec![Context::new("exponent found here", *exponent_range, source)]
+            }
             ErrorKind::ExpectedPlusOrMinusOrDigitAfterE { e_range, .. } => {
                 vec![Context::new("exponent found here", *e_range, source)]
             }

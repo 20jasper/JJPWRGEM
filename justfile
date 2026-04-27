@@ -189,7 +189,7 @@ publish-dry-run crate:
 
 [group('release')]
 release-binary:
-    release-plz update --package jjpwrgem
+    release-plz update
     cargo release --no-publish --tag-prefix=jjpwrgem- --execute
 
 [group('release')]

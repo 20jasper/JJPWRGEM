@@ -77,8 +77,12 @@ pub trait Emitter {
     fn emit_string(&mut self, s: &str) {
         self.push_quoted(s);
     }
-    fn emit_number(&mut self, n: &str) {
+    fn emit_mantissa(&mut self, n: &str) {
         self.push_str(n);
+    }
+    fn emit_exponent(&mut self, e: &str) {
+        self.push('e');
+        self.push_str(e);
     }
     fn emit_boolean(&mut self, b: bool) {
         self.push_str(if b { TRUE } else { FALSE });

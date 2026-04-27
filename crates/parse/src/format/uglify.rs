@@ -1,5 +1,3 @@
-use std::borrow::Cow;
-
 use crate::{
     Result,
     ast::Value,
@@ -62,8 +60,12 @@ impl<'a> Visitor<'a> for UglifyEmitVisitor {
         self.emit_string(s);
     }
 
-    fn on_number(&mut self, n: Cow<'_, str>) {
-        self.emit_number(&n);
+    fn on_mantissa(&mut self, mantissa: &str) {
+        self.emit_mantissa(mantissa);
+    }
+
+    fn on_exponent(&mut self, exponent: &str) {
+        self.emit_exponent(exponent);
     }
 
     fn on_boolean(&mut self, b: bool) {

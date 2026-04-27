@@ -3,8 +3,10 @@ use core::{iter::Peekable, str::CharIndices};
 use crate::{
     Error, ErrorKind, Result,
     tokens::{
-        CharWithContext, FALSE, NULL, TRUE, Token, TokenWithContext, lexical::JsonChar,
-        number::parse_num, string::parse_string,
+        CharWithContext, FALSE, NULL, TRUE, Token, TokenWithContext,
+        lexical::JsonChar,
+        number::{parse_exponent, parse_mantissa},
+        string::parse_string,
     },
 };
 
@@ -90,62 +92,72 @@ impl<'a> Iterator for TokenStreamInner<'a> {
     type Item = Result<'a, TokenWithContext<'a>>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.consume_whitespace();
-        let ctx = self.chars.peek()?;
+        loop {
+            self.consume_whitespace();
+            let ctx = self.chars.peek()?;
 
-        let CharWithContext(r, JsonChar(c)) = *ctx;
-        if let Some(tok) = ctx.as_token_with_context() {
-            self.chars.next();
-            return Some(Ok(tok));
-        }
-        let token = match c {
-            '"' => parse_string(self.input, &mut self.chars),
-            '0'..='9' | '-' => parse_num(self.input, &mut self.chars),
-            'n' | 't' | 'f' => {
-                let expected = match c {
-                    'n' => NULL,
-                    't' => TRUE,
-                    'f' => FALSE,
-                    _ => unreachable!("{c} is not able to be reached"),
-                };
-                let actual = self
-                    .chars
-                    .by_ref()
-                    .take(expected.len())
-                    .map(|c| c.as_char());
-
-                if actual.eq(expected.chars()) {
-                    let token = match c {
-                        'n' => Token::Null,
-                        't' => true.into(),
-                        'f' => false.into(),
+            let CharWithContext(r, JsonChar(c)) = *ctx;
+            if let Some(tok) = ctx.as_token_with_context() {
+                self.chars.next();
+                return Some(Ok(tok));
+            }
+            let token = match c {
+                '"' => return Some(parse_string(self.input, &mut self.chars)),
+                '0'..='9' | '-' => return Some(parse_mantissa(self.input, &mut self.chars)),
+                'e' | 'E' => {
+                    self.chars.next();
+                    match parse_exponent(self.input, r, &mut self.chars) {
+                        Ok(Some(tok)) => return Some(Ok(tok)),
+                        Ok(None) => continue, // zero exponent stripped skip to next token
+                        Err(e) => return Some(Err(e)),
+                    }
+                }
+                'n' | 't' | 'f' => {
+                    let expected = match c {
+                        'n' => NULL,
+                        't' => TRUE,
+                        'f' => FALSE,
                         _ => unreachable!("{c} is not able to be reached"),
                     };
-                    let end = *self
+                    let actual = self
                         .chars
-                        .peek()
-                        .map(|CharWithContext(r, _)| &r.start)
-                        .unwrap_or(&self.input.len());
-                    Ok(TokenWithContext {
-                        token,
-                        range: r.start..end,
-                    })
-                } else {
-                    Err(Error::new(
-                        ErrorKind::UnexpectedCharacter(c.into()),
-                        r,
-                        self.input,
-                    ))
-                }
-            }
-            _ => Err(Error::new(
-                ErrorKind::UnexpectedCharacter(c.into()),
-                r,
-                self.input,
-            )),
-        };
+                        .by_ref()
+                        .take(expected.len())
+                        .map(|c| c.as_char());
 
-        Some(token)
+                    if actual.eq(expected.chars()) {
+                        let token = match c {
+                            'n' => Token::Null,
+                            't' => true.into(),
+                            'f' => false.into(),
+                            _ => unreachable!("{c} is not able to be reached"),
+                        };
+                        let end = *self
+                            .chars
+                            .peek()
+                            .map(|CharWithContext(r, _)| &r.start)
+                            .unwrap_or(&self.input.len());
+                        Ok(TokenWithContext {
+                            token,
+                            range: r.start..end,
+                        })
+                    } else {
+                        Err(Error::new(
+                            ErrorKind::UnexpectedCharacter(c.into()),
+                            r,
+                            self.input,
+                        ))
+                    }
+                }
+                _ => Err(Error::new(
+                    ErrorKind::UnexpectedCharacter(c.into()),
+                    r,
+                    self.input,
+                )),
+            };
+
+            return Some(token);
+        }
     }
 }
 
