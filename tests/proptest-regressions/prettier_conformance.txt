@@ -1,0 +1,11 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc 3a040e840696e74240185200f84382da4711b53f52bbe6910cac4e0665c7fdb2 # shrinks to pre = "", val = "1e+1", post = ""
+cc e0b1ccb32eae17f2fd0190943186ef13914bf37cbe0f4148a08a050202b6414b # shrinks to input = "{\"a\":null}"
+cc 1dd4a028fa3c22d833508c0c44b1942bd0f13f0fce424a72a08d26ba6403e313 # shrinks to input = "[[61,true],[ \t\nfalse,\n\t82,true\n]]"
+cc 113d11f7401d630447a69e1e8b4f72afbc254c90bfdc44faa79b1cd45b7debe7 # shrinks to input = "[[45,-24],[  true,false]]"
+cc a140b02a5337f3c86beff3382e3ef3779a6154fc1b699b3065c487665445f200 # shrinks to input = "{\"aaaaaaaaaaaaajydrdxdtaeamtmpsjlba\":[33,\"nMrb b6  x W8yvYRHOJ2vk6qr3qGgJZ8X\"]}"

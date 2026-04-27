@@ -52,12 +52,30 @@ lint:
     RUSTFLAGS=-Dwarnings cargo clippy -q --all-targets --all-features --workspace
     pnpm --if-present lint > /dev/null
 
-test_flags := "--all-features --workspace --all-targets -q"
+test_flags := "--all-features --workspace -q"
 
+# run tests without benchmarks or slow property tests
 [group('test')]
 test *args="":
-    cargo test {{ test_flags }} {{ args }} > /dev/null
+    cargo test {{ test_flags }} --tests --lib --bins --examples {{ args }} -- --skip prop_ --skip matches_prettier > /dev/null
     echo "tests passed!"
+
+[group('test')]
+test-all *args="":
+    cargo test {{ test_flags }} --tests --lib --bins --examples {{ args }} -- --skip matches_prettier > /dev/null
+    just test-snapshot
+    just test-prettier-large
+    echo "tests passed!"
+
+# run all prettier property tests with full case count (slow, for thorough checking)
+[group('test')]
+test-prettier-prop:
+    PROPTEST_CASES=256 cargo test --test integration {{ test_flags }} -- prop_
+
+# run slow prettier property tests (large objects, 1-150 entries)
+[group('test')]
+test-prettier-large:
+    PROPTEST_CASES=256 cargo test --test integration {{ test_flags }} -- --include-ignored prop_large_object_expanded
 
 # common flag: --open
 [group('test')]

@@ -58,6 +58,7 @@ bytes2chars = { workspace = true }
 const_format = "0.2.35"
 
 insta = "1.44.3"
+proptest = "1.11.0"
 rstest = { workspace = true }
 rstest_reuse = { workspace = true }
 

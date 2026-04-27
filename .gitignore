@@ -1,5 +1,6 @@
 /target
 node_modules
+tests/integration/proptest-regressions/
 /benches/output/*
 !/benches/output/bytes2chars.md
 !/benches/output/json_deser.md
