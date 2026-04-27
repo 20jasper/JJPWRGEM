@@ -86,7 +86,7 @@ test-cov *args="":
 # deletes snapshots locally and rejects in CI
 [group('test')]
 test-snapshot:
-    cargo insta test {{ test_flags }} --unreferenced auto
+    cargo insta test --unreferenced auto --all-features --workspace
     cargo insta review
 
 [group('readmes')]
