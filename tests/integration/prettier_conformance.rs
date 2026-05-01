@@ -41,6 +41,7 @@ fn is_known_prettier_difference_case(name: &str) -> bool {
             | "ARRAY_OBJECT_ELEMENT_INLINE_77"
             | "ARRAY_OBJECT_ELEMENT_INLINE_80"
             | "ARRAY_OBJECT_CRAB_EMOJI_INLINE"
+            | "ARRAY_NUMERIC_MATRIX_SHORT"
     )
 }
 
@@ -71,11 +72,6 @@ fn prettier_cmd() -> std::process::Command {
 
 #[rstest_reuse::apply(format_template)]
 fn matches_prettier(#[case] (name, input): (&str, &str)) {
-    // These fixtures are known intentional divergences from prettier formatting.
-    if is_known_prettier_difference_case(name) {
-        return;
-    }
-
     let mut prettier = prettier_cmd();
 
     let prettier_out = exec_cmd(&mut prettier, Some(input.as_bytes().to_vec()));
@@ -94,10 +90,17 @@ fn matches_prettier(#[case] (name, input): (&str, &str)) {
         jjp_out.stderr
     );
 
-    assert_eq!(
-        prettier_out.stdout, jjp_out.stdout,
-        "output mismatch for {name}"
-    );
+    if is_known_prettier_difference_case(name) {
+        assert_ne!(
+            prettier_out.stdout, jjp_out.stdout,
+            "{name} is in is_known_prettier_difference_case but jjp now matches prettier — remove it from the list"
+        );
+    } else {
+        assert_eq!(
+            prettier_out.stdout, jjp_out.stdout,
+            "output mismatch for {name}"
+        );
+    }
 }
 
 // ── Proptest strategies ────────────────────────────────────────────────────────
