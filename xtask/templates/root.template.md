@@ -38,7 +38,7 @@ npm install -g jjpwrgem
 
 #### Requirements
 
-x86-64 binaries require a CPU with AVX2 support (Intel Haswell 2013+, AMD Ryzen 2017+). ARM binaries have no special requirements
+Precompiled x86-64 binaries require a CPU with AVX2 support (Intel Haswell 2013+, AMD Ryzen 2017+). ARM binaries have no special requirements
 
 ### From source
 
@@ -48,7 +48,7 @@ RUSTFLAGS="-C target-cpu=native" cargo install --path .
 
 ## Stability
 
-JJPWRGEM's CLI is pretty stable. Internal libraries are likely unstable
+Internal libraries are likely unstable. Formatting output is unstable
 
 {{IND}}
 
