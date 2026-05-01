@@ -182,4 +182,13 @@ pub fn exec_cmd(cmd: &mut Command, stdin: Option<Vec<u8>>) -> Output {
 #[case(crate::fixture_tuple!(ARRAY_OBJECT_ELEMENT_INLINE_80))]
 #[case(crate::fixture_tuple!(ARRAY_OBJECT_ELEMENT_INLINE_83))]
 #[case(crate::fixture_tuple!(ARRAY_OBJECT_CRAB_EMOJI_INLINE))]
+#[case(crate::fixture_tuple!(ARRAY_NUMBERS_FILL_MIXED_LENGTHS))]
+#[case(crate::fixture_tuple!(ARRAY_NUMBERS_WITH_EXPONENTS_FILL))]
+#[case(crate::fixture_tuple!(ARRAY_STRINGS_OVER_80))]
+#[case(crate::fixture_tuple!(ARRAY_BOOLS_NULLS_OVER_80))]
+#[case(crate::fixture_tuple!(ARRAY_MIXED_PRIMITIVES_OVER_80))]
+#[case(crate::fixture_tuple!(ARRAY_NUMBERS_WITH_ONE_STRING_OVER_80))]
+#[case(crate::fixture_tuple!(OBJECT_WITH_NESTED_FILL_ARRAY))]
+#[case(crate::fixture_tuple!(ARRAY_NUMERIC_MATRIX_SHORT))]
+#[case(crate::fixture_tuple!(ARRAY_NUMERIC_MATRIX_HETEROGENEOUS))]
 pub fn format_template(#[case] (name, input): (&str, &str)) {}

@@ -232,6 +232,19 @@ pub const ARRAY_OBJECT_ELEMENT_INLINE_83: &str =
 pub const ARRAY_OBJECT_CRAB_EMOJI_INLINE: &str =
     const_format::concatcp!(r#"[{"k": ""#, str_repeat!("🦀", 20), r#""}]"#);
 
+pub const ARRAY_NUMBERS_FILL_MIXED_LENGTHS: &str =
+    "[12345,123434,343434,343434,3433434,34343434,34433434,34343434,343443,34433434,344334]";
+pub const ARRAY_NUMBERS_WITH_EXPONENTS_FILL: &str =
+    "[1e10, 2e-3, 1.5e2, 12345, 1234567, 1e100, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]";
+pub const ARRAY_STRINGS_OVER_80: &str = r#"["aaaaaaaa","bbbbbbbb","cccccccc","dddddddd","eeeeeeee","ffffffff","gggggggg","hhhhhhhh","iiiiiiii","jjjjjjjj"]"#;
+pub const ARRAY_BOOLS_NULLS_OVER_80: &str = "[true, false, null, true, false, null, true, false, null, true, false, null, true, false, null, true, false, null]";
+pub const ARRAY_MIXED_PRIMITIVES_OVER_80: &str = r#"[1, 2, "three", true, null, false, "six", 7.5, 8, "nine", 10, true, 12, null, "fifteen", 16]"#;
+pub const ARRAY_NUMBERS_WITH_ONE_STRING_OVER_80: &str = r#"[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, "twenty-five"]"#;
+pub const OBJECT_WITH_NESTED_FILL_ARRAY: &str = r#"{"deeply":{"nested":{"key":[12345,123434,343434,343434,3433434,34343434,34433434,34343434,343443,34433434,344334]}}}"#;
+pub const ARRAY_NUMERIC_MATRIX_SHORT: &str = "[[1,2,3],[4,5,6]]";
+pub const ARRAY_NUMERIC_MATRIX_HETEROGENEOUS: &str =
+    r#"[[1, null], [1, null], [null], [0], [false], [""]]"#;
+
 // valid subset of prettier's JSON format test suite
 pub const PRETTIER_KEY_VALUE: &str =
     include_str!("../conformance/prettier/tests/format/json/json/key-value.json");
