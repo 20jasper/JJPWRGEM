@@ -1,0 +1,5 @@
+---
+source: tests/integration/format_ast.rs
+expression: out
+---
+[1,2,"three",true,null,false,"six",7.5,8,"nine",10,true,12,null,"fifteen",16]

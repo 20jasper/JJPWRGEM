@@ -1,0 +1,24 @@
+---
+source: tests/integration/commands/format.rs
+expression: output.snapshot_display()
+---
+args: ["format"]
+status: 0
+success: true
+stdin ---
+["aaaaaaaa","bbbbbbbb","cccccccc","dddddddd","eeeeeeee","ffffffff","gggggggg","hhhhhhhh","iiiiiiii","jjjjjjjj"]
+stdout ---
+[
+  "aaaaaaaa",
+  "bbbbbbbb",
+  "cccccccc",
+  "dddddddd",
+  "eeeeeeee",
+  "ffffffff",
+  "gggggggg",
+  "hhhhhhhh",
+  "iiiiiiii",
+  "jjjjjjjj"
+]
+
+stderr ---

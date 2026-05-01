@@ -1,0 +1,32 @@
+---
+source: tests/integration/commands/format.rs
+expression: output.snapshot_display()
+---
+args: ["format"]
+status: 0
+success: true
+stdin ---
+[true, false, null, true, false, null, true, false, null, true, false, null, true, false, null, true, false, null]
+stdout ---
+[
+  true,
+  false,
+  null,
+  true,
+  false,
+  null,
+  true,
+  false,
+  null,
+  true,
+  false,
+  null,
+  true,
+  false,
+  null,
+  true,
+  false,
+  null
+]
+
+stderr ---

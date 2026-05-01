@@ -1,0 +1,5 @@
+---
+source: tests/integration/format_ast.rs
+expression: out
+---
+{"deeply":{"nested":{"key":[12345,123434,343434,343434,3433434,34343434,34433434,34343434,343443,34433434,344334]}}}

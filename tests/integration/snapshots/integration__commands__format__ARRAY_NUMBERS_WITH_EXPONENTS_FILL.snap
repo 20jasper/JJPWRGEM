@@ -1,0 +1,32 @@
+---
+source: tests/integration/commands/format.rs
+expression: output.snapshot_display()
+---
+args: ["format"]
+status: 0
+success: true
+stdin ---
+[1e10, 2e-3, 1.5e2, 12345, 1234567, 1e100, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+stdout ---
+[
+  1e10,
+  2e-3,
+  1.5e2,
+  12345,
+  1234567,
+  1e100,
+  1,
+  2,
+  3,
+  4,
+  5,
+  6,
+  7,
+  8,
+  9,
+  10,
+  11,
+  12
+]
+
+stderr ---

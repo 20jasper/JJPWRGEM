@@ -298,15 +298,17 @@ mod len {
             Value::Array(values) => {
                 let brackets_len = 2;
                 let mut sum = brackets_len;
-                let mut values = values.iter();
-                while let Some(value) = values.next()
-                    && within_limit(sum, limit)
-                {
+                for (i, value) in values.iter().enumerate() {
+                    if !within_limit(sum, limit) {
+                        break;
+                    }
+                    if i > 0 {
+                        sum += 2;
+                    }
                     let remaining = limit.saturating_sub(sum);
                     let len = try_get_value_len(value, remaining)?;
                     sum += len;
                 }
-
                 sum
             }
             Value::Boolean(b) => {
