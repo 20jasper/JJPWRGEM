@@ -1,0 +1,20 @@
+---
+source: tests/integration/commands/format.rs
+expression: output.snapshot_display()
+---
+args: ["format"]
+status: 0
+success: true
+stdin ---
+[{"k":"v"},{"x":"y"},{"a":"b"},{"c":"d"},{"e":"f"},{"g":"h"}]
+stdout ---
+[
+  { "k": "v" },
+  { "x": "y" },
+  { "a": "b" },
+  { "c": "d" },
+  { "e": "f" },
+  { "g": "h" }
+]
+
+stderr ---

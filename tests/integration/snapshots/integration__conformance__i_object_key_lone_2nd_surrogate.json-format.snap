@@ -8,8 +8,6 @@ success: true
 stdin ---
 {"\uDFAA":0}
 stdout ---
-{
-  "\uDFAA": 0
-}
+{ "\uDFAA": 0 }
 
 stderr ---

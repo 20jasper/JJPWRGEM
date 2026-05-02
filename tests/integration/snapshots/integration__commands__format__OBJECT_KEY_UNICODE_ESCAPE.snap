@@ -8,8 +8,6 @@ success: true
 stdin ---
 {"\u006bey": "value"}
 stdout ---
-{
-  "\u006bey": "value"
-}
+{ "\u006bey": "value" }
 
 stderr ---

@@ -13,9 +13,6 @@ stdin ---
 
 }
 stdout ---
-{
-  "hi": "hi",
-  "bye": "Bye"
-}
+{ "hi": "hi", "bye": "Bye" }
 
 stderr ---

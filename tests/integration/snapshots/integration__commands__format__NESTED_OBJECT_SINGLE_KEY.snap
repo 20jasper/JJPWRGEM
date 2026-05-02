@@ -17,14 +17,6 @@ stdin ---
             }   
         
 stdout ---
-{
-  "rust": {
-    "rust": {
-      "rust": {
-        "rust": null
-      }
-    }
-  }
-}
+{ "rust": { "rust": { "rust": { "rust": null } } } }
 
 stderr ---

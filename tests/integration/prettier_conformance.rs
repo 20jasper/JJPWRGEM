@@ -14,32 +14,15 @@ const PRINT_WIDTH: usize = 80;
 fn is_known_prettier_difference_case(name: &str) -> bool {
     matches!(
         name,
-        "ARRAY_OBJECTS_WITH_INCREASING_KEYS"
-            | "ARRAY_MANY_SINGLE_KEY_OBJECTS"
-            | "ARRAY_MANY_TWO_KEY_OBJECTS"
-            | "ARRAY_MANY_FIVE_KEY_OBJECTS"
-            | "ARRAYS_NESTED_FIVE_LEVELS_WITH_OBJECT"
-            | "NESTED_OBJECT_SINGLE_KEY"
+        "ARRAY_WITH_NESTED_OBJECTS"
             | "MIXED_ARRAY_WITH_LONG_STRINGS"
-            | "OBJECT_WITH_EXPANDED_AND_NON_EXPANDED_ARR"
-            | "PRETTIER_MULTI_LINE"
-            | "PRETTIER_SINGLE_LINE"
             | "PRETTIER_PASS1"
             | "ARRAY_BLANK_LINES_AND_EXTRA_WHITESPACE"
-            | "TSCONFIG"
             | "VALID_TRAILING_ZEROS_FRACTION"
-            | "OBJECT_KEY_UNICODE_ESCAPE"
             | "ARRAY_THREE_NEWLINES_BETWEEN_ITEMS"
             | "OBJECT_BLANK_LINES_BETWEEN_KEYS"
-            | "OBJECT_EMPTY_STRING_KEY"
-            | "OBJECT_DUPLICATE_KEYS"
-            | "ARRAY_SINGLE_OBJECT"
+            | "OBJECT_LEADING_NEWLINE"
             | "EXPONENT_LEADING_ZEROS"
-            | "OBJECT_NUMERIC_STRING_KEY"
-            | "OBJECT_SINGLE_KEY_ROOT"
-            | "ARRAY_OBJECT_ELEMENT_INLINE_77"
-            | "ARRAY_OBJECT_ELEMENT_INLINE_80"
-            | "ARRAY_OBJECT_CRAB_EMOJI_INLINE"
             | "ARRAY_NUMERIC_MATRIX_SHORT"
     )
 }
@@ -507,7 +490,7 @@ proptest! {
     }
 
     #[test]
-    #[ignore = "known: prettier inlines short array values on same line as key, jjp always expands"]
+    #[ignore = "known: prettier preserves expanded object input in some array-valued object cases, jjp ignores input layout"]
     fn prop_object_with_array_values_matches_prettier(input in arb_object_with_array_values()) {
         run_prop_expanded_object_comparison(&input)?;
     }
@@ -521,7 +504,7 @@ proptest! {
     }
 
     #[test]
-    #[ignore = "known: jjp collapses short objects in arrays, prettier expands each object"]
+    #[ignore = "known: prettier preserves expanded object layouts in arrays, jjp ignores input layout and inlines fitting objects"]
     fn prop_array_of_objects_matches_prettier(input in arb_array_of_objects()) {
         run_prop_comparison(&input)?;
     }
@@ -531,7 +514,7 @@ proptest! {
 
 proptest! {
     #[test]
-    #[ignore = "known: jjp collapses short objects inline, prettier always expands"]
+    #[ignore = "known: prettier preserves pre-existing line breaks before the first object key, jjp ignores input layout"]
     fn prop_object_matches_prettier(input in arb_object()) {
         run_prop_comparison(&input)?;
     }

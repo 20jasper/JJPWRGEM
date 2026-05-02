@@ -10,8 +10,6 @@ stdin ---
 "a": "b"
 }
 stdout ---
-{
-  "a": "b"
-}
+{ "a": "b" }
 
 stderr ---

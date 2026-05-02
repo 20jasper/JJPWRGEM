@@ -21,7 +21,12 @@ stdout ---
     "rust is a must",
     "rust is a must"
   ],
-  "hi2": ["rust is a must", "rust is a must", "rust is a must", "rust is a must"]
+  "hi2": [
+    "rust is a must",
+    "rust is a must",
+    "rust is a must",
+    "rust is a must"
+  ]
 }
 
 stderr ---

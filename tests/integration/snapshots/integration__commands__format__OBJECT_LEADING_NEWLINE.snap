@@ -9,8 +9,6 @@ stdin ---
 {
 "key": "val"}
 stdout ---
-{
-  "key": "val"
-}
+{ "key": "val" }
 
 stderr ---

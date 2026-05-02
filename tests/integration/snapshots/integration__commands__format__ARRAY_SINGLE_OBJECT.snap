@@ -8,10 +8,6 @@ success: true
 stdin ---
 [{"single": "object"}]
 stdout ---
-[
-  {
-    "single": "object"
-  }
-]
+[{ "single": "object" }]
 
 stderr ---

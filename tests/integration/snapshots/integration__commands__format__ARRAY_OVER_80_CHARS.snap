@@ -1,6 +1,5 @@
 ---
 source: tests/integration/commands/format.rs
-assertion_line: 16
 expression: output.snapshot_display()
 ---
 args: ["format"]

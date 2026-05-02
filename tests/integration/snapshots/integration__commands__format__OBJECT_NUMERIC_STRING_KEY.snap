@@ -8,8 +8,6 @@ success: true
 stdin ---
 {"1": "a"}
 stdout ---
-{
-  "1": "a"
-}
+{ "1": "a" }
 
 stderr ---

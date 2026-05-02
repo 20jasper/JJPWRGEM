@@ -217,7 +217,18 @@ pub const OBJECT_EMPTY_STRING_KEY: &str = r#"{"": "value"}"#;
 pub const OBJECT_DUPLICATE_KEYS: &str = r#"{"a": 1, "a": 2}"#;
 pub const OBJECT_NUMERIC_STRING_KEY: &str = r#"{"1": "a"}"#;
 pub const OBJECT_SINGLE_KEY_ROOT: &str = r#"{"k": "v"}"#;
+pub const OBJECT_INLINE_ROOT_80: &str =
+    const_format::concatcp!(r#"{"k":""#, str_repeat!("a", 69), r#""}"#);
+pub const OBJECT_INLINE_ROOT_83: &str =
+    const_format::concatcp!(r#"{"k":""#, str_repeat!("a", 72), r#""}"#);
+pub const OBJECT_INLINE_SHORT_ARRAY_VALUE: &str = r#"{"k":[1,2,3]}"#;
+pub const OBJECT_INLINE_NESTED_OBJECT_VALUE: &str = r#"{"k":{"a":1},"x":1}"#;
+pub const OBJECT_INLINE_UNICODE_VALUE: &str =
+    const_format::concatcp!(r#"{"k":""#, str_repeat!("🦀", 17), r#""}"#);
 pub const ARRAY_SINGLE_OBJECT: &str = r#"[{"single": "object"}]"#;
+pub const ARRAY_INLINE_THREE_SHORT_OBJECTS: &str = r#"[{"k":"v"},{"x":"y"},{"a":"b"}]"#;
+pub const ARRAY_EXPANDED_SIX_SHORT_OBJECTS: &str =
+    r#"[{"k":"v"},{"x":"y"},{"a":"b"},{"c":"d"},{"e":"f"},{"g":"h"}]"#;
 pub const ARRAY_STRING_LONGER_THAN_PRINT_WIDTH: &str =
     r#"["this string is way way way way way way way way way way way way way way too long"]"#;
 pub const ARRAY_OVER_80_CHARS: &str =

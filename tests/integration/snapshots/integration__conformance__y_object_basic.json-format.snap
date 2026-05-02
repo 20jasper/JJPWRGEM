@@ -8,8 +8,6 @@ success: true
 stdin ---
 {"asd":"sdf"}
 stdout ---
-{
-  "asd": "sdf"
-}
+{ "asd": "sdf" }
 
 stderr ---
