@@ -148,6 +148,15 @@ pub fn join_into<T, B>(
     }
 }
 
+fn number_len(mantissa: &str, exponent: &str) -> usize {
+    mantissa.len()
+        + if exponent.is_empty() {
+            0
+        } else {
+            1 + exponent.len()
+        }
+}
+
 fn format_value_into(buf: &mut FormatBuf, val: &Value, depth: usize) {
     match val {
         Value::Null => buf.push_str(NULL),
@@ -184,10 +193,12 @@ fn format_value_into(buf: &mut FormatBuf, val: &Value, depth: usize) {
         }
         Value::Array(items) if items.is_empty() => buf.push_str("[]"),
         Value::Array(items) => {
-            if len::should_expand(val, buf.available_bytes()) {
-                expanded_format_arr_into(buf, items, depth)
-            } else {
+            if !len::should_expand(val, buf.available_bytes()) {
                 compact_format_arr_into(buf, items, depth);
+            } else if items.iter().all(|v| matches!(v, Value::Number { .. })) {
+                fill_format_arr_into(buf, items, depth);
+            } else {
+                expanded_format_arr_into(buf, items, depth);
             }
         }
         Value::Boolean(b) => buf.push_str(if *b { TRUE } else { FALSE }),
@@ -209,6 +220,32 @@ fn expanded_format_arr_into(buf: &mut FormatBuf, items: &[Value], depth: usize) 
             buf.write_eol();
         },
     );
+    buf.write_eol();
+    buf.write_indent(depth);
+    buf.push(']');
+}
+
+fn fill_format_arr_into(buf: &mut FormatBuf, items: &[Value], depth: usize) {
+    buf.push('[');
+    buf.write_eol();
+    buf.write_indent(depth + 1);
+    for (i, item) in items.iter().enumerate() {
+        let Value::Number { mantissa, exponent } = item else {
+            unreachable!("fill_format_arr_into called with non-Number item");
+        };
+        let item_len = number_len(mantissa, exponent);
+        if i > 0 {
+            buf.push(',');
+            let trailing_comma_len = usize::from(i + 1 < items.len());
+            if item_len + 1 + trailing_comma_len > buf.available_bytes() {
+                buf.write_eol();
+                buf.write_indent(depth + 1);
+            } else {
+                buf.write_key_val_delimiter();
+            }
+        }
+        format_value_into(buf, item, depth + 1);
+    }
     buf.write_eol();
     buf.write_indent(depth);
     buf.push(']');
@@ -262,6 +299,7 @@ pub fn prettify_value_into(
 }
 
 mod len {
+    use super::number_len;
     use crate::{
         ast::Value,
         tokens::{FALSE, NULL, TRUE},
@@ -280,14 +318,7 @@ mod len {
         let len = match val {
             Value::Null => NULL.len(),
             Value::String(s) => s.len(),
-            Value::Number { mantissa, exponent } => {
-                mantissa.len()
-                    + if exponent.is_empty() {
-                        0
-                    } else {
-                        1 + exponent.len()
-                    }
-            }
+            Value::Number { mantissa, exponent } => number_len(mantissa, exponent),
             Value::Object(entries) => {
                 if entries.is_empty() {
                     2

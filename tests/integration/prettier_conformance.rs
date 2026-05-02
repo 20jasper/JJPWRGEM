@@ -34,10 +34,6 @@ fn is_known_prettier_difference_case(name: &str) -> bool {
             | "OBJECT_EMPTY_STRING_KEY"
             | "OBJECT_DUPLICATE_KEYS"
             | "ARRAY_SINGLE_OBJECT"
-            | "ARRAY_OVER_80_CHARS"
-            | "ARRAY_NUMBERS_FILL_MIXED_LENGTHS"
-            | "ARRAY_NUMBERS_WITH_EXPONENTS_FILL"
-            | "OBJECT_WITH_NESTED_FILL_ARRAY"
             | "EXPONENT_LEADING_ZEROS"
             | "OBJECT_NUMERIC_STRING_KEY"
             | "OBJECT_SINGLE_KEY_ROOT"
@@ -362,19 +358,25 @@ fn arb_nested_array() -> impl Strategy<Value = String> {
     })
 }
 
-/// Array of 10–20 short scalars — total > 80 chars, triggering fill/pack mode in prettier
+/// Array of 20–40 short integers whose inline form exceeds print width, triggering
+/// prettier's numeric-array fill mode.
 fn arb_fill_mode_array() -> impl Strategy<Value = String> {
-    prop::collection::vec(arb_safe_scalar(), 10..=20usize).prop_map(|items| {
-        let mut s = "[".to_string();
-        for (i, item) in items.iter().enumerate() {
-            s.push_str(item);
-            if i + 1 < items.len() {
-                s.push_str(", ");
+    prop::collection::vec((-99i32..=99i32).prop_map(|n| n.to_string()), 20..=40usize)
+        .prop_filter("array must exceed print width", |items| {
+            2 + items.iter().map(String::len).sum::<usize>() + items.len().saturating_sub(1) * 2
+                > PRINT_WIDTH
+        })
+        .prop_map(|items| {
+            let mut s = "[".to_string();
+            for (i, item) in items.iter().enumerate() {
+                s.push_str(item);
+                if i + 1 < items.len() {
+                    s.push_str(", ");
+                }
             }
-        }
-        s.push(']');
-        s
-    })
+            s.push(']');
+            s
+        })
 }
 
 /// Any safe value: scalar or long ASCII string (1–150 chars)
@@ -567,7 +569,6 @@ proptest! {
     }
 
     #[test]
-    #[ignore = "known: blank lines between array items — jjp normalizes to one blank line, prettier strips all"]
     fn prop_array_blank_lines_matches_prettier(
         input in prop::collection::vec(arb_safe_scalar(), 0..=4usize)
             .prop_flat_map(|items| {
@@ -612,7 +613,6 @@ proptest! {
     }
 
     #[test]
-    #[ignore = "known: prettier packs multiple short items per line (fill mode), jjp expands one per line"]
     fn prop_array_fill_mode_matches_prettier(input in arb_fill_mode_array()) {
         run_prop_comparison(&input)?;
     }
