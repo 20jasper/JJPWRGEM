@@ -1,6 +1,6 @@
 use core::{fmt::Display, range::RangeInclusive};
 
-use crate::tokens::CharWithContext;
+use crate::tokens::{CharWithContext, Token};
 
 /// see [JsonChar::is_whitespace]
 pub fn trim_end_whitespace(s: &str) -> &str {
@@ -16,6 +16,28 @@ pub fn trim_end_whitespace(s: &str) -> &str {
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy, PartialOrd, Ord)]
 pub struct JsonChar(pub char);
+
+#[derive(Debug, PartialEq, Eq, Clone, Copy, PartialOrd, Ord)]
+pub struct JsonByte(pub u8);
+
+impl JsonByte {
+    pub fn is_whitespace(&self) -> bool {
+        matches!(self.0, b' ' | b'\t' | b'\n' | b'\r')
+    }
+
+    pub fn as_token<'a>(&self) -> Option<Token<'a>> {
+        let token = match self.0 {
+            b'{' => Token::OpenCurlyBrace,
+            b'}' => Token::ClosedCurlyBrace,
+            b':' => Token::Colon,
+            b',' => Token::Comma,
+            b'[' => Token::OpenSquareBracket,
+            b']' => Token::ClosedSquareBracket,
+            _ => return None,
+        };
+        Some(token)
+    }
+}
 
 impl JsonChar {
     ///```abnf
@@ -122,6 +144,12 @@ impl Display for JsonChar {
 
 impl From<char> for JsonChar {
     fn from(value: char) -> Self {
+        Self(value)
+    }
+}
+
+impl From<u8> for JsonByte {
+    fn from(value: u8) -> Self {
         Self(value)
     }
 }

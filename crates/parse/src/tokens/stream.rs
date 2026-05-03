@@ -3,7 +3,7 @@ use core::{iter::Peekable, str::CharIndices};
 use crate::{
     Error, ErrorKind, Result,
     tokens::{
-        CharWithContext, FALSE, NULL, TRUE, Token, TokenWithContext,
+        ByteWithContext, CharWithContext, FALSE, NULL, TRUE, Token, TokenWithContext,
         lexical::JsonChar,
         number::{parse_exponent, parse_mantissa},
         string::parse_string,
@@ -63,28 +63,67 @@ impl<'a> Iterator for CharsWithContext<'a> {
 
 #[derive(Debug, Clone)]
 struct TokenStreamInner<'a> {
-    chars: Peekable<CharsWithContext<'a>>,
     input: &'a str,
+    pos: usize,
 }
 
 impl<'a> TokenStreamInner<'a> {
     fn new(s: &'a str) -> Self {
-        Self {
-            chars: CharsWithContext::new(s, 0).peekable(),
-            input: s,
+        Self { input: s, pos: 0 }
+    }
+
+    fn peek_byte_with_context(&self) -> Option<ByteWithContext> {
+        self.input
+            .as_bytes()
+            .get(self.pos)
+            .copied()
+            .map(|byte| (self.pos, byte).into())
+    }
+
+    fn chars_from_pos(&self) -> Peekable<CharsWithContext<'a>> {
+        CharsWithContext::new(&self.input[self.pos..], self.pos).peekable()
+    }
+
+    fn parse_with_chars<T>(
+        &mut self,
+        f: impl FnOnce(&'a str, &mut Peekable<CharsWithContext<'a>>) -> Result<'a, T>,
+    ) -> Result<'a, T> {
+        let mut chars = self.chars_from_pos();
+        let result = f(self.input, &mut chars);
+        if result.is_ok() {
+            self.update_pos_from_chars(&mut chars);
         }
+        result
+    }
+
+    fn update_pos_from_chars(&mut self, chars: &mut Peekable<CharsWithContext<'a>>) {
+        self.pos = chars
+            .peek()
+            .map(|CharWithContext(range, _)| range.start)
+            .unwrap_or(self.input.len());
+    }
+
+    fn unexpected_character(&self) -> Result<'a, TokenWithContext<'a>> {
+        let unexpected = self.input[self.pos..]
+            .chars()
+            .next()
+            .expect("pos must be in bounds");
+        Err(Error::new(
+            ErrorKind::UnexpectedCharacter(JsonChar(unexpected)),
+            self.pos..self.pos + unexpected.len_utf8(),
+            self.input,
+        ))
     }
 
     fn consume_whitespace(&mut self) {
-        let Some(CharWithContext(r, c)) = self.chars.peek() else {
+        let Some(ByteWithContext(_, byte)) = self.peek_byte_with_context() else {
             return;
         };
-        if !c.is_whitespace() {
+        if !byte.is_whitespace() {
             return;
         }
 
-        let new_pos = r.start + skip_whitespace(&self.input.as_bytes()[r.start..]);
-        self.chars = CharsWithContext::new(&self.input[new_pos..], new_pos).peekable();
+        self.pos += skip_whitespace(&self.input.as_bytes()[self.pos..]);
     }
 }
 
@@ -94,66 +133,51 @@ impl<'a> Iterator for TokenStreamInner<'a> {
     fn next(&mut self) -> Option<Self::Item> {
         loop {
             self.consume_whitespace();
-            let ctx = self.chars.peek()?;
+            let ctx = self.peek_byte_with_context()?;
 
-            let CharWithContext(r, JsonChar(c)) = *ctx;
             if let Some(tok) = ctx.as_token_with_context() {
-                self.chars.next();
+                self.pos = ctx.range().end;
                 return Some(Ok(tok));
             }
-            let token = match c {
-                '"' => return Some(parse_string(self.input, &mut self.chars)),
-                '0'..='9' | '-' => return Some(parse_mantissa(self.input, &mut self.chars)),
-                'e' | 'E' => {
-                    self.chars.next();
-                    match parse_exponent(self.input, r, &mut self.chars) {
-                        Ok(Some(tok)) => return Some(Ok(tok)),
-                        Ok(None) => continue, // zero exponent stripped skip to next token
-                        Err(e) => return Some(Err(e)),
+
+            let token = match ctx.as_byte() {
+                b'"' => self.parse_with_chars(parse_string),
+                b'0'..=b'9' | b'-' => self.parse_with_chars(parse_mantissa),
+                b'e' | b'E' => {
+                    match self.parse_with_chars(|input, chars| {
+                        chars.next();
+                        parse_exponent(input, ctx.range(), chars)
+                    }) {
+                        Ok(Some(tok)) => Ok(tok),
+                        Ok(None) => continue,
+                        Err(err) => Err(err),
                     }
                 }
-                'n' | 't' | 'f' => {
-                    let expected = match c {
-                        'n' => NULL,
-                        't' => TRUE,
-                        'f' => FALSE,
-                        _ => unreachable!("{c} is not able to be reached"),
+                b'n' | b't' | b'f' => {
+                    let expected = match ctx.as_byte() {
+                        b'n' => NULL,
+                        b't' => TRUE,
+                        b'f' => FALSE,
+                        _ => unreachable!("matched above"),
                     };
-                    let actual = self
-                        .chars
-                        .by_ref()
-                        .take(expected.len())
-                        .map(|c| c.as_char());
-
-                    if actual.eq(expected.chars()) {
-                        let token = match c {
-                            'n' => Token::Null,
-                            't' => true.into(),
-                            'f' => false.into(),
-                            _ => unreachable!("{c} is not able to be reached"),
+                    let end = self.pos + expected.len();
+                    if self.input.as_bytes().get(self.pos..end) == Some(expected.as_bytes()) {
+                        let token = match ctx.as_byte() {
+                            b'n' => Token::Null,
+                            b't' => true.into(),
+                            b'f' => false.into(),
+                            _ => unreachable!("matched above"),
                         };
-                        let end = *self
-                            .chars
-                            .peek()
-                            .map(|CharWithContext(r, _)| &r.start)
-                            .unwrap_or(&self.input.len());
+                        self.pos = end;
                         Ok(TokenWithContext {
                             token,
-                            range: r.start..end,
+                            range: ctx.0..end,
                         })
                     } else {
-                        Err(Error::new(
-                            ErrorKind::UnexpectedCharacter(c.into()),
-                            r,
-                            self.input,
-                        ))
+                        self.unexpected_character()
                     }
                 }
-                _ => Err(Error::new(
-                    ErrorKind::UnexpectedCharacter(c.into()),
-                    r,
-                    self.input,
-                )),
+                _ => self.unexpected_character(),
             };
 
             return Some(token);

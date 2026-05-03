@@ -7,7 +7,7 @@ use core::{fmt::Display, range::Range};
 
 pub use stream::TokenStream;
 
-use crate::tokens::lexical::JsonChar;
+use crate::tokens::lexical::{JsonByte, JsonChar};
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum Token<'a> {
@@ -125,32 +125,28 @@ impl From<(usize, char)> for CharWithContext {
     }
 }
 
-impl CharWithContext {
-    fn as_token_with_context<'a>(&self) -> Option<TokenWithContext<'a>> {
-        match self {
-            CharWithContext(range, JsonChar(c)) => {
-                let token = match c {
-                    '{' => Token::OpenCurlyBrace,
-                    '}' => Token::ClosedCurlyBrace,
-                    ':' => Token::Colon,
-                    ',' => Token::Comma,
-                    '[' => Token::OpenSquareBracket,
-                    ']' => Token::ClosedSquareBracket,
-                    _ => return None,
-                };
-                Some(TokenWithContext {
-                    token,
-                    range: *range,
-                })
-            }
-        }
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ByteWithContext(pub usize, pub JsonByte);
+impl From<(usize, u8)> for ByteWithContext {
+    fn from((i, b): (usize, u8)) -> Self {
+        Self(i, b.into())
+    }
+}
+
+impl ByteWithContext {
+    pub fn range(&self) -> Range<usize> {
+        self.0..self.0 + 1
     }
 
-    fn as_json_char(&self) -> JsonChar {
-        self.1
+    pub fn as_token_with_context<'a>(&self) -> Option<TokenWithContext<'a>> {
+        Some(TokenWithContext {
+            token: self.1.as_token()?,
+            range: self.range(),
+        })
     }
-    fn as_char(&self) -> char {
-        self.as_json_char().0
+
+    pub fn as_byte(&self) -> u8 {
+        self.1.0
     }
 }
 
