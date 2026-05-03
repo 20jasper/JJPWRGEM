@@ -4,7 +4,7 @@ use crate::{
     Error, ErrorKind, Result,
     tokens::{
         ByteWithContext, CharWithContext, Token, TokenWithContext, current_byte_pos,
-        lexical::{JsonByte, JsonChar},
+        lexical::JsonByte,
     },
 };
 
@@ -202,42 +202,42 @@ enum ExponentState<'a> {
 impl<'a> ExponentState<'a> {
     fn process(
         self,
-        chars: &mut Peekable<impl Iterator<Item = CharWithContext>>,
+        bytes: &mut Peekable<impl Iterator<Item = ByteWithContext>>,
         input: &'a str,
     ) -> Result<'a, Self> {
         let res = match self {
-            ExponentState::MinusOrPlusOrDigit { exponent_range } => match chars.peek().copied() {
-                Some(CharWithContext(range, JsonChar('+'))) => {
-                    chars.next();
+            ExponentState::MinusOrPlusOrDigit { exponent_range } => match bytes.peek().copied() {
+                Some(byte @ ByteWithContext(_, JsonByte(b'+'))) => {
+                    bytes.next();
                     ExponentState::AfterSign {
                         exponent_range,
-                        sign_end: range.end,
+                        sign_end: byte.range().end,
                         exp_start: None,
                     }
                 }
-                Some(CharWithContext(range, JsonChar('-'))) => {
-                    chars.next();
+                Some(byte @ ByteWithContext(_, JsonByte(b'-'))) => {
+                    bytes.next();
                     ExponentState::AfterSign {
                         exponent_range,
-                        sign_end: range.end,
-                        exp_start: Some(range.start),
+                        sign_end: byte.range().end,
+                        exp_start: Some(byte.range().start),
                     }
                 }
-                Some(CharWithContext(range, JsonChar(d @ '0'..='9'))) => {
-                    chars.next();
+                Some(byte @ ByteWithContext(_, JsonByte(d @ b'0'..=b'9'))) => {
+                    bytes.next();
                     ExponentState::Digits {
-                        exp_start: range.start,
-                        has_nonzero: d != '0',
-                        exp_end: range.end,
+                        exp_start: byte.range().start,
+                        has_nonzero: d != b'0',
+                        exp_end: byte.range().end,
                     }
                 }
-                maybe_c => {
+                _ => {
                     return Err(Error::from_maybe_json_char_with_context(
                         |c| ErrorKind::ExpectedPlusOrMinusOrDigitAfterE {
                             e_range: exponent_range,
                             maybe_c: c,
                         },
-                        maybe_c,
+                        current_char_with_context(input, bytes),
                         input,
                     ));
                 }
@@ -246,22 +246,22 @@ impl<'a> ExponentState<'a> {
                 exponent_range,
                 sign_end,
                 exp_start,
-            } => match chars.peek().copied() {
-                Some(CharWithContext(range, JsonChar(d @ '0'..='9'))) => {
-                    chars.next();
+            } => match bytes.peek().copied() {
+                Some(byte @ ByteWithContext(_, JsonByte(d @ b'0'..=b'9'))) => {
+                    bytes.next();
                     ExponentState::Digits {
-                        exp_start: exp_start.unwrap_or(range.start),
-                        has_nonzero: d != '0',
-                        exp_end: range.end,
+                        exp_start: exp_start.unwrap_or(byte.range().start),
+                        has_nonzero: d != b'0',
+                        exp_end: byte.range().end,
                     }
                 }
-                maybe_c => {
+                _ => {
                     return Err(Error::from_maybe_json_char_with_context(
                         |c| ErrorKind::ExpectedDigitAfterE {
                             exponent_range: exponent_range.start..sign_end,
                             maybe_c: c,
                         },
-                        maybe_c,
+                        current_char_with_context(input, bytes),
                         input,
                     ));
                 }
@@ -270,13 +270,13 @@ impl<'a> ExponentState<'a> {
                 exp_start,
                 has_nonzero,
                 exp_end,
-            } => match chars.peek().copied() {
-                Some(CharWithContext(range, JsonChar(d @ '0'..='9'))) => {
-                    chars.next();
+            } => match bytes.peek().copied() {
+                Some(byte @ ByteWithContext(_, JsonByte(d @ b'0'..=b'9'))) => {
+                    bytes.next();
                     ExponentState::Digits {
                         exp_start,
-                        has_nonzero: has_nonzero || d != '0',
-                        exp_end: range.end,
+                        has_nonzero: has_nonzero || d != b'0',
+                        exp_end: byte.range().end,
                     }
                 }
                 _ => {
@@ -337,12 +337,12 @@ pub fn parse_mantissa<'a>(
 pub fn parse_exponent<'a>(
     input: &'a str,
     exponent_range: Range<usize>,
-    chars: &mut Peekable<impl Iterator<Item = CharWithContext>>,
+    bytes: &mut Peekable<impl Iterator<Item = ByteWithContext>>,
 ) -> Result<'a, Option<TokenWithContext<'a>>> {
     let mut state = ExponentState::MinusOrPlusOrDigit { exponent_range };
 
     loop {
-        state = state.process(chars, input)?;
+        state = state.process(bytes, input)?;
         match state {
             ExponentState::End(slice, range) => {
                 break Ok(Some(TokenWithContext {

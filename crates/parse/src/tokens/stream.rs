@@ -165,9 +165,9 @@ impl<'a> Iterator for TokenStreamInner<'a> {
                 b'"' => self.parse_with_chars(parse_string),
                 b'0'..=b'9' | b'-' => self.parse_with_bytes(parse_mantissa),
                 b'e' | b'E' => {
-                    match self.parse_with_chars(|input, chars| {
-                        chars.next();
-                        parse_exponent(input, ctx.range(), chars)
+                    match self.parse_with_bytes(|input, bytes| {
+                        bytes.next();
+                        parse_exponent(input, ctx.range(), bytes)
                     }) {
                         Ok(Some(tok)) => Ok(tok),
                         Ok(None) => continue,
