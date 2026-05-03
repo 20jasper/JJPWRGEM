@@ -7,6 +7,7 @@ use gungraun::{
 use jjpwrgem_parse::{
     ast::{Value, parse_str},
     format::{LineEnding, prettify_value_into, uglify_str},
+    tokens::TokenStream,
 };
 
 const CITM: &str = include_str!("../../xtask/bench/data/json-benchmark/data/citm_catalog.json");
@@ -60,6 +61,16 @@ fn bench_prettify_ast(ast: Value<'static>) -> String {
     buf
 }
 
+#[library_benchmark]
+#[bench::citm(CITM)]
+#[bench::canada(CANADA)]
+#[bench::twitter(TWITTER)]
+fn bench_tokens_plain(json: &'static str) {
+    TokenStream::new(black_box(json)).for_each(|token| {
+        black_box(token.unwrap());
+    })
+}
+
 library_benchmark_group!(
     name = deser_group;
     config = branch_sim_config();
@@ -78,8 +89,15 @@ library_benchmark_group!(
     benchmarks = bench_prettify_ast
 );
 
+library_benchmark_group!(
+    name = tokens_plain_group;
+    config = branch_sim_config();
+    benchmarks = bench_tokens_plain
+);
+
 main!(
     library_benchmark_groups = deser_group,
     uglify_tokens_group,
-    prettify_ast_group
+    prettify_ast_group,
+    tokens_plain_group
 );

@@ -214,7 +214,7 @@ release-binary:
 release-notes:
     dist host --steps=create --output-format=json | jq -r .announcement_github_body
 
-json-benches := "json_deser json_prettify json_uglify"
+json-benches := "json_deser json_prettify json_tokens json_uglify"
 
 # e.g. `just bench bytes2chars` or `just bench json_prettify --sample-size 50`
 [group('bench')]

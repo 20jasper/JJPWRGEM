@@ -37,3 +37,7 @@ harness = false
 [[bench]]
 name = "json_iai"
 harness = false
+
+[[bench]]
+name = "json_tokens"
+harness = false
