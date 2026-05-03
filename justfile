@@ -28,6 +28,7 @@ tools-install:
 [group('dev')]
 tools-install-bench:
     cargo binstall cargo-criterion@1.1.0 -y
+    cargo binstall cargo-codspeed@4.6.0 -y
     cargo binstall gungraun-runner@0.18.1 -y
     cargo binstall rustfilt@0.2.1 -y
 
@@ -275,6 +276,14 @@ bench-docker:
 [group('bench')]
 plot-bench:
     cargo xtask plot-benchmarks
+
+codspeed-benches := "--bench bytes2chars --bench json_deser --bench json_prettify --bench json_uglify --bench json_tokens"
+
+# build and run all criterion benches via codspeed
+[group('bench')]
+bench-codspeed:
+    cargo codspeed build --package benches {{ codspeed-benches }}
+    cargo codspeed run --package benches {{ codspeed-benches }}
 
 [group('bench')]
 bench-iai *args="":

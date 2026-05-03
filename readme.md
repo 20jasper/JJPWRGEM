@@ -23,7 +23,7 @@ help: insert colon and placeholder value
 
 ```
 
-![coverage: 87.3%](https://img.shields.io/badge/coverage-87.3%25-green)
+![coverage: 87.3%](https://img.shields.io/badge/coverage-87.3%25-green) [![See codspeed dashboard](https://img.shields.io/endpoint?url=https://codspeed.io/badge.json)](https://codspeed.io/20jasper/JJPWRGEM?utm_source=badge)
 
 ![A logo of an axolotl riding a skateboard](./logo.webp)
 

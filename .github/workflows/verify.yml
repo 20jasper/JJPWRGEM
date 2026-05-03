@@ -85,7 +85,7 @@ jobs:
       - name: build
         run: cargo build --release --verbose
       - name: test
-        run: just test-all
+        run: just test
 
   publish-dry-run:
     runs-on: ubuntu-latest

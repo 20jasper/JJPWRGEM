@@ -1,5 +1,7 @@
 # jjpwrgem benchmarks
 
+[![See codspeed dashboard](https://img.shields.io/endpoint?url=https://codspeed.io/badge.json)](https://codspeed.io/20jasper/JJPWRGEM?utm_source=badge)
+
 {{BENCH_SUMMARY}}
 
 - [CLI formatter and minifier speed](cli-formatter.md): wall-clock timing against jq, prettier, dprint, and others

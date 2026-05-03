@@ -8,7 +8,7 @@ An RFC 8259 compliant JSON Parser and formatter!
 {{CHECK_EXAMPLE}}
 ```
 
-{{COVERAGE_BADGE}}
+{{COVERAGE_BADGE}} [![See codspeed dashboard](https://img.shields.io/endpoint?url=https://codspeed.io/badge.json)](https://codspeed.io/20jasper/JJPWRGEM?utm_source=badge)
 
 ![A logo of an axolotl riding a skateboard](./logo.webp)
 

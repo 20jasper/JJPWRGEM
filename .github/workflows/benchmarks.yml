@@ -1,0 +1,34 @@
+name: benchmarks
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  benchmarks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          submodules: true
+      - uses: taiki-e/install-action@db5fb34fa772531a3ece57ca434f579eb334e0fb # v2.75.30
+        with:
+          tool: just@1.47, cargo-codspeed@4.6.0
+      - name: Configure Dependency Caching
+        uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4 # v2.9.1
+      - name: Run benchmarks
+        uses: CodSpeedHQ/action@c381be0bfd20e844fb45594f6aa182ffcd94545c # v4.15.0
+        with:
+          run: just bench-codspeed
+          mode: simulation
+          token: ${{ secrets.CODSPEED_TOKEN }}

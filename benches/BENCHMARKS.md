@@ -2,6 +2,8 @@
 
 # jjpwrgem benchmarks
 
+[![See codspeed dashboard](https://img.shields.io/endpoint?url=https://codspeed.io/badge.json)](https://codspeed.io/20jasper/JJPWRGEM?utm_source=badge)
+
 jjpwrgem is optimized for readonly operations on cached syntax trees. Notably pretty serialization from a syntax tree is 4 times faster than `sonic_rs` while also supporting width aware expansion. Deserialization is not yet fully optimized
 
 - [CLI formatter and minifier speed](cli-formatter.md): wall-clock timing against jq, prettier, dprint, and others
