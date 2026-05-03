@@ -26,6 +26,8 @@ jobs:
           tool: just@1.47, cargo-codspeed@4.6.0
       - name: Configure Dependency Caching
         uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4 # v2.9.1
+        with:
+          shared-key: benches
       - name: Run benchmarks
         uses: CodSpeedHQ/action@c381be0bfd20e844fb45594f6aa182ffcd94545c # v4.15.0
         with:
