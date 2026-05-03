@@ -34,7 +34,7 @@ fn bench_tokens(c: &mut Criterion) {
 
 criterion_group! {
     name = benches;
-    config = Criterion::default().measurement_time(std::time::Duration::from_secs(10));
+    config = Criterion::default().measurement_time(std::time::Duration::from_secs(11));
     targets = bench_tokens
 }
 criterion_main!(benches);
