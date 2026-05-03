@@ -1013,7 +1013,6 @@ version = "0.7.0"
 dependencies = [
  "bytes2chars",
  "displaydoc",
- "itertools 0.14.0",
  "rstest",
  "rstest_reuse",
  "serde",

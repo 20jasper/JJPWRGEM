@@ -8,7 +8,6 @@ publish = false
 [dependencies]
 bytes2chars = { workspace = true }
 displaydoc = { workspace = true }
-itertools = "0.14.0"
 serde = { version = "1", optional = true, features = ["derive"] }
 thiserror = { workspace = true }
 
