@@ -1,11 +1,20 @@
 use core::{iter::Peekable, range::Range};
 
-use itertools::Itertools;
-
 use crate::{
     Error, ErrorKind, Result,
-    tokens::{CharWithContext, Token, TokenWithContext, lexical::JsonChar},
+    tokens::{
+        ByteWithContext, CharWithContext, Token, TokenWithContext, current_byte_pos,
+        lexical::{JsonByte, JsonChar},
+    },
 };
+
+fn current_char_with_context(
+    input: &str,
+    bytes: &mut Peekable<impl Iterator<Item = ByteWithContext>>,
+) -> Option<CharWithContext> {
+    let pos = current_byte_pos(bytes, input);
+    input[pos..].chars().next().map(|c| (pos, c).into())
+}
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 enum MantissaState<'a> {
@@ -33,50 +42,61 @@ impl<'a> MantissaState<'a> {
 
     fn process(
         self,
-        chars: &mut Peekable<impl Iterator<Item = CharWithContext>>,
+        bytes: &mut Peekable<impl Iterator<Item = ByteWithContext>>,
         input: &'a str,
     ) -> Result<'a, Self> {
         let res = match self {
-            MantissaState::MinusOrInteger => match chars.next() {
-                Some(CharWithContext(range, JsonChar('-'))) => MantissaState::Leading(range),
-                Some(CharWithContext(range, JsonChar('0'))) => {
+            MantissaState::MinusOrInteger => match bytes.peek().copied() {
+                Some(byte @ ByteWithContext(_, JsonByte(b'-'))) => {
+                    bytes.next();
+                    MantissaState::Leading(byte.range())
+                }
+                Some(byte @ ByteWithContext(_, JsonByte(b'0'))) => {
+                    bytes.next();
+                    let range = byte.range();
                     MantissaState::IntegerOrDecimalOrEnd {
                         leading_zero: Some(range),
                         mantissa: range,
                     }
                 }
-                Some(CharWithContext(range, JsonChar('1'..='9'))) => {
+                Some(byte @ ByteWithContext(_, JsonByte(b'1'..=b'9'))) => {
+                    bytes.next();
+                    let range = byte.range();
                     MantissaState::IntegerOrDecimalOrEnd {
                         leading_zero: None,
                         mantissa: range,
                     }
                 }
-                maybe_c => {
+                _ => {
                     return Err(Error::from_maybe_json_char_with_context(
                         ErrorKind::ExpectedMinusOrDigit,
-                        maybe_c,
+                        current_char_with_context(input, bytes),
                         input,
                     ));
                 }
             },
-            MantissaState::Leading(mantissa) => match chars.next() {
-                Some(CharWithContext(leading_range, JsonChar('0'))) => {
+            MantissaState::Leading(mantissa) => match bytes.peek().copied() {
+                Some(byte @ ByteWithContext(_, JsonByte(b'0'))) => {
+                    bytes.next();
                     MantissaState::IntegerOrDecimalOrEnd {
-                        leading_zero: Some(leading_range),
-                        mantissa: mantissa.start..leading_range.end,
+                        leading_zero: Some(byte.range()),
+                        mantissa: mantissa.start..byte.range().end,
                     }
                 }
-                Some(CharWithContext(leading_range, JsonChar('1'..='9'))) => {
+                Some(byte @ ByteWithContext(_, JsonByte(b'1'..=b'9'))) => {
+                    bytes.next();
                     MantissaState::IntegerOrDecimalOrEnd {
                         leading_zero: None,
-                        mantissa: mantissa.start..leading_range.end,
+                        mantissa: mantissa.start..byte.range().end,
                     }
                 }
-                maybe_char @ (Some(_) | None) => {
+                _ => {
                     return Err(Error::new(
                         ErrorKind::ExpectedDigitFollowingMinus(
                             mantissa,
-                            maybe_char.map(|CharWithContext(_, c)| c).into(),
+                            current_char_with_context(input, bytes)
+                                .map(|CharWithContext(_, c)| c)
+                                .into(),
                         ),
                         mantissa,
                         input,
@@ -86,16 +106,18 @@ impl<'a> MantissaState<'a> {
             MantissaState::IntegerOrDecimalOrEnd {
                 leading_zero,
                 mantissa,
-            } => match (leading_zero, chars.peek().copied()) {
-                (Some(initial_range), Some(CharWithContext(_, JsonChar('0'..='9')))) => {
-                    let final_zero_range = chars
-                        .peeking_take_while(|CharWithContext(_, JsonChar(c))| *c == '0')
-                        .last()
-                        .map(|CharWithContext(r, _)| r)
-                        .unwrap_or(initial_range);
+            } => match (leading_zero, bytes.peek().copied()) {
+                (Some(initial_range), Some(ByteWithContext(_, JsonByte(b'0'..=b'9')))) => {
+                    let mut final_zero_range = initial_range;
+                    while let Some(byte @ ByteWithContext(_, JsonByte(b'0'))) =
+                        bytes.peek().copied()
+                    {
+                        final_zero_range = byte.range();
+                        bytes.next();
+                    }
 
-                    let extra_end = match chars.peek().copied() {
-                        Some(CharWithContext(_, JsonChar('1'..='9'))) => final_zero_range.end,
+                    let extra_end = match bytes.peek().copied() {
+                        Some(ByteWithContext(_, JsonByte(b'1'..=b'9'))) => final_zero_range.end,
                         _ => final_zero_range.start,
                     };
 
@@ -108,18 +130,18 @@ impl<'a> MantissaState<'a> {
                         input,
                     ));
                 }
-                (_, Some(CharWithContext(range, JsonChar('0'..='9')))) => {
-                    chars.next();
+                (_, Some(byte @ ByteWithContext(_, JsonByte(b'0'..=b'9')))) => {
+                    bytes.next();
                     MantissaState::IntegerOrDecimalOrEnd {
                         leading_zero: None,
-                        mantissa: mantissa.start..range.end,
+                        mantissa: mantissa.start..byte.range().end,
                     }
                 }
-                (_, Some(CharWithContext(dot_range, JsonChar('.')))) => {
-                    chars.next();
+                (_, Some(byte @ ByteWithContext(_, JsonByte(b'.')))) => {
+                    bytes.next();
                     MantissaState::Fraction {
-                        mantissa: mantissa.start..dot_range.end,
-                        dot_range,
+                        mantissa: mantissa.start..byte.range().end,
+                        dot_range: byte.range(),
                     }
                 }
                 _ => Self::finish(input, mantissa),
@@ -127,27 +149,27 @@ impl<'a> MantissaState<'a> {
             MantissaState::Fraction {
                 mantissa,
                 dot_range,
-            } => match chars.peek().copied() {
-                Some(CharWithContext(range, JsonChar('0'..='9'))) => {
-                    chars.next();
-                    MantissaState::FractionOrEnd(mantissa.start..range.end)
+            } => match bytes.peek().copied() {
+                Some(byte @ ByteWithContext(_, JsonByte(b'0'..=b'9'))) => {
+                    bytes.next();
+                    MantissaState::FractionOrEnd(mantissa.start..byte.range().end)
                 }
-                maybe_c => {
+                _ => {
                     return Err(Error::from_maybe_json_char_with_context(
                         |c| ErrorKind::ExpectedDigitAfterDot {
                             number_range: mantissa,
                             dot_range,
                             maybe_c: c,
                         },
-                        maybe_c,
+                        current_char_with_context(input, bytes),
                         input,
                     ));
                 }
             },
-            MantissaState::FractionOrEnd(mantissa) => match chars.peek().copied() {
-                Some(CharWithContext(range, JsonChar('0'..='9'))) => {
-                    chars.next();
-                    MantissaState::FractionOrEnd(mantissa.start..range.end)
+            MantissaState::FractionOrEnd(mantissa) => match bytes.peek().copied() {
+                Some(byte @ ByteWithContext(_, JsonByte(b'0'..=b'9'))) => {
+                    bytes.next();
+                    MantissaState::FractionOrEnd(mantissa.start..byte.range().end)
                 }
                 _ => Self::finish(input, mantissa),
             },
@@ -287,12 +309,12 @@ impl<'a> ExponentState<'a> {
 /// See [RFC 8259 Section 6](https://datatracker.ietf.org/doc/html/rfc8259#section-6)
 pub fn parse_mantissa<'a>(
     input: &'a str,
-    chars: &mut Peekable<impl Iterator<Item = CharWithContext>>,
+    bytes: &mut Peekable<impl Iterator<Item = ByteWithContext>>,
 ) -> Result<'a, TokenWithContext<'a>> {
     let mut state = MantissaState::MinusOrInteger;
 
     loop {
-        state = state.process(chars, input)?;
+        state = state.process(bytes, input)?;
         if let MantissaState::End(tok) = state {
             break Ok(tok);
         }
@@ -339,10 +361,22 @@ mod tests {
     use rstest::rstest;
 
     use super::*;
-    use crate::tokens::stream;
+    use crate::tokens::{BytesWithContext, stream};
 
     fn str_to_tokens<'a>(s: &'a str) -> Result<'a, Vec<TokenWithContext<'a>>> {
         stream::TokenStream::new(s).collect()
+    }
+
+    fn parse_mantissa_from_start<'a>(input: &'a str) -> (Result<'a, TokenWithContext<'a>>, usize) {
+        let mut bytes = BytesWithContext::new(input, 0).peekable();
+        let mut probe = bytes.clone();
+        let result = parse_mantissa(input, &mut probe);
+        let pos = if result.is_ok() {
+            current_byte_pos(&mut probe, input)
+        } else {
+            current_byte_pos(&mut bytes, input)
+        };
+        (result, pos)
     }
 
     #[rstest]
@@ -369,5 +403,31 @@ mod tests {
             _ => panic!("unexpected token count: {}", tokens.len()),
         };
         assert_eq!(result, (mantissa, exponent));
+    }
+
+    #[test]
+    fn mantissa_updates_position_on_success() {
+        let (token, pos) = parse_mantissa_from_start("-12.34x");
+        let token = token.unwrap();
+
+        assert_eq!(token.range, 0..6);
+        assert_eq!(pos, 6);
+    }
+
+    #[test]
+    fn mantissa_keeps_utf8_boundary() {
+        let (token, pos) = parse_mantissa_from_start("1é");
+        let token = token.unwrap();
+
+        assert_eq!(token.range, 0..1);
+        assert_eq!(pos, 1);
+    }
+
+    #[test]
+    fn mantissa_does_not_advance_position_on_error() {
+        let (result, pos) = parse_mantissa_from_start("-é");
+
+        assert!(result.is_err());
+        assert_eq!(pos, 0);
     }
 }

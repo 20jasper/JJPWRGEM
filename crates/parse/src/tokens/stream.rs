@@ -3,7 +3,8 @@ use core::{iter::Peekable, str::CharIndices};
 use crate::{
     Error, ErrorKind, Result,
     tokens::{
-        ByteWithContext, CharWithContext, FALSE, NULL, TRUE, Token, TokenWithContext,
+        ByteWithContext, BytesWithContext, CharWithContext, FALSE, NULL, TRUE, Token,
+        TokenWithContext, current_byte_pos,
         lexical::JsonChar,
         number::{parse_exponent, parse_mantissa},
         string::parse_string,
@@ -84,6 +85,10 @@ impl<'a> TokenStreamInner<'a> {
         CharsWithContext::new(&self.input[self.pos..], self.pos).peekable()
     }
 
+    fn bytes_from_pos(&self) -> Peekable<BytesWithContext<'a>> {
+        BytesWithContext::new(self.input, self.pos).peekable()
+    }
+
     fn parse_with_chars<T>(
         &mut self,
         f: impl FnOnce(&'a str, &mut Peekable<CharsWithContext<'a>>) -> Result<'a, T>,
@@ -96,11 +101,27 @@ impl<'a> TokenStreamInner<'a> {
         result
     }
 
+    fn parse_with_bytes<T>(
+        &mut self,
+        f: impl FnOnce(&'a str, &mut Peekable<BytesWithContext<'a>>) -> Result<'a, T>,
+    ) -> Result<'a, T> {
+        let mut bytes = self.bytes_from_pos();
+        let result = f(self.input, &mut bytes);
+        if result.is_ok() {
+            self.update_pos_from_bytes(&mut bytes);
+        }
+        result
+    }
+
     fn update_pos_from_chars(&mut self, chars: &mut Peekable<CharsWithContext<'a>>) {
         self.pos = chars
             .peek()
             .map(|CharWithContext(range, _)| range.start)
             .unwrap_or(self.input.len());
+    }
+
+    fn update_pos_from_bytes(&mut self, bytes: &mut Peekable<BytesWithContext<'a>>) {
+        self.pos = current_byte_pos(bytes, self.input);
     }
 
     fn unexpected_character(&self) -> Result<'a, TokenWithContext<'a>> {
@@ -142,7 +163,7 @@ impl<'a> Iterator for TokenStreamInner<'a> {
 
             let token = match ctx.as_byte() {
                 b'"' => self.parse_with_chars(parse_string),
-                b'0'..=b'9' | b'-' => self.parse_with_chars(parse_mantissa),
+                b'0'..=b'9' | b'-' => self.parse_with_bytes(parse_mantissa),
                 b'e' | b'E' => {
                     match self.parse_with_chars(|input, chars| {
                         chars.next();

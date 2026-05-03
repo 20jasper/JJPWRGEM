@@ -3,7 +3,7 @@ mod number;
 mod stream;
 mod string;
 
-use core::{fmt::Display, range::Range};
+use core::{fmt::Display, iter::Peekable, range::Range};
 
 pub use stream::TokenStream;
 
@@ -148,6 +148,40 @@ impl ByteWithContext {
     pub fn as_byte(&self) -> u8 {
         self.1.0
     }
+}
+
+#[derive(Debug, Clone)]
+pub(crate) struct BytesWithContext<'a> {
+    input: &'a str,
+    pos: usize,
+}
+
+impl<'a> BytesWithContext<'a> {
+    pub(crate) fn new(input: &'a str, pos: usize) -> Self {
+        Self { input, pos }
+    }
+}
+
+impl Iterator for BytesWithContext<'_> {
+    type Item = ByteWithContext;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.input.as_bytes().get(self.pos).copied().map(|byte| {
+            let start = self.pos;
+            self.pos += 1;
+            (start, byte).into()
+        })
+    }
+}
+
+pub(crate) fn current_byte_pos(
+    bytes: &mut Peekable<impl Iterator<Item = ByteWithContext>>,
+    input: &str,
+) -> usize {
+    bytes
+        .peek()
+        .map(|ByteWithContext(start, _)| *start)
+        .unwrap_or(input.len())
 }
 
 impl From<bool> for Token<'_> {
