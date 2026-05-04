@@ -2,20 +2,20 @@
 
 |                           |  `sonic_rs`  | `simd_json`  | `serde_json` | `jjpwrgem` |
 | :------------------------ | :----------: | :----------: | :----------: | :--------: |
-| time (canada)             |   3.59 ms    |   3.25 ms    |   2.76 ms    | 771.60 µs  |
-| throughput (canada)       | 597.63 MiB/s | 661.04 MiB/s | 777.91 MiB/s | 2.72 GiB/s |
-| time (citm_catalog)       |  652.34 µs   |  477.33 µs   |  530.58 µs   | 283.04 µs  |
-| throughput (citm_catalog) |  2.47 GiB/s  |  3.37 GiB/s  |  3.03 GiB/s  | 5.68 GiB/s |
-| time (twitter)            |  286.59 µs   |  355.21 µs   |  383.72 µs   | 133.60 µs  |
-| throughput (twitter)      |  2.05 GiB/s  |  1.66 GiB/s  |  1.53 GiB/s  | 4.40 GiB/s |
+| time (canada)             |   3.81 ms    |   3.30 ms    |   2.94 ms    | 744.76 µs  |
+| throughput (canada)       | 563.22 MiB/s | 650.28 MiB/s | 729.10 MiB/s | 2.81 GiB/s |
+| time (citm_catalog)       |  633.39 µs   |  488.54 µs   |  507.50 µs   | 295.85 µs  |
+| throughput (citm_catalog) |  2.54 GiB/s  |  3.29 GiB/s  |  3.17 GiB/s  | 5.44 GiB/s |
+| time (twitter)            |  289.03 µs   |  372.55 µs   |  365.44 µs   | 144.80 µs  |
+| throughput (twitter)      |  2.03 GiB/s  |  1.58 GiB/s  |  1.61 GiB/s  | 4.06 GiB/s |
 
 ## uglify_tokens
 
 |                           |  `jjpwrgem`  |
 | :------------------------ | :----------: |
-| time (canada)             |   12.38 ms   |
-| throughput (canada)       | 173.43 MiB/s |
-| time (citm_catalog)       |   4.01 ms    |
-| throughput (citm_catalog) | 410.33 MiB/s |
-| time (twitter)            |   2.19 ms    |
-| throughput (twitter)      | 275.31 MiB/s |
+| time (canada)             |   8.91 ms    |
+| throughput (canada)       | 241.00 MiB/s |
+| time (citm_catalog)       |   2.64 ms    |
+| throughput (citm_catalog) | 622.78 MiB/s |
+| time (twitter)            |   1.44 ms    |
+| throughput (twitter)      | 419.28 MiB/s |
