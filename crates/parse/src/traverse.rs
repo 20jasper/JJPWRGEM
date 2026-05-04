@@ -6,6 +6,7 @@ use core::range::Range;
 use crate::{
     Error, ErrorKind, Result,
     ast::{ObjectEntries, Value},
+    format::join_into,
     tokens::{Token, TokenStream, TokenWithContext},
     traverse::{array::parse_array, object::parse_object},
 };
@@ -103,22 +104,6 @@ pub fn validate_start_of_value<'a>(
     }
 }
 
-fn join<V, T>(
-    visitor: &mut V,
-    items: impl IntoIterator<Item = T>,
-    mut item_fmt: impl FnMut(&mut V, &T),
-    mut delim_fmt: impl FnMut(&mut V, &T),
-) {
-    let mut iter = items.into_iter();
-    if let Some(first) = iter.next() {
-        item_fmt(visitor, &first);
-        for item in iter {
-            delim_fmt(visitor, &item);
-            item_fmt(visitor, &item);
-        }
-    }
-}
-
 pub fn parse_value<'a>(val: &'a Value, visitor: &mut impl Visitor<'a>) {
     match val {
         Value::Null => visitor.on_null(),
@@ -132,7 +117,7 @@ pub fn parse_value<'a>(val: &'a Value, visitor: &mut impl Visitor<'a>) {
         Value::Boolean(b) => visitor.on_boolean(*b),
         Value::Object(ObjectEntries(items)) => {
             visitor.on_object_open();
-            join(
+            join_into(
                 visitor,
                 items,
                 |visitor, (k, v)| {
@@ -146,7 +131,7 @@ pub fn parse_value<'a>(val: &'a Value, visitor: &mut impl Visitor<'a>) {
         }
         Value::Array(items) => {
             visitor.on_array_open();
-            join(
+            join_into(
                 visitor,
                 items,
                 |visitor, val| {

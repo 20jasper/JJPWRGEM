@@ -135,20 +135,14 @@ impl<'a> Iterator for TokenStreamInner<'a> {
                     }
                 }
                 b'n' | b't' | b'f' => {
-                    let expected = match ctx.as_byte() {
-                        b'n' => NULL,
-                        b't' => TRUE,
-                        b'f' => FALSE,
+                    let (expected, token) = match ctx.as_byte() {
+                        b'n' => (NULL, Token::Null),
+                        b't' => (TRUE, true.into()),
+                        b'f' => (FALSE, false.into()),
                         _ => unreachable!("matched above"),
                     };
                     let end = self.pos + expected.len();
                     if self.input.as_bytes().get(self.pos..end) == Some(expected.as_bytes()) {
-                        let token = match ctx.as_byte() {
-                            b'n' => Token::Null,
-                            b't' => true.into(),
-                            b'f' => false.into(),
-                            _ => unreachable!("matched above"),
-                        };
                         self.pos = end;
                         Ok(TokenWithContext {
                             token,
@@ -196,7 +190,7 @@ impl<'a> TokenStream<'a> {
         if let Some(token) = self.cached.take() {
             Ok(Some(token))
         } else {
-            self.next().transpose()
+            self.inner.next().transpose()
         }
     }
 }
@@ -205,6 +199,6 @@ impl<'a> Iterator for TokenStream<'a> {
     type Item = Result<'a, TokenWithContext<'a>>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.inner.next()
+        self.next_token().transpose()
     }
 }

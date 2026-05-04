@@ -8,7 +8,6 @@ use crate::{
 
 enum StringState<'a> {
     Open,
-    // TODO track last escaped u escapes
     CharOrEscapeOrEnd {
         string_range: Range<usize>,
         quote_range: Range<usize>,
