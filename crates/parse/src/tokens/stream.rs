@@ -1,10 +1,10 @@
-use core::{iter::Peekable, str::CharIndices};
+use core::iter::Peekable;
 
 use crate::{
     Error, ErrorKind, Result,
     tokens::{
-        ByteWithContext, BytesWithContext, CharWithContext, FALSE, NULL, TRUE, Token,
-        TokenWithContext, current_byte_pos,
+        ByteWithContext, BytesWithContext, FALSE, NULL, TRUE, Token, TokenWithContext,
+        current_byte_pos,
         lexical::JsonChar,
         number::{parse_exponent, parse_mantissa},
         string::parse_string,
@@ -40,29 +40,6 @@ fn skip_whitespace(bytes: &[u8]) -> usize {
 }
 
 #[derive(Debug, Clone)]
-struct CharsWithContext<'a> {
-    iter: CharIndices<'a>,
-    offset: usize,
-}
-
-impl<'a> CharsWithContext<'a> {
-    fn new(s: &'a str, offset: usize) -> Self {
-        Self {
-            iter: s.char_indices(),
-            offset,
-        }
-    }
-}
-
-impl<'a> Iterator for CharsWithContext<'a> {
-    type Item = CharWithContext;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.iter.next().map(|(i, c)| (i + self.offset, c).into())
-    }
-}
-
-#[derive(Debug, Clone)]
 struct TokenStreamInner<'a> {
     input: &'a str,
     pos: usize,
@@ -81,24 +58,8 @@ impl<'a> TokenStreamInner<'a> {
             .map(|byte| (self.pos, byte).into())
     }
 
-    fn chars_from_pos(&self) -> Peekable<CharsWithContext<'a>> {
-        CharsWithContext::new(&self.input[self.pos..], self.pos).peekable()
-    }
-
     fn bytes_from_pos(&self) -> Peekable<BytesWithContext<'a>> {
         BytesWithContext::new(self.input, self.pos).peekable()
-    }
-
-    fn parse_with_chars<T>(
-        &mut self,
-        f: impl FnOnce(&'a str, &mut Peekable<CharsWithContext<'a>>) -> Result<'a, T>,
-    ) -> Result<'a, T> {
-        let mut chars = self.chars_from_pos();
-        let result = f(self.input, &mut chars);
-        if result.is_ok() {
-            self.update_pos_from_chars(&mut chars);
-        }
-        result
     }
 
     fn parse_with_bytes<T>(
@@ -111,13 +72,6 @@ impl<'a> TokenStreamInner<'a> {
             self.update_pos_from_bytes(&mut bytes);
         }
         result
-    }
-
-    fn update_pos_from_chars(&mut self, chars: &mut Peekable<CharsWithContext<'a>>) {
-        self.pos = chars
-            .peek()
-            .map(|CharWithContext(range, _)| range.start)
-            .unwrap_or(self.input.len());
     }
 
     fn update_pos_from_bytes(&mut self, bytes: &mut Peekable<BytesWithContext<'a>>) {
@@ -162,7 +116,13 @@ impl<'a> Iterator for TokenStreamInner<'a> {
             }
 
             let token = match ctx.as_byte() {
-                b'"' => self.parse_with_chars(parse_string),
+                b'"' => {
+                    let result = parse_string(self.input, self.pos);
+                    if let Ok(token) = &result {
+                        self.pos = token.range.end;
+                    }
+                    result
+                }
                 b'0'..=b'9' | b'-' => self.parse_with_bytes(parse_mantissa),
                 b'e' | b'E' => {
                     match self.parse_with_bytes(|input, bytes| {

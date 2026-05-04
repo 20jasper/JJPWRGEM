@@ -156,14 +156,15 @@ impl<'a> StringState<'a> {
     }
 }
 
-pub fn parse_string<'a>(
-    input: &'a str,
-    chars: &mut Peekable<impl Iterator<Item = CharWithContext>>,
-) -> Result<'a, TokenWithContext<'a>> {
+pub fn parse_string<'a>(input: &'a str, pos: usize) -> Result<'a, TokenWithContext<'a>> {
+    let mut chars = input[pos..]
+        .char_indices()
+        .map(|(i, c)| (i + pos, c).into())
+        .peekable();
     let mut state = StringState::Open;
 
     loop {
-        state = state.process(chars, input)?;
+        state = state.process(&mut chars, input)?;
         if let StringState::End(tok) = state {
             break Ok(tok);
         }
