@@ -69,7 +69,7 @@ impl Value<'_> {
     }
 }
 
-pub fn parse_str<'a>(json: &'a str) -> Result<'a, Value<'a>> {
+pub fn parse_str<'a>(json: &'a str) -> Result<Value<'a>> {
     let mut ast = AstVisitor::new();
     parse_tokens(&mut TokenStream::new(json), json, true, &mut ast)?;
     Ok(ast

@@ -6,9 +6,8 @@ use crate::{
     tokens::{CharWithContext, JsonChar, Token, TokenWithContext},
 };
 
-enum StringState<'a> {
+enum StringState {
     Open,
-    // TODO track last escaped u escapes
     CharOrEscapeOrEnd {
         string_range: Range<usize>,
         quote_range: Range<usize>,
@@ -25,15 +24,15 @@ enum StringState<'a> {
         slash_range: Range<usize>,
         digits_seen: usize,
     },
-    End(TokenWithContext<'a>),
+    End(TokenWithContext),
 }
 
-impl<'a> StringState<'a> {
+impl StringState {
     fn process(
         self,
         chars: &mut Peekable<impl Iterator<Item = CharWithContext>>,
-        input: &'a str,
-    ) -> Result<'a, Self> {
+        input: &str,
+    ) -> Result<Self> {
         let res = match self {
             StringState::Open => {
                 let Some(CharWithContext(starting_quote, JsonChar('"'))) = chars.next() else {
@@ -54,10 +53,10 @@ impl<'a> StringState<'a> {
                     quote_range,
                     slash_range: r,
                 },
-                Some(CharWithContext(r, JsonChar('"'))) => StringState::End(TokenWithContext {
-                    token: Token::String(input[quote_range.end..r.start].into()),
-                    range: string_range.start..r.end,
-                }),
+                Some(CharWithContext(r, JsonChar('"'))) => StringState::End(TokenWithContext::new(
+                    Token::String,
+                    string_range.start..r.end,
+                )),
                 Some(CharWithContext(r, c)) if c.is_control() => {
                     return Err(Error::new(
                         ErrorKind::UnexpectedControlCharacterInString(c),
@@ -156,7 +155,7 @@ impl<'a> StringState<'a> {
     }
 }
 
-pub fn parse_string<'a>(input: &'a str, pos: usize) -> Result<'a, TokenWithContext<'a>> {
+pub fn parse_string(input: &str, pos: usize) -> Result<TokenWithContext> {
     let mut chars = input[pos..]
         .char_indices()
         .map(|(i, c)| (i + pos, c).into())

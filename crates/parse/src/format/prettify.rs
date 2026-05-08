@@ -117,11 +117,7 @@ impl FormatBuf {
     }
 }
 
-pub fn format_str<'a>(
-    json: &'a str,
-    options: FormatOptions,
-    preferred_width: usize,
-) -> Result<'a, String> {
+pub fn format_str(json: &str, options: FormatOptions, preferred_width: usize) -> Result<String> {
     let mut buf = FormatBuf::new(String::with_capacity(json.len()), options, preferred_width);
     format_value_into(&mut buf, &parse_str(json)?, 0);
     Ok(buf.into_inner())
@@ -306,11 +302,7 @@ pub fn format_value(val: &Value, options: &FormatOptions, preferred_width: usize
     buf.into_inner()
 }
 
-pub fn prettify_str(
-    json: &str,
-    preferred_width: usize,
-    line_ending: LineEnding,
-) -> Result<'_, String> {
+pub fn prettify_str(json: &str, preferred_width: usize, line_ending: LineEnding) -> Result<String> {
     format_str(json, FormatOptions::prettify(line_ending), preferred_width)
 }
 

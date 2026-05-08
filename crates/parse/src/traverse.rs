@@ -6,7 +6,7 @@ use core::range::Range;
 use crate::{
     Error, ErrorKind, Result,
     ast::{ObjectEntries, Value},
-    tokens::{Token, TokenStream, TokenWithContext},
+    tokens::{ErrorToken, Token, TokenStream, TokenWithContext},
     traverse::{array::parse_array, object::parse_object},
 };
 
@@ -30,7 +30,7 @@ pub fn parse_tokens<'a>(
     text: &'a str,
     fail_on_multiple_value: bool,
     visitor: &mut impl Visitor<'a>,
-) -> Result<'a, Range<usize>> {
+) -> Result<Range<usize>> {
     let peeked = tokens.peek_token()?.copied();
     let Some(peeked) = peeked else {
         return Err(Error::from_maybe_token_with_context(
@@ -46,52 +46,65 @@ pub fn parse_tokens<'a>(
             let token_ctx = tokens
                 .next_token()?
                 .expect("peek guaranteed a value for scalar token");
+            let range = token_ctx.range;
 
             match t {
-                Token::String(s) => visitor.on_string(s),
-                Token::Mantissa(m) => {
-                    visitor.on_mantissa(m);
+                Token::String => {
+                    let body = token_ctx.content_range();
+                    visitor.on_string(&text[body.start..body.end]);
+                }
+                Token::Mantissa => {
+                    visitor.on_mantissa(&text[range.start..range.end]);
                     if let Some(TokenWithContext {
-                        token: Token::Exponent(_),
+                        token: Token::Exponent,
                         ..
-                    }) = tokens.peek_token()?
+                    }) = tokens.peek_token()?.copied()
                     {
                         let exp_ctx = tokens.next_token()?.expect("peek guaranteed");
-                        if let Token::Exponent(e) = exp_ctx.token {
-                            visitor.on_exponent(e);
-                        }
+                        let er = exp_ctx.range;
+                        visitor.on_exponent(&text[er.start..er.end]);
                     }
                 }
                 Token::Null => visitor.on_null(),
-                Token::Boolean(b) => visitor.on_boolean(b),
+                Token::True => visitor.on_boolean(true),
+                Token::False => visitor.on_boolean(false),
                 _ => unreachable!("guard prevents non scalars"),
             };
 
-            token_ctx.range
+            range
         }
-        invalid => {
+        _ => {
             return Err(Error::new(
-                ErrorKind::ExpectedValue(None, Some(invalid).into()),
+                ErrorKind::ExpectedValue(
+                    None,
+                    crate::tokens::TokenOption(Some(ErrorToken::new(
+                        peeked.token,
+                        peeked.range,
+                        text,
+                    ))),
+                ),
                 peeked.range,
                 text,
             ));
         }
     };
 
-    if fail_on_multiple_value
-        && let Some(TokenWithContext { token, range }) = tokens.peek_token()?.copied()
-    {
-        return Err(Error::new(ErrorKind::TokenAfterEnd(token), range, text));
+    if fail_on_multiple_value && let Some(twc) = tokens.peek_token()?.copied() {
+        return Err(Error::new(
+            ErrorKind::TokenAfterEnd(ErrorToken::new(twc.token, twc.range, text)),
+            twc.range,
+            text,
+        ));
     }
 
     Ok(range)
 }
 
-pub fn validate_start_of_value<'a>(
-    text: &'a str,
-    expect_ctx: TokenWithContext<'a>,
-    maybe_token: Option<TokenWithContext<'a>>,
-) -> Result<'a, ()> {
+pub fn validate_start_of_value(
+    text: &str,
+    expect_ctx: TokenWithContext,
+    maybe_token: Option<TokenWithContext>,
+) -> Result<()> {
     if !maybe_token.is_some_and(|ctx| ctx.token.is_start_of_value()) {
         Err(Error::from_maybe_token_with_context(
             |tok| ErrorKind::ExpectedValue(Some(expect_ctx), tok),

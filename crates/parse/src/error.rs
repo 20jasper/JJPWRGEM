@@ -1,43 +1,43 @@
 pub mod diagnostics;
 
-use core::{fmt::Display, ops::Deref, range::Range};
+use core::{ops::Deref, range::Range};
 
 use displaydoc::Display;
 use thiserror::Error;
 
 use crate::tokens::{
-    CharWithContext, JsonCharOption, Token, TokenOption, TokenWithContext,
+    CharWithContext, ErrorToken, JsonCharOption, Token, TokenOption, TokenWithContext,
     lexical::{JsonChar, trim_end_whitespace},
 };
 
-pub type Result<'a, T> = std::result::Result<T, Error<'a>>;
+pub type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Debug, PartialEq, Eq, Display, Clone)]
-pub enum ErrorKind<'a> {
+pub enum ErrorKind {
     // array/object
     /// expected key, found {1}
-    ExpectedKey(TokenWithContext<'a>, TokenOption<'a>),
+    ExpectedKey(TokenWithContext, TokenOption),
     /// expected colon after key, found {1}
-    ExpectedColon(TokenWithContext<'a>, TokenOption<'a>),
+    ExpectedColon(TokenWithContext, TokenOption),
     /// expected json value, found {1}
-    ExpectedValue(Option<TokenWithContext<'a>>, TokenOption<'a>),
+    ExpectedValue(Option<TokenWithContext>, TokenOption),
     /// expected entry or closed delimiter `{expected}`, found {found}
     ExpectedEntryOrClosedDelimiter {
-        open_ctx: TokenWithContext<'a>,
+        open_ctx: TokenWithContext,
         expected: JsonChar,
-        found: TokenOption<'a>,
+        found: TokenOption,
     },
     /// expected comma or closed curly brace, found {found}
     ExpectedCommaOrClosedCurlyBrace {
         range: Range<usize>,
-        open_ctx: TokenWithContext<'a>,
-        found: TokenOption<'a>,
+        open_ctx: TokenWithContext,
+        found: TokenOption,
     },
     /// expected open brace `{expected}`, found {found}
     ExpectedOpenBrace {
         expected: JsonChar,
-        context: Option<TokenWithContext<'a>>,
-        found: TokenOption<'a>,
+        context: Option<TokenWithContext>,
+        found: TokenOption,
     },
 
     // mantissa
@@ -100,15 +100,15 @@ pub enum ErrorKind<'a> {
     /// unexpected character `{0}`. expected start of a json value
     UnexpectedCharacter(JsonChar),
     /// unexpected token {0} after json finished
-    TokenAfterEnd(Token<'a>),
+    TokenAfterEnd(ErrorToken),
 }
 
-impl<'a> ErrorKind<'a> {
+impl ErrorKind {
     pub fn expected_entry_or_closed_delimiter(
-        open_ctx: TokenWithContext<'a>,
-        found: TokenOption<'a>,
+        open_ctx: TokenWithContext,
+        found: TokenOption,
     ) -> Option<Self> {
-        closing_delimiter_for_open(&open_ctx.token).map(|expected| {
+        closing_delimiter_for_open(open_ctx.token).map(|expected| {
             Self::ExpectedEntryOrClosedDelimiter {
                 open_ctx,
                 expected,
@@ -118,7 +118,7 @@ impl<'a> ErrorKind<'a> {
     }
 }
 
-fn closing_delimiter_for_open(token: &Token) -> Option<JsonChar> {
+fn closing_delimiter_for_open(token: Token) -> Option<JsonChar> {
     match token {
         Token::OpenCurlyBrace => Some('}'.into()),
         Token::OpenSquareBracket => Some(']'.into()),
@@ -129,40 +129,35 @@ fn closing_delimiter_for_open(token: &Token) -> Option<JsonChar> {
 #[derive(Debug, PartialEq, Eq, Display, Error, Clone)]
 // box inner error for performance--a Rust enum is as large as the largest
 // variant so happy path case becomes 100s of bytes otherwise
-pub struct Error<'a>(pub Box<ErrorInner<'a>>);
-
-impl<'a> Display for Error<'a> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.0)
-    }
-}
+/// {0}
+pub struct Error(pub Box<ErrorInner>);
 
 #[derive(Debug, PartialEq, Eq, Display, Error, Clone)]
 /// {kind}
-pub struct ErrorInner<'a> {
-    kind: ErrorKind<'a>,
+pub struct ErrorInner {
+    pub(crate) kind: ErrorKind,
     range: Range<usize>,
     source_text: String,
     source_name: String,
 }
 
-impl<'a> From<ErrorInner<'a>> for Error<'a> {
-    fn from(value: ErrorInner<'a>) -> Self {
+impl From<ErrorInner> for Error {
+    fn from(value: ErrorInner) -> Self {
         Error(Box::new(value))
     }
 }
 
-impl<'a> Deref for Error<'a> {
-    type Target = ErrorInner<'a>;
+impl Deref for Error {
+    type Target = ErrorInner;
 
     fn deref(&self) -> &Self::Target {
         &self.0
     }
 }
 
-impl<'a> Error<'a> {
+impl Error {
     pub fn message(&self) -> String {
-        self.0.kind.to_string()
+        self.to_string()
     }
 
     pub fn source_text(&self) -> &str {
@@ -174,28 +169,24 @@ impl<'a> Error<'a> {
         &self.0.range
     }
 
-    pub fn new(kind: ErrorKind<'a>, range: Range<usize>, text: &'a str) -> Self {
-        // TODO take this as a param or have some sort of context
-        let source_name = "stdin".into();
+    pub fn new(kind: ErrorKind, range: Range<usize>, text: &str) -> Self {
         ErrorInner {
             kind,
             range,
             source_text: text.into(),
-            source_name,
+            source_name: "stdin".into(),
         }
         .into()
     }
 
-    pub fn from_unterminated(kind: ErrorKind<'a>, text: &'a str) -> Self {
+    pub fn from_unterminated(kind: ErrorKind, text: &str) -> Self {
         let trimmed = trim_end_whitespace(text);
-        // TODO handle multibyte characters properly
-        // text.char_indices().rev()
         Self::new(kind, trimmed.len().saturating_sub(1)..trimmed.len(), text)
     }
 
     /// # Panics
     /// if bytes are valid at the location reported by [std::str::Utf8Error]
-    pub fn from_utf8_error_slice(e: std::str::Utf8Error, bytes: &[u8]) -> Error<'static> {
+    pub fn from_utf8_error_slice(e: std::str::Utf8Error, bytes: &[u8]) -> Error {
         use bytes2chars::Utf8CharIndices;
         const LOSSY_BYTE_LENGTH: usize = '\u{FFFD}'.len_utf8();
         let b2c_err =
@@ -204,12 +195,10 @@ impl<'a> Error<'a> {
                 .and_then(|r| r.err())
                 .expect("a Utf8Error was returned so this must be an error");
 
-        let source_text = String::from_utf8_lossy(bytes).into_owned();
-        let range = e.valid_up_to()..e.valid_up_to() + LOSSY_BYTE_LENGTH;
         ErrorInner {
             kind: ErrorKind::InvalidEncoding(b2c_err.kind),
-            range,
-            source_text,
+            range: e.valid_up_to()..e.valid_up_to() + LOSSY_BYTE_LENGTH,
+            source_text: String::from_utf8_lossy(bytes).into_owned(),
             source_name: "stdin".into(),
         }
         .into()
@@ -217,14 +206,20 @@ impl<'a> Error<'a> {
 
     pub fn from_maybe_token_with_context<F>(
         f: F,
-        maybe_token: Option<TokenWithContext<'a>>,
-        text: &'a str,
+        maybe_token: Option<TokenWithContext>,
+        text: &str,
     ) -> Self
     where
-        F: Fn(TokenOption<'a>) -> ErrorKind<'a>,
+        F: Fn(TokenOption) -> ErrorKind,
     {
-        if let Some(TokenWithContext { token, range }) = maybe_token {
-            Error::new(f(Some(token).into()), range, text)
+        if let Some(twc) = maybe_token {
+            Error::new(
+                f(TokenOption(Some(ErrorToken::new(
+                    twc.token, twc.range, text,
+                )))),
+                twc.range,
+                text,
+            )
         } else {
             Error::from_unterminated(f(None.into()), text)
         }
@@ -233,10 +228,10 @@ impl<'a> Error<'a> {
     pub fn from_maybe_json_char_with_context<F>(
         f: F,
         maybe_c: Option<CharWithContext>,
-        text: &'a str,
+        text: &str,
     ) -> Self
     where
-        F: Fn(JsonCharOption) -> ErrorKind<'a>,
+        F: Fn(JsonCharOption) -> ErrorKind,
     {
         if let Some(CharWithContext(r, c)) = maybe_c {
             Error::new(f(Some(c).into()), r, text)

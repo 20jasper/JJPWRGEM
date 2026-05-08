@@ -64,8 +64,8 @@ impl<'a> TokenStreamInner<'a> {
 
     fn parse_with_bytes<T>(
         &mut self,
-        f: impl FnOnce(&'a str, &mut Peekable<BytesWithContext<'a>>) -> Result<'a, T>,
-    ) -> Result<'a, T> {
+        f: impl FnOnce(&'a str, &mut Peekable<BytesWithContext<'a>>) -> Result<T>,
+    ) -> Result<T> {
         let mut bytes = self.bytes_from_pos();
         let result = f(self.input, &mut bytes);
         if result.is_ok() {
@@ -78,7 +78,7 @@ impl<'a> TokenStreamInner<'a> {
         self.pos = current_byte_pos(bytes, self.input);
     }
 
-    fn unexpected_character(&self) -> Result<'a, TokenWithContext<'a>> {
+    fn unexpected_character(&self) -> Result<TokenWithContext> {
         let unexpected = self.input[self.pos..]
             .chars()
             .next()
@@ -103,7 +103,7 @@ impl<'a> TokenStreamInner<'a> {
 }
 
 impl<'a> Iterator for TokenStreamInner<'a> {
-    type Item = Result<'a, TokenWithContext<'a>>;
+    type Item = Result<TokenWithContext>;
 
     fn next(&mut self) -> Option<Self::Item> {
         loop {
@@ -145,15 +145,12 @@ impl<'a> Iterator for TokenStreamInner<'a> {
                     if self.input.as_bytes().get(self.pos..end) == Some(expected.as_bytes()) {
                         let token = match ctx.as_byte() {
                             b'n' => Token::Null,
-                            b't' => true.into(),
-                            b'f' => false.into(),
+                            b't' => Token::True,
+                            b'f' => Token::False,
                             _ => unreachable!("matched above"),
                         };
                         self.pos = end;
-                        Ok(TokenWithContext {
-                            token,
-                            range: ctx.0..end,
-                        })
+                        Ok(TokenWithContext::new(token, ctx.0..end))
                     } else {
                         self.unexpected_character()
                     }
@@ -169,7 +166,7 @@ impl<'a> Iterator for TokenStreamInner<'a> {
 #[derive(Debug, Clone)]
 pub struct TokenStream<'a> {
     inner: TokenStreamInner<'a>,
-    cached: Option<TokenWithContext<'a>>,
+    cached: Option<TokenWithContext>,
 }
 
 impl<'a> TokenStream<'a> {
@@ -180,7 +177,7 @@ impl<'a> TokenStream<'a> {
         }
     }
 
-    pub fn peek_token(&mut self) -> Result<'a, Option<&TokenWithContext<'a>>> {
+    pub fn peek_token(&mut self) -> Result<Option<&TokenWithContext>> {
         if self.cached.is_none() {
             match self.inner.next() {
                 Some(Ok(token)) => self.cached = Some(token),
@@ -192,7 +189,7 @@ impl<'a> TokenStream<'a> {
         Ok(self.cached.as_ref())
     }
 
-    pub fn next_token(&mut self) -> Result<'a, Option<TokenWithContext<'a>>> {
+    pub fn next_token(&mut self) -> Result<Option<TokenWithContext>> {
         if let Some(token) = self.cached.take() {
             Ok(Some(token))
         } else {
@@ -202,7 +199,7 @@ impl<'a> TokenStream<'a> {
 }
 
 impl<'a> Iterator for TokenStream<'a> {
-    type Item = Result<'a, TokenWithContext<'a>>;
+    type Item = Result<TokenWithContext>;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.inner.next()

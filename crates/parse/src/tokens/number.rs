@@ -17,7 +17,7 @@ fn current_char_with_context(
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
-enum MantissaState<'a> {
+enum MantissaState {
     MinusOrInteger,
     Leading(Range<usize>),
     IntegerOrDecimalOrEnd {
@@ -29,22 +29,19 @@ enum MantissaState<'a> {
         dot_range: Range<usize>,
     },
     FractionOrEnd(Range<usize>),
-    End(TokenWithContext<'a>),
+    End(TokenWithContext),
 }
 
-impl<'a> MantissaState<'a> {
-    fn finish(s: &'a str, mantissa: Range<usize>) -> Self {
-        MantissaState::End(TokenWithContext {
-            token: Token::Mantissa(&s[mantissa]),
-            range: mantissa,
-        })
+impl MantissaState {
+    fn finish(mantissa: Range<usize>) -> Self {
+        MantissaState::End(TokenWithContext::new(Token::Mantissa, mantissa))
     }
 
     fn process(
         self,
         bytes: &mut Peekable<impl Iterator<Item = ByteWithContext>>,
-        input: &'a str,
-    ) -> Result<'a, Self> {
+        input: &str,
+    ) -> Result<Self> {
         let res = match self {
             MantissaState::MinusOrInteger => match bytes.peek().copied() {
                 Some(byte @ ByteWithContext(_, JsonByte(b'-'))) => {
@@ -144,7 +141,7 @@ impl<'a> MantissaState<'a> {
                         dot_range: byte.range(),
                     }
                 }
-                _ => Self::finish(input, mantissa),
+                _ => Self::finish(mantissa),
             },
             MantissaState::Fraction {
                 mantissa,
@@ -171,7 +168,7 @@ impl<'a> MantissaState<'a> {
                     bytes.next();
                     MantissaState::FractionOrEnd(mantissa.start..byte.range().end)
                 }
-                _ => Self::finish(input, mantissa),
+                _ => Self::finish(mantissa),
             },
             MantissaState::End(_) => self,
         };
@@ -181,7 +178,7 @@ impl<'a> MantissaState<'a> {
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
-enum ExponentState<'a> {
+enum ExponentState {
     MinusOrPlusOrDigit {
         exponent_range: Range<usize>,
     },
@@ -196,15 +193,15 @@ enum ExponentState<'a> {
         exp_end: usize,
     },
     Zero,
-    End(&'a str, Range<usize>),
+    End(Range<usize>),
 }
 
-impl<'a> ExponentState<'a> {
+impl ExponentState {
     fn process(
         self,
         bytes: &mut Peekable<impl Iterator<Item = ByteWithContext>>,
-        input: &'a str,
-    ) -> Result<'a, Self> {
+        input: &str,
+    ) -> Result<Self> {
         let res = match self {
             ExponentState::MinusOrPlusOrDigit { exponent_range } => match bytes.peek().copied() {
                 Some(byte @ ByteWithContext(_, JsonByte(b'+'))) => {
@@ -281,13 +278,13 @@ impl<'a> ExponentState<'a> {
                 }
                 _ => {
                     if has_nonzero {
-                        ExponentState::End(&input[exp_start..exp_end], exp_start..exp_end)
+                        ExponentState::End(exp_start..exp_end)
                     } else {
                         ExponentState::Zero
                     }
                 }
             },
-            ExponentState::Zero | ExponentState::End(_, _) => self,
+            ExponentState::Zero | ExponentState::End(_) => self,
         };
 
         Ok(res)
@@ -307,10 +304,10 @@ impl<'a> ExponentState<'a> {
 /// zero          = %x30              ; 0
 /// ```
 /// See [RFC 8259 Section 6](https://datatracker.ietf.org/doc/html/rfc8259#section-6)
-pub fn parse_mantissa<'a>(
-    input: &'a str,
+pub fn parse_mantissa(
+    input: &str,
     bytes: &mut Peekable<impl Iterator<Item = ByteWithContext>>,
-) -> Result<'a, TokenWithContext<'a>> {
+) -> Result<TokenWithContext> {
     let mut state = MantissaState::MinusOrInteger;
 
     loop {
@@ -334,21 +331,18 @@ pub fn parse_mantissa<'a>(
 /// zero          = %x30              ; 0
 /// ```
 /// See [RFC 8259 Section 6](https://datatracker.ietf.org/doc/html/rfc8259#section-6)
-pub fn parse_exponent<'a>(
-    input: &'a str,
+pub fn parse_exponent(
+    input: &str,
     exponent_range: Range<usize>,
     bytes: &mut Peekable<impl Iterator<Item = ByteWithContext>>,
-) -> Result<'a, Option<TokenWithContext<'a>>> {
+) -> Result<Option<TokenWithContext>> {
     let mut state = ExponentState::MinusOrPlusOrDigit { exponent_range };
 
     loop {
         state = state.process(bytes, input)?;
         match state {
-            ExponentState::End(slice, range) => {
-                break Ok(Some(TokenWithContext {
-                    token: Token::Exponent(slice),
-                    range,
-                }));
+            ExponentState::End(range) => {
+                break Ok(Some(TokenWithContext::new(Token::Exponent, range)));
             }
             ExponentState::Zero => break Ok(None),
             _ => {}
@@ -363,11 +357,11 @@ mod tests {
     use super::*;
     use crate::tokens::{BytesWithContext, stream};
 
-    fn str_to_tokens<'a>(s: &'a str) -> Result<'a, Vec<TokenWithContext<'a>>> {
+    fn str_to_tokens(s: &str) -> Result<Vec<TokenWithContext>> {
         stream::TokenStream::new(s).collect()
     }
 
-    fn parse_mantissa_from_start<'a>(input: &'a str) -> (Result<'a, TokenWithContext<'a>>, usize) {
+    fn parse_mantissa_from_start(input: &str) -> (Result<TokenWithContext>, usize) {
         let mut bytes = BytesWithContext::new(input, 0).peekable();
         let mut probe = bytes.clone();
         let result = parse_mantissa(input, &mut probe);
@@ -395,7 +389,10 @@ mod tests {
     fn number_tokens(#[case] input: &str, #[case] mantissa: &str, #[case] exponent: Option<&str>) {
         let tokens = str_to_tokens(input).unwrap();
         let result = match tokens.as_slice() {
-            [m] => (&input[m.range.start..m.range.end], None),
+            [m] => {
+                let mr = m.range;
+                (&input[mr.start..mr.end], None)
+            }
             [m, e] => (
                 &input[m.range.start..m.range.end],
                 Some(&input[e.range.start..e.range.end]),

@@ -3,7 +3,7 @@ use std::{borrow::Cow, path::Path};
 
 use crate::{
     Error, ErrorKind,
-    tokens::{JsonCharOption, Token, TokenOption, TokenWithContext, lexical::JsonChar},
+    tokens::{ErrorToken, JsonCharOption, Token, TokenOption, TokenWithContext, lexical::JsonChar},
 };
 pub const EXPECTED_COMMA_OR_CLOSED_CURLY_MESSAGE: &str = "the preceding key/value pair";
 pub const INSERT_MISSING_CLOSED_BRACE_HELP: &str = "insert the missing closed brace";
@@ -82,7 +82,7 @@ impl<'a> Diagnostic<'a> {
     }
 }
 
-fn error_source<'a>(error: &'a Error<'a>) -> Source<'a> {
+fn error_source<'a>(error: &'a Error) -> Source<'a> {
     if error.source_name == "stdin" {
         Source::Stdin(error.source_text.as_str())
     } else {
@@ -108,55 +108,68 @@ fn exponent_patch_suggestions<'a>(
     ]
 }
 
-impl<'a> From<&'a Error<'a>> for Vec<Patch<'a>> {
-    fn from(error: &'a Error<'a>) -> Self {
+impl<'a> From<&'a Error> for Vec<Patch<'a>> {
+    fn from(error: &'a Error) -> Self {
         let source = error_source(error);
         match &error.kind {
             ErrorKind::ExpectedKey(
                 TokenWithContext {
                     token: Token::Comma,
-                    range,
+                    range: comma_range,
                 },
                 TokenOption(Some(_)),
-            ) => {
-                vec![Patch::new(
-                    "consider removing the trailing comma",
-                    *range,
-                    source,
-                    "",
-                )]
-            }
+            ) => vec![Patch::new(
+                "consider removing the trailing comma",
+                *comma_range,
+                source,
+                "",
+            )],
             ErrorKind::ExpectedKey(
                 TokenWithContext {
                     token: Token::Comma,
-                    range,
+                    range: comma_range,
                 },
                 TokenOption(None),
-            ) => {
+            ) => vec![Patch::new(
+                "consider replacing the trailing comma with a closed curly brace",
+                *comma_range,
+                source,
+                "}",
+            )],
+            ErrorKind::ExpectedColon(ctx, TokenOption(None)) => {
+                let r = ctx.range;
                 vec![Patch::new(
-                    "consider replacing the trailing comma with a closed curly brace",
-                    *range,
+                    "insert colon, placeholder value, and closing curly brace",
+                    r.end..r.end,
                     source,
-                    "}",
+                    r#": "garlic bread" }"#,
                 )]
             }
-            ErrorKind::ExpectedColon(ctx, found) => {
-                let (message, replacement) = match found.0.as_ref() {
-                    None => (
-                        "insert colon, placeholder value, and closing curly brace",
-                        r#": "garlic bread" }"#,
-                    ),
-                    Some(Token::Comma) | Some(Token::ClosedCurlyBrace) => {
-                        ("insert colon and placeholder value", r#": "🐟🛹""#)
-                    }
-                    _ => ("insert the missing colon", ": "),
-                };
-
+            ErrorKind::ExpectedColon(
+                ctx,
+                TokenOption(Some(ErrorToken {
+                    tag: Token::Comma, ..
+                }))
+                | TokenOption(Some(ErrorToken {
+                    tag: Token::ClosedCurlyBrace,
+                    ..
+                })),
+            ) => {
+                let r = ctx.range;
                 vec![Patch::new(
-                    message,
-                    ctx.range.end..ctx.range.end,
+                    "insert colon and placeholder value",
+                    r.end..r.end,
                     source,
-                    replacement,
+                    r#": "🐟🛹""#,
+                )]
+            }
+            ErrorKind::ExpectedColon(ctx, _) => {
+                let r = ctx.range;
+                vec![Patch::new(
+                    "insert the missing colon",
+                    r.end..r.end,
+                    source,
+                    ": ",
                 )]
             }
             ErrorKind::ExpectedEntryOrClosedDelimiter {
@@ -169,50 +182,73 @@ impl<'a> From<&'a Error<'a>> for Vec<Patch<'a>> {
                 source,
                 expected.to_string(),
             )],
-            ErrorKind::ExpectedCommaOrClosedCurlyBrace { range, found, .. } => {
-                match found.0.as_ref() {
-                    Some(Token::String(s)) => vec![Patch::new(
-                        Cow::Owned(format!("is {s:?} a key? consider adding a comma")),
-                        range.end..range.end,
-                        source,
-                        ",",
-                    )],
-                    None => vec![Patch::new(
-                        INSERT_MISSING_CLOSED_BRACE_HELP,
-                        range.end..range.end,
-                        source,
-                        "}",
-                    )],
-                    _ => Vec::new(),
-                }
+            ErrorKind::ExpectedEntryOrClosedDelimiter {
+                found: TokenOption(Some(_)),
+                ..
+            } => Vec::new(),
+            ErrorKind::ExpectedCommaOrClosedCurlyBrace {
+                range,
+                found:
+                    TokenOption(Some(
+                        t @ ErrorToken {
+                            tag: Token::String, ..
+                        },
+                    )),
+                ..
+            } => {
+                let s = t.content();
+                vec![Patch::new(
+                    Cow::Owned(format!("is {s} a key? consider adding a comma")),
+                    range.end..range.end,
+                    source,
+                    ",",
+                )]
             }
-            ErrorKind::ExpectedValue(ctx, tok_opt) => match (ctx, tok_opt.0.as_ref()) {
-                (
-                    Some(TokenWithContext {
-                        token: Token::Comma,
-                        range,
-                    }),
-                    Some(Token::ClosedSquareBracket),
-                ) => vec![Patch::new(
-                    "consider removing the trailing comma",
-                    *range,
-                    source,
-                    "",
-                )],
-                (_, None) => vec![Patch::new(
-                    "insert a placeholder value",
-                    error.range.end..error.range.end,
-                    source,
-                    " \"rust is a must\"",
-                )],
-                (_, Some(Token::ClosedCurlyBrace)) => vec![Patch::new(
-                    "consider adding the missing open curly brace",
-                    error.range.end - 1..error.range.end,
-                    source,
-                    "{}",
-                )],
-                _ => Vec::new(),
-            },
+            ErrorKind::ExpectedCommaOrClosedCurlyBrace {
+                range,
+                found: TokenOption(None),
+                ..
+            } => vec![Patch::new(
+                INSERT_MISSING_CLOSED_BRACE_HELP,
+                range.end..range.end,
+                source,
+                "}",
+            )],
+            ErrorKind::ExpectedCommaOrClosedCurlyBrace { .. } => Vec::new(),
+            ErrorKind::ExpectedValue(
+                Some(TokenWithContext {
+                    token: Token::Comma,
+                    range: comma_range,
+                }),
+                TokenOption(Some(ErrorToken {
+                    tag: Token::ClosedSquareBracket,
+                    ..
+                })),
+            ) => vec![Patch::new(
+                "consider removing the trailing comma",
+                *comma_range,
+                source,
+                "",
+            )],
+            ErrorKind::ExpectedValue(_, TokenOption(None)) => vec![Patch::new(
+                "insert a placeholder value",
+                error.range.end..error.range.end,
+                source,
+                " \"rust is a must\"",
+            )],
+            ErrorKind::ExpectedValue(
+                _,
+                TokenOption(Some(ErrorToken {
+                    tag: Token::ClosedCurlyBrace,
+                    ..
+                })),
+            ) => vec![Patch::new(
+                "consider adding the missing open curly brace",
+                error.range.end - 1..error.range.end,
+                source,
+                "{}",
+            )],
+            ErrorKind::ExpectedValue(_, _) => Vec::new(),
             ErrorKind::UnexpectedControlCharacterInString(escaped) => vec![Patch::new(
                 "replace the control character with its escaped form",
                 error.range,
@@ -307,10 +343,6 @@ impl<'a> From<&'a Error<'a>> for Vec<Patch<'a>> {
             },
 
             ErrorKind::ExpectedDigitAfterDot { .. } => Vec::new(),
-            ErrorKind::ExpectedEntryOrClosedDelimiter {
-                found: TokenOption(Some(_)),
-                ..
-            } => Vec::new(),
             ErrorKind::UnexpectedCharacter(_) => Vec::new(),
             ErrorKind::ExpectedHexDigit { .. } => Vec::new(),
             ErrorKind::InvalidEncoding(_) => Vec::new(),
@@ -321,8 +353,8 @@ impl<'a> From<&'a Error<'a>> for Vec<Patch<'a>> {
     }
 }
 
-impl<'a> From<&'a Error<'a>> for Vec<Context<'a>> {
-    fn from(error: &'a Error<'a>) -> Self {
+impl<'a> From<&'a Error> for Vec<Context<'a>> {
+    fn from(error: &'a Error) -> Self {
         let source = error_source(error);
         match &error.kind {
             ErrorKind::ExpectedKey(ctx, _)
@@ -332,7 +364,10 @@ impl<'a> From<&'a Error<'a>> for Vec<Context<'a>> {
             | ErrorKind::ExpectedOpenBrace {
                 context: Some(ctx), ..
             } => vec![Context::new(
-                format!("expected due to {}", ctx.token),
+                format!(
+                    "expected due to `{}`",
+                    &error.source_text[ctx.range.start..ctx.range.end]
+                ),
                 ctx.range,
                 source,
             )],
@@ -345,7 +380,10 @@ impl<'a> From<&'a Error<'a>> for Vec<Context<'a>> {
                     source,
                 ),
                 Context::new(
-                    format!("object opened here by {}", open_ctx.token),
+                    format!(
+                        "object opened here by `{}`",
+                        &error.source_text[open_ctx.range.start..open_ctx.range.end]
+                    ),
                     open_ctx.range,
                     source,
                 ),
@@ -408,10 +446,10 @@ impl<'a> From<&'a Error<'a>> for Vec<Context<'a>> {
     }
 }
 
-impl<'a> From<&'a Error<'a>> for Diagnostic<'a> {
-    fn from(error: &'a Error<'a>) -> Self {
+impl<'a> From<&'a Error> for Diagnostic<'a> {
+    fn from(error: &'a Error) -> Self {
         Diagnostic {
-            message: error.kind.to_string(),
+            message: error.message(),
             range: Some(error.range),
             context: error.into(),
             patches: error.into(),

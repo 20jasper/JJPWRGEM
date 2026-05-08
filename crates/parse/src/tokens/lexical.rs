@@ -25,7 +25,7 @@ impl JsonByte {
         matches!(self.0, b' ' | b'\t' | b'\n' | b'\r')
     }
 
-    pub fn as_token<'a>(&self) -> Option<Token<'a>> {
+    pub fn as_token(&self) -> Option<Token> {
         let token = match self.0 {
             b'{' => Token::OpenCurlyBrace,
             b'}' => Token::ClosedCurlyBrace,

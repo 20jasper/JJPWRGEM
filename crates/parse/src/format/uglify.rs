@@ -6,7 +6,7 @@ use crate::{
     traverse::{Visitor, parse_tokens, parse_value},
 };
 
-pub fn uglify_str(json: &str) -> Result<'_, String> {
+pub fn uglify_str(json: &str) -> Result<String> {
     let mut visitor = UglifyEmitVisitor::default();
     parse_tokens(&mut TokenStream::new(json), json, true, &mut visitor)?;
     Ok(visitor.buf)

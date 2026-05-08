@@ -7,29 +7,29 @@ use crate::{
 };
 
 #[derive(Debug, PartialEq, Eq, Clone)]
-pub enum ArrayState<'a> {
+pub enum ArrayState {
     Open,
     ValueOrEnd {
-        open_ctx: TokenWithContext<'a>,
+        open_ctx: TokenWithContext,
     },
     Value {
-        open_ctx: TokenWithContext<'a>,
-        expect_ctx: TokenWithContext<'a>,
+        open_ctx: TokenWithContext,
+        expect_ctx: TokenWithContext,
     },
     CommaOrEnd {
-        open_ctx: TokenWithContext<'a>,
+        open_ctx: TokenWithContext,
         last_value_range: Range<usize>,
     },
     End(Range<usize>),
 }
 
-impl<'a> ArrayState<'a> {
-    pub fn process(
+impl ArrayState {
+    pub fn process<'a>(
         self,
         tokens: &mut TokenStream<'a>,
         text: &'a str,
         visitor: &mut impl Visitor<'a>,
-    ) -> Result<'a, Self> {
+    ) -> Result<Self> {
         let next_state = match self {
             ArrayState::Open => match tokens.next_token()? {
                 Some(
@@ -151,7 +151,7 @@ pub fn parse_array<'a>(
     tokens: &mut TokenStream<'a>,
     text: &'a str,
     visitor: &mut impl Visitor<'a>,
-) -> Result<'a, Range<usize>> {
+) -> Result<Range<usize>> {
     let mut state = ArrayState::Open;
 
     loop {

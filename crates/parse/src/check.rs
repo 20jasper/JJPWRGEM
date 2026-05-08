@@ -22,7 +22,7 @@ impl<'a> Visitor<'a> for NoopVisitor {
     fn on_item_delim(&mut self) {}
 }
 
-pub fn validate_str<'a>(json: &'a str) -> Result<'a, ()> {
+pub fn validate_str(json: &str) -> Result<()> {
     let mut visitor = NoopVisitor;
     parse_tokens(&mut TokenStream::new(json), json, true, &mut visitor)?;
     Ok(())
