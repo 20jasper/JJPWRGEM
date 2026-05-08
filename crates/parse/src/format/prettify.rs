@@ -160,13 +160,8 @@ pub fn join_into<T, B>(
     }
 }
 
-fn number_len(mantissa: &str, exponent: &str) -> usize {
-    mantissa.len()
-        + if exponent.is_empty() {
-            0
-        } else {
-            EXPONENT_MARKER_LEN + exponent.len()
-        }
+fn number_len(mantissa: &str, exponent: Option<&str>) -> usize {
+    mantissa.len() + exponent.map(|e| EXPONENT_MARKER_LEN + e.len()).unwrap_or(0)
 }
 
 fn format_value_into(buf: &mut FormatBuf, val: &Value, depth: usize) {
@@ -175,7 +170,7 @@ fn format_value_into(buf: &mut FormatBuf, val: &Value, depth: usize) {
         Value::String(s) => buf.push_quoted(s),
         Value::Number { mantissa, exponent } => {
             buf.push_str(mantissa);
-            if !exponent.is_empty() {
+            if let Some(exponent) = exponent {
                 buf.push('e');
                 buf.push_str(exponent);
             }
@@ -250,7 +245,7 @@ fn fill_format_arr_into(buf: &mut FormatBuf, items: &[Value], depth: usize) {
         let Value::Number { mantissa, exponent } = item else {
             unreachable!("fill_format_arr_into called with non-Number item");
         };
-        let item_len = number_len(mantissa, exponent);
+        let item_len = number_len(mantissa, *exponent);
         if i > 0 {
             buf.push(',');
             let trailing_comma_len = usize::from(i + 1 < items.len());
@@ -368,7 +363,7 @@ mod len {
         let len = match val {
             Value::Null => NULL.len(),
             Value::String(s) => quoted_len(s),
-            Value::Number { mantissa, exponent } => number_len(mantissa, exponent),
+            Value::Number { mantissa, exponent } => number_len(mantissa, *exponent),
             Value::Object(entries) => {
                 if entries.is_empty() {
                     BRACE_PAIR_LEN

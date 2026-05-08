@@ -125,7 +125,7 @@ pub fn parse_value<'a>(val: &'a Value, visitor: &mut impl Visitor<'a>) {
         Value::String(s) => visitor.on_string(s),
         Value::Number { mantissa, exponent } => {
             visitor.on_mantissa(mantissa);
-            if !exponent.is_empty() {
+            if let Some(exponent) = exponent {
                 visitor.on_exponent(exponent);
             }
         }

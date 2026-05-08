@@ -49,7 +49,7 @@ pub enum Value<'a> {
     String(&'a str),
     Number {
         mantissa: &'a str,
-        exponent: &'a str,
+        exponent: Option<&'a str>,
     },
     Object(ObjectEntries<'a>),
     Array(Vec<Value<'a>>),
@@ -61,10 +61,10 @@ impl Value<'_> {
         let Value::Number { mantissa, exponent } = self else {
             return None;
         };
-        if exponent.is_empty() {
-            mantissa.parse().ok()
-        } else {
+        if let Some(exponent) = exponent {
             format!("{mantissa}e{exponent}").parse().ok()
+        } else {
+            mantissa.parse().ok()
         }
     }
 }
@@ -199,7 +199,7 @@ mod visitor {
         fn on_mantissa(&mut self, mantissa: &'a str) {
             self.emit_value(Value::Number {
                 mantissa,
-                exponent: "",
+                exponent: None,
             });
         }
 
@@ -207,7 +207,7 @@ mod visitor {
             let Value::Number { exponent: e, .. } = self.last_emitted_mut() else {
                 unreachable!("exponent must follow mantissa")
             };
-            *e = exponent;
+            *e = Some(exponent);
         }
 
         fn on_boolean(&mut self, b: bool) {
