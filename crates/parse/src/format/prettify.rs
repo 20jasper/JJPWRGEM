@@ -3,7 +3,7 @@ use core::iter;
 use crate::{
     Result,
     ast::{Value, parse_str},
-    format::LineEnding,
+    format::{LineEnding, join_into},
     tokens::{FALSE, NULL, TRUE},
 };
 
@@ -121,39 +121,6 @@ pub fn format_str(json: &str, options: FormatOptions, preferred_width: usize) ->
     let mut buf = FormatBuf::new(String::with_capacity(json.len()), options, preferred_width);
     format_value_into(&mut buf, &parse_str(json)?, 0);
     Ok(buf.into_inner())
-}
-
-/// writes formatted delimiters between formatted items
-///
-/// avoids allocating intermediate `String`s declaratively
-/// # Examples
-/// ```
-/// # use jjpwrgem_parse::format::join_into;
-/// # use std::fmt::Write as _;
-///
-/// let mut buf = String::new();
-/// join_into(
-///     &mut buf,
-///     [1, 2, 3, 4],
-///     |buf, x| write!(buf, "{}", x * 2).unwrap(),
-///     |buf, _| write!(buf, ",").unwrap(),
-/// );
-/// assert_eq!(buf, "2,4,6,8");
-/// ```
-pub fn join_into<T, B>(
-    buf: &mut B,
-    items: impl IntoIterator<Item = T>,
-    mut item_fmt: impl FnMut(&mut B, &T),
-    mut delim_fmt: impl FnMut(&mut B, &T),
-) {
-    let mut iter = items.into_iter();
-    if let Some(first) = iter.next() {
-        item_fmt(buf, &first);
-        for item in iter {
-            delim_fmt(buf, &item);
-            item_fmt(buf, &item);
-        }
-    }
 }
 
 fn number_len(mantissa: &str, exponent: Option<&str>) -> usize {
