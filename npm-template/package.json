@@ -1,66 +1,92 @@
 {
   "name": "jjpwrgem",
   "version": "0.5.5",
+  "private": false,
   "description": "jjpwrgem json parser with really good error messages",
   "keywords": [
     "command-line-utilities",
-    "text-processing",
     "encoding",
-    "parser",
     "formatter",
     "json",
-    "linter"
+    "linter",
+    "parser",
+    "text-processing"
   ],
   "homepage": "https://github.com/20jasper/jjpwrgem",
   "license": "MIT",
   "author": "Jacob Asper <jacobasper191@gmail.com>",
-  "main": "",
-  "bin": { "jjp": "run-jjp.js" },
   "repository": "https://github.com/20jasper/jjpwrgem",
-  "scripts": { "postinstall": "node ./install.js" },
-  "dependencies": { "detect-libc": "^2.1.2" },
-  "devDependencies": {},
-  "engines": { "node": ">=14", "npm": ">=6" },
-  "private": false,
+  "bin": {
+    "jjp": "run-jjp.js"
+  },
   "type": "",
+  "main": "",
+  "scripts": {
+    "postinstall": "node ./install.js"
+  },
+  "dependencies": {
+    "detect-libc": "^2.1.2"
+  },
+  "devDependencies": {},
+  "engines": {
+    "node": ">=14",
+    "npm": ">=6"
+  },
+  "artifactDownloadUrl": "https://github.com/20jasper/jjpwrgem/releases/download/jjpwrgem-v0.5.5",
+  "glibcMinimum": {
+    "major": 2,
+    "series": 35
+  },
   "preferUnplugged": true,
-  "glibcMinimum": { "major": 2, "series": 35 },
   "supportedPlatforms": {
     "aarch64-apple-darwin": {
       "artifactName": "jjpwrgem-aarch64-apple-darwin.tar.xz",
-      "bins": { "jjp": "jjp" },
+      "bins": {
+        "jjp": "jjp"
+      },
       "zipExt": ".tar.xz"
     },
     "aarch64-unknown-linux-gnu": {
       "artifactName": "jjpwrgem-aarch64-unknown-linux-gnu.tar.xz",
-      "bins": { "jjp": "jjp" },
+      "bins": {
+        "jjp": "jjp"
+      },
       "zipExt": ".tar.xz"
     },
     "x86_64-apple-darwin": {
       "artifactName": "jjpwrgem-x86_64-apple-darwin.tar.xz",
-      "bins": { "jjp": "jjp" },
+      "bins": {
+        "jjp": "jjp"
+      },
       "zipExt": ".tar.xz"
     },
     "x86_64-unknown-linux-gnu": {
       "artifactName": "jjpwrgem-x86_64-unknown-linux-gnu.tar.xz",
-      "bins": { "jjp": "jjp" },
+      "bins": {
+        "jjp": "jjp"
+      },
       "zipExt": ".tar.xz"
     },
     "x86_64-pc-windows-gnu": {
       "artifactName": "jjpwrgem-x86_64-pc-windows-msvc.zip",
-      "bins": { "jjp": "jjp.exe" },
+      "bins": {
+        "jjp": "jjp.exe"
+      },
       "zipExt": ".zip"
     },
     "aarch64-pc-windows-msvc": {
       "artifactName": "jjpwrgem-x86_64-pc-windows-msvc.zip",
-      "bins": { "jjp": "jjp.exe" },
+      "bins": {
+        "jjp": "jjp.exe"
+      },
       "zipExt": ".zip"
     },
     "x86_64-pc-windows-msvc": {
       "artifactName": "jjpwrgem-x86_64-pc-windows-msvc.zip",
-      "bins": { "jjp": "jjp.exe" },
+      "bins": {
+        "jjp": "jjp.exe"
+      },
       "zipExt": ".zip"
     }
-  },
-  "artifactDownloadUrl": "https://github.com/20jasper/jjpwrgem/releases/download/jjpwrgem-v0.5.5"
+  }
 }

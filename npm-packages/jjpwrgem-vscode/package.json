@@ -1,21 +1,14 @@
 {
   "name": "jjpwrgem-vscode",
   "displayName": "jjpwrgem-vscode",
-  "description": "format json with jjpwrgem!",
   "version": "0.0.1",
-  "type": "commonjs",
-  "publisher": "20jasper",
-  "engines": {
-    "vscode": "^1.107.0"
-  },
+  "description": "format json with jjpwrgem!",
   "categories": [
     "Other"
   ],
-  "activationEvents": [
-    "onLanguage:json"
-  ],
+  "publisher": "20jasper",
+  "type": "commonjs",
   "main": "./dist/extension.js",
-  "contributes": {},
   "scripts": {
     "vscode:prepublish": "pnpm run package",
     "compile": "pnpm run check-types && pnpm run lint && node esbuild.js",
@@ -29,6 +22,9 @@
     "check-types": "tsc --noEmit",
     "lint": "eslint src --max-warnings=0",
     "test": "vscode-test"
+  },
+  "dependencies": {
+    "jjpwrgem": "workspace:^"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.2",
@@ -45,7 +41,11 @@
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.50.0"
   },
-  "dependencies": {
-    "jjpwrgem": "workspace:^"
+  "contributes": {},
+  "activationEvents": [
+    "onLanguage:json"
+  ],
+  "engines": {
+    "vscode": "^1.107.0"
   }
 }

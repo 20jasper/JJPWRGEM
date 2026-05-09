@@ -33,7 +33,7 @@ tools-install-bench:
     cargo binstall rustfilt@0.2.1 -y
 
 prettier := "pnpm exec oxfmt"
-prettier_glob := "./**/*.{md,yaml,yml,ts,js}"
+prettier_glob := "./**/*.{md,yaml,yml,ts,js,json}"
 
 # format rust, justfile, and markdown
 [group('lint')]
@@ -120,6 +120,7 @@ npm-markdown:
 [group('npm')]
 package-json: npm-markdown
     cargo xtask generate-npm-package
+    {{ prettier }} npm-template/package.json --write
     cd ./npm-template && npm i --ignore-scripts --no-fund && npm shrinkwrap && git add npm-shrinkwrap.json
 
 # regenerated npm package metadata and checks for changes

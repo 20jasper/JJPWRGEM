@@ -6,18 +6,14 @@
 pre-push:
   parallel: true
   jobs:
+    - run: just package-json-check && just format-check
     - run: just lint
       glob: "*.rs"
-    - run: just format-check
-      glob:
-        - "justfile"
-        - "**/*.{rs,md,yml,ts,js}"
     - run: cargo shear
     - run: dist plan > /dev/null
     - run: just publish-dry-run bytes2chars
       glob: "crates/bytes2chars/**"
     - run: just readmes-check
-    - run: just package-json-check
     - run: just test
       glob: "**/*.rs"
 
@@ -27,7 +23,7 @@ pre-commit:
     - run: just format
       glob:
         - "justfile"
-        - "**/*.{rs,md,yml,ts,js}"
+        - "**/*.{rs,md,yml,ts,js,json}"
       stage_fixed: true
     - run: just readmes && git add "**/*.md" *.md
       glob:
