@@ -23,7 +23,7 @@ jobs:
         uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8 # stable
 
       - name: Install just
-        uses: taiki-e/install-action@d7a49667ab48375774f4add272c526ef8ae55dcd # just
+        uses: taiki-e/install-action@e2cb24b1c47c69de6ab0e673c14cbb39b6d6e299 # just
       - name: Generate npm package manifest
         run: just package-json
 
