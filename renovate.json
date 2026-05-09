@@ -1,16 +1,28 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": [
-    "config:best-practices"
-  ],
-   "packageRules": [
+  "extends": ["config:best-practices"],
+  "packageRules": [
     {
       "matchManagers": ["dockerfile", "mise", "cargo"],
       "matchFileNames": ["xtask/bench/**", "benches/**", "Dockerfile"],
       "groupName": "benches"
+    },
+    {
+      "matchManagers": ["cargo"],
+      "matchDepTypes": ["dev-dependencies"],
+      "groupName": "rust dev dependencies"
+    },
+    {
+      "matchManagers": ["npm"],
+      "matchDepTypes": ["dev-dependencies"],
+      "groupName": "npm dev dependencies"
+    },
+
+    {
+      "matchManagers": ["github-actions"],
+      "groupName": "github actions",
+      "matchUpdateTypes": ["patch", "minor"]
     }
   ],
-  "ignorePaths": [
-	  ".github/workflows/jjp-release.yml"
-  ]
+  "ignorePaths": [".github/workflows/jjp-release.yml"]
 }
