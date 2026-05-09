@@ -102,12 +102,12 @@ fn feature(#[case] args: &[&str]) {
         assert!(
             case.expected != JsonResult::Fail || !output.status.success(),
             "expected failure: {}",
-            &case.file_name,
+            case.file_name,
         );
         assert!(
             case.expected != JsonResult::Pass || output.status.success(),
             "expected success: {}",
-            &case.file_name,
+            case.file_name,
         );
     }
 }
