@@ -2,5 +2,15 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
     "config:best-practices"
+  ],
+   "packageRules": [
+    {
+      "matchManagers": ["dockerfile", "mise", "cargo"],
+      "matchFileNames": ["xtask/bench/**", "benches/**", "Dockerfile"],
+      "groupName": "benches"
+    }
+  ],
+  "ignorePaths": [
+	  ".github/workflows/jjp-release.yml"
   ]
 }
