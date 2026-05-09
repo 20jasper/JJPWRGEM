@@ -51,6 +51,7 @@
     }
   ],
   "ignorePaths": [
-    ".github/workflows/jjp-release.yml"
+    ".github/workflows/jjp-release.yml",
+    "npm-packages/jjpwrgem-vscode/**"
   ]
 }
