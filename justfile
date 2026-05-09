@@ -38,13 +38,13 @@ prettier_glob := "./**/*.{md,yaml,yml,ts,js}"
 # format rust, justfile, and markdown
 [group('lint')]
 format:
-    cargo +nightly fmt --all
+    cargo fmt --all
     just --fmt --unstable
     {{ prettier }} {{ prettier_glob }} --write
 
 [group('lint')]
 format-check:
-    cargo +nightly fmt --all -- --check
+    cargo fmt --all -- --check
     just --fmt --unstable --check
     {{ prettier }} {{ prettier_glob }} --check
 
