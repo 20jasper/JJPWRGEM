@@ -5,7 +5,8 @@
     {
       "matchManagers": ["dockerfile", "mise", "cargo"],
       "matchFileNames": ["xtask/bench/**", "benches/**", "Dockerfile"],
-      "groupName": "benches"
+      "groupName": "benches",
+      "rangeStrategy": "pin"
     },
     {
       "matchManagers": ["cargo"],
