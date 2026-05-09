@@ -58,7 +58,7 @@ RUN --mount=type=bind,source=crates,target=crates \
     cargo build --locked --release && \
     install -Dm755 ./target/release/$APP_NAME /usr/local/cargo/bin/$APP_NAME
 
-FROM node:24-bullseye AS mise
+FROM node:24.15.0-bullseye@sha256:56f6060597e3a8eb0777806826a3bfcd53427bfbd68f375626a0ef8053a3bd90 AS mise
 ARG BENCHMARK_PATH="./xtask/bench"
 
 COPY ${BENCHMARK_PATH}/mise.toml /mise/mise.toml
@@ -86,7 +86,7 @@ RUN --mount=type=secret,id=gh_token \
     GITHUB_TOKEN="$(cat /run/secrets/gh_token 2>/dev/null || true)" \
     MISE_JOBS=1 mise install
 
-FROM node:24-bullseye AS final
+FROM node:24.15.0-bullseye@sha256:56f6060597e3a8eb0777806826a3bfcd53427bfbd68f375626a0ef8053a3bd90 AS final
 
 RUN apt-get update && apt-get install -y \
     curl \
