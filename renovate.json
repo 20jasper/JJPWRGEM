@@ -6,21 +6,26 @@
       "matchManagers": ["dockerfile", "mise", "cargo"],
       "matchFileNames": ["xtask/bench/**", "benches/**", "Dockerfile"],
       "groupName": "benches",
-      "rangeStrategy": "pin"
+      "rangeStrategy": "pin",
+      "automerge": true
     },
-
     {
       "matchManagers": ["cargo"],
       "groupName": "rust deps (minor + patch)",
       "matchUpdateTypes": ["patch", "minor"]
     },
-
+    {
+      "matchManagers": ["cargo", "npm"],
+      "matchDepTypes": ["devDependencies"],
+      "groupName": "dev deps (minor + patch)",
+      "matchUpdateTypes": ["patch", "minor"],
+      "automerge": true
+    },
     {
       "matchManagers": ["cargo"],
       "groupName": "rust deps (major)",
       "matchUpdateTypes": ["major"]
     },
-
     {
       "matchManagers": ["npm"],
       "matchDepTypes": ["dependencies"],
@@ -34,11 +39,12 @@
       "matchUpdateTypes": ["major"],
       "dependencyDashboardApproval": true
     },
-
     {
       "matchManagers": ["github-actions"],
       "groupName": "github actions",
-      "matchUpdateTypes": ["patch", "minor", "digest"]
+      "matchUpdateTypes": ["patch", "minor", "digest"],
+      "automerge": true,
+      "minimumReleaseAge": "14 days"
     }
   ],
   "ignorePaths": [
