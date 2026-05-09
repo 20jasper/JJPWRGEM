@@ -1,53 +1,44 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": [
-    "config:best-practices"
-  ],
+  "extends": ["config:best-practices"],
   "packageRules": [
     {
-      "matchManagers": [
-        "dockerfile",
-        "mise",
-        "cargo"
-      ],
-      "matchFileNames": [
-        "xtask/bench/**",
-        "benches/**",
-        "Dockerfile"
-      ],
+      "matchManagers": ["dockerfile", "mise", "cargo"],
+      "matchFileNames": ["xtask/bench/**", "benches/**", "Dockerfile"],
       "groupName": "benches",
       "rangeStrategy": "pin"
     },
+
     {
-      "matchManagers": [
-        "cargo"
-      ],
-      "matchFileNames": [
-        "crates/cli/**"
-      ],
-      "groupName": "binary dependencies"
+      "matchManagers": ["cargo"],
+      "groupName": "rust deps (minor + patch)",
+      "matchUpdateTypes": ["patch", "minor"]
+    },
+
+    {
+      "matchManagers": ["cargo"],
+      "groupName": "rust deps (major)",
+      "matchUpdateTypes": ["major"]
+    },
+
+    {
+      "matchManagers": ["npm"],
+      "matchDepTypes": ["dependencies"],
+      "groupName": "npm runtime deps (minor + patch)",
+      "matchUpdateTypes": ["patch", "minor"]
     },
     {
-      "matchDepTypes": [
-        "devDependencies",
-        "dev-dependencies"
-      ],
-      "groupName": "dev deps",
-      "matchUpdateTypes": [
-        "patch",
-        "minor"
-      ]
+      "matchManagers": ["npm"],
+      "matchDepTypes": ["dependencies"],
+      "groupName": "npm runtime deps (major)",
+      "matchUpdateTypes": ["major"],
+      "dependencyDashboardApproval": true
     },
+
     {
-      "matchManagers": [
-        "github-actions"
-      ],
+      "matchManagers": ["github-actions"],
       "groupName": "github actions",
-      "matchUpdateTypes": [
-        "patch",
-        "minor",
-        "digest"
-      ]
+      "matchUpdateTypes": ["patch", "minor", "digest"]
     }
   ],
   "ignorePaths": [
