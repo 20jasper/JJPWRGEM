@@ -10,7 +10,8 @@
     },
     {
       "matchDepTypes": ["devDependencies", "dev-dependencies"],
-      "matchUpdateTypes": ["patch", "minor"]
+      "groupName": "dev deps",
+      "matchUpdateTypes": ["patch", "minor"],
     },
 
     {
