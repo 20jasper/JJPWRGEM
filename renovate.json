@@ -11,7 +11,7 @@
     {
       "matchDepTypes": ["devDependencies", "dev-dependencies"],
       "groupName": "dev deps",
-      "matchUpdateTypes": ["patch", "minor"],
+      "matchUpdateTypes": ["patch", "minor"]
     },
 
     {
