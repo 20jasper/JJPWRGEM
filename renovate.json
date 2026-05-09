@@ -9,20 +9,19 @@
       "rangeStrategy": "pin"
     },
     {
-      "matchManagers": ["cargo"],
-      "matchDepTypes": ["dev-dependencies"],
-      "groupName": "rust dev dependencies"
-    },
-    {
-      "matchManagers": ["npm"],
-      "matchDepTypes": ["dev-dependencies"],
-      "groupName": "npm dev dependencies"
+      "matchDepTypes": ["devDependencies", "dev-dependencies"],
+      "matchUpdateTypes": ["patch", "minor"]
     },
 
     {
       "matchManagers": ["github-actions"],
       "groupName": "github actions",
-      "matchUpdateTypes": ["patch", "minor"]
+      "matchUpdateTypes": ["patch", "minor", "digest"]
+    },
+    {
+      "matchManagers": ["cargo"],
+      "matchFileNames": ["crates/cli/**"],
+      "groupName": "binary dependencies"
     }
   ],
   "ignorePaths": [".github/workflows/jjp-release.yml"]
