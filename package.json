@@ -2,11 +2,11 @@
   "name": "root",
   "version": "1.0.0",
   "private": true,
-  "description": "",
-  "main": "index.js",
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "engines": {
+    "node": ">=22",
+    "pnpm": "10"
+  },
+  "packageManager": "pnpm@10.1.0",
   "devDependencies": {
     "oxfmt": "0.48.0",
     "prettier": "3.8.3"
