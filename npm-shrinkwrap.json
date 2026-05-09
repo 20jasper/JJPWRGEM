@@ -7,10 +7,13 @@
     "": {
       "name": "root",
       "version": "1.0.0",
-      "license": "ISC",
       "devDependencies": {
         "oxfmt": "0.48.0",
         "prettier": "3.8.3"
+      },
+      "engines": {
+        "node": ">=22",
+        "pnpm": "10"
       }
     },
     "node_modules/@oxfmt/binding-android-arm-eabi": {
