@@ -1,29 +1,56 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["config:best-practices"],
+  "extends": [
+    "config:best-practices"
+  ],
   "packageRules": [
     {
-      "matchManagers": ["dockerfile", "mise", "cargo"],
-      "matchFileNames": ["xtask/bench/**", "benches/**", "Dockerfile"],
+      "matchManagers": [
+        "dockerfile",
+        "mise",
+        "cargo"
+      ],
+      "matchFileNames": [
+        "xtask/bench/**",
+        "benches/**",
+        "Dockerfile"
+      ],
       "groupName": "benches",
       "rangeStrategy": "pin"
     },
     {
-      "matchDepTypes": ["devDependencies", "dev-dependencies"],
-      "groupName": "dev deps",
-      "matchUpdateTypes": ["patch", "minor"]
-    },
-
-    {
-      "matchManagers": ["github-actions"],
-      "groupName": "github actions",
-      "matchUpdateTypes": ["patch", "minor", "digest"]
-    },
-    {
-      "matchManagers": ["cargo"],
-      "matchFileNames": ["crates/cli/**"],
+      "matchManagers": [
+        "cargo"
+      ],
+      "matchFileNames": [
+        "crates/cli/**"
+      ],
       "groupName": "binary dependencies"
+    },
+    {
+      "matchDepTypes": [
+        "devDependencies",
+        "dev-dependencies"
+      ],
+      "groupName": "dev deps",
+      "matchUpdateTypes": [
+        "patch",
+        "minor"
+      ]
+    },
+    {
+      "matchManagers": [
+        "github-actions"
+      ],
+      "groupName": "github actions",
+      "matchUpdateTypes": [
+        "patch",
+        "minor",
+        "digest"
+      ]
     }
   ],
-  "ignorePaths": [".github/workflows/jjp-release.yml"]
+  "ignorePaths": [
+    ".github/workflows/jjp-release.yml"
+  ]
 }
