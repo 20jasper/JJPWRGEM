@@ -1,6 +1,6 @@
 [tools]
 bun = "latest"
-python = "3.13"
+python = "3.14.4"
 uv = "latest"
 "npm:json-minify" = "latest"
 "npm:prettier" = "latest"

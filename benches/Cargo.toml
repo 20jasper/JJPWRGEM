@@ -9,14 +9,14 @@ include = []
 
 [dev-dependencies]
 bytes2chars = { path = "../crates/bytes2chars" }
-criterion = { package = "codspeed-criterion-compat", version = "4.6.0" }
-gungraun = "0.18.1"
+criterion = { package = "codspeed-criterion-compat", version = "=4.6.0" }
+gungraun = "=0.18.1"
 jjpwrgem-parse = { path = "../crates/parse" }
-serde_json = "1"
-simd-json = "0.17"
-sonic-rs = "0.5"
-utf8-decode = "2.0.0"
-bstr = "1"
+serde_json = "=1.0.149"
+simd-json = "=0.17.0"
+sonic-rs = "=0.5.8"
+utf8-decode = "=2.0.0"
+bstr = "=1.12.1"
 
 [[bench]]
 name = "bytes2chars"
