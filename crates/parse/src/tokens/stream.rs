@@ -135,20 +135,14 @@ impl<'a> Iterator for TokenStreamInner<'a> {
                     }
                 }
                 b'n' | b't' | b'f' => {
-                    let expected = match ctx.as_byte() {
-                        b'n' => NULL,
-                        b't' => TRUE,
-                        b'f' => FALSE,
+                    let (expected, token) = match ctx.as_byte() {
+                        b'n' => (NULL, Token::Null),
+                        b't' => (TRUE, Token::True),
+                        b'f' => (FALSE, Token::False),
                         _ => unreachable!("matched above"),
                     };
                     let end = self.pos + expected.len();
                     if self.input.as_bytes().get(self.pos..end) == Some(expected.as_bytes()) {
-                        let token = match ctx.as_byte() {
-                            b'n' => Token::Null,
-                            b't' => Token::True,
-                            b'f' => Token::False,
-                            _ => unreachable!("matched above"),
-                        };
                         self.pos = end;
                         Ok(TokenWithContext::new(token, ctx.0..end))
                     } else {
