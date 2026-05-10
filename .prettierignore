@@ -1,6 +1,7 @@
 crates/bytes2chars/README.md
 tests/conformance
 xtask/bench/data
+xtask/bench/output/
 .github/workflows/jjp-release.yml
 CHANGELOG.md
 pnpm-lock.yaml
