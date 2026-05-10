@@ -9,29 +9,6 @@ default:
 submodules:
     git submodule update --init --recursive
 
-# install required devtools via cargo binstall
-[group('dev')]
-tools-install:
-    cargo binstall cargo-watch@8.5 -y
-    cargo binstall cargo-llvm-cov@0.8 -y
-    cargo binstall cargo-insta@1.46 -y
-    cargo binstall cargo-shear@1.11 -y
-    cargo binstall cargo-diet@1.3.0 -y
-    cargo binstall cargo-dist@0.31.0 -y
-    cargo binstall release-plz@0.3 -y
-    cargo binstall cargo-rdme@1.5 -y
-    cargo binstall tracey@1.3.0 -y
-    cargo binstall cargo-release@0.25 -y
-    just tools-install-bench
-
-# install bench devtools (also requires valgrind, kcachegrind, and callgrind from system package manager)
-[group('dev')]
-tools-install-bench:
-    cargo binstall cargo-criterion@1.1.0 -y
-    cargo binstall cargo-codspeed@4.6.0 -y
-    cargo binstall gungraun-runner@0.18.1 -y
-    cargo binstall rustfilt@0.2.1 -y
-
 prettier := "pnpm exec oxfmt"
 prettier_glob := "./**/*.{md,yaml,yml,ts,js,json}"
 
