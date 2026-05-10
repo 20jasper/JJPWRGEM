@@ -45,6 +45,10 @@
       "matchUpdateTypes": ["patch", "minor", "digest"],
       "automerge": true,
       "minimumReleaseAge": "14 days"
+    },
+    {
+      "matchManagers": ["git-submodules"],
+      "automerge": true
     }
   ],
   "ignorePaths": [
