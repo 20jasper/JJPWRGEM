@@ -264,6 +264,28 @@ pub fn write_readmes() {
     fs::write(JSON_BENCH_OUT_PATH_STR, json_bench_rendered).unwrap();
 }
 
+fn check_readme(path: &str, existing: &str, generated: &str) -> anyhow::Result<()> {
+    if existing == generated {
+        return Ok(());
+    }
+    let diff = existing
+        .lines()
+        .zip(generated.lines())
+        .enumerate()
+        .find(|(_, (a, b))| a != b);
+    if let Some((i, (a, b))) = diff {
+        bail!(
+            "{path} out of date — first diff at line {}\n  existing:  {a:?}\n  generated: {b:?}",
+            i + 1
+        );
+    }
+    bail!(
+        "{path} out of date — length differs: {} vs {} chars",
+        existing.len(),
+        generated.len()
+    );
+}
+
 pub fn are_readmes_updated() -> anyhow::Result<()> {
     let badge = coverage_badge(COVERAGE);
     let root_rendered =
@@ -280,19 +302,19 @@ pub fn are_readmes_updated() -> anyhow::Result<()> {
     let json_bench_rendered =
         render_template(JSON_BENCH_TEMPLATE, &JSON_BENCH_TABLE_REPLACEMENTS).unwrap();
 
-    if EXISTING_ROOT != root_rendered {
-        bail!("readme.md out of date (root)")
-    } else if EXISTING_PARSE != parse_rendered {
-        bail!("crates/parse/readme.md out of date")
-    } else if EXISTING_BENCH != bench_rendered {
-        bail!("benches/BENCHMARKS.md out of date")
-    } else if EXISTING_CLI_BENCH != cli_bench_rendered {
-        bail!("benches/cli-formatter.md out of date")
-    } else if EXISTING_BYTES2CHARS_BENCH != bytes2chars_bench_rendered {
-        bail!("benches/utf8.md out of date")
-    } else if EXISTING_JSON_BENCH != json_bench_rendered {
-        bail!("benches/json.md out of date")
-    } else {
-        Ok(())
-    }
+    check_readme("readme.md", EXISTING_ROOT, &root_rendered)?;
+    check_readme("crates/parse/readme.md", EXISTING_PARSE, &parse_rendered)?;
+    check_readme("benches/BENCHMARKS.md", EXISTING_BENCH, &bench_rendered)?;
+    check_readme(
+        "benches/cli-formatter.md",
+        EXISTING_CLI_BENCH,
+        &cli_bench_rendered,
+    )?;
+    check_readme(
+        "benches/utf8.md",
+        EXISTING_BYTES2CHARS_BENCH,
+        &bytes2chars_bench_rendered,
+    )?;
+    check_readme("benches/json.md", EXISTING_JSON_BENCH, &json_bench_rendered)?;
+    Ok(())
 }
