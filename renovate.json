@@ -49,6 +49,43 @@
     {
       "matchManagers": ["git-submodules"],
       "automerge": true
+    },
+    {
+      "matchManagers": ["mise"],
+      "matchFileNames": ["mise.toml"],
+      "matchUpdateTypes": ["patch", "minor"],
+      "groupName": "mise dev tools (patch + minor)",
+      "automerge": true
+    },
+    {
+      "matchPackageNames": ["cargo-insta", "cargo:cargo-insta"],
+      "groupName": "cargo-insta",
+      "automerge": true
+    },
+    {
+      "matchPackageNames": [
+        "codspeed-criterion-compat",
+        "cargo:cargo-codspeed",
+        "cargo:cargo-criterion"
+      ],
+      "groupName": "cargo-codspeed",
+      "automerge": true
+    },
+    {
+      "matchPackageNames": ["gungraun", "cargo:gungraun-runner"],
+      "groupName": "gungraun",
+      "automerge": true
+    },
+    {
+      "matchManagers": ["mise"],
+      "matchFileNames": ["mise.toml"],
+      "matchPackageNames": [
+        "cargo:cargo-dist",
+        "cargo:release-plz",
+        "cargo:cargo-release"
+      ],
+      "groupName": "mise release tools",
+      "dependencyDashboardApproval": true
     }
   ],
   "ignorePaths": [
