@@ -18,6 +18,3 @@ pnpm = "11.0.7"
 "cargo:cargo-codspeed" = "4.6.0"
 "cargo:gungraun-runner" = "0.18.1"
 "cargo:rustfilt" = "0.2.1"
-
-[settings]
-cargo_binstall = true
