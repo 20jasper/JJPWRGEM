@@ -1,5 +1,5 @@
 set working-directory := "."
-set quiet := true
+set quiet
 
 default:
     just --list
