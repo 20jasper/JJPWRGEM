@@ -2,7 +2,7 @@
 just = "1.47"
 jq = "1.8.1"
 lefthook = "2.1.6"
-node = "22"
+node = "24"
 pnpm = "11.0.7"
 "cargo:cargo-watch" = "8.5"
 "cargo:cargo-llvm-cov" = "0.8"
