@@ -1,7 +1,7 @@
 [tools]
 bun = "1.3.13"
 python = "3.14.5"
-uv = "0.11.12"
+uv = "0.11.13"
 "npm:json-minify" = "1.0.0"
 "npm:prettier" = "3.8.3"
 "npm:oxfmt" = "0.48.0"
