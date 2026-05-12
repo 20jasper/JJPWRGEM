@@ -5,8 +5,8 @@ use gungraun::{
     library_benchmark_group, main,
 };
 use jjpwrgem_parse::{
-    ast::{Value, parse_str},
-    format::{LineEnding, prettify_value_into, uglify_str},
+    ast::Document,
+    format::{LineEnding, prettify_document_into, uglify_str},
     tokens::TokenStream,
 };
 
@@ -27,8 +27,8 @@ fn branch_sim_config() -> LibraryBenchmarkConfig {
 #[bench::citm(CITM)]
 #[bench::canada(CANADA)]
 #[bench::twitter(TWITTER)]
-fn bench_deser(json: &'static str) -> jjpwrgem_parse::ast::Value<'static> {
-    parse_str(black_box(json)).unwrap()
+fn bench_deser(json: &'static str) -> Document<&'static str> {
+    Document::parse(black_box(json)).unwrap()
 }
 
 #[library_benchmark]
@@ -39,25 +39,25 @@ fn bench_uglify_tokens(json: &'static str) -> String {
     uglify_str(black_box(json)).unwrap()
 }
 
-fn setup_citm_ast() -> Value<'static> {
-    parse_str(CITM).unwrap()
+fn setup_citm_ast() -> Document<&'static str> {
+    Document::parse(CITM).unwrap()
 }
 
-fn setup_canada_ast() -> Value<'static> {
-    parse_str(CANADA).unwrap()
+fn setup_canada_ast() -> Document<&'static str> {
+    Document::parse(CANADA).unwrap()
 }
 
-fn setup_twitter_ast() -> Value<'static> {
-    parse_str(TWITTER).unwrap()
+fn setup_twitter_ast() -> Document<&'static str> {
+    Document::parse(TWITTER).unwrap()
 }
 
 #[library_benchmark]
 #[bench::citm(setup = setup_citm_ast)]
 #[bench::canada(setup = setup_canada_ast)]
 #[bench::twitter(setup = setup_twitter_ast)]
-fn bench_prettify_ast(ast: Value<'static>) -> String {
+fn bench_prettify_ast(doc: Document<&'static str>) -> String {
     let mut buf = String::new();
-    prettify_value_into(&mut buf, black_box(&ast), 80, LineEnding::Lf);
+    prettify_document_into(&mut buf, black_box(&doc), 80, LineEnding::Lf);
     buf
 }
 

@@ -4,7 +4,7 @@ use criterion::{BatchSize, BenchmarkId, Criterion, Throughput, criterion_group, 
 
 mod json_common;
 
-use jjpwrgem_parse::ast::parse_str;
+use jjpwrgem_parse::ast::Document;
 use json_common::{include_impl, load_inputs};
 
 fn bench_deser(c: &mut Criterion) {
@@ -19,7 +19,7 @@ fn bench_deser(c: &mut Criterion) {
                 BenchmarkId::new("jjpwrgem", name),
                 json.as_str(),
                 |b, json| {
-                    b.iter(|| parse_str(black_box(json)).unwrap());
+                    b.iter(|| Document::parse(black_box(json)).unwrap());
                 },
             );
         }

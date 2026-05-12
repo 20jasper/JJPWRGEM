@@ -2,8 +2,8 @@ use std::hint::black_box;
 
 use criterion::{BenchmarkId, Criterion, Throughput, criterion_group, criterion_main};
 use jjpwrgem_parse::{
-    ast::parse_str,
-    format::{LineEnding, prettify_value_into, uglify_value_into},
+    ast::Document,
+    format::{LineEnding, prettify_document_into, uglify_document_into},
 };
 
 const ZERO_EXPONENT_ARRAY: &str = r#"[
@@ -33,7 +33,7 @@ fn bench_deser(c: &mut Criterion) {
     for (name, json) in INPUTS {
         group.throughput(Throughput::Bytes(json.len() as u64));
         group.bench_function(BenchmarkId::new("jjpwrgem", name), |b| {
-            b.iter(|| parse_str(black_box(json)).unwrap());
+            b.iter(|| Document::parse(black_box(json)).unwrap());
         });
     }
 
@@ -46,15 +46,15 @@ fn bench_prettify(c: &mut Criterion) {
     for (name, json) in INPUTS {
         group.throughput(Throughput::Bytes(json.len() as u64));
 
-        let ast = parse_str(json).unwrap();
+        let ast = Document::parse(*json).unwrap();
         let mut probe = String::new();
-        prettify_value_into(&mut probe, &ast, 80, LineEnding::Lf);
+        prettify_document_into(&mut probe, &ast, 80, LineEnding::Lf);
         let mut buf = String::with_capacity(probe.len());
 
         group.bench_function(BenchmarkId::new("jjpwrgem", name), |b| {
             b.iter(|| {
                 buf.clear();
-                prettify_value_into(&mut buf, black_box(&ast), 80, LineEnding::Lf);
+                prettify_document_into(&mut buf, black_box(&ast), 80, LineEnding::Lf);
                 black_box(&buf);
             });
         });
@@ -69,15 +69,15 @@ fn bench_uglify(c: &mut Criterion) {
     for (name, json) in INPUTS {
         group.throughput(Throughput::Bytes(json.len() as u64));
 
-        let ast = parse_str(json).unwrap();
+        let ast = Document::parse(*json).unwrap();
         let mut probe = String::new();
-        uglify_value_into(&mut probe, &ast);
+        uglify_document_into(&mut probe, &ast);
         let mut buf = String::with_capacity(probe.len());
 
         group.bench_function(BenchmarkId::new("jjpwrgem", name), |b| {
             b.iter(|| {
                 buf.clear();
-                uglify_value_into(&mut buf, black_box(&ast));
+                uglify_document_into(&mut buf, black_box(&ast));
                 black_box(&buf);
             });
         });

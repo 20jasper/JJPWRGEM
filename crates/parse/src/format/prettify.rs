@@ -1,9 +1,9 @@
-use core::iter;
+use core::{iter, range::Range};
 
 use crate::{
     Result,
-    ast::{Value, parse_str},
-    format::{LineEnding, join_into},
+    ast::{Document, Value},
+    format::LineEnding,
     tokens::{FALSE, NULL, TRUE},
 };
 
@@ -14,6 +14,8 @@ const COLON_LEN: usize = 1;
 const EXPONENT_MARKER_LEN: usize = 1;
 const BRACKET_PAIR_LEN: usize = 2;
 const BRACE_PAIR_LEN: usize = 2;
+
+type ObjectEntry = (Range<usize>, Value);
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct FormatOptions {
@@ -119,48 +121,70 @@ impl FormatBuf {
 
 pub fn format_str(json: &str, options: FormatOptions, preferred_width: usize) -> Result<String> {
     let mut buf = FormatBuf::new(String::with_capacity(json.len()), options, preferred_width);
-    format_value_into(&mut buf, &parse_str(json)?, 0);
+    let doc = Document::parse(json)?;
+    format_document_value_into(&mut buf, &doc, doc.root(), 0);
     Ok(buf.into_inner())
 }
 
-fn number_len(mantissa: &str, exponent: Option<&str>) -> usize {
-    mantissa.len() + exponent.map(|e| EXPONENT_MARKER_LEN + e.len()).unwrap_or(0)
+use super::join_into;
+
+fn range_len(range: Range<usize>) -> usize {
+    range.end - range.start
 }
 
-fn format_value_into(buf: &mut FormatBuf, val: &Value, depth: usize) {
+fn number_len(mantissa: Range<usize>, exponent: Option<Range<usize>>) -> usize {
+    range_len(mantissa)
+        + if let Some(exponent) = exponent {
+            EXPONENT_MARKER_LEN + range_len(exponent)
+        } else {
+            0
+        }
+}
+
+fn format_document_value_into<S: AsRef<str>>(
+    buf: &mut FormatBuf,
+    doc: &Document<S>,
+    val: &Value,
+    depth: usize,
+) {
     match val {
         Value::Null => buf.push_str(NULL),
-        Value::String(s) => buf.push_quoted(s),
+        Value::String(r) => buf.push_quoted(doc.slice(*r)),
         Value::Number { mantissa, exponent } => {
-            buf.push_str(mantissa);
+            buf.push_str(doc.slice(*mantissa));
             if let Some(exponent) = exponent {
                 buf.push('e');
-                buf.push_str(exponent);
+                buf.push_str(doc.slice(*exponent));
             }
         }
         Value::Object(entries) if entries.0.is_empty() => buf.push_str("{}"),
         Value::Object(entries) => {
-            if !len::should_expand(val, buf.available_bytes(), buf.delimiter_len()) {
-                compact_format_obj_into(buf, entries.0.as_slice(), depth);
+            if !len::should_expand(doc, val, buf.available_bytes(), buf.delimiter_len()) {
+                compact_format_obj_into(buf, doc, entries.0.as_slice(), depth);
             } else {
-                expanded_format_obj_into(buf, entries.0.as_slice(), depth);
+                expanded_format_obj_into(buf, doc, entries.0.as_slice(), depth);
             }
         }
         Value::Array(items) if items.is_empty() => buf.push_str("[]"),
         Value::Array(items) => {
-            if !len::should_expand(val, buf.available_bytes(), buf.delimiter_len()) {
-                compact_format_arr_into(buf, items, depth);
+            if !len::should_expand(doc, val, buf.available_bytes(), buf.delimiter_len()) {
+                compact_format_arr_into(buf, doc, items, depth);
             } else if items.iter().all(|v| matches!(v, Value::Number { .. })) {
-                fill_format_arr_into(buf, items, depth);
+                fill_format_arr_into(buf, doc, items, depth);
             } else {
-                expanded_format_arr_into(buf, items, depth);
+                expanded_format_arr_into(buf, doc, items, depth);
             }
         }
         Value::Boolean(b) => buf.push_str(if *b { TRUE } else { FALSE }),
     }
 }
 
-fn expanded_format_arr_into(buf: &mut FormatBuf, items: &[Value], depth: usize) {
+fn expanded_format_arr_into<S: AsRef<str>>(
+    buf: &mut FormatBuf,
+    doc: &Document<S>,
+    items: &[Value],
+    depth: usize,
+) {
     buf.push('[');
     buf.write_eol();
     join_into(
@@ -168,7 +192,7 @@ fn expanded_format_arr_into(buf: &mut FormatBuf, items: &[Value], depth: usize) 
         items,
         |buf, val| {
             buf.write_indent(depth + 1);
-            format_value_into(buf, val, depth + 1)
+            format_document_value_into(buf, doc, val, depth + 1)
         },
         |buf, _| {
             buf.push(',');
@@ -180,15 +204,20 @@ fn expanded_format_arr_into(buf: &mut FormatBuf, items: &[Value], depth: usize) 
     buf.push(']');
 }
 
-fn expanded_format_obj_into(buf: &mut FormatBuf, entries: &[(&str, Value)], depth: usize) {
+fn expanded_format_obj_into<S: AsRef<str>>(
+    buf: &mut FormatBuf,
+    doc: &Document<S>,
+    entries: &[ObjectEntry],
+    depth: usize,
+) {
     buf.push('{');
     buf.write_eol();
     join_into(
         buf,
         entries.iter(),
-        |buf, (key, val)| {
+        |buf, (key_range, val)| {
             buf.write_indent(depth + 1);
-            write_object_entry_into(buf, key, val, depth + 1);
+            write_object_entry_into(buf, doc, key_range, val, depth + 1);
         },
         |buf, _| {
             buf.push(',');
@@ -200,7 +229,12 @@ fn expanded_format_obj_into(buf: &mut FormatBuf, entries: &[(&str, Value)], dept
     buf.push('}');
 }
 
-fn fill_format_arr_into(buf: &mut FormatBuf, items: &[Value], depth: usize) {
+fn fill_format_arr_into<S: AsRef<str>>(
+    buf: &mut FormatBuf,
+    doc: &Document<S>,
+    items: &[Value],
+    depth: usize,
+) {
     buf.push('[');
     buf.write_eol();
     buf.write_indent(depth + 1);
@@ -208,7 +242,7 @@ fn fill_format_arr_into(buf: &mut FormatBuf, items: &[Value], depth: usize) {
         let Value::Number { mantissa, exponent } = item else {
             unreachable!("fill_format_arr_into called with non-Number item");
         };
-        let item_len = number_len(mantissa, *exponent);
+        let item_len = number_len(*mantissa, *exponent);
         if i > 0 {
             buf.push(',');
             let trailing_comma_len = usize::from(i + 1 < items.len());
@@ -219,19 +253,24 @@ fn fill_format_arr_into(buf: &mut FormatBuf, items: &[Value], depth: usize) {
                 buf.write_key_val_delimiter();
             }
         }
-        format_value_into(buf, item, depth + 1);
+        format_document_value_into(buf, doc, item, depth + 1);
     }
     buf.write_eol();
     buf.write_indent(depth);
     buf.push(']');
 }
 
-fn compact_format_arr_into(buf: &mut FormatBuf, items: &[Value], depth: usize) {
+fn compact_format_arr_into<S: AsRef<str>>(
+    buf: &mut FormatBuf,
+    doc: &Document<S>,
+    items: &[Value],
+    depth: usize,
+) {
     buf.push('[');
     join_into(
         buf,
         items,
-        |buf, val| format_value_into(buf, val, depth + 1),
+        |buf, val| format_document_value_into(buf, doc, val, depth + 1),
         |buf, _| {
             buf.push(',');
             buf.write_key_val_delimiter();
@@ -240,20 +279,31 @@ fn compact_format_arr_into(buf: &mut FormatBuf, items: &[Value], depth: usize) {
     buf.push(']');
 }
 
-fn write_object_entry_into(buf: &mut FormatBuf, key: &str, val: &Value, depth: usize) {
-    buf.push_quoted(key);
+fn write_object_entry_into<S: AsRef<str>>(
+    buf: &mut FormatBuf,
+    doc: &Document<S>,
+    key_range: &Range<usize>,
+    val: &Value,
+    depth: usize,
+) {
+    buf.push_quoted(doc.slice(*key_range));
     buf.push(':');
     buf.write_key_val_delimiter();
-    format_value_into(buf, val, depth);
+    format_document_value_into(buf, doc, val, depth);
 }
 
-fn compact_format_obj_into(buf: &mut FormatBuf, entries: &[(&str, Value)], depth: usize) {
+fn compact_format_obj_into<S: AsRef<str>>(
+    buf: &mut FormatBuf,
+    doc: &Document<S>,
+    entries: &[ObjectEntry],
+    depth: usize,
+) {
     buf.push('{');
     buf.write_key_val_delimiter();
     join_into(
         buf,
         entries.iter(),
-        |buf, (key, val)| write_object_entry_into(buf, key, val, depth + 1),
+        |buf, (key_range, val)| write_object_entry_into(buf, doc, key_range, val, depth + 1),
         |buf, _| {
             buf.push(',');
             buf.write_key_val_delimiter();
@@ -263,9 +313,13 @@ fn compact_format_obj_into(buf: &mut FormatBuf, entries: &[(&str, Value)], depth
     buf.push('}');
 }
 
-pub fn format_value(val: &Value, options: &FormatOptions, preferred_width: usize) -> String {
+pub fn format_document<S: AsRef<str>>(
+    doc: &Document<S>,
+    options: &FormatOptions,
+    preferred_width: usize,
+) -> String {
     let mut buf = FormatBuf::new(String::new(), *options, preferred_width);
-    format_value_into(&mut buf, val, 0);
+    format_document_value_into(&mut buf, doc, doc.root(), 0);
     buf.into_inner()
 }
 
@@ -273,13 +327,17 @@ pub fn prettify_str(json: &str, preferred_width: usize, line_ending: LineEnding)
     format_str(json, FormatOptions::prettify(line_ending), preferred_width)
 }
 
-pub fn prettify_value(val: &Value, preferred_width: usize, line_ending: LineEnding) -> String {
-    format_value(val, &FormatOptions::prettify(line_ending), preferred_width)
+pub fn prettify_document<S: AsRef<str>>(
+    doc: &Document<S>,
+    preferred_width: usize,
+    line_ending: LineEnding,
+) -> String {
+    format_document(doc, &FormatOptions::prettify(line_ending), preferred_width)
 }
 
-pub fn prettify_value_into(
+pub fn prettify_document_into<S: AsRef<str>>(
     buf: &mut String,
-    val: &Value,
+    doc: &Document<S>,
     preferred_width: usize,
     line_ending: LineEnding,
 ) {
@@ -288,7 +346,7 @@ pub fn prettify_value_into(
         FormatOptions::prettify(line_ending),
         preferred_width,
     );
-    format_value_into(&mut fmt_buf, val, 0);
+    format_document_value_into(&mut fmt_buf, doc, doc.root(), 0);
     *buf = fmt_buf.into_inner();
 }
 
@@ -302,8 +360,13 @@ mod len {
     };
 
     /// returns if the inline length of the value > limit or it finds a newline
-    pub fn should_expand(val: &Value, limit: usize, delimiter_len: usize) -> bool {
-        try_get_value_len(val, limit, delimiter_len).is_none()
+    pub fn should_expand<S: AsRef<str>>(
+        doc: &crate::ast::Document<S>,
+        val: &Value,
+        limit: usize,
+        delimiter_len: usize,
+    ) -> bool {
+        try_get_value_len(doc, val, limit, delimiter_len).is_none()
     }
 
     fn quoted_len(value: &str) -> usize {
@@ -314,32 +377,37 @@ mod len {
         COMMA_LEN + delimiter_len
     }
 
-    fn try_get_value_len(val: &Value<'_>, limit: usize, delimiter_len: usize) -> Option<usize> {
+    fn try_get_value_len<S: AsRef<str>>(
+        doc: &crate::ast::Document<S>,
+        val: &Value,
+        limit: usize,
+        delimiter_len: usize,
+    ) -> Option<usize> {
         fn within_limit(len: usize, limit: usize) -> bool {
             len <= limit
         }
 
         let len = match val {
             Value::Null => NULL.len(),
-            Value::String(s) => quoted_len(s),
-            Value::Number { mantissa, exponent } => number_len(mantissa, *exponent),
+            Value::String(r) => quoted_len(doc.slice(*r)),
+            Value::Number { mantissa, exponent } => number_len(*mantissa, *exponent),
             Value::Object(entries) => {
                 if entries.is_empty() {
                     BRACE_PAIR_LEN
                 } else {
                     let braces_len = BRACE_PAIR_LEN + (delimiter_len * 2);
                     let mut sum = braces_len;
-                    for (i, (key, value)) in entries.0.iter().enumerate() {
+                    for (i, (key_range, value)) in entries.0.iter().enumerate() {
                         if !within_limit(sum, limit) {
                             break;
                         }
                         if i > 0 {
                             sum += separated_item_prefix_len(delimiter_len);
                         }
-                        sum += quoted_len(key);
+                        sum += quoted_len(doc.slice(*key_range));
                         sum += COLON_LEN + delimiter_len;
                         let remaining = limit.saturating_sub(sum);
-                        let len = try_get_value_len(value, remaining, delimiter_len)?;
+                        let len = try_get_value_len(doc, value, remaining, delimiter_len)?;
                         sum += len;
                     }
                     sum
@@ -356,7 +424,7 @@ mod len {
                         sum += separated_item_prefix_len(delimiter_len);
                     }
                     let remaining = limit.saturating_sub(sum);
-                    let len = try_get_value_len(value, remaining, delimiter_len)?;
+                    let len = try_get_value_len(doc, value, remaining, delimiter_len)?;
                     sum += len;
                 }
                 sum

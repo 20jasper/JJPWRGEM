@@ -1,3 +1,5 @@
+use core::range::Range;
+
 use visitor::AstVisitor;
 
 use crate::{Result, tokens::TokenStream, traverse::parse_tokens};
@@ -5,7 +7,7 @@ use crate::{Result, tokens::TokenStream, traverse::parse_tokens};
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct ObjectEntries(pub(crate) Vec<(Range<usize>, Value)>);
 
-impl<'a> ObjectEntries<'a> {
+impl ObjectEntries {
     pub fn new() -> Self {
         Self(Vec::new())
     }
@@ -27,63 +29,105 @@ impl<'a> ObjectEntries<'a> {
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
-pub enum Value<'a> {
+pub enum Value {
     Null,
-    String(&'a str),
+    /// excludes surrounding quotes
+    String(Range<usize>),
     Number {
-        mantissa: &'a str,
-        exponent: Option<&'a str>,
+        mantissa: Range<usize>,
+        exponent: Option<Range<usize>>,
     },
-    Object(ObjectEntries<'a>),
-    Array(Vec<Value<'a>>),
+    Object(ObjectEntries),
+    Array(Vec<Value>),
     Boolean(bool),
 }
 
-impl Value<'_> {
-    pub fn to_f64(&self) -> Option<f64> {
+impl Value {
+    pub(crate) fn to_f64(&self, source: &str) -> Option<f64> {
         let Value::Number { mantissa, exponent } = self else {
             return None;
         };
+        let m = &source[*mantissa];
         if let Some(exponent) = exponent {
-            format!("{mantissa}e{exponent}").parse().ok()
+            let e = &source[*exponent];
+            format!("{m}e{e}").parse().ok()
         } else {
-            mantissa.parse().ok()
+            m.parse().ok()
         }
     }
 }
 
-pub fn parse_str<'a>(json: &'a str) -> Result<Value<'a>> {
-    let mut ast = AstVisitor::new();
-    parse_tokens(&mut TokenStream::new(json), json, true, &mut ast)?;
-    Ok(ast
-        .finish()
-        .expect("visitor should error if empty or unfinished"))
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Document<S> {
+    source: S,
+    root: Value,
+}
+
+impl<S: AsRef<str>> Document<S> {
+    pub fn parse(source: S) -> Result<Self> {
+        let mut ast = AstVisitor::new();
+        parse_tokens(
+            &mut TokenStream::new(source.as_ref()),
+            source.as_ref(),
+            true,
+            &mut ast,
+        )?;
+        let root = ast
+            .finish()
+            .expect("visitor should error if empty or unfinished");
+        Ok(Self { source, root })
+    }
+
+    pub fn root(&self) -> &Value {
+        &self.root
+    }
+
+    pub fn slice(&self, range: Range<usize>) -> &str {
+        &self.source.as_ref()[range]
+    }
+
+    pub fn get_object_value<'a>(&self, entries: &'a ObjectEntries, key: &str) -> Option<&'a Value> {
+        entries.find(self.source.as_ref(), key)
+    }
+
+    pub fn as_str<'a>(&'a self, value: &Value) -> Option<&'a str> {
+        match value {
+            Value::String(r) => Some(self.slice(*r)),
+            _ => None,
+        }
+    }
+
+    pub fn parse_f64(&self, value: &Value) -> Option<f64> {
+        value.to_f64(self.source.as_ref())
+    }
 }
 
 mod visitor {
+    use core::range::Range;
+
     use crate::{
         ast::{ObjectEntries, Value},
         traverse::Visitor,
     };
 
     #[derive(Debug, Default)]
-    pub struct AstVisitor<'a> {
-        stack: Vec<AstFrame<'a>>,
-        result: Option<Value<'a>>,
+    pub struct AstVisitor {
+        stack: Vec<AstFrame>,
+        result: Option<Value>,
     }
 
     #[derive(Debug)]
-    enum AstFrame<'a> {
+    enum AstFrame {
         Object {
-            entries: ObjectEntries<'a>,
-            current_key: Option<&'a str>,
+            entries: ObjectEntries,
+            current_key: Option<Range<usize>>,
         },
         Array {
-            items: Vec<Value<'a>>,
+            items: Vec<Value>,
         },
     }
 
-    impl<'a> AstVisitor<'a> {
+    impl AstVisitor {
         pub fn new() -> Self {
             Self {
                 stack: Vec::new(),
@@ -91,7 +135,7 @@ mod visitor {
             }
         }
 
-        fn last_emitted_mut(&mut self) -> &mut Value<'a> {
+        fn last_emitted_mut(&mut self) -> &mut Value {
             match self.stack.last_mut() {
                 None => self.result.as_mut().expect("must have emitted a value"),
                 Some(AstFrame::Array { items }) => items.last_mut().expect("must have item"),
@@ -101,9 +145,8 @@ mod visitor {
             }
         }
 
-        fn emit_value(&mut self, value: Value<'a>) {
+        fn emit_value(&mut self, value: Value) {
             match self.stack.last_mut() {
-                // top-level value
                 None => {
                     self.result = Some(value);
                 }
@@ -122,12 +165,12 @@ mod visitor {
             }
         }
 
-        pub fn finish(self) -> Option<Value<'a>> {
+        pub fn finish(self) -> Option<Value> {
             self.result
         }
     }
 
-    impl<'a> Visitor<'a> for AstVisitor<'a> {
+    impl<'a> Visitor<'a> for AstVisitor {
         fn on_object_open(&mut self) {
             self.stack.push(AstFrame::Object {
                 entries: ObjectEntries::new(),
@@ -135,9 +178,9 @@ mod visitor {
             });
         }
 
-        fn on_object_key(&mut self, key: &'a str) {
+        fn on_object_key(&mut self, range: Range<usize>, _key: &'a str) {
             if let Some(AstFrame::Object { current_key, .. }) = self.stack.last_mut() {
-                *current_key = Some(key);
+                *current_key = Some(range);
             } else {
                 unreachable!("must be in object for object key")
             }
@@ -175,22 +218,22 @@ mod visitor {
             self.emit_value(Value::Null);
         }
 
-        fn on_string(&mut self, s: &'a str) {
-            self.emit_value(Value::String(s));
+        fn on_string(&mut self, range: Range<usize>, _s: &'a str) {
+            self.emit_value(Value::String(range));
         }
 
-        fn on_mantissa(&mut self, mantissa: &'a str) {
+        fn on_mantissa(&mut self, range: Range<usize>, _mantissa: &'a str) {
             self.emit_value(Value::Number {
-                mantissa,
+                mantissa: range,
                 exponent: None,
             });
         }
 
-        fn on_exponent(&mut self, exponent: &'a str) {
-            let Value::Number { exponent: e, .. } = self.last_emitted_mut() else {
+        fn on_exponent(&mut self, range: Range<usize>, _exponent: &'a str) {
+            let Value::Number { exponent, .. } = self.last_emitted_mut() else {
                 unreachable!("exponent must follow mantissa")
             };
-            *e = Some(exponent);
+            *exponent = Some(range);
         }
 
         fn on_boolean(&mut self, b: bool) {
@@ -206,68 +249,58 @@ mod visitor {
 mod tests {
     use super::*;
 
-    fn kv_to_map<'a>(tuples: &[(&'a str, Value<'a>)]) -> Value<'a> {
-        Value::Object(tuples.to_vec().into())
+    fn range_of(source: &str, needle: &str) -> Range<usize> {
+        let start = source.find(needle).expect("needle in source");
+        start..start + needle.len()
+    }
+
+    fn make_obj(entries: Vec<(&str, Value)>, source: &str) -> Value {
+        let entries = entries
+            .into_iter()
+            .map(|(k, v)| (range_of(source, k), v))
+            .collect::<Vec<_>>();
+        Value::Object(ObjectEntries(entries))
     }
 
     #[test]
     fn empty_object() {
-        assert_eq!(parse_str("{}").unwrap(), kv_to_map(&[]));
+        let doc = Document::parse("{}").unwrap();
+        assert_eq!(doc.root(), &Value::Object(ObjectEntries::new()));
     }
 
     #[test]
     fn one_key_value_pair() {
+        let json = r#"{"hi":"bye"}"#;
+        let doc = Document::parse(json).unwrap();
         assert_eq!(
-            parse_str(r#"{"hi":"bye"}"#).unwrap(),
-            kv_to_map(&[("hi", Value::String("bye"))])
-        );
-    }
-
-    #[test]
-    fn nested_object() {
-        let nested = |val| kv_to_map(&[("rust", val)]);
-        assert_eq!(
-            parse_str(
-                r#"
-                {
-                    "rust": {
-                        "rust": {
-                            "rust": {
-                                "rust": "rust"
-                            }   
-                        }   
-                    }
-                }        
-            "#
-            )
-            .unwrap(),
-            nested(nested(nested(nested(Value::String("rust")))))
+            doc.root(),
+            &make_obj(vec![("hi", Value::String(range_of(json, "bye")))], json)
         );
     }
 
     #[rstest_reuse::template]
     #[rstest::rstest]
-    #[case("null", Value::Null)]
-    #[case("true", Value::Boolean(true))]
-    #[case("false", Value::Boolean(false))]
-    #[case("\"burger\"", Value::String("burger".into()))]
-    fn primitive_template(#[case] primitive: &str, #[case] expected: Value) {}
+    #[case("null", |_: &str| Value::Null)]
+    #[case("true", |_: &str| Value::Boolean(true))]
+    #[case("false", |_: &str| Value::Boolean(false))]
+    #[case("\"burger\"", |s: &str| Value::String(range_of(s, "burger")))]
+    fn primitive_template(#[case] primitive: &str, #[case] expected: fn(&str) -> Value) {}
 
     #[rstest_reuse::apply(primitive_template)]
-    fn primitive_object_value(#[case] primitive: &str, #[case] expected: Value) {
-        assert_eq!(
-            parse_str(&format!(
-                r#"{{
+    fn primitive_object_value(#[case] primitive: &str, #[case] expected: fn(&str) -> Value) {
+        let json = format!(
+            r#"{{
                 "rust": {primitive}
             }}"#
-            ))
-            .unwrap(),
-            kv_to_map(&[("rust", expected)])
-        )
+        );
+        let doc = Document::parse(&json).unwrap();
+        let want = make_obj(vec![("rust", expected(&json))], &json);
+        assert_eq!(doc.root(), &want);
     }
 
     #[rstest_reuse::apply(primitive_template)]
-    fn primitives(#[case] json: &str, #[case] expected: Value) {
-        assert_eq!(parse_str(json), Ok(expected));
+    fn primitives(#[case] json: &str, #[case] expected: fn(&str) -> Value) {
+        let doc = Document::parse(json).unwrap();
+        assert_eq!(doc.root(), &expected(json));
     }
 }

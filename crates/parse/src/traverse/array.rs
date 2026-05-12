@@ -107,6 +107,7 @@ impl ArrayState {
                 Some(TokenWithContext {
                     token: Token::ClosedSquareBracket,
                     range: closed_range,
+                    ..
                 }) => {
                     tokens.next_token()?;
 

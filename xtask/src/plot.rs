@@ -6,7 +6,7 @@ use std::{
 
 use anyhow::{Context, Error, Result, anyhow, bail};
 use base64::{Engine as _, engine::general_purpose::STANDARD};
-use jjpwrgem_parse::ast::{self, Value};
+use jjpwrgem_parse::ast::{self, Document, Value};
 use plotters::{
     coord::Shift,
     prelude::*,
@@ -26,24 +26,24 @@ struct BenchmarkResult {
     times: Vec<f64>,
 }
 
-impl<'a> TryFrom<&Value<'a>> for BenchmarkResult {
+impl TryFrom<(&Document<&str>, &Value)> for BenchmarkResult {
     type Error = Error;
 
-    fn try_from(item: &Value<'a>) -> std::result::Result<Self, Self::Error> {
+    fn try_from((doc, item): (&Document<&str>, &Value)) -> std::result::Result<Self, Self::Error> {
         let ast::Value::Object(entry) = item else {
             bail!("must be a JSON object");
         };
 
-        let command_value = entry
-            .get("command")
+        let command_value = doc
+            .get_object_value(entry, "command")
             .with_context(|| "missing 'command' field")?;
-        let ast::Value::String(value) = command_value else {
-            bail!("command must be a string");
-        };
-        let command = (*value).to_owned();
+        let command = doc
+            .as_str(command_value)
+            .with_context(|| "command must be a string")?
+            .to_owned();
 
-        let times_value = entry
-            .get("times")
+        let times_value = doc
+            .get_object_value(entry, "times")
             .with_context(|| "missing 'times' field")?;
         let ast::Value::Array(times_array) = times_value else {
             bail!("must be an array");
@@ -53,8 +53,8 @@ impl<'a> TryFrom<&Value<'a>> for BenchmarkResult {
             .iter()
             .enumerate()
             .map(|(time_index, time_value)| -> Result<f64> {
-                let parsed = time_value
-                    .to_f64()
+                let parsed = doc
+                    .parse_f64(time_value)
                     .with_context(|| format!("times[{time_index}] must be a number"))?;
                 Ok(parsed)
             })
@@ -65,14 +65,14 @@ impl<'a> TryFrom<&Value<'a>> for BenchmarkResult {
 }
 
 fn parse_benchmark_results(raw: &str) -> Result<Vec<BenchmarkResult>> {
-    let root = ast::parse_str(raw)
+    let doc = Document::parse(raw)
         .map_err(|err| anyhow!("failed to parse JSON with jjpwrgem parser: {err}"))?;
-    let ast::Value::Object(entries) = root else {
+    let ast::Value::Object(entries) = doc.root() else {
         bail!("benchmark data must be a JSON object");
     };
 
-    let results_value = entries
-        .get("results")
+    let results_value = doc
+        .get_object_value(entries, "results")
         .context("benchmark data missing 'results' field")?;
     let ast::Value::Array(items) = results_value else {
         bail!("'results' field must be an array");
@@ -82,7 +82,9 @@ fn parse_benchmark_results(raw: &str) -> Result<Vec<BenchmarkResult>> {
         .iter()
         .enumerate()
         .map(|(index, item)| -> Result<BenchmarkResult> {
-            item.try_into().with_context(|| format!("index: {index}"))
+            (&doc, item)
+                .try_into()
+                .with_context(|| format!("index: {index}"))
         })
         .collect()
 }

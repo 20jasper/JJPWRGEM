@@ -1,9 +1,11 @@
+use core::range::Range;
+
 use crate::{
     Result,
-    ast::Value,
+    ast::Document,
     format::Emitter,
     tokens::TokenStream,
-    traverse::{Visitor, parse_tokens, parse_value},
+    traverse::{Visitor, parse_tokens, visit_document},
 };
 
 pub fn uglify_str(json: &str) -> Result<String> {
@@ -32,7 +34,7 @@ impl<'a> Visitor<'a> for UglifyEmitVisitor {
         self.emit_object_open();
     }
 
-    fn on_object_key(&mut self, key: &str) {
+    fn on_object_key(&mut self, _range: Range<usize>, key: &'a str) {
         self.emit_string(key);
     }
 
@@ -56,15 +58,15 @@ impl<'a> Visitor<'a> for UglifyEmitVisitor {
         self.emit_null();
     }
 
-    fn on_string(&mut self, s: &str) {
+    fn on_string(&mut self, _range: Range<usize>, s: &'a str) {
         self.emit_string(s);
     }
 
-    fn on_mantissa(&mut self, mantissa: &str) {
+    fn on_mantissa(&mut self, _range: Range<usize>, mantissa: &'a str) {
         self.emit_mantissa(mantissa);
     }
 
-    fn on_exponent(&mut self, exponent: &str) {
+    fn on_exponent(&mut self, _range: Range<usize>, exponent: &'a str) {
         self.emit_exponent(exponent);
     }
 
@@ -77,16 +79,16 @@ impl<'a> Visitor<'a> for UglifyEmitVisitor {
     }
 }
 
-pub fn uglify_value(val: &Value) -> String {
+pub fn uglify_document<S: AsRef<str>>(doc: &Document<S>) -> String {
     let mut visitor = UglifyEmitVisitor::default();
-    parse_value(val, &mut visitor);
+    visit_document(doc, &mut visitor);
     visitor.buf
 }
 
-pub fn uglify_value_into(buf: &mut String, val: &Value) {
+pub fn uglify_document_into<S: AsRef<str>>(buf: &mut String, doc: &Document<S>) {
     let mut visitor = UglifyEmitVisitor {
         buf: std::mem::take(buf),
     };
-    parse_value(val, &mut visitor);
+    visit_document(doc, &mut visitor);
     *buf = visitor.buf;
 }

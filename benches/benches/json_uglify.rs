@@ -2,8 +2,8 @@ use std::hint::black_box;
 
 use criterion::{BenchmarkId, Criterion, Throughput, criterion_group, criterion_main};
 use jjpwrgem_parse::{
-    ast::parse_str,
-    format::{uglify_str, uglify_value_into},
+    ast::Document,
+    format::{uglify_document_into, uglify_str},
 };
 use simd_json::prelude::Writable as _;
 
@@ -18,15 +18,15 @@ fn bench_uglify_ast(c: &mut Criterion, inputs: &[(&str, String)]) {
         // Normalize throughput by source size so all formatters are comparable.
         group.throughput(Throughput::Bytes(json.len() as u64));
 
-        let ast = parse_str(json).unwrap();
+        let ast = Document::parse(json.as_str()).unwrap();
         if include_impl("jjpwrgem") {
             let mut probe = String::new();
-            uglify_value_into(&mut probe, &ast);
+            uglify_document_into(&mut probe, &ast);
             let mut jjp_buf = String::with_capacity(probe.len());
             group.bench_function(BenchmarkId::new("jjpwrgem", name), |b| {
                 b.iter(|| {
                     jjp_buf.clear();
-                    uglify_value_into(&mut jjp_buf, black_box(&ast));
+                    uglify_document_into(&mut jjp_buf, black_box(&ast));
                     black_box(&jjp_buf);
                 });
             });

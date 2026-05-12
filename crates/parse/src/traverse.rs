@@ -5,22 +5,21 @@ use core::range::Range;
 
 use crate::{
     Error, ErrorKind, Result,
-    ast::{ObjectEntries, Value},
     tokens::{ErrorToken, Token, TokenStream, TokenWithContext},
     traverse::{array::parse_array, object::parse_object},
 };
 
 pub trait Visitor<'a> {
     fn on_object_open(&mut self);
-    fn on_object_key(&mut self, key: &'a str);
+    fn on_object_key(&mut self, range: Range<usize>, key: &'a str);
     fn on_object_key_val_delim(&mut self);
     fn on_object_close(&mut self);
     fn on_array_open(&mut self);
     fn on_array_close(&mut self);
     fn on_null(&mut self);
-    fn on_string(&mut self, value: &'a str);
-    fn on_mantissa(&mut self, mantissa: &'a str);
-    fn on_exponent(&mut self, exponent: &'a str);
+    fn on_string(&mut self, range: Range<usize>, value: &'a str);
+    fn on_mantissa(&mut self, range: Range<usize>, mantissa: &'a str);
+    fn on_exponent(&mut self, range: Range<usize>, exponent: &'a str);
     fn on_boolean(&mut self, value: bool);
     fn on_item_delim(&mut self);
 }
@@ -51,18 +50,18 @@ pub fn parse_tokens<'a>(
             match t {
                 Token::String => {
                     let body = token_ctx.content_range();
-                    visitor.on_string(&text[body.start..body.end]);
+                    visitor.on_string(body, &text[body]);
                 }
                 Token::Mantissa => {
-                    visitor.on_mantissa(&text[range.start..range.end]);
+                    visitor.on_mantissa(range, &text[range]);
                     if let Some(TokenWithContext {
                         token: Token::Exponent,
-                        ..
+                        range: er,
                     }) = tokens.peek_token()?.copied()
                     {
                         let exp_ctx = tokens.next_token()?.expect("peek guaranteed");
-                        let er = exp_ctx.range;
-                        visitor.on_exponent(&text[er.start..er.end]);
+                        debug_assert_eq!(exp_ctx.range, er);
+                        visitor.on_exponent(er, &text[er]);
                     }
                 }
                 Token::Null => visitor.on_null(),
@@ -75,14 +74,7 @@ pub fn parse_tokens<'a>(
         }
         _ => {
             return Err(Error::new(
-                ErrorKind::ExpectedValue(
-                    None,
-                    crate::tokens::TokenOption(Some(ErrorToken::new(
-                        peeked.token,
-                        peeked.range,
-                        text,
-                    ))),
-                ),
+                ErrorKind::ExpectedValue(None, Some(peeked.token).into()),
                 peeked.range,
                 text,
             ));
@@ -132,14 +124,26 @@ fn join<V, T>(
     }
 }
 
-pub fn parse_value<'a>(val: &'a Value, visitor: &mut impl Visitor<'a>) {
+pub fn visit_document<'a, S: AsRef<str>>(
+    doc: &'a crate::ast::Document<S>,
+    visitor: &mut impl Visitor<'a>,
+) {
+    visit_value(doc, doc.root(), visitor);
+}
+
+fn visit_value<'a, S: AsRef<str>>(
+    doc: &'a crate::ast::Document<S>,
+    val: &crate::ast::Value,
+    visitor: &mut impl Visitor<'a>,
+) {
+    use crate::ast::{ObjectEntries, Value};
     match val {
         Value::Null => visitor.on_null(),
-        Value::String(s) => visitor.on_string(s),
+        Value::String(r) => visitor.on_string(*r, doc.slice(*r)),
         Value::Number { mantissa, exponent } => {
-            visitor.on_mantissa(mantissa);
+            visitor.on_mantissa(*mantissa, doc.slice(*mantissa));
             if let Some(exponent) = exponent {
-                visitor.on_exponent(exponent);
+                visitor.on_exponent(*exponent, doc.slice(*exponent));
             }
         }
         Value::Boolean(b) => visitor.on_boolean(*b),
@@ -148,10 +152,10 @@ pub fn parse_value<'a>(val: &'a Value, visitor: &mut impl Visitor<'a>) {
             join(
                 visitor,
                 items,
-                |visitor, (k, v)| {
-                    visitor.on_object_key(k);
+                |visitor, (kr, v)| {
+                    visitor.on_object_key(*kr, doc.slice(*kr));
                     visitor.on_object_key_val_delim();
-                    parse_value(v, visitor);
+                    visit_value(doc, v, visitor);
                 },
                 |visitor, _| visitor.on_item_delim(),
             );
@@ -162,9 +166,7 @@ pub fn parse_value<'a>(val: &'a Value, visitor: &mut impl Visitor<'a>) {
             join(
                 visitor,
                 items,
-                |visitor, val| {
-                    parse_value(val, visitor);
-                },
+                |visitor, val| visit_value(doc, val, visitor),
                 |visitor, _| visitor.on_item_delim(),
             );
             visitor.on_array_close();
@@ -175,36 +177,41 @@ pub fn parse_value<'a>(val: &'a Value, visitor: &mut impl Visitor<'a>) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ast::parse_str;
+    use crate::ast::Document;
+
+    fn range_of(source: &str, needle: &str) -> Range<usize> {
+        let start = source.find(needle).expect("needle in source");
+        start..start + needle.len()
+    }
 
     #[derive(Debug, PartialEq, Eq)]
-    enum Event<'a> {
+    enum Event {
         ObjectOpen,
-        ObjectKey(&'a str),
+        ObjectKey(Range<usize>),
         ObjectKeyValDelim,
         ObjectClose,
         ArrayOpen,
         ArrayClose,
         Null,
-        String(&'a str),
-        Mantissa(&'a str),
-        Exponent(&'a str),
+        String(Range<usize>),
+        Mantissa(Range<usize>),
+        Exponent(Range<usize>),
         Boolean(bool),
         ItemDelim,
     }
 
     #[derive(Default)]
-    struct RecordingVisitor<'a> {
-        events: Vec<Event<'a>>,
+    struct RecordingVisitor {
+        events: Vec<Event>,
     }
 
-    impl<'a> Visitor<'a> for RecordingVisitor<'a> {
+    impl<'a> Visitor<'a> for RecordingVisitor {
         fn on_object_open(&mut self) {
             self.events.push(Event::ObjectOpen);
         }
 
-        fn on_object_key(&mut self, key: &'a str) {
-            self.events.push(Event::ObjectKey(key));
+        fn on_object_key(&mut self, range: Range<usize>, _key: &'a str) {
+            self.events.push(Event::ObjectKey(range));
         }
 
         fn on_object_key_val_delim(&mut self) {
@@ -227,16 +234,16 @@ mod tests {
             self.events.push(Event::Null);
         }
 
-        fn on_string(&mut self, value: &'a str) {
-            self.events.push(Event::String(value));
+        fn on_string(&mut self, range: Range<usize>, _value: &'a str) {
+            self.events.push(Event::String(range));
         }
 
-        fn on_mantissa(&mut self, mantissa: &'a str) {
-            self.events.push(Event::Mantissa(mantissa));
+        fn on_mantissa(&mut self, range: Range<usize>, _mantissa: &'a str) {
+            self.events.push(Event::Mantissa(range));
         }
 
-        fn on_exponent(&mut self, exponent: &'a str) {
-            self.events.push(Event::Exponent(exponent));
+        fn on_exponent(&mut self, range: Range<usize>, _exponent: &'a str) {
+            self.events.push(Event::Exponent(range));
         }
 
         fn on_boolean(&mut self, value: bool) {
@@ -249,37 +256,38 @@ mod tests {
     }
 
     #[test]
-    fn parse_value_matches_token_traversal_events() {
+    fn visit_document_matches_token_traversal_events() {
         let json = r#"{"a":["b",{"c":1e5}],"d":true}"#;
         let expected = vec![
             Event::ObjectOpen,
-            Event::ObjectKey("a"),
+            Event::ObjectKey(range_of(json, "a")),
             Event::ObjectKeyValDelim,
             Event::ArrayOpen,
-            Event::String("b"),
+            Event::String(range_of(json, "b")),
             Event::ItemDelim,
             Event::ObjectOpen,
-            Event::ObjectKey("c"),
+            Event::ObjectKey(range_of(json, "c")),
             Event::ObjectKeyValDelim,
-            Event::Mantissa("1"),
-            Event::Exponent("5"),
+            Event::Mantissa(range_of(json, "1")),
+            Event::Exponent(range_of(json, "5")),
             Event::ObjectClose,
             Event::ArrayClose,
             Event::ItemDelim,
-            Event::ObjectKey("d"),
+            Event::ObjectKey(range_of(json, "d")),
             Event::ObjectKeyValDelim,
             Event::Boolean(true),
             Event::ObjectClose,
         ];
 
-        let mut from_tokens = RecordingVisitor::default();
+        let mut from_tokens: RecordingVisitor = RecordingVisitor::default();
         parse_tokens(&mut TokenStream::new(json), json, true, &mut from_tokens).unwrap();
 
-        let ast = parse_str(json).unwrap();
+        let doc = Document::parse(json).unwrap();
         let mut from_ast = RecordingVisitor::default();
-        parse_value(&ast, &mut from_ast);
+        visit_document(&doc, &mut from_ast);
 
         assert_eq!(from_tokens.events, expected);
         assert_eq!(from_ast.events, expected);
+        assert_eq!(from_tokens.events, from_ast.events);
     }
 }

@@ -4,7 +4,7 @@ use std::{collections::HashMap, fs};
 
 use anyhow::{Context, Ok, Result, anyhow};
 use itertools::Itertools as _;
-use jjpwrgem_parse::format::LineEnding;
+use jjpwrgem_parse::{ast::Document, format::LineEnding};
 use package_json::PackageJson;
 
 use crate::npm::metadata::{
@@ -77,9 +77,8 @@ pub fn write_package_json() -> Result<()> {
     // I don't mind so much
     let compact_json =
         jjpwrgem_parse::format::serde::uglify_serializable(&package_json_from_env()?)?;
-    let ast =
-        jjpwrgem_parse::ast::parse_str(&compact_json).map_err(|err| anyhow!(err.to_string()))?;
-    let formatted_json = jjpwrgem_parse::format::prettify_value(&ast, 80, LineEnding::Lf);
+    let ast = Document::parse(compact_json.as_str()).map_err(|err| anyhow!(err.to_string()))?;
+    let formatted_json = jjpwrgem_parse::format::prettify_document(&ast, 80, LineEnding::Lf);
 
     let static_path = concat!(env!("CARGO_MANIFEST_DIR"), "/../npm-template/package.json");
     fs::write(static_path, formatted_json)?;

@@ -80,7 +80,7 @@ impl ErrorToken {
     pub fn new(tag: Token, range: Range<usize>, source: &str) -> Self {
         Self {
             tag,
-            content: source[range.start..range.end].into(),
+            content: source[range].into(),
         }
     }
 

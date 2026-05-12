@@ -68,13 +68,15 @@ impl ObjectState {
             } => match (last_pair, tokens.next_token()?) {
                 (
                     _,
-                    Some(TokenWithContext {
-                        token: Token::ClosedCurlyBrace,
-                        range: closed_range,
-                    }),
+                    Some(
+                        ctx @ TokenWithContext {
+                            token: Token::ClosedCurlyBrace,
+                            ..
+                        },
+                    ),
                 ) => {
                     visitor.on_object_close();
-                    ObjectState::End(open_ctx.range.start..closed_range.end)
+                    ObjectState::End(open_ctx.range.start..ctx.range.end)
                 }
                 (
                     Some(_),
@@ -101,7 +103,7 @@ impl ObjectState {
                     ),
                 ) => {
                     let body = key_ctx.content_range();
-                    visitor.on_object_key(&text[body.start..body.end]);
+                    visitor.on_object_key(body, &text[body]);
                     ObjectState::Colon { key_ctx, open_ctx }
                 }
                 (Some(pair_span), maybe_token) => {
@@ -138,7 +140,7 @@ impl ObjectState {
                     },
                 ) => {
                     let body = key_ctx.content_range();
-                    visitor.on_object_key(&text[body.start..body.end]);
+                    visitor.on_object_key(body, &text[body]);
                     ObjectState::Colon { key_ctx, open_ctx }
                 }
                 maybe_token => {
