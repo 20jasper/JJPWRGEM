@@ -6,4 +6,5 @@ extend-exclude = [
   "**/snapshots/",
   "**/*.snap",
   "**/*.base64",
+  "*.cast",
 ]

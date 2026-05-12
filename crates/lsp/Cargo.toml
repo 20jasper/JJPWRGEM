@@ -1,0 +1,26 @@
+[package]
+name = "jjpwrgem-lsp"
+version = "0.1.0"
+edition.workspace = true
+authors.workspace = true
+description = "JSON language server with rich errors"
+license.workspace = true
+readme = "readme.md"
+repository.workspace = true
+documentation = "https://docs.rs/jjpwrgem-lsp"
+keywords = ["json", "lsp", "parser", "formatter", "diagnostics"]
+categories = ["development-tools", "parser-implementations", "text-processing"]
+include = ["src/**/*", "readme.md"]
+
+[dev-dependencies]
+rstest = { workspace = true }
+
+[dependencies]
+dashmap = "6.2"
+jjpwrgem-parse = { workspace = true }
+tokio = { version = "1.52", features = ["macros", "rt", "io-std"] }
+tower-lsp-server = "0.23"
+
+[lints]
+workspace = true
+

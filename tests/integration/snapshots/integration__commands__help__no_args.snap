@@ -17,6 +17,7 @@ Usage: jjp <COMMAND>
 Commands:
   format  Make your json look really good
   check   Validates json syntax
+  lsp     Start a language server over stdio
 
 Options:
   -h, --help     Print help

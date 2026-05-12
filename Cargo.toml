@@ -44,6 +44,7 @@ members = [
   "crates/parse",
   "xtask",
   "crates/bytes2chars",
+  "crates/lsp",
   "benches",
 ]
 
@@ -55,6 +56,7 @@ thiserror = "2"
 rstest = "0.26"
 rstest_reuse = "0.7"
 bytes2chars = { version = "0.2", path = "crates/bytes2chars" }
+lsp = { path = "crates/lsp", version = "0.1", package = "jjpwrgem-lsp" }
 
 [dependencies]
 anstream = "1"
@@ -62,6 +64,7 @@ clap = { version = "4.5.53", features = ["derive"] }
 displaydoc = { workspace = true }
 jjpwrgem-parse = { workspace = true }
 jjpwrgem-ui = { workspace = true }
+lsp = { workspace = true }
 thiserror = { workspace = true }
 
 # fixes erroneous clippy warnings in 1.92

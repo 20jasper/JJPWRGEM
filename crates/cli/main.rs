@@ -28,40 +28,15 @@ fn main() -> ExitCode {
 
     let style = Style::Pretty(Color::Plain);
 
-    let buf = {
-        let mut stdin = std::io::stdin();
+    if matches!(cli.command, Commands::Lsp) {
+        lsp::run_blocking();
+        return ExitCode::SUCCESS;
+    }
 
-        if stdin.is_terminal() {
-            anstream::eprintln!(
-                "{}",
-                style.render_message(Error::NonEmptyStdinRequired.into())
-            );
-            return ExitCode::FAILURE;
-        }
-
-        let mut buf = vec![];
-        stdin
-            .read_to_end(&mut buf)
-            .expect("Failed to read from stdin");
-
-        if buf.is_empty() {
-            anstream::eprintln!(
-                "{}",
-                style.render_message(Error::NonEmptyStdinRequired.into())
-            );
-            return ExitCode::FAILURE;
-        }
-
-        buf
+    let Some(json) = read_stdin(style) else {
+        return ExitCode::FAILURE;
     };
-    let json = match String::from_utf8(buf) {
-        Err(e) => {
-            let err = jjpwrgem_parse::Error::from_utf8_error_slice(e.utf8_error(), e.as_bytes());
-            anstream::eprintln!("{}", style.render_diagnostic(Diagnostic::from(&err)));
-            return ExitCode::FAILURE;
-        }
-        Ok(s) => s,
-    };
+
     let output = match &cli.command {
         Commands::Format {
             uglify,
@@ -75,11 +50,48 @@ fn main() -> ExitCode {
             end_of_line.into_parse(),
         ),
         Commands::Check => check(&json, style),
+        Commands::Lsp => unreachable!("LSP command handled above"),
     };
 
     print_output(&output);
-
     output.exit_code
+}
+
+fn read_stdin(style: Style) -> Option<String> {
+    let buf = {
+        let mut stdin = std::io::stdin();
+
+        if stdin.is_terminal() {
+            anstream::eprintln!(
+                "{}",
+                style.render_message(Error::NonEmptyStdinRequired.into())
+            );
+            return None;
+        }
+
+        let mut buf = vec![];
+        stdin
+            .read_to_end(&mut buf)
+            .expect("Failed to read from stdin");
+
+        if buf.is_empty() {
+            anstream::eprintln!(
+                "{}",
+                style.render_message(Error::NonEmptyStdinRequired.into())
+            );
+            return None;
+        }
+
+        buf
+    };
+    match String::from_utf8(buf) {
+        Err(e) => {
+            let err = jjpwrgem_parse::Error::from_utf8_error_slice(e.utf8_error(), e.as_bytes());
+            anstream::eprintln!("{}", style.render_diagnostic(Diagnostic::from(&err)));
+            None
+        }
+        Ok(s) => Some(s),
+    }
 }
 
 pub fn format(

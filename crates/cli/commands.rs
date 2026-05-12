@@ -56,6 +56,8 @@ pub enum Commands {
     ))]
     /// Validates json syntax
     Check,
+    /// Start a language server over stdio
+    Lsp,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, ValueEnum, Default)]
