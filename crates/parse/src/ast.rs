@@ -2,44 +2,27 @@ use visitor::AstVisitor;
 
 use crate::{Result, tokens::TokenStream, traverse::parse_tokens};
 
-#[derive(Debug, Clone, Default, Eq)]
-pub struct ObjectEntries<'a>(pub Vec<(&'a str, Value<'a>)>);
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct ObjectEntries(pub(crate) Vec<(Range<usize>, Value)>);
 
 impl<'a> ObjectEntries<'a> {
     pub fn new() -> Self {
         Self(Vec::new())
     }
 
-    pub fn push(&mut self, k: &'a str, v: Value<'a>) {
-        self.0.push((k, v));
-    }
-
-    pub fn get(&self, k: &'a str) -> Option<&Value<'a>> {
-        self.0.iter().find_map(|(k2, v)| (k == *k2).then_some(v))
-    }
-
-    pub fn len(&self) -> usize {
-        self.0.len()
+    pub fn push(&mut self, key_range: Range<usize>, v: Value) {
+        self.0.push((key_range, v));
     }
 
     pub fn is_empty(&self) -> bool {
-        self.len() == 0
+        self.0.is_empty()
     }
-}
 
-impl<'a> From<Vec<(&'a str, Value<'a>)>> for ObjectEntries<'a> {
-    fn from(value: Vec<(&'a str, Value<'a>)>) -> Self {
-        ObjectEntries(value)
-    }
-}
-
-impl<'a> PartialEq for ObjectEntries<'a> {
-    fn eq(&self, other: &Self) -> bool {
-        if self.0.len() != other.0.len() {
-            return false;
-        }
-
-        self.0.iter().all(|(k, v)| other.get(k) == Some(v))
+    pub(crate) fn find<'a>(&'a self, source: &str, key: &str) -> Option<&'a Value> {
+        self.0
+            .iter()
+            .find(|(kr, _)| &source[*kr] == key)
+            .map(|(_, v)| v)
     }
 }
 
