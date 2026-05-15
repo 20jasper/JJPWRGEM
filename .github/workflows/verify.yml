@@ -35,7 +35,7 @@ jobs:
           submodules: true
       - uses: ./.github/actions/setup-node
       - uses: ./.github/actions/setup-mise
-      - run: mise install cargo:cargo-shear cargo:cargo-diet cargo:cargo-rdme cargo:tracey
+      - run: mise install cargo:cargo-shear cargo:cargo-diet cargo:cargo-rdme cargo:tracey actionlint
       - name: Configure Dependency Caching
         uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4 # v2.9.1
       - name: check unused dependencies

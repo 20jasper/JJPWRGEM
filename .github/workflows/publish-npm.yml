@@ -33,7 +33,7 @@ jobs:
         working-directory: npm
         run: |
           set -euo pipefail
-          tarball=$(ls -1 *.tgz 2>/dev/null | head -n1 || true)
+          tarball=$(find . -maxdepth 1 -name '*.tgz' -print | head -n1 || true)
           if [ -z "${tarball}" ]; then
             echo "No tarball (*.tgz) found in $(pwd)"
             ls -la
@@ -41,10 +41,10 @@ jobs:
           fi
           echo "Publishing ${tarball}"
           IS_PRERELEASE=$(echo "$PLAN" | jq -r '.announcement_is_prerelease')
-          TAG_ARG=""
+          tag_args=()
           if [ "$IS_PRERELEASE" = "true" ]; then
-            TAG_ARG="--tag alpha"
+            tag_args=(--tag alpha)
           fi
-          npm publish --access public --provenance $TAG_ARG "${tarball}"
+          npm publish --access public --provenance "${tag_args[@]}" "${tarball}"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

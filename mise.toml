@@ -1,5 +1,6 @@
 [tools]
 just = "1.51.0"
+actionlint = "1.7.12"
 jq = "1.8.1"
 lefthook = "2.1.6"
 node = "22"
