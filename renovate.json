@@ -58,6 +58,28 @@
       "automerge": true
     },
     {
+      "matchPackageNames": ["node", "node:node"],
+      "matchUpdateTypes": ["patch", "minor", "digest"],
+      "groupName": "node",
+      "automerge": true
+    },
+    {
+      "matchPackageNames": ["node", "node:node"],
+      "matchUpdateTypes": ["major"],
+      "groupName": "node"
+    },
+    {
+      "matchPackageNames": ["pnpm", "node:pnpm"],
+      "matchUpdateTypes": ["patch", "minor", "digest"],
+      "groupName": "pnpm",
+      "automerge": true
+    },
+    {
+      "matchPackageNames": ["pnpm", "node:pnpm"],
+      "matchUpdateTypes": ["major"],
+      "groupName": "pnpm"
+    },
+    {
       "matchPackageNames": ["cargo-insta", "cargo:cargo-insta"],
       "groupName": "cargo-insta",
       "automerge": true
