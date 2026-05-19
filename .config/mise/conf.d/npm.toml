@@ -11,7 +11,9 @@ depends = ["npm-markdown"]
 run = [
   "cargo xtask generate-npm-package",
   "oxfmt npm-template/package.json --write",
-  "cd ./npm-template && npm i --ignore-scripts --no-fund && npm shrinkwrap && git add npm-shrinkwrap.json",
+  "npm install --prefix npm-template --ignore-scripts --no-fund",
+  "npm shrinkwrap --prefix npm-template",
+  "git add npm-template/npm-shrinkwrap.json",
 ]
 
 [tasks.package-json-check]
