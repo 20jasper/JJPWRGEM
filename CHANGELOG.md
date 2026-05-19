@@ -156,7 +156,7 @@ Summary
 
 ### Performance
 
-- join_into utility to declaritively avoid allocating delimiter strings
+- join_into utility to declaratively avoid allocating delimiter strings
 - write to single buffer instead of allocating buffer per JSON value
 - don't use anstream for content without ansi
 

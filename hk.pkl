@@ -49,6 +49,9 @@ local check_steps = new Mapping<String, Step> {
     check = "mise run readmes-check"
   }
   ["shellcheck"] = Builtins.shellcheck
+  ["typos"] {
+    check = "mise run typos"
+  }
   ["test"] {
     glob = List("**/*.rs")
     check = "mise run test"

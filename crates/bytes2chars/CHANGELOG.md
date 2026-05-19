@@ -21,7 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Documentation
 
-- *(tracey)* document spec adherance with tracey
+- *(tracey)* document spec adherence with tracey
 
 ## [0.1.1](https://github.com/20jasper/JJPWRGEM/compare/v0.1.0...v0.1.1) - 2026-03-21
 
