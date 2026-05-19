@@ -8,17 +8,17 @@ shellcheck = "0.10.0"
 "npm:oxfmt" = "0.50.0"
 
 [tasks.format]
-description = "Format rust, markdown, and config files"
+description = "Format rust, markdown, toml, and config files"
 run = [
   "cargo fmt --all",
-  "oxfmt './**/*.{md,yaml,yml,ts,js,json}' --write",
+  "oxfmt './**/*.{md,toml,yaml,yml,ts,js,json}' --write",
 ]
 
 [tasks.format-check]
 description = "Verify formatting is up-to-date"
 run = [
   "cargo fmt --all -- --check",
-  "oxfmt './**/*.{md,yaml,yml,ts,js,json}' --check",
+  "oxfmt './**/*.{md,toml,yaml,yml,ts,js,json}' --check",
 ]
 
 [tasks.lint]
