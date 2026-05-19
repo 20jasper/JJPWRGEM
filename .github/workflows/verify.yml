@@ -9,6 +9,9 @@ on:
     branches:
       - main
 
+permissions:
+  contents: read
+
 env:
   RUSTFLAGS: "-Dwarnings"
   CARGO_TERM_COLOR: always
