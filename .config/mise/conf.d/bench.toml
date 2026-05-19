@@ -2,6 +2,7 @@
 "cargo:cargo-criterion" = "1.1.0"
 "cargo:cargo-codspeed" = "4.6.0"
 "cargo:gungraun-runner" = "0.19.0"
+"cargo:rustfilt" = "0.2.1"
 
 [vars]
 codspeed_benches = "--bench bytes2chars --bench json_deser --bench json_prettify --bench json_uglify --bench json_tokens"
