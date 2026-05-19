@@ -3,6 +3,8 @@
 
 [tasks."bytes2chars-readme"]
 description = "Regenerate the bytes2chars README from its lib.rs docs"
+sources = ["crates/bytes2chars/src/**/*.rs", "crates/bytes2chars/Cargo.toml"]
+outputs = ["crates/bytes2chars/README.md"]
 run = [
   "cargo +nightly fmt -p bytes2chars",
   "cargo rdme --workspace-project bytes2chars --force",
@@ -15,6 +17,20 @@ run = "cargo rdme --workspace-project bytes2chars --check"
 [tasks.readmes]
 description = "Generate markdown files from templates"
 depends_post = ["bytes2chars-readme"]
+sources = [
+  "xtask/templates/**",
+  "xtask/src/template.rs",
+  "benches/docker/output/*.md",
+  "benches/output/*.md",
+]
+outputs = [
+  "readme.md",
+  "crates/parse/readme.md",
+  "benches/BENCHMARKS.md",
+  "benches/json.md",
+  "benches/cli-formatter.md",
+  "benches/utf8.md",
+]
 run = "cargo xtask generate-readmes"
 
 [tasks."readmes-check"]

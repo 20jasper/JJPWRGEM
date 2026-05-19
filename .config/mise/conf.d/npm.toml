@@ -1,5 +1,7 @@
 [tasks.npm-markdown]
 description = "Copy top-level readme and changelog into npm-template/"
+sources = ["readme.md", "CHANGELOG.md"]
+outputs = ["npm-template/README.md", "npm-template/CHANGELOG.md"]
 run = [
   "cp -f readme.md npm-template/README.md",
   "cp -f CHANGELOG.md npm-template/CHANGELOG.md",
@@ -8,6 +10,8 @@ run = [
 [tasks.package-json]
 description = "Regenerate npm-template/package.json and shrinkwrap"
 depends = ["npm-markdown"]
+sources = ["xtask/src/**/*.rs", "Cargo.toml", "dist-workspace.toml"]
+outputs = ["npm-template/package.json", "npm-template/npm-shrinkwrap.json"]
 run = [
   "cargo xtask generate-npm-package",
   "oxfmt npm-template/package.json --write",
