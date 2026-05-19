@@ -1,0 +1,37 @@
+# bacon dev-loop config. Default job picks up clippy with all targets/features.
+# Switch jobs in the TUI: `c` clippy, `t` test, `i` install, `b` build, `r` run.
+# Docs: https://dystroy.org/bacon/
+
+default_job = "clippy"
+env.RUSTFLAGS = "-Dwarnings"
+
+[jobs.clippy]
+command = ["cargo", "clippy", "--all-targets", "--all-features", "--workspace"]
+need_stdout = false
+
+[jobs.test]
+command = [
+  "cargo",
+  "test",
+  "--all-features",
+  "--workspace",
+  "--tests",
+  "--lib",
+  "--bins",
+  "--examples",
+  "--",
+  "--skip",
+  "prop_",
+  "--skip",
+  "matches_prettier",
+]
+need_stdout = true
+
+[jobs.install]
+command = ["cargo", "install", "--path", ".", "--offline"]
+need_stdout = true
+on_success = "job:clippy"
+
+[jobs.build]
+command = ["cargo", "build", "--all-features", "--workspace"]
+need_stdout = false

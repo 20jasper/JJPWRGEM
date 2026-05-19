@@ -1,5 +1,5 @@
 [tools]
-"cargo:cargo-watch" = "8.5"
+"cargo:bacon" = "3.23.0"
 
 [tasks.submodules]
 description = "Initialize and update all git submodules"
@@ -9,10 +9,14 @@ run = "git submodule update --init --recursive"
 description = "Install jjp to your cargo bin path"
 run = "cargo install --path ."
 
+[tasks.dev]
+description = "Interactive dev loop (clippy/test/install/build via bacon TUI)"
+run = "bacon"
+
 [tasks.install-watch]
-description = "Install jjp on every source change"
+description = "Re-install jjp on every source change"
 depends = ["install"]
-run = "cargo watch -q -c -x 'install --path . --offline'"
+run = "bacon install"
 
 [tasks.vscode-test-wsl]
 description = "Run the vscode extension test suite under WSL (Xvfb + dbus + pnpm) (Linux/WSL only)"
