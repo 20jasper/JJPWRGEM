@@ -1,0 +1,7 @@
+# committed config. Conventional-commits with relaxed limits for this project.
+style = "conventional"
+subject_capitalized = false
+subject_length = 80
+no_fixup = true
+no_wip = true
+merge_commit = true

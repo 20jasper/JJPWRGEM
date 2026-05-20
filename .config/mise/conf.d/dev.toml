@@ -1,4 +1,6 @@
 [tools]
+"aqua:jdx/hk" = "1.45.0"
+"aqua:apple/pkl" = "0.31.1"
 "cargo:bacon" = "3.23.0"
 
 [tasks.submodules]

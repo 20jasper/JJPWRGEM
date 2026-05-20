@@ -1,0 +1,98 @@
+amends "package://github.com/jdx/hk/releases/download/v1.45.0/hk@1.45.0#/Config.pkl"
+import "package://github.com/jdx/hk/releases/download/v1.45.0/hk@1.45.0#/Builtins.pkl"
+
+// Steps that mutate files. Run in pre-commit (with stash) and on `hk fix`.
+local fix_steps = new Mapping<String, Step> {
+  ["diet"] {
+    fix = "mise run diet"
+    stage = List("crates/**/Cargo.toml", "Cargo.toml")
+  }
+  ["format"] {
+    glob = List("**/*.{rs,md,toml,yml,ts,js,json}")
+    fix = "mise run format"
+  }
+  ["readmes"] {
+    glob = List("**/*.md", "xtask/templates/**", "crates/bytes2chars/src/**")
+    fix = "mise run readmes"
+    stage = List("**/*.md", "*.md")
+  }
+  ["package-json"] {
+    glob = List("xtask/**", "Cargo.toml", "dist-workspace.toml")
+    fix = "mise run package-json"
+    stage = List("npm-template/**")
+  }
+}
+
+// Read-only steps. Run on pre-push and `hk check`.
+local check_steps = new Mapping<String, Step> {
+  ["package-json-check"] {
+    check = "mise run package-json-check"
+  }
+  ["format-check"] {
+    check = "mise run format-check"
+  }
+  ["lint"] {
+    glob = List("**/*.rs")
+    check = "mise run lint"
+  }
+  ["cargo-shear"] {
+    check = "cargo shear"
+  }
+  ["dist-plan"] {
+    check = "dist plan > /dev/null"
+  }
+  ["publish-dry-run"] {
+    glob = List("crates/bytes2chars/**")
+    check = "mise run publish-dry-run bytes2chars"
+  }
+  ["readmes-check"] {
+    check = "mise run readmes-check"
+  }
+  ["shellcheck"] = Builtins.shellcheck
+  ["test"] {
+    glob = List("**/*.rs")
+    check = "mise run test"
+  }
+}
+
+// Sync mise tools whenever mise config files change in a checkout/merge.
+local sync_mise = new Mapping<String, Step> {
+  ["mise-install"] {
+    glob = List("mise.toml", ".config/mise/conf.d/*.toml", "benches/mise.toml", "benches/docker/mise.toml", "rust-toolchain.toml")
+    check = "mise install --quiet"
+  }
+}
+
+// Validate the commit message format against conventional-commits.
+local commit_msg_steps = new Mapping<String, Step> {
+  ["committed"] {
+    check = "committed --commit-file {{commit_msg_file}} --no-merge-commit --no-fixup --no-wip"
+  }
+}
+
+hooks {
+  ["pre-commit"] {
+    fix = true
+    stash = "git"
+    steps = fix_steps
+  }
+  ["pre-push"] {
+    steps = check_steps
+  }
+  ["fix"] {
+    fix = true
+    steps = fix_steps
+  }
+  ["check"] {
+    steps = check_steps
+  }
+  ["post-merge"] {
+    steps = sync_mise
+  }
+  ["post-checkout"] {
+    steps = sync_mise
+  }
+  ["commit-msg"] {
+    steps = commit_msg_steps
+  }
+}

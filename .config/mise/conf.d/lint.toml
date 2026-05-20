@@ -1,7 +1,9 @@
 [tools]
 actionlint = "1.7.12"
+shellcheck = "0.10.0"
 "cargo:cargo-shear" = "1.11"
 "cargo:cargo-diet" = "1.3.0"
+"cargo:committed" = "1.1.11"
 "cargo:tracey" = "1.3.0"
 "npm:oxfmt" = "0.50.0"
 
