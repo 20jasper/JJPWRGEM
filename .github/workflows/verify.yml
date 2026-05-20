@@ -23,7 +23,7 @@ jobs:
       - uses: ./.github/actions/setup-mise
       - name: Configure Dependency Caching
         uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4 # v2.9.1
-      - run: just format-check
+      - run: mise run format-check
 
   lint:
     runs-on: ubuntu-latest
@@ -35,17 +35,14 @@ jobs:
           submodules: true
       - uses: ./.github/actions/setup-node
       - uses: ./.github/actions/setup-mise
-      - run: mise install cargo:cargo-shear cargo:cargo-diet cargo:cargo-rdme cargo:tracey actionlint
       - name: Configure Dependency Caching
         uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4 # v2.9.1
-      - name: check unused dependencies
-        run: cargo shear
       - name: verify publish contents
-        run: just diet
-      - run: just lint
-      - run: just readmes-check
-      - run: just package-json-check
-      - run: just tracey-check
+        run: mise run diet
+      - run: mise run lint
+      - run: mise run readmes-check
+      - run: mise run package-json-check
+      - run: mise run tracey-check
 
   test-cli:
     runs-on: ubuntu-latest
@@ -54,14 +51,13 @@ jobs:
         with:
           submodules: true
       - uses: ./.github/actions/setup-mise
-      - run: mise install cargo:cargo-insta
       - name: Configure Dependency Caching
         uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4 # v2.9.1
       - uses: ./.github/actions/setup-node
       - name: build
         run: cargo build --release --verbose
       - name: test
-        run: just test
+        run: mise run test
 
   publish-dry-run:
     runs-on: ubuntu-latest
@@ -71,7 +67,7 @@ jobs:
       - name: Configure Dependency Caching
         uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4 # v2.9.1
       - name: publish dry-run (bytes2chars only)
-        run: just publish-dry-run bytes2chars
+        run: mise run publish-dry-run bytes2chars
 
   test-vscode:
     runs-on: ubuntu-latest
@@ -82,7 +78,7 @@ jobs:
       - uses: ./.github/actions/setup-mise
       - name: Configure Dependency Caching
         uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4 # v2.9.1
-      - run: just vscode-bin
+      - run: mise run vscode-bin
       - uses: ./.github/actions/setup-node
       - run: /usr/bin/Xvfb :99 -screen 0 1024x768x24 > /dev/null 2>&1 & echo "Started xvfb"
         shell: bash

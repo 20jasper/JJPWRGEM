@@ -1,5 +1,5 @@
 name: mise setup
-description: Install mise and cargo-binstall for fast cargo tool installs
+description: Install mise and cargo-binstall so mise auto-installs cargo:* tools on demand
 
 runs:
   using: composite
@@ -10,5 +10,3 @@ runs:
     - uses: taiki-e/install-action@e3134ec54b36203e18f2d1e80652058bd078dd91 # v2.77.3
       with:
         tool: cargo-binstall
-    - run: mise install just
-      shell: bash
