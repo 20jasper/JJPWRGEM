@@ -6,15 +6,18 @@
       "matchManagers": ["dockerfile", "mise", "cargo"],
       "matchFileNames": ["xtask/bench/**", "benches/**", "Dockerfile"],
       "groupName": "benches",
-      "rangeStrategy": "pin",
       "matchUpdateTypes": ["patch", "minor", "digest"],
       "automerge": true
     },
     {
       "matchManagers": ["dockerfile", "mise", "cargo"],
+      "matchFileNames": ["xtask/bench/**", "benches/**", "Dockerfile"],
+      "rangeStrategy": "pin"
+    },
+    {
+      "matchManagers": ["dockerfile", "mise", "cargo"],
       "matchFileNames": ["benches/**", "Dockerfile"],
       "groupName": "benches (major)",
-      "rangeStrategy": "pin",
       "matchUpdateTypes": ["major"]
     },
     {
@@ -96,12 +99,6 @@
       "matchPackageNames": ["cargo-insta", "cargo:cargo-insta"],
       "groupName": "cargo-insta",
       "automerge": true
-    },
-    {
-      "matchPackageNames": ["oxfmt", "npm:oxfmt"],
-      "groupName": "oxfmt",
-      "automerge": true,
-      "minimumReleaseAge": "3 days"
     },
     {
       "matchPackageNames": [

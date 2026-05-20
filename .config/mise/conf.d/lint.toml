@@ -3,19 +3,20 @@ actionlint = "1.7.12"
 "cargo:cargo-shear" = "1.11"
 "cargo:cargo-diet" = "1.3.0"
 "cargo:tracey" = "1.3.0"
+"npm:oxfmt" = "0.50.0"
 
 [tasks.format]
 description = "Format rust, markdown, and config files"
 run = [
   "cargo fmt --all",
-  "pnpm exec oxfmt './**/*.{md,yaml,yml,ts,js,json}' --write",
+  "oxfmt './**/*.{md,yaml,yml,ts,js,json}' --write",
 ]
 
 [tasks.format-check]
 description = "Verify formatting is up-to-date"
 run = [
   "cargo fmt --all -- --check",
-  "pnpm exec oxfmt './**/*.{md,yaml,yml,ts,js,json}' --check",
+  "oxfmt './**/*.{md,yaml,yml,ts,js,json}' --check",
 ]
 
 [tasks.lint]

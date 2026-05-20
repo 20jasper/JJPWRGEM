@@ -10,7 +10,7 @@ description = "Regenerate npm-template/package.json and shrinkwrap"
 depends = ["npm-markdown"]
 run = [
   "cargo xtask generate-npm-package",
-  "pnpm exec oxfmt npm-template/package.json --write",
+  "oxfmt npm-template/package.json --write",
   "cd ./npm-template && npm i --ignore-scripts --no-fund && npm shrinkwrap && git add npm-shrinkwrap.json",
 ]
 

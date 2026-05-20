@@ -79,7 +79,7 @@ docker run --rm \
   -u "$(id -u):$(id -g)" \
   -v "$(pwd)/xtask/bench/output:/benchmark/output" \
   jjp-benchmark
-pnpm exec oxfmt './xtask/bench/output/*.md' --write
+oxfmt './xtask/bench/output/*.md' --write
 mise run plot-bench
 mise run readmes
 '''
