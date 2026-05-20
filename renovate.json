@@ -70,32 +70,6 @@
       "minimumReleaseAge": "3 days"
     },
     {
-      "matchPackageNames": ["node", "node:node"],
-      "matchUpdateTypes": ["patch", "minor", "digest"],
-      "groupName": "node",
-      "automerge": true,
-      "minimumReleaseAge": "14 days"
-    },
-    {
-      "matchPackageNames": ["node", "node:node"],
-      "matchUpdateTypes": ["major"],
-      "groupName": "node",
-      "minimumReleaseAge": "14 days"
-    },
-    {
-      "matchPackageNames": ["pnpm", "node:pnpm"],
-      "matchUpdateTypes": ["patch", "minor", "digest"],
-      "groupName": "pnpm",
-      "automerge": true,
-      "minimumReleaseAge": "14 days"
-    },
-    {
-      "matchPackageNames": ["pnpm", "node:pnpm"],
-      "matchUpdateTypes": ["major"],
-      "groupName": "pnpm",
-      "minimumReleaseAge": "14 days"
-    },
-    {
       "matchPackageNames": ["cargo-insta", "cargo:cargo-insta"],
       "groupName": "cargo-insta",
       "automerge": true
