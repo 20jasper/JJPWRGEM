@@ -141,7 +141,7 @@
     {
       "customType": "regex",
       "description": "Bump hk's pkl amends URL in hk.pkl alongside the mise hk tool",
-      "fileMatch": ["^hk\\.pkl$"],
+      "managerFilePatterns": ["/^hk\\.pkl$/"],
       "matchStrings": [
         "github\\.com/jdx/hk/releases/download/v(?<currentValue>\\d+\\.\\d+\\.\\d+)/",
         "/hk@(?<currentValue>\\d+\\.\\d+\\.\\d+)#"
