@@ -1,0 +1,85 @@
+[tools]
+"cargo:cargo-criterion" = "1.1.0"
+"cargo:cargo-codspeed" = "4.6.0"
+"cargo:gungraun-runner" = "0.18.1"
+
+[vars]
+codspeed_benches = "--bench bytes2chars --bench json_deser --bench json_prettify --bench json_uglify --bench json_tokens"
+
+[tasks.bench]
+description = "Run a single criterion bench and write its markdown table (e.g. mise run bench json_prettify)"
+dir = "{{config_root}}/benches"
+shell = "bash -c"
+run = '''
+name=$1
+shift
+mkdir -p output
+tmp=$(mktemp)
+trap 'rm -f "$tmp"' EXIT
+cargo criterion --bench "$name" --message-format=json "$@" > "$tmp"
+cargo xtask bench-table < "$tmp" > "output/$name.md"
+mise run readmes
+'''
+
+[tasks.bench-json]
+description = "Run the four standard json criterion benches and regenerate readmes"
+run = [
+  'mise run bench json_deser "$@"',
+  'mise run bench json_prettify "$@"',
+  'mise run bench json_uglify "$@"',
+]
+
+[tasks.bench-codspeed]
+description = "Build and run all criterion benches via codspeed"
+dir = "{{config_root}}/benches"
+run = [
+  "cargo codspeed build {{vars.codspeed_benches}}",
+  "cargo codspeed run {{vars.codspeed_benches}}",
+]
+
+[tasks.bench-iai]
+description = "Run the iai (gungraun) bench"
+dir = "{{config_root}}/benches"
+run = 'cargo bench --bench json_iai "$@"'
+
+[tasks.plot-bench]
+description = "Plot docker bench results"
+run = "cargo xtask plot-benchmarks"
+
+[tasks.kcachegrind]
+description = "Open kcachegrind on a json_iai callgrind output (Linux only; requires kcachegrind on PATH)"
+shell = "bash -c"
+run = '''
+bench=${1:-deser}
+fixture=${2:-citm}
+out="target/gungraun/benches/json_iai/${bench}_group/bench_${bench}.${fixture}/callgrind.bench_${bench}.${fixture}.out"
+rustfilt < "$out" > "${out%.out}.demangled.out"
+kcachegrind "${out%.out}.demangled.out" &
+'''
+
+[tasks.iai-annotate]
+description = "callgrind_annotate a json_iai output, demangled by rustfilt (Linux only)"
+shell = "bash -c"
+run = '''
+bench=${1:-deser}
+fixture=${2:-citm}
+callgrind_annotate \
+  "target/gungraun/benches/json_iai/${bench}_group/bench_${bench}.${fixture}/callgrind.bench_${bench}.${fixture}.out" \
+  2>/dev/null | rustfilt | head -60
+'''
+
+[tasks.bench-docker]
+description = "Run perf tests against 10+ cli tools via docker and embed outputs in readmes"
+shell = "bash -c"
+run = '''
+mkdir -p xtask/bench/output
+GITHUB_TOKEN="$(gh auth token 2>/dev/null || true)" \
+  docker build -t jjp-benchmark --secret id=gh_token,env=GITHUB_TOKEN .
+docker run --rm \
+  -u "$(id -u):$(id -g)" \
+  -v "$(pwd)/xtask/bench/output:/benchmark/output" \
+  jjp-benchmark
+pnpm exec oxfmt './xtask/bench/output/*.md' --write
+mise run plot-bench
+mise run readmes
+'''

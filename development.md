@@ -2,28 +2,14 @@
 
 ## quick start
 
-Install
+Install [`mise`](https://mise.jdx.dev/)
 
-- rust
-- node
-
-Install cargo-binstall
-
-```rs
-cargo install cargo-binstall --locked
+```sh
+curl https://mise.run | sh
+mise trust
 ```
 
-Install just
-
-```rs
-cargo binstall just
-```
-
-Install the rest of the dev deps
-
-```rs
-just dev-install
-```
+`mise` is used for development tasks and versioning. `mise tasks` will show everything available and install proper versions on your system
 
 ## Releases
 

@@ -1,2 +1,23 @@
 [tools]
 "cargo:cargo-rdme" = "1.5"
+
+[tasks."bytes2chars-readme"]
+description = "Regenerate the bytes2chars README from its lib.rs docs"
+run = [
+  "cargo +nightly fmt -p bytes2chars",
+  "cargo rdme --workspace-project bytes2chars --force",
+]
+
+[tasks."bytes2chars-readme-check"]
+description = "Verify the bytes2chars README matches its lib.rs docs"
+run = "cargo rdme --workspace-project bytes2chars --check"
+
+[tasks.readmes]
+description = "Generate markdown files from templates"
+depends_post = ["bytes2chars-readme"]
+run = "cargo xtask generate-readmes"
+
+[tasks."readmes-check"]
+description = "Verify markdown files match generated templates"
+depends_post = ["bytes2chars-readme-check"]
+run = "cargo xtask verify-readmes"

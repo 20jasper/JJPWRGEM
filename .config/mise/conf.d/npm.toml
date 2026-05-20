@@ -1,0 +1,23 @@
+[tasks.npm-markdown]
+description = "Copy top-level readme and changelog into npm-template/"
+run = [
+  "cp -f readme.md npm-template/README.md",
+  "cp -f CHANGELOG.md npm-template/CHANGELOG.md",
+]
+
+[tasks.package-json]
+description = "Regenerate npm-template/package.json and shrinkwrap"
+depends = ["npm-markdown"]
+run = [
+  "cargo xtask generate-npm-package",
+  "pnpm exec oxfmt npm-template/package.json --write",
+  "cd ./npm-template && npm i --ignore-scripts --no-fund && npm shrinkwrap && git add npm-shrinkwrap.json",
+]
+
+[tasks.package-json-check]
+description = "Regenerate npm package metadata and assert no changes"
+depends = ["package-json"]
+run = [
+  "git diff --exit-code -- npm-template/npm-shrinkwrap.json",
+  "npm pack ./npm-template --dry-run --quiet",
+]

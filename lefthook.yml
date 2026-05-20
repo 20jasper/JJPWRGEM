@@ -6,32 +6,31 @@
 pre-push:
   parallel: true
   jobs:
-    - run: just package-json-check && just format-check
-    - run: just lint
+    - run: mise run package-json-check && mise run format-check
+    - run: mise run lint
       glob: "*.rs"
     - run: cargo shear
     - run: dist plan > /dev/null
-    - run: just publish-dry-run bytes2chars
+    - run: mise run publish-dry-run bytes2chars
       glob: "crates/bytes2chars/**"
-    - run: just readmes-check
-    - run: just test
+    - run: mise run readmes-check
+    - run: mise run test
       glob: "**/*.rs"
 
 pre-commit:
   jobs:
-    - run: just diet && git add ./crates/**/Cargo.toml Cargo.toml
-    - run: just format
+    - run: mise run diet && git add ./crates/**/Cargo.toml Cargo.toml
+    - run: mise run format
       glob:
-        - "justfile"
         - "**/*.{rs,md,yml,ts,js,json}"
       stage_fixed: true
-    - run: just readmes && git add "**/*.md" *.md
+    - run: mise run readmes && git add "**/*.md" *.md
       glob:
         - "**/*.md"
         - "xtask/templates/**"
         - "crates/bytes2chars/src/**"
       stage_fixed: true
-    - run: just package-json
+    - run: mise run package-json
       glob:
         - "xtask/"
         - "Cargo.toml"

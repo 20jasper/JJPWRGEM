@@ -1,2 +1,56 @@
 [tools]
 "cargo:cargo-watch" = "8.5"
+
+[tasks.submodules]
+description = "Initialize and update all git submodules"
+run = "git submodule update --init --recursive"
+
+[tasks.install]
+description = "Install jjp to your cargo bin path"
+run = "cargo install --path ."
+
+[tasks.install-watch]
+description = "Install jjp on every source change"
+depends = ["install"]
+run = "cargo watch -q -c -x 'install --path . --offline'"
+
+[tasks.vscode-test-wsl]
+description = "Run the vscode extension test suite under WSL (Xvfb + dbus + pnpm) (Linux/WSL only)"
+depends = ["vscode-bin"]
+shell = "bash -c"
+run = '''
+export XDG_RUNTIME_DIR="/tmp/runtime-$(id -u)"
+mkdir -p "$XDG_RUNTIME_DIR" && chmod 700 "$XDG_RUNTIME_DIR"
+if command -v dbus-launch >/dev/null 2>&1; then
+  echo "Starting dbus-launch"
+  eval "$(dbus-launch --sh-syntax)" || true
+elif command -v dbus-daemon >/dev/null 2>&1; then
+  dbus-daemon --session --fork --print-address > "$XDG_RUNTIME_DIR/bus" 2>/dev/null || true
+  echo "Started dbus-daemon (if available)"
+else
+  echo "dbus not found; continuing without session bus"
+fi
+if command -v Xvfb >/dev/null 2>&1; then
+  /usr/bin/Xvfb :99 -screen 0 1024x768x24 > /dev/null 2>&1 &
+  sleep 1
+  echo "Started Xvfb"
+else
+  echo "Xvfb not found; attempting to run tests without X server"
+fi
+export DISPLAY=":99.0"
+pnpm --filter jjpwrgem-vscode test
+'''
+
+[tasks.vscode-bin]
+description = "Build release binary and copy it to the vscode extension bin dir"
+run = [
+  "cargo build --release",
+  "mkdir -p ./npm-packages/jjpwrgem-vscode/bin",
+  "cp target/release/jjp ./npm-packages/jjpwrgem-vscode/bin/jjp",
+  "chmod +x ./npm-packages/jjpwrgem-vscode/bin/jjp",
+]
+run_windows = [
+  "cargo build --release",
+  "mkdir -p ./npm-packages/jjpwrgem-vscode/bin",
+  "cp target/release/jjp.exe ./npm-packages/jjpwrgem-vscode/bin/jjp.exe",
+]

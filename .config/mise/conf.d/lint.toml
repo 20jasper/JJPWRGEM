@@ -3,3 +3,35 @@ actionlint = "1.7.12"
 "cargo:cargo-shear" = "1.11"
 "cargo:cargo-diet" = "1.3.0"
 "cargo:tracey" = "1.3.0"
+
+[tasks.format]
+description = "Format rust, markdown, and config files"
+run = [
+  "cargo fmt --all",
+  "pnpm exec oxfmt './**/*.{md,yaml,yml,ts,js,json}' --write",
+]
+
+[tasks.format-check]
+description = "Verify formatting is up-to-date"
+run = [
+  "cargo fmt --all -- --check",
+  "pnpm exec oxfmt './**/*.{md,yaml,yml,ts,js,json}' --check",
+]
+
+[tasks.lint]
+description = "clippy, pnpm workspace lint, actionlint, and cargo shear"
+env = { RUSTFLAGS = "-Dwarnings" }
+run = [
+  "cargo clippy -q --all-targets --all-features --workspace",
+  "pnpm --if-present lint > /dev/null",
+  "actionlint",
+  "cargo shear",
+]
+
+[tasks.diet]
+description = "Trim publishable crate dirs before release"
+run = 'for x in ./crates/* ./xtask ./benches .; do [ -f "$x/Cargo.toml" ] || continue; (cd "$x" && cargo diet -r -q); done'
+
+[tasks.tracey-check]
+description = "Verify spec rules have version bumps for any changed rule text"
+run = "tracey pre-commit"
