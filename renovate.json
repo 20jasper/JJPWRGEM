@@ -7,7 +7,15 @@
       "matchFileNames": ["xtask/bench/**", "benches/**", "Dockerfile"],
       "groupName": "benches",
       "rangeStrategy": "pin",
+      "matchUpdateTypes": ["patch", "minor", "digest"],
       "automerge": true
+    },
+    {
+      "matchManagers": ["dockerfile", "mise", "cargo"],
+      "matchFileNames": ["benches/**", "Dockerfile"],
+      "groupName": "benches (major)",
+      "rangeStrategy": "pin",
+      "matchUpdateTypes": ["major"]
     },
     {
       "matchManagers": ["cargo"],
@@ -52,37 +60,48 @@
     },
     {
       "matchManagers": ["mise"],
-      "matchFileNames": ["mise.toml"],
+      "matchFileNames": ["mise.toml", ".config/mise/conf.d/*.toml"],
       "matchUpdateTypes": ["patch", "minor"],
       "groupName": "mise dev tools (patch + minor)",
-      "automerge": true
+      "automerge": true,
+      "minimumReleaseAge": "3 days"
     },
     {
       "matchPackageNames": ["node", "node:node"],
       "matchUpdateTypes": ["patch", "minor", "digest"],
       "groupName": "node",
-      "automerge": true
+      "automerge": true,
+      "minimumReleaseAge": "14 days"
     },
     {
       "matchPackageNames": ["node", "node:node"],
       "matchUpdateTypes": ["major"],
-      "groupName": "node"
+      "groupName": "node",
+      "minimumReleaseAge": "14 days"
     },
     {
       "matchPackageNames": ["pnpm", "node:pnpm"],
       "matchUpdateTypes": ["patch", "minor", "digest"],
       "groupName": "pnpm",
-      "automerge": true
+      "automerge": true,
+      "minimumReleaseAge": "14 days"
     },
     {
       "matchPackageNames": ["pnpm", "node:pnpm"],
       "matchUpdateTypes": ["major"],
-      "groupName": "pnpm"
+      "groupName": "pnpm",
+      "minimumReleaseAge": "14 days"
     },
     {
       "matchPackageNames": ["cargo-insta", "cargo:cargo-insta"],
       "groupName": "cargo-insta",
       "automerge": true
+    },
+    {
+      "matchPackageNames": ["oxfmt", "npm:oxfmt"],
+      "groupName": "oxfmt",
+      "automerge": true,
+      "minimumReleaseAge": "3 days"
     },
     {
       "matchPackageNames": [
@@ -100,7 +119,7 @@
     },
     {
       "matchManagers": ["mise"],
-      "matchFileNames": ["mise.toml"],
+      "matchFileNames": ["mise.toml", ".config/mise/conf.d/*.toml"],
       "matchPackageNames": [
         "cargo:cargo-dist",
         "cargo:release-plz",
