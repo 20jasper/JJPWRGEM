@@ -1,8 +1,9 @@
 [tools]
 actionlint = "1.7.12"
 jq = "1.8.1"
-node = "22"
-pnpm = "11.1.2"
+
+[settings]
+idiomatic_version_file_enable_tools = ["node", "pnpm"]
 
 [hooks]
 postinstall = "hk install --mise"
