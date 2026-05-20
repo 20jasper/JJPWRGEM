@@ -1,9 +1,15 @@
-[tools]
-actionlint = "1.7.12"
-jq = "1.8.1"
+min_version = "2026.5.12"
 
 [settings]
+experimental = true
+lockfile = true
 idiomatic_version_file_enable_tools = ["node", "pnpm"]
+
+[settings.cargo]
+binstall = true
+
+[tools]
+jq = "1.8.1"
 
 [hooks]
 postinstall = "hk install --mise"
