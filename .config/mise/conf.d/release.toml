@@ -1,0 +1,4 @@
+[tools]
+"cargo:cargo-dist" = "0.31.0"
+"cargo:release-plz" = "0.3"
+"cargo:cargo-release" = "1.0"

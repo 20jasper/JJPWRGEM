@@ -261,12 +261,12 @@ codspeed-benches := "--bench bytes2chars --bench json_deser --bench json_prettif
 # build and run all criterion benches via codspeed
 [group('bench')]
 bench-codspeed:
-    cargo codspeed build --package benches {{ codspeed-benches }}
-    cargo codspeed run --package benches {{ codspeed-benches }}
+    cd benches && cargo codspeed build {{ codspeed-benches }}
+    cd benches && cargo codspeed run {{ codspeed-benches }}
 
 [group('bench')]
 bench-iai *args="":
-    cargo bench -p benches --bench json_iai {{ args }}
+    cd benches && cargo bench --bench json_iai {{ args }}
 
 [group('bench')]
 kcachegrind bench="deser" fixture="citm":

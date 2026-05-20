@@ -1,0 +1,2 @@
+[tools]
+"cargo:cargo-watch" = "8.5"
