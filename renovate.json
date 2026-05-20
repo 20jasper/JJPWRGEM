@@ -101,6 +101,12 @@
       "automerge": true
     },
     {
+      "matchPackageNames": ["jdx/hk", "aqua:jdx/hk"],
+      "groupName": "hk",
+      "automerge": true,
+      "minimumReleaseAge": "3 days"
+    },
+    {
       "matchPackageNames": [
         "codspeed-criterion-compat",
         "cargo:cargo-codspeed",
@@ -130,5 +136,20 @@
     ".github/workflows/jjp-release.yml",
     "npm-packages/jjpwrgem-vscode/**",
     "npm-template/package.json"
+  ],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "Bump hk's pkl amends URL in hk.pkl alongside the mise hk tool",
+      "fileMatch": ["^hk\\.pkl$"],
+      "matchStrings": [
+        "github\\.com/jdx/hk/releases/download/v(?<currentValue>\\d+\\.\\d+\\.\\d+)/",
+        "/hk@(?<currentValue>\\d+\\.\\d+\\.\\d+)#"
+      ],
+      "depNameTemplate": "jdx/hk",
+      "packageNameTemplate": "jdx/hk",
+      "datasourceTemplate": "github-releases",
+      "extractVersionTemplate": "^v?(?<version>.*)$"
+    }
   ]
 }
