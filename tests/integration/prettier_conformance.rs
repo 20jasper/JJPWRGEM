@@ -89,7 +89,7 @@ fn matches_prettier(#[case] (name, input): (&str, &str)) {
 
 /// Safe whitespace: at most one `\n` per gap (no blank lines)
 fn arb_safe_ws() -> impl Strategy<Value = String> {
-    prop::collection::vec(prop_oneof![Just(" "), Just("\t"), Just("\n")], 0..=3usize).prop_map(
+    prop::collection::vec(prop_oneof![Just(" "), Just("\t"), Just("\n")], 0..=3_usize).prop_map(
         |chars| {
             let s = chars.concat();
             let mut out = String::new();
@@ -112,7 +112,7 @@ fn arb_safe_ws() -> impl Strategy<Value = String> {
 
 /// Whitespace that may include blank lines (for the `#[ignore]` blank-line test)
 fn arb_ws_with_blanks() -> impl Strategy<Value = String> {
-    prop::collection::vec(prop_oneof![Just(" "), Just("\t"), Just("\n")], 0..=4usize)
+    prop::collection::vec(prop_oneof![Just(" "), Just("\t"), Just("\n")], 0..=4_usize)
         .prop_map(|chars| chars.concat())
 }
 
@@ -159,7 +159,7 @@ fn arb_safe_string() -> impl Strategy<Value = String> {
 
 /// Array of 0–4 safe short scalars. Kept small so total < 80 chars — both formatters inline.
 fn arb_safe_array() -> impl Strategy<Value = String> {
-    prop::collection::vec(arb_safe_scalar(), 0..=4usize).prop_flat_map(|items| {
+    prop::collection::vec(arb_safe_scalar(), 0..=4_usize).prop_flat_map(|items| {
         let gaps_len = items.len().saturating_sub(1).max(1);
         (
             Just(items),
@@ -192,7 +192,7 @@ fn arb_safe_array_with_strings() -> impl Strategy<Value = String> {
         arb_safe_scalar(),
         "[a-zA-Z0-9]{0,10}".prop_map(|s| format!("\"{s}\"")),
     ];
-    prop::collection::vec(arb_item, 0..=4usize).prop_flat_map(|items| {
+    prop::collection::vec(arb_item, 0..=4_usize).prop_flat_map(|items| {
         let gaps_len = items.len().saturating_sub(1).max(1);
         (
             Just(items),
@@ -278,13 +278,13 @@ fn arb_object() -> impl Strategy<Value = String> {
 /// Whitespace with spaces/tabs only — no newlines, so prettier doesn't treat the array as
 /// "already expanded" (which would cause outer arrays to expand even when they fit on one line)
 fn arb_ws_no_newlines() -> impl Strategy<Value = String> {
-    prop::collection::vec(prop_oneof![Just(" "), Just("\t")], 0..=3usize)
+    prop::collection::vec(prop_oneof![Just(" "), Just("\t")], 0..=3_usize)
         .prop_map(|chars| chars.concat())
 }
 
 /// Inner array with no-newline whitespace, used inside nested arrays
 fn arb_inner_array() -> impl Strategy<Value = String> {
-    prop::collection::vec(arb_safe_scalar(), 0..=4usize).prop_flat_map(|items| {
+    prop::collection::vec(arb_safe_scalar(), 0..=4_usize).prop_flat_map(|items| {
         let gaps_len = items.len().saturating_sub(1).max(1);
         (
             Just(items),
@@ -314,7 +314,7 @@ fn arb_inner_array() -> impl Strategy<Value = String> {
 /// Array of 0–3 inner arrays (no newlines in inner arrays).
 /// When the outer array must expand, each inner array stays inline in both formatters.
 fn arb_nested_array() -> impl Strategy<Value = String> {
-    prop::collection::vec(arb_inner_array(), 0..=3usize).prop_flat_map(|items| {
+    prop::collection::vec(arb_inner_array(), 0..=3_usize).prop_flat_map(|items| {
         let gaps_len = items.len().saturating_sub(1).max(1);
         (
             Just(items),
@@ -553,7 +553,7 @@ proptest! {
 
     #[test]
     fn prop_array_blank_lines_matches_prettier(
-        input in prop::collection::vec(arb_safe_scalar(), 0..=4usize)
+        input in prop::collection::vec(arb_safe_scalar(), 0..=4_usize)
             .prop_flat_map(|items| {
                 let gaps_len = items.len().saturating_sub(1).max(1);
                 (

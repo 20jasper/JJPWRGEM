@@ -2,7 +2,7 @@ use core::{fmt::Display, range::RangeInclusive};
 
 use crate::tokens::{CharWithContext, Token};
 
-/// see [JsonChar::is_whitespace]
+/// see [`JsonChar::is_whitespace`]
 pub fn trim_end_whitespace(s: &str) -> &str {
     let end = s
         .char_indices()
@@ -95,7 +95,7 @@ impl JsonChar {
     /// See [RFC 8259, Section 7](https://datatracker.ietf.org/doc/html/rfc8259#section-7)
     pub const CONTROL_RANGE: RangeInclusive<char> = '\u{0000}'..='\u{001F}';
 
-    /// see [Self::CONTROL_RANGE]
+    /// see [`Self::CONTROL_RANGE`]
     pub fn is_control(&self) -> bool {
         Self::CONTROL_RANGE.contains(&self.0)
     }
@@ -138,7 +138,7 @@ impl Display for JsonChar {
         } else {
             self.0.to_string()
         };
-        write!(f, "{}", rep)
+        write!(f, "{rep}")
     }
 }
 

@@ -1,3 +1,8 @@
+#![allow(
+    clippy::print_stdout,
+    clippy::print_stderr,
+    reason = "CLI should write to stdout/err"
+)]
 mod commands;
 mod error;
 mod output;
@@ -63,13 +68,13 @@ fn main() -> ExitCode {
             preferred_width,
             end_of_line,
         } => format(
-            json,
+            &json,
             style,
             *uglify,
             *preferred_width,
             end_of_line.into_parse(),
         ),
-        Commands::Check => check(json, style),
+        Commands::Check => check(&json, style),
     };
 
     print_output(&output);
@@ -78,16 +83,16 @@ fn main() -> ExitCode {
 }
 
 pub fn format(
-    json: String,
+    json: &str,
     style: Style,
     uglify: bool,
     preferred_width: usize,
     line_ending: LineEnding,
 ) -> Output {
     let result = if uglify {
-        format::uglify_str(&json)
+        format::uglify_str(json)
     } else {
-        format::prettify_str(&json, preferred_width, line_ending)
+        format::prettify_str(json, preferred_width, line_ending)
     };
 
     match result {
@@ -96,9 +101,9 @@ pub fn format(
     }
 }
 
-pub fn check(json: String, style: Style) -> Output {
-    match validate_str(&json) {
-        Ok(_) => Output::success(""),
+pub fn check(json: &str, style: Style) -> Output {
+    match validate_str(json) {
+        Ok(()) => Output::success(""),
         Err(error) => Output::failure_diagnostic(Diagnostic::from(&error), style),
     }
 }

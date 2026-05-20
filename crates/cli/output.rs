@@ -19,7 +19,7 @@ impl Output {
         }
     }
 
-    pub fn failure_diagnostic(diagnostic: Diagnostic, style: Style) -> Self {
+    pub fn failure_diagnostic(diagnostic: Diagnostic<'_>, style: Style) -> Self {
         Output {
             stdout: None,
             stderr: Some(style.render_diagnostic(diagnostic)),
@@ -32,6 +32,6 @@ impl Debug for Output {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let stdout = self.stdout.as_deref().unwrap_or("<empty>");
         let stderr = self.stderr.as_deref().unwrap_or("<empty>");
-        write!(f, "stdout --- \n{stdout}\nstderr --- \n{stderr}",)
+        write!(f, "stdout --- \n{stdout}\nstderr --- \n{stderr}")
     }
 }

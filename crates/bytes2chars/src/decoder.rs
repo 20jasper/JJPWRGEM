@@ -64,7 +64,10 @@ mod inner {
 
     impl UtfStateInner {
         fn push(&mut self, b: u8) {
-            debug_assert!(self.bytes < self.max_bytes);
+            debug_assert!(
+                self.bytes < self.max_bytes,
+                "push called past expected sequence length"
+            );
 
             if self.bytes == 0 {
                 self.codepoint = Self::lead_payload_bits(b, self.max_bytes);

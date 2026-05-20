@@ -101,13 +101,12 @@ fn run_conformance_cases(cases: &[&Utf8Case]) {
         }
     }
 
-    if !failures.is_empty() {
-        panic!(
-            "{} UTF-8 conformance failure(s):\n{}",
-            failures.len(),
-            failures.join("\n")
-        );
-    }
+    assert!(
+        failures.is_empty(),
+        "{} UTF-8 conformance failure(s):\n{}",
+        failures.len(),
+        failures.join("\n")
+    );
 }
 
 // utf8[verify encoding.ascii]

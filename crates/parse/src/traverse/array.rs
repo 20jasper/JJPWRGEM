@@ -58,7 +58,6 @@ impl ArrayState {
                 Some(TokenWithContext {
                     token: Token::ClosedSquareBracket,
                     range: closed_range,
-                    ..
                 }) => {
                     tokens.next_token()?;
                     visitor.on_array_close();
@@ -107,7 +106,6 @@ impl ArrayState {
                 Some(TokenWithContext {
                     token: Token::ClosedSquareBracket,
                     range: closed_range,
-                    ..
                 }) => {
                     tokens.next_token()?;
 

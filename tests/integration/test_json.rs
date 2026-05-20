@@ -10,16 +10,16 @@ pub const OBJECT_MISSING_COMMA_BETWEEN_VALUES: &str = r#"{"hi": null null"#;
 pub const OBJECT_MISSING_COMMA_OR_CLOSING_WITH_WHITESPACE: &str = r#"{"hi": null     "#;
 pub const OBJECT_TRAILING_COMMA_WITH_CLOSED: &str = r#"{"hi": null, }"#;
 pub const OBJECT_TRAILING_COMMA: &str = r#"{"hi": null, "#;
-pub const OBJECT_DOUBLE_OPEN_CURLY: &str = r#"{{"#;
-pub const OBJECT_OPEN_CURLY: &str = r#"{"#;
-pub const CLOSED_CURLY: &str = r#"}"#;
-pub const EMPTY_INPUT: &str = r#""#;
-pub const UNEXPECTED_CHARACTER: &str = r#"🦀"#;
+pub const OBJECT_DOUBLE_OPEN_CURLY: &str = r"{{";
+pub const OBJECT_OPEN_CURLY: &str = r"{";
+pub const CLOSED_CURLY: &str = r"}";
+pub const EMPTY_INPUT: &str = r"";
+pub const UNEXPECTED_CHARACTER: &str = r"🦀";
 pub const UNEXPECTED_ESCAPED_CHARACTER: &str = "\u{B}";
 pub const DOUBLE_QUOTE: &str = r#"""#;
 pub const OBJECT_WITH_LINE_BREAK_VALUE: &str = "{\"hi\": \"line\nbreak\"}";
 pub const OBJECT_WITH_ADJACENT_STRINGS: &str = r#"{"hi": "bye" "ferris": null"#;
-pub const OBJECT_EMPTY_THEN_OPEN: &str = r#"{}{"#;
+pub const OBJECT_EMPTY_THEN_OPEN: &str = r"{}{";
 pub const MINUS_SIGN: &str = "-";
 pub const LEADING_ZERO_MINUS_SIGN_ZERO: &str = "-000";
 pub const LEADING_ZERO_ZERO: &str = "000";
@@ -61,7 +61,7 @@ pub const ARRAY_OBJECTS_WITH_INCREASING_KEYS: &str = r#"[
         "meta": {"note": "varied keys"}
     }
 ]"#;
-pub const ARRAY_MULTIPLE_EMPTY_OBJECTS: &str = r#"[{}, {}, {}, {}]"#;
+pub const ARRAY_MULTIPLE_EMPTY_OBJECTS: &str = r"[{}, {}, {}, {}]";
 pub const ARRAY_MANY_SINGLE_KEY_OBJECTS: &str = r#"[
     {"alpha": 1},
     {"beta": true},
@@ -232,7 +232,7 @@ pub const ARRAY_EXPANDED_SIX_SHORT_OBJECTS: &str =
 pub const ARRAY_STRING_LONGER_THAN_PRINT_WIDTH: &str =
     r#"["this string is way way way way way way way way way way way way way way too long"]"#;
 pub const ARRAY_OVER_80_CHARS: &str =
-    const_format::concatcp!(r#"["#, str_repeat!("1234567890, ", 14), r#"1234567890]"#);
+    const_format::concatcp!(r"[", str_repeat!("1234567890, ", 14), r"1234567890]");
 
 pub const ARRAY_OBJECT_ELEMENT_INLINE_77: &str =
     const_format::concatcp!(r#"[{"k": ""#, str_repeat!("a", 64), r#""}]"#);

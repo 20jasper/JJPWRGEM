@@ -33,7 +33,7 @@ pub struct Output {
 impl Output {
     pub fn snapshot_display(&self) -> String {
         format!(
-            r#"args: {:?}
+            r"args: {:?}
 status: {}
 success: {}
 stdin ---
@@ -41,7 +41,7 @@ stdin ---
 stdout ---
 {}
 stderr ---
-{}"#,
+{}",
             self.args,
             self.status.code().unwrap_or(-1),
             self.status.success(),

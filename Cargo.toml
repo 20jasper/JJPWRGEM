@@ -70,7 +70,106 @@ opt-level = 3
 inherits = "release"
 lto = "thin"
 
-[lints.clippy]
-[lints.rustdoc]
+[lints]
+workspace = true
+
+[workspace.lints.rust]
+macro_use_extern_crate = "deny"
+unsafe-code = "deny"
+unsafe-op-in-unsafe-fn = "forbid"
+# warn
+absolute_paths_not_starting_with_crate = "warn"
+ffi-unwind-calls = "warn"
+let-underscore-drop = "warn"
+missing-abi = "warn"
+missing_debug_implementations = "warn"
+non-ascii-idents = "warn"
+tail_expr_drop_order = "warn"
+unit-bindings = "warn"
+variant-size-differences = "warn"
+# groups
+unused = { level = "warn", priority = -1 }
+rust-2018-idioms = "warn"
+rust-2018-compatibility = "warn"
+rust-2021-compatibility = "warn"
+rust-2024-compatibility = "warn"
+
+[workspace.lints.rustdoc]
 broken_intra_doc_links = "warn"
 missing_crate_level_docs = "warn"
+
+[workspace.lints.clippy]
+# deny
+wildcard_dependencies = "deny"
+mod_module_files = "deny"
+
+pedantic = { level = "warn", priority = -1 }
+missing_errors_doc = "allow"
+missing_panics_doc = "allow"
+must_use_candidate = "allow"
+# pedantic overrides
+if_not_else = "allow"
+too_many_lines = "allow"
+redundant_closure_for_method_calls = "allow"
+# false positives on displaydoc's `{ident}` 
+doc_markdown = "allow"
+# can have different semantics for non disjoint. also prevents comments per match
+match_same_arms = "allow"
+# noisy, sometimes debug formatting is better 
+unnecessary_debug_formatting = "allow"
+# cargo
+negative_feature_names = "warn"
+redundant_feature_names = "warn"
+# restriction
+allow_attributes = "warn"
+allow_attributes_without_reason = "warn"
+as_underscore = "warn"
+cfg_not_test = "warn"
+empty_enum_variants_with_brackets = "warn"
+clone_on_ref_ptr = "warn"
+exit = "warn"
+get_unwrap = "warn"
+infinite_loop = "warn"
+pathbuf_init_then_push = "warn"
+
+# libs shouldn't write to stdout/err
+print_stderr = "warn"
+print_stdout = "warn"
+
+pub_underscore_fields = "warn"
+rest_pat_in_fully_bound_structs = "warn"
+unused_result_ok = "warn"
+assertions_on_result_states = "allow"
+create_dir = "warn"
+dbg_macro = "warn"
+default_union_representation = "warn"
+empty_drop = "warn"
+empty_structs_with_brackets = "warn"
+float_cmp_const = "warn"
+fn_to_numeric_cast_any = "warn"
+format_push_string = "warn"
+if_then_some_else_none = "warn"
+mem_forget = "warn"
+missing_assert_message = "warn"
+missing_asserts_for_indexing = "warn"
+rc_buffer = "warn"
+rc_mutex = "warn"
+redundant_test_prefix = "warn"
+same_name_method = "warn"
+semicolon_outside_block = "warn"
+set_contains_or_insert = "warn"
+string_lit_as_bytes = "warn"
+string_lit_chars_any = "warn"
+suspicious_xor_used_as_pow = "warn"
+todo = "warn"
+try_err = "warn"
+undocumented_unsafe_blocks = "warn"
+unnecessary_get_then_check = "warn"
+unnecessary_safety_comment = "warn"
+unimplemented = "warn"
+unnecessary_self_imports = "warn"
+unneeded_field_pattern = "warn"
+verbose_file_reads = "warn"
+unnecessary_map_or = "warn"
+useless_concat = "warn"
+cast_lossless = "warn"

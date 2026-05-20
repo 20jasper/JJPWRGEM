@@ -214,7 +214,7 @@ mod tests {
     fn unterminated_sequence_yields_eof_error() {
         // 0xC3 starts a 2-byte sequence but the stream ends after one byte
         let result: crate::Result<alloc::string::String> =
-            Utf8Chars::new([0xC3u8].iter().copied(), 0).collect();
+            Utf8Chars::new([0xC3_u8].iter().copied(), 0).collect();
         assert_eq!(
             result.unwrap_err(),
             crate::Error {

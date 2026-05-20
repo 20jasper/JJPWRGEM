@@ -56,6 +56,7 @@ pub enum Source<'a> {
     Stdin(&'a str),
     File { source: &'a str, path: &'a Path },
 }
+#[derive(Debug)]
 pub struct Diagnostic<'a> {
     pub message: String,
     pub range: Option<Range<usize>>,
@@ -74,15 +75,15 @@ impl<'a> Diagnostic<'a> {
     ) -> Self {
         Self {
             message,
+            range,
             context,
             patches,
             source,
-            range,
         }
     }
 }
 
-fn error_source<'a>(error: &'a Error) -> Source<'a> {
+fn error_source(error: &Error) -> Source<'_> {
     if error.source_name == "stdin" {
         Source::Stdin(error.source_text.as_str())
     } else {
@@ -93,10 +94,7 @@ fn error_source<'a>(error: &'a Error) -> Source<'a> {
     }
 }
 
-fn exponent_patch_suggestions<'a>(
-    exponent_range: Range<usize>,
-    source: Source<'a>,
-) -> Vec<Patch<'a>> {
+fn exponent_patch_suggestions(exponent_range: Range<usize>, source: Source<'_>) -> Vec<Patch<'_>> {
     vec![
         Patch::new(REMOVE_EXPONENT_HELP, exponent_range, source, ""),
         Patch::new(
@@ -118,6 +116,16 @@ impl<'a> From<&'a Error> for Vec<Patch<'a>> {
                     range: comma_range,
                 },
                 TokenOption(Some(_)),
+            )
+            | ErrorKind::ExpectedValue(
+                Some(TokenWithContext {
+                    token: Token::Comma,
+                    range: comma_range,
+                }),
+                TokenOption(Some(ErrorToken {
+                    tag: Token::ClosedSquareBracket,
+                    ..
+                })),
             ) => vec![Patch::new(
                 "consider removing the trailing comma",
                 *comma_range,
@@ -148,10 +156,7 @@ impl<'a> From<&'a Error> for Vec<Patch<'a>> {
             ErrorKind::ExpectedColon(
                 ctx,
                 TokenOption(Some(ErrorToken {
-                    tag: Token::Comma, ..
-                }))
-                | TokenOption(Some(ErrorToken {
-                    tag: Token::ClosedCurlyBrace,
+                    tag: Token::Comma | Token::ClosedCurlyBrace,
                     ..
                 })),
             ) => {
@@ -215,21 +220,6 @@ impl<'a> From<&'a Error> for Vec<Patch<'a>> {
                 "}",
             )],
             ErrorKind::ExpectedCommaOrClosedCurlyBrace { .. } => Vec::new(),
-            ErrorKind::ExpectedValue(
-                Some(TokenWithContext {
-                    token: Token::Comma,
-                    range: comma_range,
-                }),
-                TokenOption(Some(ErrorToken {
-                    tag: Token::ClosedSquareBracket,
-                    ..
-                })),
-            ) => vec![Patch::new(
-                "consider removing the trailing comma",
-                *comma_range,
-                source,
-                "",
-            )],
             ErrorKind::ExpectedValue(_, TokenOption(None)) => vec![Patch::new(
                 "insert a placeholder value",
                 error.range.end..error.range.end,

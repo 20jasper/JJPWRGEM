@@ -224,8 +224,7 @@ pub(crate) fn current_byte_pos(
 ) -> usize {
     bytes
         .peek()
-        .map(|ByteWithContext(start, _)| *start)
-        .unwrap_or(input.len())
+        .map_or(input.len(), |ByteWithContext(start, _)| *start)
 }
 
 impl From<bool> for Token {
@@ -258,7 +257,7 @@ mod tests {
                 ctx(Token::String, 9..20),
                 ctx(Token::ClosedCurlyBrace, 20..21),
             ]
-        )
+        );
     }
 
     #[rstest_reuse::template]
@@ -291,7 +290,7 @@ mod tests {
                 ctx(expected, 26..(26 + primitive.len())),
                 ctx(Token::ClosedCurlyBrace, (json.len() - 1)..json.len()),
             ]
-        )
+        );
     }
 
     fn json_to_json_and_error(
@@ -360,7 +359,7 @@ mod tests {
                 ctx(Token::OpenSquareBracket, 0..1),
                 ctx(Token::ClosedSquareBracket, 1..2),
             ]
-        )
+        );
     }
 
     #[test]

@@ -192,7 +192,7 @@ fn expanded_format_arr_into<S: AsRef<str>>(
         items,
         |buf, val| {
             buf.write_indent(depth + 1);
-            format_document_value_into(buf, doc, val, depth + 1)
+            format_document_value_into(buf, doc, val, depth + 1);
         },
         |buf, _| {
             buf.push(',');

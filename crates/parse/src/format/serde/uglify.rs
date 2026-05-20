@@ -1,3 +1,8 @@
+#![expect(
+    clippy::unnecessary_wraps,
+    reason = "serde trait methods require Result<(), Error>"
+)]
+
 use std::fmt::{Display, Write as _};
 
 use serde::ser::{
@@ -314,6 +319,7 @@ impl<'a> ser::Serializer for &'a mut UglifyEmitVisitor {
     }
 }
 
+#[derive(Debug)]
 pub struct SeqSerializer<'a> {
     serializer: &'a mut UglifyEmitVisitor,
     first: bool,
@@ -338,6 +344,7 @@ impl_seq_like!(SerializeSeq, serialize_element);
 impl_seq_like!(SerializeTuple, serialize_element);
 impl_seq_like!(SerializeTupleStruct, serialize_field);
 
+#[derive(Debug)]
 pub struct TupleVariantSerializer<'a> {
     serializer: &'a mut UglifyEmitVisitor,
     first: bool,
@@ -362,6 +369,7 @@ impl SerializeTupleVariant for TupleVariantSerializer<'_> {
     }
 }
 
+#[derive(Debug)]
 pub struct MapSerializer<'a> {
     serializer: &'a mut UglifyEmitVisitor,
     first: bool,
@@ -422,6 +430,7 @@ impl SerializeStruct for MapSerializer<'_> {
     }
 }
 
+#[derive(Debug)]
 pub struct StructVariantSerializer<'a> {
     serializer: &'a mut UglifyEmitVisitor,
     first: bool,

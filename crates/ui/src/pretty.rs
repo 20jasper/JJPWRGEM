@@ -1,11 +1,11 @@
 mod diagnostic {
     use annotate_snippets::{Annotation, AnnotationKind, Group, Level, Snippet};
     use jjpwrgem_parse::error::diagnostics::{Context, Diagnostic, Patch, Source};
-    fn patch_to_patch<'a>(patch: Patch<'a>) -> annotate_snippets::Patch<'a> {
+    fn patch_to_patch(patch: Patch<'_>) -> annotate_snippets::Patch<'_> {
         annotate_snippets::Patch::new(patch.span.into(), patch.replacement)
     }
 
-    fn source_to_snippet<'a, T: Clone>(val: Source<'a>) -> Snippet<'a, T> {
+    fn source_to_snippet<T: Clone>(val: Source<'_>) -> Snippet<'_, T> {
         let (source, path) = match val {
             Source::Stdin(src) => (src, "stdin"),
             Source::File { source, path } => (
@@ -17,24 +17,20 @@ mod diagnostic {
         Snippet::source(source).path(path)
     }
 
-    fn context_to_annotation<'a>(ctx: Context<'a>) -> Annotation<'a> {
-        let Context {
-            message,
-            span,
-            source: _,
-        } = ctx;
+    fn context_to_annotation(ctx: Context<'_>) -> Annotation<'_> {
+        let Context { message, span, .. } = ctx;
         AnnotationKind::Context.span(span.into()).label(message)
     }
 
-    pub fn report_diagnostic<'a>(
+    pub fn report_diagnostic(
         Diagnostic {
             message,
             context,
             patches,
             source,
             range,
-        }: Diagnostic<'a>,
-    ) -> Vec<Group<'a>> {
+        }: Diagnostic<'_>,
+    ) -> Vec<Group<'_>> {
         let annotations = if let Some(range) = range {
             std::iter::once(AnnotationKind::Primary.span(range.into()))
                 .chain(context.into_iter().map(context_to_annotation))

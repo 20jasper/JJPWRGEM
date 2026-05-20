@@ -60,7 +60,10 @@ pub fn parse_tokens<'a>(
                     }) = tokens.peek_token()?.copied()
                     {
                         let exp_ctx = tokens.next_token()?.expect("peek guaranteed");
-                        debug_assert_eq!(exp_ctx.range, er);
+                        debug_assert_eq!(
+                            exp_ctx.range, er,
+                            "peeked exponent range must match the consumed token"
+                        );
                         visitor.on_exponent(er, &text[er]);
                     }
                 }
@@ -68,13 +71,13 @@ pub fn parse_tokens<'a>(
                 Token::True => visitor.on_boolean(true),
                 Token::False => visitor.on_boolean(false),
                 _ => unreachable!("guard prevents non scalars"),
-            };
+            }
 
             range
         }
-        _ => {
+        t => {
             return Err(Error::new(
-                ErrorKind::ExpectedValue(None, Some(peeked.token).into()),
+                ErrorKind::ExpectedValue(None, Some(t).into()),
                 peeked.range,
                 text,
             ));
@@ -171,7 +174,7 @@ fn visit_value<'a, S: AsRef<str>>(
             );
             visitor.on_array_close();
         }
-    };
+    }
 }
 
 #[cfg(test)]

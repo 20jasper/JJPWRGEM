@@ -13,6 +13,10 @@ pub enum Error {
 }
 
 impl Error {
+    #[expect(
+        clippy::unnecessary_wraps,
+        reason = "future Error variants may have no help"
+    )]
     fn get_help(&self) -> Option<String> {
         let help = match self {
             Error::NonEmptyStdinRequired => {

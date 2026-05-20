@@ -102,7 +102,7 @@ impl<'a> TokenStreamInner<'a> {
     }
 }
 
-impl<'a> Iterator for TokenStreamInner<'a> {
+impl Iterator for TokenStreamInner<'_> {
     type Item = Result<TokenWithContext>;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -192,7 +192,7 @@ impl<'a> TokenStream<'a> {
     }
 }
 
-impl<'a> Iterator for TokenStream<'a> {
+impl Iterator for TokenStream<'_> {
     type Item = Result<TokenWithContext>;
 
     fn next(&mut self) -> Option<Self::Item> {

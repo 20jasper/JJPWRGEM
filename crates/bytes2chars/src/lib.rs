@@ -1,4 +1,13 @@
 #![no_std]
+#![allow(
+    unsafe_code,
+    reason = "utf-8 decoder uses char::from_u32_unchecked on validated codepoints"
+)]
+#![warn(missing_debug_implementations)]
+#![warn(missing_docs)]
+#![warn(clippy::missing_errors_doc)]
+#![warn(clippy::missing_panics_doc)]
+#![warn(clippy::multiple_unsafe_ops_per_block)]
 //! # bytes2chars
 //!
 //! lazily decodes utf-8 [`char`][char]s from bytes
@@ -121,7 +130,7 @@ mod error {
     /// a specialized [`core::result::Result`] for utf8 decoding
     pub type Result<T> = core::result::Result<T, Error>;
 
-    #[allow(missing_docs)]
+    #[expect(missing_docs, reason = "self explanatory")]
     #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Display)]
     pub enum ErrorKind {
         /// byte 0x{_0:02X} cannot start a UTF-8 sequence
@@ -145,7 +154,7 @@ mod error {
     pub struct Error {
         /// byte range of the invalid sequence
         pub range: Range<usize>,
-        #[allow(missing_docs)]
+        #[expect(missing_docs, reason = "self explanatory")]
         pub kind: ErrorKind,
     }
 
