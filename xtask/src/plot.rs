@@ -203,7 +203,7 @@ const BENCHMARK_DATASETS: &[BenchmarkDataset] = &[
 ];
 
 fn bench_output_dir() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("bench/output")
+    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../benches/docker/output")
 }
 
 pub fn plot_all_benchmarks() -> Result<()> {

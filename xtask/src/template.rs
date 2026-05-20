@@ -157,42 +157,42 @@ const BENCH_TABLE_REPLACEMENTS: [(&str, &str); 6] = [
         "{{PRETTY_CANADA_TABLE}}",
         include_str!(concat!(
             env!("CARGO_MANIFEST_DIR"),
-            "/bench/output/pretty-canada.md"
+            "/../benches/docker/output/pretty-canada.md"
         )),
     ),
     (
         "{{UGLY_CANADA_TABLE}}",
         include_str!(concat!(
             env!("CARGO_MANIFEST_DIR"),
-            "/bench/output/ugly-canada.md"
+            "/../benches/docker/output/ugly-canada.md"
         )),
     ),
     (
         "{{PRETTY_CITM_CATALOG_TABLE}}",
         include_str!(concat!(
             env!("CARGO_MANIFEST_DIR"),
-            "/bench/output/pretty-citm_catalog.md"
+            "/../benches/docker/output/pretty-citm_catalog.md"
         )),
     ),
     (
         "{{UGLY_CITM_CATALOG_TABLE}}",
         include_str!(concat!(
             env!("CARGO_MANIFEST_DIR"),
-            "/bench/output/ugly-citm_catalog.md"
+            "/../benches/docker/output/ugly-citm_catalog.md"
         )),
     ),
     (
         "{{PRETTY_TWITTER_TABLE}}",
         include_str!(concat!(
             env!("CARGO_MANIFEST_DIR"),
-            "/bench/output/pretty-twitter.md"
+            "/../benches/docker/output/pretty-twitter.md"
         )),
     ),
     (
         "{{UGLY_TWITTER_TABLE}}",
         include_str!(concat!(
             env!("CARGO_MANIFEST_DIR"),
-            "/bench/output/ugly-twitter.md"
+            "/../benches/docker/output/ugly-twitter.md"
         )),
     ),
 ];

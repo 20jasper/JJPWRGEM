@@ -1,8 +1,8 @@
 [submodule "tests/conformance/JSONTestSuite"]
 	path = tests/conformance/JSONTestSuite
 	url = https://github.com/nst/JSONTestSuite.git
-[submodule "xtask/bench/data/json-benchmark"]
-	path = xtask/bench/data/json-benchmark
+[submodule "benches/docker/data/json-benchmark"]
+	path = benches/docker/data/json-benchmark
 	url = https://github.com/serde-rs/json-benchmark
 [submodule "tests/conformance/utf8tests"]
 	path = tests/conformance/utf8tests

@@ -6,17 +6,17 @@ jjpwrgem is optimized for readonly operations on cached syntax trees. Notably pr
 
 Throughput benchmarks for deserializing into a syntax tree, serializing the syntax tree, and streaming serialization and deserialization
 
-Run locally with `just bench-json` or individual `just bench json_deser`, `just bench json_prettify`, and `just bench json_uglify`
+Run locally with `mise run bench-json` or individual `mise run bench json_deser`, `mise run bench json_prettify`, and `mise run bench json_uglify`
 
 Throughput is normalized by input and output bytes and benchmarks do not measure initial buffer allocation
 
 The following JSON fixtures are used across benchmarks:
 
-- [canada.json](/xtask/bench/data/json-benchmark/data/canada.json) — 2.2MB, lots of lightly nested arrays, no strings
+- [canada.json](/benches/docker/data/json-benchmark/data/canada.json) — 2.2MB, lots of lightly nested arrays, no strings
 
-- [citm_catalog.json](/xtask/bench/data/json-benchmark/data/citm_catalog.json) — 1.7MB, lots of lightly nested long objects, ASCII strings
+- [citm_catalog.json](/benches/docker/data/json-benchmark/data/citm_catalog.json) — 1.7MB, lots of lightly nested long objects, ASCII strings
 
-- [twitter.json](/xtask/bench/data/json-benchmark/data/twitter.json) — 0.6MB, lots of lightly nested short objects, multibyte strings
+- [twitter.json](/benches/docker/data/json-benchmark/data/twitter.json) — 0.6MB, lots of lightly nested short objects, multibyte strings
 
 ## deser
 

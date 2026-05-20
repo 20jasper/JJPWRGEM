@@ -3,7 +3,7 @@
 # bytes2chars benchmarks
 
 Throughput benchmarks comparing `bytes2chars` against alternative UTF-8 decoders.
-Run locally with `just bench bytes2chars`
+Run locally with `mise run bench bytes2chars`
 
 ## ascii
 

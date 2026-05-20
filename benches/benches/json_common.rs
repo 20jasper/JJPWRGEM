@@ -4,7 +4,7 @@ fn data_path(name: &str) -> std::path::PathBuf {
     let manifest = env!("CARGO_MANIFEST_DIR");
     [
         manifest,
-        "../xtask/bench/data/json-benchmark/data",
+        "docker/data/json-benchmark/data",
         &format!("{name}.json"),
     ]
     .iter()

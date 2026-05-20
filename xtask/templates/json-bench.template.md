@@ -4,7 +4,7 @@
 
 Throughput benchmarks for deserializing into a syntax tree, serializing the syntax tree, and streaming serialization and deserialization
 
-Run locally with `just bench-json` or individual `just bench json_deser`, `just bench json_prettify`, and `just bench json_uglify`
+Run locally with `mise run bench-json` or individual `mise run bench json_deser`, `mise run bench json_prettify`, and `mise run bench json_uglify`
 
 Throughput is normalized by input and output bytes and benchmarks do not measure initial buffer allocation
 

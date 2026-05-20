@@ -4,7 +4,7 @@
   "packageRules": [
     {
       "matchManagers": ["dockerfile", "mise", "cargo"],
-      "matchFileNames": ["xtask/bench/**", "benches/**", "Dockerfile"],
+      "matchFileNames": ["benches/**", "Dockerfile"],
       "groupName": "benches",
       "matchUpdateTypes": ["patch", "minor", "digest"],
       "automerge": true

@@ -2,24 +2,24 @@
 
 # jjpwrgem CLI formatter and minifier benchmarks
 
-Wall-clock timing against jq, prettier, dprint, and others via hyperfine. Run locally with `just bench-docker`
+Wall-clock timing against jq, prettier, dprint, and others via hyperfine. Run locally with `mise run bench-docker`
 These benchmarks are run with `AMD Ryzen 5 5600X 6-Core Processor (3.70 GHz)`
 
 The following JSON fixtures are used across benchmarks:
 
-- [canada.json](/xtask/bench/data/json-benchmark/data/canada.json) — 2.2MB, lots of lightly nested arrays, no strings
+- [canada.json](/benches/docker/data/json-benchmark/data/canada.json) — 2.2MB, lots of lightly nested arrays, no strings
 
-- [citm_catalog.json](/xtask/bench/data/json-benchmark/data/citm_catalog.json) — 1.7MB, lots of lightly nested long objects, ASCII strings
+- [citm_catalog.json](/benches/docker/data/json-benchmark/data/citm_catalog.json) — 1.7MB, lots of lightly nested long objects, ASCII strings
 
-- [twitter.json](/xtask/bench/data/json-benchmark/data/twitter.json) — 0.6MB, lots of lightly nested short objects, multibyte strings
+- [twitter.json](/benches/docker/data/json-benchmark/data/twitter.json) — 0.6MB, lots of lightly nested short objects, multibyte strings
 
 ## canada
 
-[canada.json](/xtask/bench/data/json-benchmark/data/canada.json) — 2.2MB, lots of lightly nested arrays, no strings
+[canada.json](/benches/docker/data/json-benchmark/data/canada.json) — 2.2MB, lots of lightly nested arrays, no strings
 
 ### pretty canada
 
-![candlestick benchmark for pretty printing canada.json](/xtask/bench/output/pretty-canada.png)
+![candlestick benchmark for pretty printing canada.json](/benches/docker/output/pretty-canada.png)
 
 | Command        |     Mean [ms] | Min [ms] | Max [ms] |     Relative |
 | :------------- | ------------: | -------: | -------: | -----------: |
@@ -43,7 +43,7 @@ The following JSON fixtures are used across benchmarks:
 
 ### ugly canada
 
-![candlestick benchmark for ugly printing canada.json](/xtask/bench/output/ugly-canada.png)
+![candlestick benchmark for ugly printing canada.json](/benches/docker/output/ugly-canada.png)
 
 | Command       |    Mean [ms] | Min [ms] | Max [ms] |     Relative |
 | :------------ | -----------: | -------: | -------: | -----------: |
@@ -62,11 +62,11 @@ The following JSON fixtures are used across benchmarks:
 
 ## citm catalog
 
-[citm_catalog.json](/xtask/bench/data/json-benchmark/data/citm_catalog.json) — 1.7MB, lots of lightly nested long objects, ASCII strings
+[citm_catalog.json](/benches/docker/data/json-benchmark/data/citm_catalog.json) — 1.7MB, lots of lightly nested long objects, ASCII strings
 
 ### pretty citm catalog
 
-![candlestick benchmark for pretty printing citm-catalog.json](/xtask/bench/output/pretty-citm_catalog.png)
+![candlestick benchmark for pretty printing citm-catalog.json](/benches/docker/output/pretty-citm_catalog.png)
 
 | Command        |   Mean [ms] | Min [ms] | Max [ms] |      Relative |
 | :------------- | ----------: | -------: | -------: | ------------: |
@@ -90,7 +90,7 @@ The following JSON fixtures are used across benchmarks:
 
 ### ugly citm catalog
 
-![candlestick benchmark for ugly printing citm-catalog.json](/xtask/bench/output/ugly-citm_catalog.png)
+![candlestick benchmark for ugly printing citm-catalog.json](/benches/docker/output/ugly-citm_catalog.png)
 
 | Command       |   Mean [ms] | Min [ms] | Max [ms] |     Relative |
 | :------------ | ----------: | -------: | -------: | -----------: |
@@ -109,11 +109,11 @@ The following JSON fixtures are used across benchmarks:
 
 ## twitter
 
-[twitter.json](/xtask/bench/data/json-benchmark/data/twitter.json) — 0.6MB, lots of lightly nested short objects, multibyte strings
+[twitter.json](/benches/docker/data/json-benchmark/data/twitter.json) — 0.6MB, lots of lightly nested short objects, multibyte strings
 
 ### pretty twitter
 
-![candlestick benchmark for pretty printing twitter.json](/xtask/bench/output/pretty-twitter.png)
+![candlestick benchmark for pretty printing twitter.json](/benches/docker/output/pretty-twitter.png)
 
 | Command        |   Mean [ms] | Min [ms] | Max [ms] |       Relative |
 | :------------- | ----------: | -------: | -------: | -------------: |
@@ -137,7 +137,7 @@ The following JSON fixtures are used across benchmarks:
 
 ### ugly twitter
 
-![candlestick benchmark for ugly printing twitter.json](/xtask/bench/output/ugly-twitter.png)
+![candlestick benchmark for ugly printing twitter.json](/benches/docker/output/ugly-twitter.png)
 
 | Command       |   Mean [ms] | Min [ms] | Max [ms] |      Relative |
 | :------------ | ----------: | -------: | -------: | ------------: |
