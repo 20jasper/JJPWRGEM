@@ -1,6 +1,7 @@
 [tools]
 "cargo:cargo-insta" = "1.46"
 "cargo:cargo-llvm-cov" = "0.8"
+"npm:prettier" = "3.8.3"
 
 [vars]
 test_flags = "--all-features --workspace -q"
