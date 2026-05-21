@@ -10,6 +10,7 @@ shellcheck = "0.11.0"
 "npm:knip" = "6.14.2"
 "npm:oxfmt" = "0.51.0"
 "npm:oxlint" = "1.66.0"
+"npm:renovate" = "42.99.0"
 
 [tasks.typos]
 run = "typos"
@@ -49,3 +50,6 @@ run = "cargo package -p bytes2chars -p jjpwrgem-parse -p jjpwrgem-ui -p jjpwrgem
 [tasks.tracey-check]
 description = "Verify spec rules have version bumps for any changed rule text"
 run = "tracey pre-commit"
+
+[tasks.renovate-check]
+run = "renovate-config-validator .github/renovate.json"

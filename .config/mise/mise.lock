@@ -187,6 +187,10 @@ backend = "npm:oxlint"
 version = "3.8.3"
 backend = "npm:prettier"
 
+[[tools."npm:renovate"]]
+version = "42.99.0"
+backend = "npm:renovate"
+
 [[tools.shellcheck]]
 version = "0.11.0"
 backend = "aqua:koalaman/shellcheck"
