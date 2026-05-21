@@ -38,6 +38,9 @@ local check_steps = new Mapping<String, Step> {
   ["cargo-shear"] {
     check = "cargo shear"
   }
+  ["cargo-deny"] {
+    check = "mise run deny"
+  }
   ["dist-plan"] {
     check = "dist plan > /dev/null"
   }

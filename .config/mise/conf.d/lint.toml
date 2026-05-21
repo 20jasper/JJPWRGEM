@@ -1,6 +1,7 @@
 [tools]
 actionlint = "1.7.12"
 shellcheck = "0.11.0"
+"cargo:cargo-deny" = "0.19.6"
 "cargo:cargo-shear" = "1.11"
 "cargo:cargo-diet" = "1.3.0"
 "cargo:committed" = "1.1.11"
@@ -9,8 +10,10 @@ shellcheck = "0.11.0"
 "npm:oxfmt" = "0.50.0"
 
 [tasks.typos]
-description = "Catch typos in source, docs, and config"
 run = "typos"
+
+[tasks.deny]
+run = "cargo deny check"
 
 [tasks.format]
 description = "Format rust, markdown, toml, and config files"
@@ -34,6 +37,9 @@ run = [
   "pnpm --if-present lint > /dev/null",
   "actionlint",
   "cargo shear",
+  "find . -name '*.sh' -not -path '*/.git/*' -not -path '*/target/*' -not -path '*/node_modules/*' -not -path '*/conformance/*' | xargs shellcheck",
+  "typos",
+  "cargo deny check",
 ]
 
 [tasks.diet]
