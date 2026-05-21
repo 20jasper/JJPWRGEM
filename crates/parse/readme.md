@@ -2,7 +2,7 @@
 
 # jjpwrgem-parse
 
-Documentation and utilities for the parser used by the CLI.
+JSON parser and formatter with rich errors. Currently unstable—expect breaking changes.
 
 ## Indeterminate Handling
 

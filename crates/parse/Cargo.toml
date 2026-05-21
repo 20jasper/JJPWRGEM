@@ -2,8 +2,13 @@
 name = "jjpwrgem-parse"
 version = "0.11.0"
 edition = "2024"
+description = "JSON parser and formatter with rich errors"
 license = "MIT"
-publish = false
+readme = "readme.md"
+repository = "https://github.com/20jasper/jjpwrgem"
+documentation = "https://docs.rs/jjpwrgem-parse"
+keywords = ["json", "parser", "formatter", "diagnostics"]
+categories = ["parser-implementations", "text-processing"]
 
 [dependencies]
 bytes2chars = { workspace = true }
