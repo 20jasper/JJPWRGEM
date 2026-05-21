@@ -11,24 +11,7 @@ pub use uglify::{uglify_document, uglify_document_into, uglify_str};
 
 use crate::tokens::{FALSE, NULL, TRUE};
 
-/// writes formatted delimiters between formatted items
-///
-/// avoids allocating intermediate `String`s declaratively
-/// # Examples
-/// ```
-/// # use jjpwrgem_parse::format::join_into;
-/// # use std::fmt::Write as _;
-///
-/// let mut buf = String::new();
-/// join_into(
-///     &mut buf,
-///     [1, 2, 3, 4],
-///     |buf, x| write!(buf, "{}", x * 2).unwrap(),
-///     |buf, _| write!(buf, ",").unwrap(),
-/// );
-/// assert_eq!(buf, "2,4,6,8");
-/// ```
-pub fn join_into<T, B>(
+pub(crate) fn join_into<T, B>(
     buf: &mut B,
     items: impl IntoIterator<Item = T>,
     mut item_fmt: impl FnMut(&mut B, &T),
@@ -61,7 +44,7 @@ impl LineEnding {
     }
 }
 
-pub trait Emitter {
+pub(crate) trait Emitter {
     fn push(&mut self, c: char);
     fn push_str(&mut self, s: &str);
 
