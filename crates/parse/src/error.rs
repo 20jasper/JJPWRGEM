@@ -169,7 +169,7 @@ impl Error {
         &self.0.range
     }
 
-    pub fn new(kind: ErrorKind, range: Range<usize>, text: &str) -> Self {
+    pub(crate) fn new(kind: ErrorKind, range: Range<usize>, text: &str) -> Self {
         ErrorInner {
             kind,
             range,
@@ -179,7 +179,7 @@ impl Error {
         .into()
     }
 
-    pub fn from_unterminated(kind: ErrorKind, text: &str) -> Self {
+    pub(crate) fn from_unterminated(kind: ErrorKind, text: &str) -> Self {
         let trimmed = trim_end_whitespace(text);
         Self::new(kind, trimmed.len().saturating_sub(1)..trimmed.len(), text)
     }
@@ -204,7 +204,7 @@ impl Error {
         .into()
     }
 
-    pub fn from_maybe_token_with_context<F>(
+    pub(crate) fn from_maybe_token_with_context<F>(
         f: F,
         maybe_token: Option<TokenWithContext>,
         text: &str,
@@ -225,7 +225,7 @@ impl Error {
         }
     }
 
-    pub fn from_maybe_json_char_with_context<F>(
+    pub(crate) fn from_maybe_json_char_with_context<F>(
         f: F,
         maybe_c: Option<CharWithContext>,
         text: &str,

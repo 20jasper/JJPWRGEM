@@ -15,8 +15,8 @@ pub fn uglify_str(json: &str) -> Result<String> {
 }
 
 #[derive(Debug, Default)]
-pub struct UglifyEmitVisitor {
-    pub buf: String,
+pub(crate) struct UglifyEmitVisitor {
+    pub(crate) buf: String,
 }
 
 impl Emitter for UglifyEmitVisitor {

@@ -5,11 +5,11 @@ use crate::{
     Error, ErrorKind,
     tokens::{ErrorToken, JsonCharOption, Token, TokenOption, TokenWithContext, lexical::JsonChar},
 };
-pub const EXPECTED_COMMA_OR_CLOSED_CURLY_MESSAGE: &str = "the preceding key/value pair";
-pub const INSERT_MISSING_CLOSED_BRACE_HELP: &str = "insert the missing closed brace";
-pub const REMOVE_EXPONENT_HELP: &str = "remove the exponent";
-pub const INSERT_EXPONENT_PLACEHOLDER_DIGIT_HELP: &str = "insert a placeholder digit";
-pub const EXPONENT_PLACEHOLDER_DIGIT: &str = "5";
+pub(crate) const EXPECTED_COMMA_OR_CLOSED_CURLY_MESSAGE: &str = "the preceding key/value pair";
+pub(crate) const INSERT_MISSING_CLOSED_BRACE_HELP: &str = "insert the missing closed brace";
+pub(crate) const REMOVE_EXPONENT_HELP: &str = "remove the exponent";
+pub(crate) const INSERT_EXPONENT_PLACEHOLDER_DIGIT_HELP: &str = "insert a placeholder digit";
+pub(crate) const EXPONENT_PLACEHOLDER_DIGIT: &str = "5";
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Context<'a> {

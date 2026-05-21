@@ -2,6 +2,22 @@
 style = "conventional"
 subject_capitalized = false
 subject_length = 80
+line_length = 80
 no_fixup = true
 no_wip = true
 merge_commit = true
+allowed_types = [
+  "fix",
+  "feat",
+  "feature",
+  "chore",
+  "docs",
+  "style",
+  "refactor",
+  "perf",
+  "test",
+  "bench",
+  "deprecated",
+  "changed",
+  "security",
+]
