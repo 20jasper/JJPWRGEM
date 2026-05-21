@@ -8,18 +8,21 @@
 codspeed_benches = "--bench bytes2chars --bench json_deser --bench json_prettify --bench json_uglify --bench json_tokens"
 
 [tasks.bench]
-description = "Run a single criterion bench and write its markdown table (e.g. mise run bench json_prettify)"
 dir = "{{config_root}}/benches"
 shell = "bash -c"
+usage = '''
+arg "<name>" help="Bench target name (e.g. bytes2chars, json_deser, json_prettify, json_uglify, json_tokens)"
+flag "--sample-size <n>" help="Pass through to criterion"
+'''
 run = '''
-name=$1
-shift
+set -euo pipefail
 mkdir -p output
-tmp=$(mktemp)
-trap 'rm -f "$tmp"' EXIT
-cargo criterion --bench "$name" --message-format=json "$@" > "$tmp"
-cargo xtask bench-table < "$tmp" > "output/$name.md"
-mise run readmes
+cargo criterion --bench "$usage_name" --message-format=json \
+  ${usage_sample_size:+--sample-size "$usage_sample_size"} \
+  | cargo xtask bench-table > "output/$usage_name.md"
+cargo xtask generate-readmes
+cargo +nightly fmt -p bytes2chars
+cargo rdme --workspace-project bytes2chars --force
 '''
 
 [tasks.bench-json]
@@ -86,6 +89,8 @@ docker run --rm \
   -v "$(pwd)/benches/docker/output:/benchmark/output" \
   jjp-benchmark
 oxfmt './benches/docker/output/*.md' --write
-mise run plot-bench
-mise run readmes
+cargo xtask plot-benchmarks
+cargo xtask generate-readmes
+cargo +nightly fmt -p bytes2chars
+cargo rdme --workspace-project bytes2chars --force
 '''
