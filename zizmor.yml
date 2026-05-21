@@ -1,0 +1,17 @@
+rules:
+  excessive-permissions:
+    ignore:
+      - jjp-release.yml
+      - release-plz.yml
+  template-injection:
+    ignore:
+      - jjp-release.yml
+  unpinned-uses:
+    ignore:
+      - jjp-release.yml
+  unpinned-images:
+    ignore:
+      - jjp-release.yml
+  secrets-inherit:
+    ignore:
+      - jjp-release.yml

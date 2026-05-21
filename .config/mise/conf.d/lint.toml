@@ -2,6 +2,7 @@
 actionlint = "1.7.12"
 shellcheck = "0.11.0"
 "cargo:cargo-deny" = "0.19.6"
+"cargo:zizmor" = "1.25.2"
 "cargo:cargo-shear" = "1.11"
 "cargo:cargo-diet" = "1.3.0"
 "cargo:committed" = "1.1.11"
@@ -40,6 +41,7 @@ run = [
   "find . -name '*.sh' -not -path '*/.git/*' -not -path '*/target/*' -not -path '*/node_modules/*' -not -path '*/conformance/*' | xargs shellcheck",
   "typos",
   "cargo deny check",
+  "zizmor .github/",
 ]
 
 [tasks.diet]
