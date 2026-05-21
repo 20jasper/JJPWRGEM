@@ -11,6 +11,11 @@ name = "bytes2chars"
 release = true
 publish = true
 
+[[package]]
+name = "jjpwrgem-parse"
+release = true
+publish = true
+
 [changelog]
 commit_parsers = [
   { message = "^(feat|feature)", group = "added" },
