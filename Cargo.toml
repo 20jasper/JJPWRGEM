@@ -39,7 +39,7 @@ rstest = "0.26.1"
 rstest_reuse = "0.7.0"
 clap = { version = "4.5.53", features = ["derive"] }
 itertools = "0.14.0"
-bytes2chars = { version = "0.2.1", path = "crates/bytes2chars" }
+bytes2chars = { version = "0.2.2", path = "crates/bytes2chars" }
 
 [dependencies]
 anstream = "1"
