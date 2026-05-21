@@ -73,14 +73,19 @@ callgrind_annotate \
 description = "Run perf tests against 10+ cli tools via docker and embed outputs in readmes"
 shell = "bash -c"
 run = '''
-mkdir -p xtask/bench/output
+mkdir -p benches/docker/output
+mise run -C benches/docker build-oci
+docker buildx create --name jjp-bench --driver docker-container 2>/dev/null || true
 GITHUB_TOKEN="$(gh auth token 2>/dev/null || true)" \
-  docker build -t jjp-benchmark --secret id=gh_token,env=GITHUB_TOKEN .
+  docker buildx build --builder jjp-bench -t jjp-benchmark \
+    --build-context "mise-tools=oci-layout://$(pwd)/benches/docker/.mise-oci" \
+    --secret id=gh_token,env=GITHUB_TOKEN \
+    --load .
 docker run --rm \
   -u "$(id -u):$(id -g)" \
-  -v "$(pwd)/xtask/bench/output:/benchmark/output" \
+  -v "$(pwd)/benches/docker/output:/benchmark/output" \
   jjp-benchmark
-oxfmt './xtask/bench/output/*.md' --write
+oxfmt './benches/docker/output/*.md' --write
 mise run plot-bench
 mise run readmes
 '''

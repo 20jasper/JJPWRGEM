@@ -37,8 +37,6 @@ bench() {
       "json-pp-rust < $FILE_PATH" \
     --command-name "jsonice" \
       "jsonice < $FILE_PATH" \
-    --command-name "jello" \
-      "jello < $FILE_PATH" \
     --command-name "prettier" \
       "prettier --parser json < $FILE_PATH" \
     --command-name "jq" \
@@ -57,8 +55,6 @@ bench() {
       "node -e '(async()=>{const t=await require(\"node:stream/consumers\").text(process.stdin);process.stdout.write(JSON.stringify(JSON.parse(t),null,2))})()' < $FILE_PATH" \
     --command-name "bun" \
       "bun -e 'console.log(JSON.stringify(await new Response(Bun.stdin.stream()).json(), null, 2))' < $FILE_PATH" \
-    --command-name "jshon" \
-      "jshon < $FILE_PATH" \
     --command-name "jsonxf" \
       "jsonxf < $FILE_PATH" \
     --command-name "jsonformat" \
@@ -74,8 +70,6 @@ bench() {
       "jjp format -u < $FILE_PATH" \
     --command-name "json-minify" \
       "json-minify < $FILE_PATH" \
-    --command-name "jello" \
-      "jello -c < $FILE_PATH" \
     --command-name "jsonxf" \
       "jsonxf -m < $FILE_PATH" \
     --command-name "jq" \
