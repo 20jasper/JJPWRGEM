@@ -55,6 +55,7 @@ local check_steps = new Mapping<String, Step> {
   ["typos"] {
     check = "mise run typos"
   }
+  ["zizmor"] = Builtins.zizmor
   ["test"] {
     glob = List("**/*.rs")
     check = "mise run test"

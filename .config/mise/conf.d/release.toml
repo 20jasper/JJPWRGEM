@@ -1,7 +1,15 @@
 [tools]
 "cargo:cargo-dist" = "0.31.0"
+pinact = "3.10.1"
 "cargo:release-plz" = "0.3"
 "cargo:cargo-release" = "1.0"
+
+[tasks.dist-generate]
+run = [
+  "dist generate",
+  "git apply --3way .dist/jjp-release.patch",
+  "pinact run .github/workflows/jjp-release.yml",
+]
 
 [tasks.prepublish]
 description = "Run all pre-publish checks (format, lint, diet, tracey)"
