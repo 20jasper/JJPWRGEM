@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.2](https://github.com/20jasper/JJPWRGEM/compare/bytes2chars-v0.2.1...bytes2chars-v0.2.2) - 2026-05-22
+
+### Documentation
+
+- organize benchmarks into multiple files, and replace manual throughput charts
+
 ## [0.2.1](https://github.com/20jasper/JJPWRGEM/compare/bytes2chars-v0.2.0...bytes2chars-v0.2.1) - 2026-04-03
 
 ### Documentation
