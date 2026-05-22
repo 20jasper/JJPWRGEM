@@ -1,5 +1,5 @@
 use displaydoc::Display;
-use jjpwrgem_ui::message::BasicErrorMessage;
+use jjpwrgem_ui::BasicErrorMessage;
 use thiserror::Error;
 
 use crate::{docs::strip_front_matter, get_docs_snapshot};

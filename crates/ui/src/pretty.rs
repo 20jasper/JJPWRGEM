@@ -22,7 +22,7 @@ mod diagnostic {
         AnnotationKind::Context.span(span.into()).label(message)
     }
 
-    pub fn report_diagnostic(
+    pub(crate) fn report_diagnostic(
         Diagnostic {
             message,
             context,
@@ -55,9 +55,9 @@ mod diagnostic {
 mod message {
     use annotate_snippets::{Group, Level};
 
-    use crate::message::BasicErrorMessage;
+    use crate::BasicErrorMessage;
 
-    pub fn report_message<'a>(message: BasicErrorMessage) -> Vec<Group<'a>> {
+    pub(crate) fn report_message<'a>(message: BasicErrorMessage) -> Vec<Group<'a>> {
         let error = Some(Level::ERROR.primary_title(message.error));
         let help = message.help.map(|x| Level::HELP.primary_title(x));
 
@@ -69,5 +69,5 @@ mod message {
     }
 }
 
-pub use diagnostic::report_diagnostic;
-pub use message::report_message;
+pub(crate) use diagnostic::report_diagnostic;
+pub(crate) use message::report_message;

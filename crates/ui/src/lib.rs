@@ -1,7 +1,5 @@
 use annotate_snippets::{Renderer, renderer::DecorStyle};
-pub use jjpwrgem_parse::error::diagnostics::Diagnostic;
-
-use crate::message::BasicErrorMessage;
+use jjpwrgem_parse::error::diagnostics::Diagnostic;
 
 mod pretty;
 
@@ -36,20 +34,8 @@ impl Style {
     }
 }
 
-pub mod message {
-
-    #[derive(Debug, PartialEq, Eq, Clone)]
-    pub struct BasicErrorMessage {
-        pub error: String,
-        pub help: Option<String>,
-    }
-
-    impl BasicErrorMessage {
-        pub fn new(error: impl Into<String>, help: Option<String>) -> Self {
-            Self {
-                error: error.into(),
-                help,
-            }
-        }
-    }
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub struct BasicErrorMessage {
+    pub error: String,
+    pub help: Option<String>,
 }
