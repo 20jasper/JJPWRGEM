@@ -1,6 +1,6 @@
 ARG APP_NAME=jjp
 
-FROM rustlang/rust:nightly-slim@sha256:a7355893810269e68a586bfb1a14d032619b6e3bb91d299eea4a4bdf4856cd8a AS build
+FROM rustlang/rust:nightly-slim@sha256:6c4a48e824fb88a2fd6b7b81c0a17cf43054f5200a2244b89e42b8876141482a AS build
 ARG APP_NAME
 WORKDIR /app
 
