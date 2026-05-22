@@ -2,8 +2,13 @@
 name = "jjpwrgem-ui"
 version = "0.2.0"
 edition = "2024"
+description = "renders jjpwrgem diagnostics"
 license = "MIT"
-publish = false
+readme = "readme.md"
+repository = "https://github.com/20jasper/jjpwrgem"
+documentation = "https://docs.rs/jjpwrgem-ui"
+keywords = ["json", "diagnostics", "error", "pretty", "report"]
+categories = ["command-line-interface", "value-formatting"]
 
 [lib]
 test = false
