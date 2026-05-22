@@ -7,7 +7,7 @@ shellcheck = "0.11.0"
 "cargo:committed" = "1.1.11"
 "cargo:tracey" = "1.3.0"
 "cargo:typos-cli" = "1.46.2"
-"npm:oxfmt" = "0.50.0"
+"npm:oxfmt" = "0.51.0"
 
 [tasks.typos]
 run = "typos"
