@@ -69,8 +69,12 @@ jobs:
       - uses: ./.github/actions/setup-mise
       - name: Configure Dependency Caching
         uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4 # v2.9.1
-      - name: publish dry-run (bytes2chars only)
+      - name: publish dry-run (bytes2chars)
         run: mise run publish-dry-run bytes2chars
+      - name: publish dry-run (jjpwrgem-parse)
+        run: mise run publish-dry-run jjpwrgem-parse
+      - name: publish dry-run (jjpwrgem-ui)
+        run: mise run publish-dry-run jjpwrgem-ui
 
   test-vscode:
     runs-on: ubuntu-latest

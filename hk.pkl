@@ -44,9 +44,17 @@ local check_steps = new Mapping<String, Step> {
   ["dist-plan"] {
     check = "dist plan > /dev/null"
   }
-  ["publish-dry-run"] {
+  ["publish-dry-run-bytes2chars"] {
     glob = List("crates/bytes2chars/**")
     check = "mise run publish-dry-run bytes2chars"
+  }
+  ["publish-dry-run-jjpwrgem-parse"] {
+    glob = List("crates/parse/**")
+    check = "mise run publish-dry-run jjpwrgem-parse"
+  }
+  ["publish-dry-run-jjpwrgem-ui"] {
+    glob = List("crates/ui/**")
+    check = "mise run publish-dry-run jjpwrgem-ui"
   }
   ["readmes-check"] {
     check = "mise run readmes-check"
