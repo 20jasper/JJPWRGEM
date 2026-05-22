@@ -54,5 +54,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - write delimiters and indentation directly to buffer, avoiding intermediate allocations
 - avoid using fmt machinery in hot paths, instead pushing directly
 - TokenStream iterator instead of collecting into intermediary Vec
-- join_into utility to declaritively avoid allocating delimiter strings
+- join_into utility to declaratively avoid allocating delimiter strings
 - write to single buffer instead of allocating buffer per JSON value
