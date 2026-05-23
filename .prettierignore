@@ -4,7 +4,7 @@ tests/conformance
 xtask/bench/data
 benches/docker/data
 benches/docker/output/
-.github/workflows/jjp-release.yml
+.github/workflows/jjpwrgem-v-release.yml
 CHANGELOG.md
 pnpm-lock.yaml
 out

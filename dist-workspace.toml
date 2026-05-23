@@ -22,7 +22,7 @@ install-path = "CARGO_HOME"
 # Whether to install an updater program
 install-updater = false
 # A prefix git tags must include for dist to care about them
-tag-namespace = "jjp"
+tag-namespace = "jjpwrgem-v"
 # Host jobs to run in CI
 host-jobs = ["./host-npm"]
 # Publish jobs to run in CI
