@@ -1,13 +1,12 @@
-pub mod lexical;
+pub(crate) mod lexical;
 mod number;
 mod stream;
 mod string;
 
 use core::{fmt::Display, iter::Peekable, range::Range};
 
+pub use lexical::{JsonByte, JsonChar};
 pub use stream::TokenStream;
-
-use crate::tokens::lexical::{JsonByte, JsonChar};
 
 #[repr(u8)]
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
@@ -27,7 +26,7 @@ pub enum Token {
 }
 
 impl Token {
-    pub fn is_start_of_value(&self) -> bool {
+    pub(crate) fn is_start_of_value(self) -> bool {
         matches!(
             self,
             Token::OpenCurlyBrace
@@ -40,7 +39,7 @@ impl Token {
         )
     }
 
-    pub fn is_scalar(&self) -> bool {
+    pub(crate) fn is_scalar(self) -> bool {
         matches!(
             self,
             Token::String | Token::Null | Token::True | Token::False | Token::Mantissa
@@ -77,7 +76,7 @@ pub struct ErrorToken {
 }
 
 impl ErrorToken {
-    pub fn new(tag: Token, range: Range<usize>, source: &str) -> Self {
+    pub(crate) fn new(tag: Token, range: Range<usize>, source: &str) -> Self {
         Self {
             tag,
             content: source[range].into(),
@@ -146,11 +145,11 @@ pub struct TokenWithContext {
 }
 
 impl TokenWithContext {
-    pub fn new(token: Token, range: Range<usize>) -> Self {
+    pub(crate) fn new(token: Token, range: Range<usize>) -> Self {
         Self { token, range }
     }
 
-    pub fn content_range(&self) -> Range<usize> {
+    pub(crate) fn content_range(&self) -> Range<usize> {
         match self.token {
             Token::String => self.range.start + 1..self.range.end - 1,
             _ => self.range,
@@ -158,9 +157,9 @@ impl TokenWithContext {
     }
 }
 
-pub const NULL: &str = "null";
-pub const FALSE: &str = "false";
-pub const TRUE: &str = "true";
+pub(crate) const NULL: &str = "null";
+pub(crate) const FALSE: &str = "false";
+pub(crate) const TRUE: &str = "true";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct CharWithContext(pub Range<usize>, pub JsonChar);
@@ -181,15 +180,15 @@ impl From<(usize, u8)> for ByteWithContext {
 }
 
 impl ByteWithContext {
-    pub fn range(&self) -> Range<usize> {
+    pub(crate) fn range(&self) -> Range<usize> {
         self.0..self.0 + 1
     }
 
-    pub fn as_token_with_context(&self) -> Option<TokenWithContext> {
+    pub(crate) fn as_token_with_context(&self) -> Option<TokenWithContext> {
         Some(TokenWithContext::new(self.1.as_token()?, self.range()))
     }
 
-    pub fn as_byte(&self) -> u8 {
+    pub(crate) fn as_byte(&self) -> u8 {
         self.1.0
     }
 }

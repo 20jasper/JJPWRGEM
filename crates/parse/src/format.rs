@@ -3,10 +3,7 @@ mod prettify;
 pub mod serde;
 mod uglify;
 
-pub use prettify::{
-    FormatOptions, format_document, format_str, prettify_document, prettify_document_into,
-    prettify_str,
-};
+pub use prettify::{prettify_document, prettify_document_into, prettify_str};
 pub use uglify::{uglify_document, uglify_document_into, uglify_str};
 
 use crate::tokens::{FALSE, NULL, TRUE};

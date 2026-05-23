@@ -65,24 +65,6 @@ pub struct Diagnostic<'a> {
     pub source: Source<'a>,
 }
 
-impl<'a> Diagnostic<'a> {
-    pub fn new(
-        message: String,
-        context: Vec<Context<'a>>,
-        patches: Vec<Patch<'a>>,
-        source: Source<'a>,
-        range: Option<Range<usize>>,
-    ) -> Self {
-        Self {
-            message,
-            range,
-            context,
-            patches,
-            source,
-        }
-    }
-}
-
 fn error_source(error: &Error) -> Source<'_> {
     if error.source_name == "stdin" {
         Source::Stdin(error.source_text.as_str())

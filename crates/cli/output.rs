@@ -1,7 +1,7 @@
 use core::fmt::Debug;
 use std::process::ExitCode;
 
-use jjpwrgem_parse::error::diagnostics::Diagnostic;
+use jjpwrgem_parse::diagnostics::Diagnostic;
 use jjpwrgem_ui::Style;
 
 pub struct Output {

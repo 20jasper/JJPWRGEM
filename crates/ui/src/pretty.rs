@@ -1,6 +1,6 @@
 mod diagnostic {
     use annotate_snippets::{Annotation, AnnotationKind, Group, Level, Snippet};
-    use jjpwrgem_parse::error::diagnostics::{Context, Diagnostic, Patch, Source};
+    use jjpwrgem_parse::diagnostics::{Context, Diagnostic, Patch, Source};
     fn patch_to_patch(patch: Patch<'_>) -> annotate_snippets::Patch<'_> {
         annotate_snippets::Patch::new(patch.span.into(), patch.replacement)
     }
