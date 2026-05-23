@@ -15,7 +15,7 @@ test = false
 doctest = false
 
 [dependencies]
-annotate-snippets = "0.12.8"
+annotate-snippets = "0.12.16"
 jjpwrgem-parse = { workspace = true }
 
 [lints]

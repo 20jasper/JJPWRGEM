@@ -13,7 +13,7 @@ categories = ["parser-implementations", "text-processing"]
 [dependencies]
 bytes2chars = { workspace = true }
 displaydoc = { workspace = true }
-serde = { version = "1", optional = true, features = ["derive"] }
+serde = { version = "1.0.228", optional = true, features = ["derive"] }
 thiserror = { workspace = true }
 
 [dev-dependencies]

@@ -8,7 +8,7 @@ include = ["src/**/*"]
 [dependencies]
 anyhow = "1"
 base64 = "0.22"
-clap = { workspace = true }
+clap = { version = "4", features = ["derive"] }
 jjpwrgem-parse = { workspace = true, features = ["serde"] }
 plotters = { version = "0.3", default-features = false, features = [
   "bitmap_backend",
@@ -21,4 +21,4 @@ cargo_metadata = { version = "0.23.1", features = ["builder"] }
 package-json = "0.5.0"
 serde_json = { version = "1.0.145", features = ["preserve_order"] }
 serde = { version = "1.0.228", features = ["derive"] }
-itertools = { workspace = true }
+itertools = "0.14"
