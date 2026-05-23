@@ -8,15 +8,15 @@ use crate::{Result, tokens::TokenStream, traverse::parse_tokens};
 pub struct ObjectEntries(pub(crate) Vec<(Range<usize>, Value)>);
 
 impl ObjectEntries {
-    pub fn new() -> Self {
+    pub(crate) fn new() -> Self {
         Self(Vec::new())
     }
 
-    pub fn push(&mut self, key_range: Range<usize>, v: Value) {
+    pub(crate) fn push(&mut self, key_range: Range<usize>, v: Value) {
         self.0.push((key_range, v));
     }
 
-    pub fn is_empty(&self) -> bool {
+    pub(crate) fn is_empty(&self) -> bool {
         self.0.is_empty()
     }
 

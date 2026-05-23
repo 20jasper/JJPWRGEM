@@ -3,7 +3,7 @@ use core::{fmt::Display, range::RangeInclusive};
 use crate::tokens::{CharWithContext, Token};
 
 /// see [`JsonChar::is_whitespace`]
-pub fn trim_end_whitespace(s: &str) -> &str {
+pub(crate) fn trim_end_whitespace(s: &str) -> &str {
     let end = s
         .char_indices()
         .map(Into::<CharWithContext>::into)
@@ -21,11 +21,11 @@ pub struct JsonChar(pub char);
 pub struct JsonByte(pub u8);
 
 impl JsonByte {
-    pub fn is_whitespace(&self) -> bool {
+    pub(crate) fn is_whitespace(self) -> bool {
         matches!(self.0, b' ' | b'\t' | b'\n' | b'\r')
     }
 
-    pub fn as_token(&self) -> Option<Token> {
+    pub(crate) fn as_token(self) -> Option<Token> {
         let token = match self.0 {
             b'{' => Token::OpenCurlyBrace,
             b'}' => Token::ClosedCurlyBrace,
@@ -59,7 +59,7 @@ impl JsonChar {
     /// unescaped = %x20-21 / %x23-5B / %x5D-10FFFF
     /// ```
     /// see [RFC 8249 section 7](https://datatracker.ietf.org/doc/html/rfc8259#section-7)
-    pub fn direct_escape(self) -> Option<&'static str> {
+    pub(crate) fn direct_escape(self) -> Option<&'static str> {
         match self.0 {
             '"' => Some(r#"\""#),
             '\\' => Some(r"\\"),
@@ -73,30 +73,31 @@ impl JsonChar {
         }
     }
 
-    pub fn minimal_escape(self) -> Option<&'static str> {
+    #[cfg(any(test, feature = "serde"))]
+    pub(crate) fn minimal_escape(self) -> Option<&'static str> {
         self.direct_escape().filter(|escaped| *escaped != r"\/")
     }
 
-    pub fn escape(self) -> String {
+    pub(crate) fn escape(self) -> String {
         match self.direct_escape() {
             Some(escaped) => escaped.into(),
             None => format!("\\u{:04X}", u32::from(self.0)),
         }
     }
 
-    pub fn is_hexdigit(&self) -> bool {
+    pub(crate) fn is_hexdigit(self) -> bool {
         self.0.is_ascii_hexdigit()
     }
 
-    pub fn can_be_escaped_directly(&self) -> bool {
+    pub(crate) fn can_be_escaped_directly(self) -> bool {
         matches!(self.0, '"' | '\\' | '/' | 'b' | 'f' | 'n' | 'r' | 't')
     }
 
     /// See [RFC 8259, Section 7](https://datatracker.ietf.org/doc/html/rfc8259#section-7)
-    pub const CONTROL_RANGE: RangeInclusive<char> = '\u{0000}'..='\u{001F}';
+    pub(crate) const CONTROL_RANGE: RangeInclusive<char> = '\u{0000}'..='\u{001F}';
 
     /// see [`Self::CONTROL_RANGE`]
-    pub fn is_control(&self) -> bool {
+    pub(crate) fn is_control(self) -> bool {
         Self::CONTROL_RANGE.contains(&self.0)
     }
 
@@ -109,7 +110,7 @@ impl JsonChar {
     ///         %x0A /              ; Line feed or New line
     ///         %x0D )              ; Carriage return
     /// ```
-    pub fn is_whitespace(&self) -> bool {
+    pub(crate) fn is_whitespace(self) -> bool {
         matches!(self.0, ' ' | '\t' | '\n' | '\r')
     }
 
@@ -126,7 +127,7 @@ impl JsonChar {
     /// name-separator  = ws %x3A ws  ; : colon
     /// value-separator = ws %x2C ws  ; , comma
     /// ```
-    pub fn is_structural(&self) -> bool {
+    pub(crate) fn is_structural(self) -> bool {
         matches!(self.0, '{' | '}' | '[' | ']' | ':' | ',')
     }
 }

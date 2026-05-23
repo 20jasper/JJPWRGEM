@@ -1,5 +1,5 @@
 use annotate_snippets::{Renderer, renderer::DecorStyle};
-use jjpwrgem_parse::error::diagnostics::Diagnostic;
+use jjpwrgem_parse::diagnostics::Diagnostic;
 
 mod pretty;
 

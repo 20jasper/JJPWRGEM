@@ -15,7 +15,7 @@ use std::{
 use clap::Parser;
 pub use error::{Error, Result};
 use jjpwrgem_parse::{
-    error::diagnostics::Diagnostic,
+    diagnostics::Diagnostic,
     format::{self, LineEnding},
     validate_str,
 };

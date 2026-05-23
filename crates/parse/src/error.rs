@@ -1,5 +1,3 @@
-pub mod diagnostics;
-
 use core::{ops::Deref, range::Range};
 
 use displaydoc::Display;
@@ -104,7 +102,7 @@ pub enum ErrorKind {
 }
 
 impl ErrorKind {
-    pub fn expected_entry_or_closed_delimiter(
+    pub(crate) fn expected_entry_or_closed_delimiter(
         open_ctx: TokenWithContext,
         found: TokenOption,
     ) -> Option<Self> {
@@ -130,15 +128,15 @@ fn closing_delimiter_for_open(token: Token) -> Option<JsonChar> {
 // box inner error for performance--a Rust enum is as large as the largest
 // variant so happy path case becomes 100s of bytes otherwise
 /// {0}
-pub struct Error(pub Box<ErrorInner>);
+pub struct Error(pub(crate) Box<ErrorInner>);
 
 #[derive(Debug, PartialEq, Eq, Display, Error, Clone)]
 /// {kind}
 pub struct ErrorInner {
     pub(crate) kind: ErrorKind,
-    range: Range<usize>,
-    source_text: String,
-    source_name: String,
+    pub(crate) range: Range<usize>,
+    pub(crate) source_text: String,
+    pub(crate) source_name: String,
 }
 
 impl From<ErrorInner> for Error {

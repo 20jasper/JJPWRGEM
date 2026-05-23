@@ -18,26 +18,14 @@ const BRACE_PAIR_LEN: usize = 2;
 type ObjectEntry = (Range<usize>, Value);
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
-pub struct FormatOptions {
+pub(crate) struct FormatOptions {
     key_val_delimiter: Option<(char, usize)>,
     indent: Option<(char, usize)>,
     line_ending: LineEnding,
 }
 
 impl FormatOptions {
-    pub fn new(
-        key_val_delimiter: Option<(char, usize)>,
-        indent: Option<(char, usize)>,
-        line_ending: LineEnding,
-    ) -> Self {
-        Self {
-            key_val_delimiter,
-            indent,
-            line_ending,
-        }
-    }
-
-    pub fn prettify(line_ending: LineEnding) -> Self {
+    pub(crate) fn prettify(line_ending: LineEnding) -> Self {
         Self {
             key_val_delimiter: Some((' ', 1)),
             indent: Some((' ', 2)),
@@ -119,7 +107,11 @@ impl FormatBuf {
     }
 }
 
-pub fn format_str(json: &str, options: FormatOptions, preferred_width: usize) -> Result<String> {
+pub(crate) fn format_str(
+    json: &str,
+    options: FormatOptions,
+    preferred_width: usize,
+) -> Result<String> {
     let mut buf = FormatBuf::new(String::with_capacity(json.len()), options, preferred_width);
     let doc = Document::parse(json)?;
     format_document_value_into(&mut buf, &doc, doc.root(), 0);
@@ -313,7 +305,7 @@ fn compact_format_obj_into<S: AsRef<str>>(
     buf.push('}');
 }
 
-pub fn format_document<S: AsRef<str>>(
+fn format_document<S: AsRef<str>>(
     doc: &Document<S>,
     options: &FormatOptions,
     preferred_width: usize,
