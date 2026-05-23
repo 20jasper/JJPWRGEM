@@ -14,7 +14,7 @@ run = [
 
 [tasks.publish-dry-run]
 description = "cargo publish --dry-run for a specific crate (e.g. mise run publish-dry-run bytes2chars)"
-run = 'cargo publish -q --dry-run -p "$@"'
+run = 'cargo publish -q --dry-run --no-verify -p "$@"'
 
 [tasks.release-binary]
 description = "Bump versions via release-plz and tag a binary release via cargo-release"
