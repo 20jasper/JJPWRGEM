@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.1](https://github.com/20jasper/JJPWRGEM/compare/jjpwrgem-ui-v0.3.0...jjpwrgem-ui-v0.3.1) - 2026-05-23
+
+### Fixed
+
+- *(deps)* loosen dependency versions
+
 ## [0.3.0](https://github.com/20jasper/JJPWRGEM/compare/jjpwrgem-ui-v0.2.0...jjpwrgem-ui-v0.3.0) - 2026-05-23
 
 ### Deprecated
