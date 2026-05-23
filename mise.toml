@@ -9,6 +9,7 @@ idiomatic_version_file_enable_tools = ["node", "pnpm"]
 binstall = true
 
 [tools]
+hk = "1.45.0"
 jq = "1.8.1"
 
 [hooks]

@@ -63,6 +63,9 @@ local check_steps = new Mapping<String, Step> {
   ["typos"] {
     check = "mise run typos"
   }
+  ["tracey-check"] {
+    check = "mise run tracey-check"
+  }
   ["test"] {
     glob = List("**/*.rs")
     check = "mise run test"

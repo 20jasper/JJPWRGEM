@@ -18,63 +18,27 @@ env:
   CI: true
 
 jobs:
-  format:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-      - uses: ./.github/actions/setup-node
-      - uses: ./.github/actions/setup-mise
-      - name: Configure Dependency Caching
-        uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4 # v2.9.1
-      - run: mise run format-check
-
-  lint:
-    runs-on: ubuntu-latest
-    env:
-      RUSTFLAGS: "-Dwarnings"
-    steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-        with:
-          submodules: true
-      - uses: ./.github/actions/setup-node
-      - uses: ./.github/actions/setup-mise
-      - name: Configure Dependency Caching
-        uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4 # v2.9.1
-      - name: verify publish contents
-        run: mise run diet
-      - run: mise run lint
-      - run: mise run readmes-check
-      - run: mise run package-json-check
-      - run: mise run tracey-check
-
-  test-cli:
+  check:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           submodules: true
+      - uses: ./.github/actions/setup-node
       - uses: ./.github/actions/setup-mise
       - name: Configure Dependency Caching
         uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4 # v2.9.1
-      - uses: ./.github/actions/setup-node
-      - name: build
-        run: cargo build --release --verbose
-      - name: test
-        run: mise run test
+      - run: mise exec -- hk check --all
 
-  publish-dry-run:
+  build-release:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-      - uses: ./.github/actions/setup-mise
+        with:
+          submodules: true
       - name: Configure Dependency Caching
         uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4 # v2.9.1
-      - name: publish dry-run (bytes2chars)
-        run: mise run publish-dry-run bytes2chars
-      - name: publish dry-run (jjpwrgem-parse)
-        run: mise run publish-dry-run jjpwrgem-parse
-      - name: publish dry-run (jjpwrgem-ui)
-        run: mise run publish-dry-run jjpwrgem-ui
+      - run: cargo build --release --verbose
 
   test-vscode:
     runs-on: ubuntu-latest

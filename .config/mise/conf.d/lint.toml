@@ -30,16 +30,11 @@ run = [
 ]
 
 [tasks.lint]
-description = "clippy, pnpm workspace lint, actionlint, and cargo shear"
 env = { RUSTFLAGS = "-Dwarnings" }
 run = [
   "cargo clippy -q --all-targets --all-features --workspace",
   "pnpm --if-present lint > /dev/null",
   "actionlint",
-  "cargo shear",
-  "find . -name '*.sh' -not -path '*/.git/*' -not -path '*/target/*' -not -path '*/node_modules/*' -not -path '*/conformance/*' | xargs shellcheck",
-  "typos",
-  "cargo deny check",
 ]
 
 [tasks.diet]
