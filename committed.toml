@@ -9,15 +9,11 @@ merge_commit = true
 allowed_types = [
   "fix",
   "feat",
-  "feature",
   "chore",
   "docs",
-  "style",
   "refactor",
   "perf",
   "test",
   "bench",
   "deprecated",
-  "changed",
-  "security",
 ]

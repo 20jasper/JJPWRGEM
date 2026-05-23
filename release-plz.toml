@@ -5,6 +5,7 @@ git_tag_enable = true
 changelog_update = true
 git_release_name = "{{ package }} {{ version }}"
 git_tag_name = "{{ package }}-v{{ version }}"
+release_commits = "^(feat|fix|docs|deprecated)(\\(.+\\))?!?:"
 
 [[package]]
 name = "bytes2chars"
@@ -30,8 +31,8 @@ commit_parsers = [
   { message = "^security", group = "security" },
   { message = "^perf", group = "performance" },
   { message = "^docs", group = "documentation" },
+  { message = "^test", group = "tests" },
   { message = "^chore", skip = true },
-  { message = "^test", skip = true },
   { message = "^bench", skip = true },
   { message = "^.*", skip = true },
 ]
