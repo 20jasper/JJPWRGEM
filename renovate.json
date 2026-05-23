@@ -1,6 +1,7 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": ["config:best-practices"],
+  "schedule": ["before 8am on wednesday"],
   "packageRules": [
     {
       "matchManagers": ["dockerfile", "mise", "cargo"],
@@ -49,6 +50,12 @@
       "matchUpdateTypes": ["major"]
     },
     {
+      "matchFileNames": ["rust-toolchain.toml"],
+      "groupName": "rust toolchain",
+      "schedule": ["before 5am on the first day of the month"],
+      "automerge": true
+    },
+    {
       "matchManagers": ["npm"],
       "matchDepTypes": ["dependencies"],
       "groupName": "npm runtime deps (minor + patch)",
@@ -66,7 +73,8 @@
       "groupName": "github actions",
       "matchUpdateTypes": ["patch", "minor", "digest"],
       "automerge": true,
-      "minimumReleaseAge": "14 days"
+      "minimumReleaseAge": "14 days",
+      "prCreation": "not-pending"
     },
     {
       "matchManagers": ["git-submodules"],
