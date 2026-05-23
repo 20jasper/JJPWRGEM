@@ -22,6 +22,17 @@
     },
     {
       "matchManagers": ["cargo"],
+      "matchFileNames": ["crates/**/Cargo.toml"],
+      "rangeStrategy": "update-lockfile"
+    },
+    {
+      "matchManagers": ["cargo"],
+      "matchFileNames": ["Cargo.toml"],
+      "matchDepTypes": ["workspace.dependencies"],
+      "rangeStrategy": "update-lockfile"
+    },
+    {
+      "matchManagers": ["cargo"],
       "groupName": "rust deps (minor + patch)",
       "matchUpdateTypes": ["patch", "minor"]
     },
