@@ -29,6 +29,7 @@ local check_steps = new Mapping<String, Step> {
     check = "mise run package-json-check"
   }
   ["format-check"] {
+    depends = List("package-json-check")
     check = "mise run format-check"
   }
   ["lint"] {
