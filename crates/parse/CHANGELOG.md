@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.0](https://github.com/20jasper/JJPWRGEM/compare/jjpwrgem-parse-v0.11.1...jjpwrgem-parse-v0.12.0) - 2026-05-23
+
+### Deprecated
+
+- [**breaking**] flatten parse module hierarchy and tighten internal visibility
+
 ## [0.11.0](https://github.com/20jasper/JJPWRGEM/releases/tag/jjpwrgem-parse-v0.11.0) - 2026-05-22
 
 ### Added
