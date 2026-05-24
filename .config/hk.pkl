@@ -59,7 +59,7 @@ local check_steps = new Mapping<String, Step> {
 // Sync mise tools whenever mise config files change in a checkout/merge.
 local sync_mise = new Mapping<String, Step> {
   ["mise-install"] {
-    glob = List("mise.toml", ".config/mise/conf.d/*.toml", "benches/mise.toml", "benches/docker/mise.toml", "rust-toolchain.toml")
+    glob = List(".config/mise/config.toml", ".config/mise/conf.d/*.toml", "benches/mise.toml", "benches/docker/mise.toml", "rust-toolchain.toml")
     check = "mise install --quiet"
   }
 }

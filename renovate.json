@@ -82,7 +82,10 @@
     },
     {
       "matchManagers": ["mise"],
-      "matchFileNames": ["mise.toml", ".config/mise/conf.d/*.toml"],
+      "matchFileNames": [
+        ".config/mise/config.toml",
+        ".config/mise/conf.d/*.toml"
+      ],
       "matchUpdateTypes": ["patch", "minor"],
       "groupName": "mise dev tools (patch + minor)",
       "automerge": true,
@@ -115,7 +118,10 @@
     },
     {
       "matchManagers": ["mise"],
-      "matchFileNames": ["mise.toml", ".config/mise/conf.d/*.toml"],
+      "matchFileNames": [
+        ".config/mise/config.toml",
+        ".config/mise/conf.d/*.toml"
+      ],
       "matchPackageNames": [
         "cargo:cargo-dist",
         "cargo:release-plz",
@@ -134,7 +140,7 @@
     {
       "customType": "regex",
       "description": "Bump hk's pkl amends URL in hk.pkl alongside the mise hk tool",
-      "managerFilePatterns": ["/^hk\\.pkl$/"],
+      "managerFilePatterns": ["/^\\.config/hk\\.pkl$/"],
       "matchStrings": [
         "github\\.com/jdx/hk/releases/download/v(?<currentValue>\\d+\\.\\d+\\.\\d+)/",
         "/hk@(?<currentValue>\\d+\\.\\d+\\.\\d+)#"
