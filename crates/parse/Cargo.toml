@@ -1,6 +1,6 @@
 [package]
 name = "jjpwrgem-parse"
-version = "0.12.1"
+version = "0.13.0"
 edition.workspace = true
 authors.workspace = true
 description = "JSON parser and formatter with rich errors"

@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.0](https://github.com/20jasper/JJPWRGEM/compare/jjpwrgem-parse-v0.12.1...jjpwrgem-parse-v0.13.0) - 2026-05-24
+
+### Fixed
+
+- set limit of 128 nesting depth
+
 ## [0.12.1](https://github.com/20jasper/JJPWRGEM/compare/jjpwrgem-parse-v0.12.0...jjpwrgem-parse-v0.12.1) - 2026-05-23
 
 ### Fixed

@@ -1081,7 +1081,7 @@ checksum = "8f42a60cbdf9a97f5d2305f08a87dc4e09308d1276d28c869c684d7777685682"
 
 [[package]]
 name = "jjpwrgem"
-version = "0.6.0"
+version = "0.6.1"
 dependencies = [
  "anstream",
  "bytes2chars",
@@ -1100,7 +1100,7 @@ dependencies = [
 
 [[package]]
 name = "jjpwrgem-lsp"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "dashmap",
  "jjpwrgem-parse",
@@ -1111,7 +1111,7 @@ dependencies = [
 
 [[package]]
 name = "jjpwrgem-parse"
-version = "0.12.1"
+version = "0.13.0"
 dependencies = [
  "bytes2chars",
  "displaydoc",
@@ -1123,7 +1123,7 @@ dependencies = [
 
 [[package]]
 name = "jjpwrgem-ui"
-version = "0.3.1"
+version = "0.3.2"
 dependencies = [
  "annotate-snippets",
  "jjpwrgem-parse",

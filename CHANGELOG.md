@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.1](https://github.com/20jasper/JJPWRGEM/compare/jjpwrgem-v0.6.0...jjpwrgem-v0.6.1) - 2026-05-24
+
+### Added
+
+- add lsp with diagnostics, formatting, and code actions
+
+### Deprecated
+
+- deprecated!(parse): removed line and column numbers from error and display impl
+
+### Fixed
+
+- set limit of 128 nesting depth
+- support utf16 and utf8 in LSP
+
+### Tests
+
+- fuzz json parsing
+
 ## [0.6.0](https://github.com/20jasper/JJPWRGEM/compare/jjpwrgem-v0.5.5...jjpwrgem-v0.6.0) - 2026-05-24
 
 ### Added
