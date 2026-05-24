@@ -9,6 +9,10 @@ on:
     branches:
       - main
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   release-plz-pr:
     name: release-plz-pr
@@ -21,11 +25,42 @@ jobs:
           persist-credentials: false
       - name: update rust
         run: rustup update stable && rustup default stable
+      - uses: ./.github/actions/setup-mise
+      - uses: ./.github/actions/setup-node
       - uses: release-plz/action@1528104d2ca23787631a1c1f022abb64b34c1e11 # v0.5.128
+        id: release-plz
         with:
           command: release-pr
         env:
           GITHUB_TOKEN: ${{ secrets.RELEASE_PLZ_TOKEN }}
+      - name: Sync npm package metadata into release PR
+        if: ${{ steps.release-plz.outputs.prs_created == 'true' || steps.release-plz.outputs.prs_updated == 'true' }}
+        env:
+          HEAD_BRANCH: ${{ fromJSON(steps.release-plz.outputs.pr).head_branch }}
+          RELEASE_PLZ_TOKEN: ${{ secrets.RELEASE_PLZ_TOKEN }}
+          COMMIT_MESSAGE: "chore: sync npm package metadata"
+        run: |
+          set -euo pipefail
+
+          git fetch origin "$HEAD_BRANCH"
+          git checkout "$HEAD_BRANCH"
+
+          mise run package-json
+
+          git add npm-template/package.json npm-template/npm-shrinkwrap.json
+
+          if git diff --cached --quiet; then
+            echo "npm metadata already in sync"
+            exit 0
+          fi
+
+          git -c user.name="github-actions[bot]" \
+              -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+              commit -m "$COMMIT_MESSAGE"
+
+          git remote set-url origin "https://x-access-token:${RELEASE_PLZ_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git pull --rebase origin "$HEAD_BRANCH"
+          git push origin "$HEAD_BRANCH"
 
   release-plz-release:
     name: release-plz-release

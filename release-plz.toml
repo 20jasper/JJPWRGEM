@@ -22,6 +22,12 @@ name = "jjpwrgem-ui"
 release = true
 publish = true
 
+[[package]]
+name = "jjpwrgem"
+release = true
+publish = true
+git_release_enable = false
+
 [changelog]
 commit_parsers = [
   { message = "^(feat|feature)", group = "added" },
