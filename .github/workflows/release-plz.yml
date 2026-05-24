@@ -60,7 +60,13 @@ jobs:
               commit -m "$COMMIT_MESSAGE"
 
           git remote set-url origin "https://x-access-token:${RELEASE_PLZ_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
-          git pull --rebase origin "$HEAD_BRANCH"
+
+          if ! git diff --quiet; then
+            echo "::warning::Unstaged changes after commit — autostashing:"
+            git diff --stat
+          fi
+
+          git pull --rebase --autostash origin "$HEAD_BRANCH"
           git push origin "$HEAD_BRANCH"
 
   release-plz-release:
