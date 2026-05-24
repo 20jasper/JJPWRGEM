@@ -11,22 +11,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- add gungraun instruction-count benchmarks
+- [**breaking**] inline objects based on width
+- [**breaking**] number only array will fill format instead of expanding
+- [**breaking**] prettier number normalization
+- improve exponent diagnostics
+- provide rich utf8 error context to the cli
+- [**breaking**] change pretty default indent to 2 spaces
+- [**breaking**] non empty arrays put items on newline
 
-### Deprecated
+### Documentation
 
-- [**breaking**] flatten parse module hierarchy and tighten internal visibility
-- [**breaking**] remove parse reexports + BasicErrorMessage::new, flatten exports
+- add xtask to generate readmes
 
 ### Fixed
 
 - jjpwrgem crate include snapshots ([#278](https://github.com/20jasper/JJPWRGEM/pull/278))
-- *(deps)* loosen dependency versions
+- account for delimiters in array width measurement
+- parse value visitor now handles object key events properly
+- spacial case empty object to be on one line
 - *(deps)* update rust crate toml to v1 ([#168](https://github.com/20jasper/JJPWRGEM/pull/168))
+
+### Performance
+
+- remove iterator abstraction layers
+- bytewise parsing for exponents
+- bytewise parsing for mantissa
+- *(parse)* skip whitespace with portable SIMD (u8x32)
+- *(parse)* replace next_if whitespace loop with peek fast path + byte scan
+- uglify_serializable now uses faster serialization from the crate instead of deferring to serde_json
 
 ### Tests
 
 - add prettier conformance suite and test runners
+- add gungraun instruction-count benchmarks
 
 ## [0.5.5](https://github.com/20jasper/JJPWRGEM/releases/tag/jjpwrgem-v0.5.5) - 2026-4-12
 
