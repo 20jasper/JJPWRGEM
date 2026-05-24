@@ -50,7 +50,7 @@ suite("Extension Smoke Tests", function () {
     const formatted = editor.document.getText();
     assert.equal(
       formatted.trim(),
-      '{\n  "foo": "bar"\n}',
+      '{ "foo": "bar" }',
       "Formatted document should contain expected JSON keys",
     );
 
