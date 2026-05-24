@@ -1,27 +1,5 @@
 [tools]
 "cargo:cargo-dist" = "0.31.0"
-"cargo:release-plz" = "0.3"
-"cargo:cargo-release" = "1.0"
-
-[tasks.prepublish]
-description = "Run all pre-publish checks (format, lint, diet, tracey)"
-run = [
-  "mise run format-check",
-  "mise run lint",
-  "mise run diet",
-  "mise run tracey-check",
-]
-
-[tasks.publish-dry-run]
-description = "cargo publish --dry-run for a specific crate (e.g. mise run publish-dry-run bytes2chars)"
-run = 'cargo publish -q --dry-run --no-verify -p "$@"'
-
-[tasks.release-binary]
-description = "Bump versions via release-plz and tag a binary release via cargo-release"
-run = [
-  "release-plz update",
-  "cargo release --no-publish --tag-prefix=jjpwrgem- --execute",
-]
 
 [tasks.release-notes]
 description = "Print GitHub release notes from dist host JSON"
