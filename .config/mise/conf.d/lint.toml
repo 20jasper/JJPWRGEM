@@ -16,14 +16,12 @@ run = "typos"
 run = "cargo deny check"
 
 [tasks.format]
-description = "Format rust, markdown, toml, and config files"
 run = [
   "cargo fmt --all",
   "oxfmt './**/*.{md,toml,yaml,yml,ts,js,json}' --write",
 ]
 
 [tasks.format-check]
-description = "Verify formatting is up-to-date"
 run = [
   "cargo fmt --all -- --check",
   "oxfmt './**/*.{md,toml,yaml,yml,ts,js,json}' --check",
@@ -42,7 +40,7 @@ description = "Trim publishable crate dirs before release"
 run = 'for x in ./crates/* ./xtask ./benches .; do [ -f "$x/Cargo.toml" ] || continue; (cd "$x" && cargo diet -q); done'
 
 [tasks.package-check]
-description = "Verify the published crates package and compile, resolving siblings locally"
+description = "check rust crates are ready to publish"
 run = "cargo package -p bytes2chars -p jjpwrgem-parse -p jjpwrgem-ui -p jjpwrgem --allow-dirty"
 
 [tasks.tracey-check]
