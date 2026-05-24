@@ -1,3 +1,5 @@
+use std::sync::OnceLock;
+
 use dashmap::DashMap;
 use jjpwrgem_parse::{
     ast::Document,
@@ -7,7 +9,7 @@ use tower_lsp_server::{Client, LanguageServer, jsonrpc::Result, ls_types::*};
 
 use crate::{
     backend::diagnostics::{build_code_actions, diagnostics_from_error},
-    range::FULL_DOCUMENT_RANGE,
+    range::{FULL_DOCUMENT_RANGE, PositionEncoding},
 };
 
 const SOURCE: &str = "jjpwrgem";
@@ -16,17 +18,20 @@ const SOURCE: &str = "jjpwrgem";
 pub struct Backend {
     client: Client,
     documents: DashMap<Uri, jjpwrgem_parse::Result<Document<String>>>,
+    position_encoding: OnceLock<PositionEncoding>,
 }
 
 mod diagnostics;
+
 fn analyze_document(
     uri: &Uri,
     text: String,
+    encoding: PositionEncoding,
 ) -> (jjpwrgem_parse::Result<Document<String>>, Vec<Diagnostic>) {
     match Document::parse(text) {
         Ok(doc) => (Ok(doc), vec![]),
         Err(e) => {
-            let diagnostics = diagnostics_from_error(uri, e.source_text(), &e);
+            let diagnostics = diagnostics_from_error(uri, e.source_text(), &e, encoding);
             (Err(e), diagnostics)
         }
     }
@@ -37,11 +42,16 @@ impl Backend {
         Self {
             client,
             documents: DashMap::new(),
+            position_encoding: OnceLock::new(),
         }
     }
 
+    fn position_encoding(&self) -> PositionEncoding {
+        self.position_encoding.get().copied().unwrap_or_default()
+    }
+
     async fn process_document(&self, uri: Uri, text: String) {
-        let (document, diagnostics) = analyze_document(&uri, text);
+        let (document, diagnostics) = analyze_document(&uri, text, self.position_encoding());
         self.documents.insert(uri.clone(), document);
         self.client
             .publish_diagnostics(uri, diagnostics, None)
@@ -50,7 +60,23 @@ impl Backend {
 }
 
 impl LanguageServer for Backend {
-    async fn initialize(&self, _: InitializeParams) -> Result<InitializeResult> {
+    async fn initialize(&self, params: InitializeParams) -> Result<InitializeResult> {
+        let client_supports_utf8 = params
+            .capabilities
+            .general
+            .as_ref()
+            .and_then(|g| g.position_encodings.as_ref())
+            .is_some_and(|encodings| encodings.contains(&PositionEncodingKind::UTF8));
+
+        let encoding = if client_supports_utf8 {
+            PositionEncoding::Utf8
+        } else {
+            PositionEncoding::Utf16
+        };
+        let _ = self.position_encoding.set(encoding);
+
+        let position_encoding = client_supports_utf8.then_some(PositionEncodingKind::UTF8);
+
         Ok(InitializeResult {
             // deprecated clangd extension superseded by positionEncoding in LSP 3.17
             // https://clangd.llvm.org/extensions.html#utf-8-offsets
@@ -60,7 +86,7 @@ impl LanguageServer for Backend {
                 version: Some(env!("CARGO_PKG_VERSION").into()),
             }),
             capabilities: ServerCapabilities {
-                position_encoding: Some(PositionEncodingKind::UTF8),
+                position_encoding,
                 text_document_sync: Some(TextDocumentSyncCapability::Options(
                     TextDocumentSyncOptions {
                         open_close: Some(true),
@@ -117,7 +143,11 @@ impl LanguageServer for Backend {
         let Some(document) = self.documents.get(uri) else {
             return Ok(None);
         };
-        Ok(Some(build_code_actions(uri, &document)))
+        Ok(Some(build_code_actions(
+            uri,
+            &document,
+            self.position_encoding(),
+        )))
     }
 
     async fn shutdown(&self) -> Result<()> {
@@ -136,13 +166,21 @@ mod tests {
 
     #[test]
     fn valid_json_produces_no_diagnostics() {
-        let (_, diagnostics) = analyze_document(&dummy_uri(), r#"{"a": 1}"#.to_owned());
+        let (_, diagnostics) = analyze_document(
+            &dummy_uri(),
+            r#"{"a": 1}"#.to_owned(),
+            PositionEncoding::Utf16,
+        );
         assert!(diagnostics.is_empty());
     }
 
     #[test]
     fn invalid_json_produces_error_diagnostic() {
-        let (_, diagnostics) = analyze_document(&dummy_uri(), r#"{"a": }"#.to_owned());
+        let (_, diagnostics) = analyze_document(
+            &dummy_uri(),
+            r#"{"a": }"#.to_owned(),
+            PositionEncoding::Utf16,
+        );
         assert_eq!(diagnostics.len(), 1);
         assert_eq!(diagnostics[0].severity, Some(DiagnosticSeverity::ERROR));
         assert_eq!(diagnostics[0].source.as_deref(), Some(SOURCE));
@@ -151,16 +189,18 @@ mod tests {
     #[test]
     fn trailing_comma_produces_code_action() {
         let uri = dummy_uri();
-        let (document, _) = analyze_document(&uri, r#"{"a": 1,}"#.to_owned());
-        let actions = build_code_actions(&uri, &document);
+        let (document, _) =
+            analyze_document(&uri, r#"{"a": 1,}"#.to_owned(), PositionEncoding::Utf16);
+        let actions = build_code_actions(&uri, &document, PositionEncoding::Utf16);
         assert!(!actions.is_empty());
     }
 
     #[test]
     fn valid_json_produces_no_code_actions() {
         let uri = dummy_uri();
-        let (document, _) = analyze_document(&uri, r#"{"a": 1}"#.to_owned());
-        let actions = build_code_actions(&uri, &document);
+        let (document, _) =
+            analyze_document(&uri, r#"{"a": 1}"#.to_owned(), PositionEncoding::Utf16);
+        let actions = build_code_actions(&uri, &document, PositionEncoding::Utf16);
         assert!(actions.is_empty());
     }
 }
