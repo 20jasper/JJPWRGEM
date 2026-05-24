@@ -7,16 +7,9 @@ on:
         description: Dist release plan JSON payload
         required: true
         type: string
-  workflow_dispatch:
-    inputs:
-      prerelease:
-        description: Publish as prerelease (--tag alpha)?
-        type: boolean
-        default: false
 
 permissions:
   contents: read
-  id-token: write
 
 jobs:
   host:
@@ -41,28 +34,7 @@ jobs:
           npm pack ./npm-template --pack-destination ./npm
 
       - name: Upload npm package artifact
-        if: github.event_name == 'workflow_call'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: ${{ github.ref_name }}-npm-package.tgz
           path: ./npm/*.tgz
-
-      - name: Publish npm package
-        if: github.event_name == 'workflow_dispatch'
-        working-directory: npm
-        run: |
-          set -euo pipefail
-          tarball=$(find . -maxdepth 1 -name '*.tgz' -print | head -n1 || true)
-          if [ -z "${tarball}" ]; then
-            echo "No tarball (*.tgz) found in $(pwd)"
-            ls -la
-            exit 1
-          fi
-          echo "Publishing ${tarball}"
-          tag_args=()
-          if [ "${{ inputs.prerelease }}" = "true" ]; then
-            tag_args=(--tag alpha)
-          fi
-          npm publish --access public --provenance "${tag_args[@]}" "${tarball}"
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
