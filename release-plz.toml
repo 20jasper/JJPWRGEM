@@ -1,6 +1,6 @@
 [workspace]
-release = false
-publish = false
+release = true
+publish = true
 git_tag_enable = true
 changelog_update = true
 git_release_name = "{{ package }} {{ version }}"
@@ -8,33 +8,15 @@ git_tag_name = "{{ package }}-v{{ version }}"
 release_commits = "^(feat|fix|docs|deprecated)(\\(.+\\))?!?:"
 
 [[package]]
-name = "bytes2chars"
-release = true
-publish = true
-
-[[package]]
-name = "jjpwrgem-parse"
-release = true
-publish = true
-
-[[package]]
-name = "jjpwrgem-ui"
-release = true
-publish = true
-
-[[package]]
 name = "jjpwrgem"
-release = true
-publish = true
 git_release_enable = false
+changelog_include = ["jjpwrgem-parse", "jjpwrgem-ui", "jjpwrgem-lsp"]
 
 [changelog]
 commit_parsers = [
   { message = "^(feat|feature)", group = "added" },
-  { message = "^changed", group = "changed" },
   { message = "^deprecated", group = "deprecated" },
   { message = "^fix", group = "fixed" },
-  { message = "^security", group = "security" },
   { message = "^perf", group = "performance" },
   { message = "^docs", group = "documentation" },
   { message = "^test", group = "tests" },
