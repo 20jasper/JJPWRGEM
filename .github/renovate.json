@@ -133,7 +133,6 @@
   ],
   "ignorePaths": [
     ".github/workflows/jjpwrgem-v-release.yml",
-    "npm-packages/jjpwrgem-vscode/**",
     "npm-template/package.json"
   ],
   "customManagers": [
