@@ -1,0 +1,10 @@
+[tools]
+"cargo:cargo-fuzz" = "0.13.1"
+
+[tasks.install-fuzz]
+# must be installed from source with stable. Mise installs incorrect musl build
+run = "RUSTUP_TOOLCHAIN=stable mise install cargo:cargo-fuzz"
+
+[tasks.fuzz]
+usage = 'arg "<target>" default="parse_then_prettify"'
+run = "cargo fuzz run {{target}} $@"

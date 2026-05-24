@@ -10,3 +10,4 @@ cc 1dd4a028fa3c22d833508c0c44b1942bd0f13f0fce424a72a08d26ba6403e313 # shrinks to
 cc 113d11f7401d630447a69e1e8b4f72afbc254c90bfdc44faa79b1cd45b7debe7 # shrinks to input = "[[45,-24],[  true,false]]"
 cc a140b02a5337f3c86beff3382e3ef3779a6154fc1b699b3065c487665445f200 # shrinks to input = "{\"aaaaaaaaaaaaajydrdxdtaeamtmpsjlba\":[33,\"nMrb b6  x W8yvYRHOJ2vk6qr3qGgJZ8X\"]}"
 cc 922a09e05e33649fda9b27f8013550d4c1c36fb2ebc56f0ae3ef2910221bab80 # shrinks to input = "[0,\n\n0]"
+cc 2dc4d1c6d2bea8224d4d8811d8b49e52d126be7ff8c6f4345f4d5312cc89087b # shrinks to input = "[-12,\n \n-54]"

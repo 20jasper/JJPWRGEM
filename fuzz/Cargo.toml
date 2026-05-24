@@ -1,0 +1,19 @@
+[package]
+name = "jjpwrgem-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2024"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "=0.4.12"
+jjpwrgem-parse = { path = "../crates/parse" }
+
+[[bin]]
+name = "parse_then_prettify"
+path = "fuzz_targets/parse_then_prettify.rs"
+test = false
+doc = false
+bench = false

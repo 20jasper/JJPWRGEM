@@ -1,6 +1,10 @@
 /target
 node_modules
 tests/integration/proptest-regressions/
+/fuzz/target
+/fuzz/corpus
+/fuzz/artifacts
+/fuzz/coverage
 /benches/output/*
 !/benches/output/bytes2chars.md
 !/benches/output/json_deser.md

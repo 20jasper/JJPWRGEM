@@ -5,19 +5,24 @@
   "packageRules": [
     {
       "matchManagers": ["dockerfile", "mise", "cargo"],
-      "matchFileNames": ["benches/**", "Dockerfile"],
+      "matchFileNames": ["benches/**", "fuzz/**", "Dockerfile"],
       "groupName": "benches",
       "matchUpdateTypes": ["patch", "minor", "digest"],
       "automerge": true
     },
     {
       "matchManagers": ["dockerfile", "mise", "cargo"],
-      "matchFileNames": ["xtask/bench/**", "benches/**", "Dockerfile"],
+      "matchFileNames": [
+        "xtask/bench/**",
+        "benches/**",
+        "fuzz/**",
+        "Dockerfile"
+      ],
       "rangeStrategy": "pin"
     },
     {
       "matchManagers": ["dockerfile", "mise", "cargo"],
-      "matchFileNames": ["benches/**", "Dockerfile"],
+      "matchFileNames": ["benches/**", "fuzz/**", "Dockerfile"],
       "groupName": "benches (major)",
       "matchUpdateTypes": ["major"]
     },
@@ -90,6 +95,11 @@
       "groupName": "mise dev tools (patch + minor)",
       "automerge": true,
       "minimumReleaseAge": "3 days"
+    },
+    {
+      "matchPackageNames": ["libfuzzer-sys", "cargo:cargo-fuzz"],
+      "groupName": "cargo-fuzz",
+      "automerge": true
     },
     {
       "matchPackageNames": ["cargo-insta", "cargo:cargo-insta"],

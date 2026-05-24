@@ -123,6 +123,10 @@ backend = "cargo:cargo-diet"
 version = "0.31.0"
 backend = "cargo:cargo-dist"
 
+[[tools."cargo:cargo-fuzz"]]
+version = "0.13.1"
+backend = "cargo:cargo-fuzz"
+
 [[tools."cargo:cargo-insta"]]
 version = "1.46.3"
 backend = "cargo:cargo-insta"
