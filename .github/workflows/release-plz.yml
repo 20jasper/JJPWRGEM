@@ -39,6 +39,7 @@ jobs:
           HEAD_BRANCH: ${{ fromJSON(steps.release-plz.outputs.pr).head_branch }}
           RELEASE_PLZ_TOKEN: ${{ secrets.RELEASE_PLZ_TOKEN }}
           COMMIT_MESSAGE: "chore: sync npm package metadata"
+          HK: "0"
         run: |
           set -euo pipefail
 
@@ -60,7 +61,7 @@ jobs:
 
           git remote set-url origin "https://x-access-token:${RELEASE_PLZ_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
           git pull --rebase origin "$HEAD_BRANCH"
-          git push origin "$HEAD_BRANCH" --no-verify # hooks run in verify ci step
+          git push origin "$HEAD_BRANCH"
 
   release-plz-release:
     name: release-plz-release
