@@ -41,6 +41,10 @@ run = [
 description = "Trim publishable crate dirs before release"
 run = 'for x in ./crates/* ./xtask ./benches .; do [ -f "$x/Cargo.toml" ] || continue; (cd "$x" && cargo diet -q); done'
 
+[tasks.package-check]
+description = "Verify the published crates package and compile, resolving siblings locally"
+run = "cargo package -p bytes2chars -p jjpwrgem-parse -p jjpwrgem-ui -p jjpwrgem --allow-dirty"
+
 [tasks.tracey-check]
 description = "Verify spec rules have version bumps for any changed rule text"
 run = "tracey pre-commit"

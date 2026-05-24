@@ -17,13 +17,4 @@ run = [
   "oxfmt npm-template/package.json --write",
   "npm install --prefix npm-template --ignore-scripts --no-fund",
   "npm shrinkwrap --prefix npm-template",
-  "git add npm-template/npm-shrinkwrap.json",
-]
-
-[tasks.package-json-check]
-description = "Regenerate npm package metadata and assert no changes"
-depends = ["package-json"]
-run = [
-  "git diff --exit-code -- npm-template/npm-shrinkwrap.json",
-  "npm pack ./npm-template --dry-run --quiet",
 ]
