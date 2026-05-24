@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0](https://github.com/20jasper/JJPWRGEM/compare/jjpwrgem-v0.5.5...jjpwrgem-v0.6.0) - 2026-05-24
+
+### Added
+
+- add gungraun instruction-count benchmarks
+
+### Deprecated
+
+- [**breaking**] flatten parse module hierarchy and tighten internal visibility
+- [**breaking**] remove parse reexports + BasicErrorMessage::new, flatten exports
+
+### Fixed
+
+- jjpwrgem crate include snapshots ([#278](https://github.com/20jasper/JJPWRGEM/pull/278))
+- *(deps)* loosen dependency versions
+- *(deps)* update rust crate toml to v1 ([#168](https://github.com/20jasper/JJPWRGEM/pull/168))
+
+### Tests
+
+- add prettier conformance suite and test runners
+
 ## [0.5.5](https://github.com/20jasper/JJPWRGEM/releases/tag/jjpwrgem-v0.5.5) - 2026-4-12
 
 ### Added
