@@ -7,18 +7,29 @@ import * as path from "path";
 suite("Extension Smoke Tests", function () {
   this.timeout(15000);
 
+  let whenReady: Promise<void>;
+
+  suiteSetup(async () => {
+    const extension = vscode.extensions.getExtension<{
+      whenReady: Promise<void>;
+    }>("20jasper.jjpwrgem-vscode")!;
+    if (!extension.isActive) {
+      await extension.activate();
+    }
+    whenReady = extension.exports.whenReady;
+  });
+
   test("Extension should be present and activate", async () => {
-    const extension = vscode.extensions.all.find(
-      (ext) => ext.packageJSON && ext.packageJSON.name === "jjpwrgem-vscode",
+    const extension = vscode.extensions.getExtension(
+      "20jasper.jjpwrgem-vscode",
     );
     assert.ok(extension, "jjpwrgem-vscode extension should be installed");
-    if (!extension!.isActive) {
-      await extension!.activate();
-    }
     assert.ok(extension!.isActive, "Extension should be active");
   });
 
   test("Open a JSON file on disk and format it", async () => {
+    await whenReady;
+
     const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "jjpwrgem-smoke-"));
     const filePath = path.join(tmpDir, "smoke.json");
     const content = `{"foo":"bar"}`;

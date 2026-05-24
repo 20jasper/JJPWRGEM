@@ -24,7 +24,7 @@
     "test": "vscode-test"
   },
   "dependencies": {
-    "jjpwrgem": "workspace:^"
+    "vscode-languageclient": "^9.0.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.2",

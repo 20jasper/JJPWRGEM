@@ -1,86 +1,52 @@
 import * as vscode from "vscode";
+import {
+  LanguageClient,
+  type LanguageClientOptions,
+  type ServerOptions,
+} from "vscode-languageclient/node";
 
-export function activate(context: vscode.ExtensionContext) {
-  const output = vscode.window.createOutputChannel("jjp");
+let client: LanguageClient;
 
-  const provider = vscode.languages.registerDocumentFormattingEditProvider(
-    "json",
-    {
-      async provideDocumentFormattingEdits(
-        document: vscode.TextDocument,
-      ): Promise<vscode.TextEdit[]> {
-        const fullRange = new vscode.Range(
-          document.positionAt(0),
-          document.positionAt(document.getText().length),
-        );
+export function activate(context: vscode.ExtensionContext): {
+  whenReady: Promise<void>;
+} {
+  const serverOptions: ServerOptions = {
+    command: "jjp",
+    args: ["lsp"],
+  };
 
-        const { stderr, stdout, code } = await execJjp(document.getText());
-        console.log({ stdout, stderr, code });
+  const clientOptions: LanguageClientOptions = {
+    documentSelector: [{ scheme: "file", language: "json" }],
+  };
 
-        if (code === 0) {
-          return [vscode.TextEdit.replace(fullRange, stdout)];
-        }
-
-        output.append(stderr);
-
-        vscode.window
-          .showErrorMessage("Uh oh, your JSON is brokey 😞", "Open Logs")
-          .then((choice) => {
-            if (choice === "Open Logs") {
-              output.show(true);
-            }
-          });
-
-        return [];
-      },
-    },
+  client = new LanguageClient(
+    "jjpwrgem",
+    "jjpwrgem LSP",
+    serverOptions,
+    clientOptions,
   );
 
-  context.subscriptions.push(provider, output);
+  context.subscriptions.push(client);
+  return {
+    whenReady: client.start().catch(() => {
+      vscode.window
+        .showErrorMessage(
+          "Could not start the LSP server. Is `jjp` installed and on your PATH?",
+          "Installation instructions",
+        )
+        .then((action) => {
+          if (action === "Installation instructions") {
+            void vscode.env.openExternal(
+              vscode.Uri.parse(
+                "https://github.com/20jasper/jjpwrgem#installation",
+              ),
+            );
+          }
+        });
+    }),
+  };
 }
 
-export function deactivate() {}
-
-async function execJjp(input: string) {
-  return runCmdWithStdin("jjp", ["format"], input);
-}
-
-import { spawn, type SpawnOptions } from "child_process";
-
-async function runCmdWithStdin(
-  cmd: string,
-  args: string[] = [],
-  input: string,
-  opts: SpawnOptions = {},
-) {
-  return new Promise<{
-    stdout: string;
-    stderr: string;
-    code: number | null;
-    signal: NodeJS.Signals | null;
-  }>((resolve, reject) => {
-    const child = spawn(cmd, args, {
-      ...opts,
-      shell: false,
-      stdio: ["pipe", "pipe", "pipe"],
-    });
-
-    let stdout = "";
-    let stderr = "";
-
-    child.stdin.write(input);
-    child.stdin.end();
-
-    child.stdout?.on("data", (d) => {
-      stdout += d.toString();
-    });
-    child.stderr?.on("data", (d) => {
-      stderr += d.toString();
-    });
-
-    child.on("error", reject);
-    child.on("close", (code, signal) =>
-      resolve({ stdout, stderr, code, signal }),
-    );
-  });
+export function deactivate(): Thenable<void> | undefined {
+  return client?.stop();
 }

@@ -22,7 +22,7 @@ run = "bacon install"
 
 [tasks.vscode-test-wsl]
 description = "Run the vscode extension test suite under WSL (Xvfb + dbus + pnpm) (Linux/WSL only)"
-depends = ["vscode-bin"]
+depends = ["install"]
 shell = "bash -c"
 run = '''
 export XDG_RUNTIME_DIR="/tmp/runtime-$(id -u)"
@@ -47,16 +47,3 @@ export DISPLAY=":99.0"
 pnpm --filter jjpwrgem-vscode test
 '''
 
-[tasks.vscode-bin]
-description = "Build release binary and copy it to the vscode extension bin dir"
-run = [
-  "cargo build --release",
-  "mkdir -p ./npm-packages/jjpwrgem-vscode/bin",
-  "cp target/release/jjp ./npm-packages/jjpwrgem-vscode/bin/jjp",
-  "chmod +x ./npm-packages/jjpwrgem-vscode/bin/jjp",
-]
-run_windows = [
-  "cargo build --release",
-  "mkdir -p ./npm-packages/jjpwrgem-vscode/bin",
-  "cp target/release/jjp.exe ./npm-packages/jjpwrgem-vscode/bin/jjp.exe",
-]

@@ -159,6 +159,14 @@ backend = "cargo:tracey"
 version = "1.46.2"
 backend = "cargo:typos-cli"
 
+[[tools.hk]]
+version = "1.45.0"
+backend = "aqua:jdx/hk"
+
+[[tools.jq]]
+version = "1.8.1"
+backend = "aqua:jqlang/jq"
+
 [[tools."npm:oxfmt"]]
 version = "0.51.0"
 backend = "npm:oxfmt"
