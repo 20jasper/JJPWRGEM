@@ -3,7 +3,7 @@ use core::range::Range;
 use crate::{
     error::{Error, ErrorKind, Result},
     tokens::{Token, TokenStream, TokenWithContext},
-    traverse::{Visitor, parse_tokens, validate_start_of_value},
+    traverse::{Visitor, parse_tokens_at_depth, validate_start_of_value},
 };
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -29,6 +29,7 @@ impl ArrayState {
         tokens: &mut TokenStream<'a>,
         text: &'a str,
         visitor: &mut impl Visitor<'a>,
+        depth: usize,
     ) -> Result<Self> {
         let next_state = match self {
             ArrayState::Open => match tokens.next_token()? {
@@ -95,7 +96,7 @@ impl ArrayState {
             } => {
                 validate_start_of_value(text, expect_ctx, tokens.peek_token()?.copied())?;
 
-                let value_range = parse_tokens(tokens, text, false, visitor)?;
+                let value_range = parse_tokens_at_depth(tokens, text, false, visitor, depth + 1)?;
                 ArrayState::CommaOrEnd {
                     open_ctx,
                     last_value_range: value_range,
@@ -149,12 +150,13 @@ impl ArrayState {
 pub fn parse_array<'a>(
     tokens: &mut TokenStream<'a>,
     text: &'a str,
+    depth: usize,
     visitor: &mut impl Visitor<'a>,
 ) -> Result<Range<usize>> {
     let mut state = ArrayState::Open;
 
     loop {
-        state = state.process(tokens, text, visitor)?;
+        state = state.process(tokens, text, visitor, depth)?;
         if let ArrayState::End(result) = state {
             break Ok(result);
         }

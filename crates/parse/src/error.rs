@@ -99,6 +99,8 @@ pub enum ErrorKind {
     UnexpectedCharacter(JsonChar),
     /// unexpected token {0} after json finished
     TokenAfterEnd(ErrorToken),
+    /// json is nested too deeply (max depth: {0})
+    NestingTooDeep(usize),
 }
 
 impl ErrorKind {

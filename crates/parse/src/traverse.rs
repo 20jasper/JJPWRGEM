@@ -24,12 +24,31 @@ pub trait Visitor<'a> {
     fn on_item_delim(&mut self);
 }
 
+const MAX_DEPTH: usize = 128;
+
 pub fn parse_tokens<'a>(
     tokens: &mut TokenStream<'a>,
     text: &'a str,
     fail_on_multiple_value: bool,
     visitor: &mut impl Visitor<'a>,
 ) -> Result<Range<usize>> {
+    parse_tokens_at_depth(tokens, text, fail_on_multiple_value, visitor, 0)
+}
+
+fn parse_tokens_at_depth<'a>(
+    tokens: &mut TokenStream<'a>,
+    text: &'a str,
+    fail_on_multiple_value: bool,
+    visitor: &mut impl Visitor<'a>,
+    depth: usize,
+) -> Result<Range<usize>> {
+    if depth >= MAX_DEPTH {
+        return Err(Error::new(
+            ErrorKind::NestingTooDeep(MAX_DEPTH),
+            0..text.len(),
+            text,
+        ));
+    }
     let peeked = tokens.peek_token()?.copied();
     let Some(peeked) = peeked else {
         return Err(Error::from_maybe_token_with_context(
@@ -39,8 +58,8 @@ pub fn parse_tokens<'a>(
         ));
     };
     let range = match peeked.token {
-        Token::OpenCurlyBrace => parse_object(tokens, text, visitor)?,
-        Token::OpenSquareBracket => parse_array(tokens, text, visitor)?,
+        Token::OpenCurlyBrace => parse_object(tokens, text, depth, visitor)?,
+        Token::OpenSquareBracket => parse_array(tokens, text, depth, visitor)?,
         t if t.is_scalar() => {
             let token_ctx = tokens
                 .next_token()?

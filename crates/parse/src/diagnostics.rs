@@ -321,6 +321,7 @@ impl<'a> From<&'a Error> for Vec<Patch<'a>> {
             ErrorKind::ExpectedOpenBrace { .. } => Vec::new(),
             ErrorKind::ExpectedMinusOrDigit(_) => Vec::new(),
             ErrorKind::ExpectedKey(_, _) => Vec::new(),
+            ErrorKind::NestingTooDeep(_) => Vec::new(),
         }
     }
 }
@@ -414,6 +415,7 @@ impl<'a> From<&'a Error> for Vec<Context<'a>> {
             ErrorKind::InvalidEncoding(_) => Vec::new(),
             ErrorKind::ExpectedMinusOrDigit(_) => Vec::new(),
             ErrorKind::ExpectedOpenBrace { context: None, .. } => Vec::new(),
+            ErrorKind::NestingTooDeep(_) => Vec::new(),
         }
     }
 }

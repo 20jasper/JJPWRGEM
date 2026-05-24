@@ -19,13 +19,10 @@ struct Case {
 }
 
 const CONFORMANCE_PATH: &str = "./tests/conformance/JSONTestSuite/test_parsing";
-const FILENAME_FILTER: [&str; 5] = [
+const FILENAME_FILTER: [&str; 3] = [
     // should expect comma or closed
     "n_array_colon_instead_of_comma.json",
     "n_array_items_separated_by_semicolon.json",
-    // uh oh
-    "500",
-    "10000",
     "n_structure_open_array_object",
 ];
 
@@ -86,7 +83,7 @@ mod common {}
 #[case(&["format", "--uglify"])]
 fn feature(#[case] args: &[&str]) {
     let (mut cases, total, rest) = get_tests();
-    assert_eq!(rest, 313);
+    assert_eq!(rest, 315);
     assert_eq!(total, 318);
 
     cases.sort_by(|a, b| a.file_name.cmp(&b.file_name));
