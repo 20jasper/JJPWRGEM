@@ -48,7 +48,7 @@ jobs:
 
           mise run package-json
 
-          git add npm-template/package.json npm-template/npm-shrinkwrap.json
+          git add npm-template/
 
           if git diff --cached --quiet; then
             echo "npm metadata already in sync"
