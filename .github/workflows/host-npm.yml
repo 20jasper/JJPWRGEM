@@ -7,9 +7,16 @@ on:
         description: Dist release plan JSON payload
         required: true
         type: string
+  workflow_dispatch:
+    inputs:
+      prerelease:
+        description: Publish as prerelease (--tag alpha)?
+        type: boolean
+        default: false
 
 permissions:
   contents: read
+  id-token: write
 
 jobs:
   host:
@@ -21,13 +28,6 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           persist-credentials: false
-
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8 # stable
-
-      - uses: ./.github/actions/setup-mise
-      - name: Generate npm package manifest
-        run: mise run package-json
 
       - name: Setup Node
         uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
@@ -41,7 +41,28 @@ jobs:
           npm pack ./npm-template --pack-destination ./npm
 
       - name: Upload npm package artifact
+        if: github.event_name == 'workflow_call'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: ${{ github.ref_name }}-npm-package.tgz
           path: ./npm/*.tgz
+
+      - name: Publish npm package
+        if: github.event_name == 'workflow_dispatch'
+        working-directory: npm
+        run: |
+          set -euo pipefail
+          tarball=$(find . -maxdepth 1 -name '*.tgz' -print | head -n1 || true)
+          if [ -z "${tarball}" ]; then
+            echo "No tarball (*.tgz) found in $(pwd)"
+            ls -la
+            exit 1
+          fi
+          echo "Publishing ${tarball}"
+          tag_args=()
+          if [ "${{ inputs.prerelease }}" = "true" ]; then
+            tag_args=(--tag alpha)
+          fi
+          npm publish --access public --provenance "${tag_args[@]}" "${tarball}"
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

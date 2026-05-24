@@ -1,0 +1,10 @@
+name: Rust toolchain and cache setup
+description: Install Rust toolchain from rust-toolchain.toml and configure dependency caching
+
+runs:
+  using: composite
+  steps:
+    - name: Install Rust toolchain
+      run: rustup toolchain install --no-self-update
+      shell: bash
+    - uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4 # v2.9.1
