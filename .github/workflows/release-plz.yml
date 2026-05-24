@@ -60,7 +60,7 @@ jobs:
 
           git remote set-url origin "https://x-access-token:${RELEASE_PLZ_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
           git pull --rebase origin "$HEAD_BRANCH"
-          git push origin "$HEAD_BRANCH"
+          git push origin "$HEAD_BRANCH" --no-verify # hooks run in verify ci step
 
   release-plz-release:
     name: release-plz-release
