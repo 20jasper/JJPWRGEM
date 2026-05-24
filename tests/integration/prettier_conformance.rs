@@ -1,7 +1,5 @@
 //! check compatibility with prettier, a JavaScript formatter
 
-use std::path::Path;
-
 use proptest::{prelude::*, prop_assert, prop_assert_eq, prop_assume, prop_oneof, proptest};
 
 use crate::{
@@ -28,12 +26,8 @@ fn is_known_prettier_difference_case(name: &str) -> bool {
 }
 
 fn prettier_cmd() -> std::process::Command {
-    let bin = Path::new(env!("CARGO_MANIFEST_DIR")).join("node_modules/.bin/prettier");
-    assert!(
-        bin.exists(),
-        "prettier not found at {bin:?} — run `pnpm install`"
-    );
-    let mut cmd = std::process::Command::new(bin);
+    // prettier is provided by mise (npm:prettier in test.toml); resolve it from PATH.
+    let mut cmd = std::process::Command::new("prettier");
     cmd.args([
         "--parser",
         "json",
@@ -42,13 +36,6 @@ fn prettier_cmd() -> std::process::Command {
         "--stdin-filepath",
         "input.json",
     ]);
-    // Ensure node is discoverable when managed by mise (shims may not be in PATH during tests)
-    let current_path = std::env::var("PATH").unwrap_or_default();
-    let home = std::env::var("HOME").unwrap_or_default();
-    let mise_shims = format!("{home}/.local/share/mise/shims");
-    if !current_path.contains(&mise_shims) {
-        cmd.env("PATH", format!("{mise_shims}:{current_path}"));
-    }
     cmd
 }
 
