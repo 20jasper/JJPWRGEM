@@ -39,7 +39,7 @@ run = [
 
 [tasks.diet]
 description = "Trim publishable crate dirs before release"
-run = 'for x in ./crates/* ./xtask ./benches .; do [ -f "$x/Cargo.toml" ] || continue; (cd "$x" && cargo diet -r -q); done'
+run = 'for x in ./crates/* ./xtask ./benches .; do [ -f "$x/Cargo.toml" ] || continue; (cd "$x" && cargo diet -q); done'
 
 [tasks.tracey-check]
 description = "Verify spec rules have version bumps for any changed rule text"
