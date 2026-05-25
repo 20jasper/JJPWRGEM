@@ -13,4 +13,19 @@ specs (
             }
         )
     }
+    {
+        name jsonlines
+        include (spec/jsonlines.md)
+        impls (
+            {
+                name rust
+                include (
+                    crates/parse/src/jsonlines.rs
+                    crates/cli/main.rs
+                    tests/integration/commands/jsonlines.rs
+                )
+                exclude (target/**)
+            }
+        )
+    }
 )
