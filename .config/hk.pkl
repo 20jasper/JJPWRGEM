@@ -3,10 +3,6 @@ import "package://github.com/jdx/hk/releases/download/v1.45.0/hk@1.45.0#/Builtin
 
 // Steps that mutate files. Run in pre-commit (with stash) and on `hk fix`.
 local fix_steps = new Mapping<String, Step> {
-  ["renovate-check"] {
-    glob = List(".github/renovate.json")
-    check = "mise run renovate-check"
-  }
   ["diet"] {
     fix = "mise run diet"
     stage = List("crates/**/Cargo.toml", "Cargo.toml")
