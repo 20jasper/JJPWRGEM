@@ -2,6 +2,12 @@
   "name": "root",
   "version": "1.0.0",
   "private": true,
+  "scripts": {
+    "lint": "oxlint --tsconfig npm-packages/jjpwrgem-vscode/tsconfig.json npm-packages/"
+  },
+  "devDependencies": {
+    "oxlint-tsgolint": "^0.23.0"
+  },
   "engines": {
     "node": ">=22.22.3",
     "pnpm": "11"

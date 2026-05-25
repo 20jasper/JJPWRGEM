@@ -24,7 +24,7 @@ suite("Extension Smoke Tests", function () {
       "20jasper.jjpwrgem-vscode",
     );
     assert.ok(extension, "jjpwrgem-vscode extension should be installed");
-    assert.ok(extension!.isActive, "Extension should be active");
+    assert.ok(extension.isActive, "Extension should be active");
   });
 
   test("Open a JSON file on disk and format it", async () => {

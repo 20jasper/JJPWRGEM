@@ -58,6 +58,10 @@ local check_steps = new Mapping<String, Step> {
     glob = List("**/*.ts")
     check = "pnpm --filter jjpwrgem-vscode run check-types"
   }
+  ["oxlint"] {
+    glob = List("**/*.ts")
+    check = "pnpm run lint"
+  }
   ["knip"] {
     glob = List("npm-packages/jjpwrgem-vscode/**")
     check = "knip --workspace npm-packages/jjpwrgem-vscode"
