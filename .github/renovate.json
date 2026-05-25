@@ -141,6 +141,9 @@
       "dependencyDashboardApproval": true
     }
   ],
+  "customEnvVariables": {
+    "MISE_TRUSTED_CONFIG_PATHS": "/tmp/renovate/repos/github/20jasper"
+  },
   "ignorePaths": [
     ".github/workflows/jjpwrgem-v-release.yml",
     "npm-template/package.json"
