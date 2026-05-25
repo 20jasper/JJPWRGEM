@@ -1081,7 +1081,7 @@ checksum = "8f42a60cbdf9a97f5d2305f08a87dc4e09308d1276d28c869c684d7777685682"
 
 [[package]]
 name = "jjpwrgem"
-version = "0.6.1"
+version = "0.6.2"
 dependencies = [
  "anstream",
  "bytes2chars",
@@ -1111,7 +1111,7 @@ dependencies = [
 
 [[package]]
 name = "jjpwrgem-parse"
-version = "0.13.0"
+version = "0.13.1"
 dependencies = [
  "bytes2chars",
  "displaydoc",

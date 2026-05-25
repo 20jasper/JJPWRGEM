@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.2](https://github.com/20jasper/JJPWRGEM/compare/jjpwrgem-v0.6.1...jjpwrgem-v0.6.2) - 2026-05-25
+
+### Fixed
+
+- out of bounds index on multibyte error source
+
 ## [0.6.1](https://github.com/20jasper/JJPWRGEM/compare/jjpwrgem-v0.6.0...jjpwrgem-v0.6.1) - 2026-05-24
 
 ### Added
