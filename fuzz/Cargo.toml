@@ -10,10 +10,18 @@ cargo-fuzz = true
 [dependencies]
 libfuzzer-sys = "=0.4.12"
 jjpwrgem-parse = { path = "../crates/parse" }
+jjpwrgem-ui = { path = "../crates/ui" }
 
 [[bin]]
 name = "parse_then_prettify"
 path = "fuzz_targets/parse_then_prettify.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "cli_check"
+path = "fuzz_targets/cli_check.rs"
 test = false
 doc = false
 bench = false

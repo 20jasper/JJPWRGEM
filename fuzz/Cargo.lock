@@ -3,6 +3,23 @@
 version = 4
 
 [[package]]
+name = "annotate-snippets"
+version = "0.12.16"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f211a51805bc641f3ad5b7664c77d2547af685cc33b4cd8d31964027a46f13f1"
+dependencies = [
+ "anstyle",
+ "memchr",
+ "unicode-width",
+]
+
+[[package]]
+name = "anstyle"
+version = "1.0.14"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "940b3a0ca603d1eade50a4846a2afffd5ef57a9feac2c0e2ec2e14f9ead76000"
+
+[[package]]
 name = "arbitrary"
 version = "1.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -10,7 +27,7 @@ checksum = "c3d036a3c4ab069c7b410a2ce876bd74808d2d0888a82667669f8e783a898bf1"
 
 [[package]]
 name = "bytes2chars"
-version = "0.2.1"
+version = "0.2.2"
 dependencies = [
  "displaydoc",
 ]
@@ -67,16 +84,25 @@ name = "jjpwrgem-fuzz"
 version = "0.0.0"
 dependencies = [
  "jjpwrgem-parse",
+ "jjpwrgem-ui",
  "libfuzzer-sys",
 ]
 
 [[package]]
 name = "jjpwrgem-parse"
-version = "0.11.0"
+version = "0.13.0"
 dependencies = [
  "bytes2chars",
  "displaydoc",
  "thiserror",
+]
+
+[[package]]
+name = "jjpwrgem-ui"
+version = "0.3.2"
+dependencies = [
+ "annotate-snippets",
+ "jjpwrgem-parse",
 ]
 
 [[package]]
@@ -104,6 +130,12 @@ dependencies = [
  "arbitrary",
  "cc",
 ]
+
+[[package]]
+name = "memchr"
+version = "2.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f8ca58f447f06ed17d5fc4043ce1b10dd205e060fb3ce5b979b8ed8e59ff3f79"
 
 [[package]]
 name = "proc-macro2"
@@ -171,6 +203,12 @@ name = "unicode-ident"
 version = "1.0.24"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e6e4313cd5fcd3dad5cafa179702e2b244f760991f45397d14d4ebf38247da75"
+
+[[package]]
+name = "unicode-width"
+version = "0.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b4ac048d71ede7ee76d585517add45da530660ef4390e49b098733c6e897f254"
 
 [[package]]
 name = "wasip2"

@@ -1,0 +1,2 @@
+#!/usr/bin/env bash
+cargo fuzz run "${1:-parse_then_prettify}" "${@:2}"
