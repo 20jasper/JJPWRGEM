@@ -3,6 +3,9 @@
 "cargo:cargo-codspeed" = "4.6.0"
 "cargo:gungraun-runner" = "0.19.0"
 "cargo:rustfilt" = "0.2.1"
+# lsp
+"cargo:lsp-bench" = "0.3.3"
+"npm:vscode-langservers-extracted" = "4.10.0"
 
 [vars]
 codspeed_benches = "--bench bytes2chars --bench json_deser --bench json_prettify --bench json_uglify --bench json_tokens"
@@ -88,9 +91,31 @@ docker run --rm \
   -u "$(id -u):$(id -g)" \
   -v "$(pwd)/benches/docker/output:/benchmark/output" \
   jjp-benchmark
+
 oxfmt './benches/docker/output/*.md' --write
 cargo xtask plot-benchmarks
 cargo xtask generate-readmes
-cargo +nightly fmt -p bytes2chars
 cargo rdme --workspace-project bytes2chars --force
 '''
+
+[tasks.bench-lsp]
+hide = true
+dir = "{{config_root}}/benches/lsp"
+usage = 'arg "<fixture>" help="fixture name (canada, twitter, small, citm_catalog)"'
+run = """
+cargo build --release -p jjpwrgem
+lsp-bench -c "benchmark-${usage_fixture}.yaml"
+mkdir -p results
+cargo xtask lsp-bench-report "${usage_fixture}"
+"""
+
+[tasks.bench-lsp-all]
+description = "run lsp-bench for all fixtures and regenerate readmes"
+run = """
+mise run bench-lsp canada
+mise run bench-lsp twitter
+mise run bench-lsp small
+mise run bench-lsp citm_catalog
+cargo xtask generate-readmes
+"""
+

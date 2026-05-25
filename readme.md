@@ -25,35 +25,27 @@ help: insert colon and placeholder value
 
 ![coverage: 87.3%](https://img.shields.io/badge/coverage-87.3%25-green) [![See codspeed dashboard](https://img.shields.io/endpoint?url=https://codspeed.io/badge.json)](https://codspeed.io/20jasper/JJPWRGEM?utm_source=badge)
 
+## Why JJP?
+
+- Rich errors with context, descriptions, and patches
+- LSP reports diagnostics around 16-56x faster and uses 6-10x less RAM than VSCode's JSON LSP — [LSP benchmarks](./benches/lsp/README.md)
+- Parses and pretty prints a 1.7MB file in ~11ms — [benchmarks](./benches/BENCHMARKS.md)
+
+![animation of JJPWRGEM's LSP. file changes are made quickly and feedback is shown quickly. code actions fix common issues like missing colons](./crates/lsp/lsp-demo.gif)
+
 ![A logo of an axolotl riding a skateboard](./logo.webp)
-
-## Table of contents
-
-- [Table of contents](#table-of-contents)
-- [Installation](#installation)
-- [Stability](#stability)
-- [FAQ](#faq)
-- [Motivations](#motivations)
 
 ## Installation
 
 ### Precompiled
 
+Precompiled x86-64 binaries require a CPU with AVX2 support (Intel Haswell 2013+, AMD Ryzen 2017+). ARM binaries have no special requirements
+
 ```bash
 mise use -g github:20jasper/jjpwrgem
 ```
 
-See [releases](https://github.com/20jasper/JJPWRGEM/releases) for shell and powershell installation instructions and raw binaries
-
-Note: node adds ~60ms of overhead
-
-```bash
-npm install -g jjpwrgem
-```
-
-#### Requirements
-
-Precompiled x86-64 binaries require a CPU with AVX2 support (Intel Haswell 2013+, AMD Ryzen 2017+). ARM binaries have no special requirements
+See [releases](https://github.com/20jasper/JJPWRGEM/releases) for shell and PowerShell installation scripts, or `npm install -g jjpwrgem`
 
 ### From source
 
@@ -61,32 +53,13 @@ Precompiled x86-64 binaries require a CPU with AVX2 support (Intel Haswell 2013+
 RUSTFLAGS="-C target-cpu=native" cargo install --path .
 ```
 
+### LSP
+
+See [LSP setup](./crates/lsp/readme.md#quick-start) to configure your editor
+
 ## Stability
 
 Internal libraries are likely unstable. Formatting output is unstable
-
-## Indeterminate Handling
-
-How cases undefined by the spec are handled
-
-- numbers of any size or length are allowed
-  - the original precision will be maintained
-  - -0 is not equal to 0 and will persist
-- the last duplicate key is stored
-  - escaped and unescaped characters are considered not equal
-- parsing will fail if BOM is included
-- only utf8 encoding is supported
-- no limitations on nesting or length
-- extensions such as trailing commas or comments are not allowed
-- surrogates are not validated, eg a lone continuation byte is valid
-
-### Is it blazingly fast™?
-
-Axolotls can't walk so fast, so skateboards are pretty fast 🛹🐟
-
-Without caching, jjpwrgem can parse and pretty print a 1.7MB JSON file in around 11ms and the average package.json in 500 microseconds
-
-See the [benchmarks](/benches/BENCHMARKS.md)
 
 ## FAQ
 
@@ -102,6 +75,12 @@ JJPWRGEM JSON Parser With Really Good Error Messages. I was inspired by GNU to m
 
 It sounds cool and the name isn't taken on any package managers
 
+### Is it blazingly fast™?
+
+Axolotls can't walk so fast, so skateboards are pretty fast 🛹🐟
+
+See the [benchmarks](/benches/BENCHMARKS.md)
+
 ### Why is the logo an axolotl riding a skateboard?
 
 It's cool
@@ -111,11 +90,3 @@ It's cool
 According to the San Diego zoo, "[a]n axolotl can reach 12 inches in length, but on average grows to about 9 inches[^axolotlFact]"
 
 [^axolotlFact]: https://animals.sandiegozoo.org/animals/axolotl
-
-## Motivations
-
-I originally started this project to practice finite state machines, but got back into it when hearing about the internals of some formatters and compilers!
-
-I am heavily inspired by the Rust compiler's error messages. I love that unhelpful errors are considered bugs
-
-I checked out several JSON parsers and formatters, and none provided much context on _why_ a key was missing. Errors ranged from "expected closing on byte 10" to a snapshot of source code for that character, but none were up to my standards

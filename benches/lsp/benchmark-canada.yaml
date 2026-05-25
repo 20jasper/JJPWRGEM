@@ -1,0 +1,20 @@
+project: ../../benches/docker/data/json-benchmark/data
+file: canada.json
+line: 1
+col: 0
+iterations: 10
+warmup: 2
+
+servers:
+  - label: jjpwrgem
+    cmd: ../../target/release/jjp
+    args: ["lsp"]
+
+  - label: vscode-json
+    cmd: vscode-json-language-server
+    args: ["--stdio"]
+
+benchmarks:
+  - initialize
+  - textDocument/diagnostic
+  - textDocument/formatting

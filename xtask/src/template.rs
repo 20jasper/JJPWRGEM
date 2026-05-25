@@ -71,6 +71,35 @@ const FIXTURE_TWITTER: &str = include_str!(concat!(
     env!("CARGO_MANIFEST_DIR"),
     "/templates/fixture_twitter.md"
 ));
+const FIXTURE_SMALL: &str = include_str!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/templates/fixture_small.md"
+));
+const LSP_BENCH_TEMPLATE: &str = include_str!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/templates/lsp-bench.template.md"
+));
+
+const LSP_BENCH_OUT_PATH_STR: &str =
+    concat!(env!("CARGO_MANIFEST_DIR"), "/../benches/lsp/README.md");
+const LSP_BENCH_RESULTS_DIR: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/../benches/lsp/results");
+
+fn generate_lsp_bench_readme() -> Option<String> {
+    let canada = fs::read_to_string(format!("{LSP_BENCH_RESULTS_DIR}/canada.md")).ok()?;
+    let twitter = fs::read_to_string(format!("{LSP_BENCH_RESULTS_DIR}/twitter.md")).ok()?;
+    let small = fs::read_to_string(format!("{LSP_BENCH_RESULTS_DIR}/small.md")).ok()?;
+    let citm_catalog =
+        fs::read_to_string(format!("{LSP_BENCH_RESULTS_DIR}/citm_catalog.md")).ok()?;
+
+    let replacements = [
+        ("{{LSP_BENCH_CANADA_TABLE}}", canada.trim()),
+        ("{{LSP_BENCH_TWITTER_TABLE}}", twitter.trim()),
+        ("{{LSP_BENCH_SMALL_TABLE}}", small.trim()),
+        ("{{LSP_BENCH_CITM_CATALOG_TABLE}}", citm_catalog.trim()),
+    ];
+
+    render_template(LSP_BENCH_TEMPLATE, &replacements).ok()
+}
 
 const COVERAGE: &str = include_str!(concat!(
     env!("CARGO_MANIFEST_DIR"),
@@ -230,7 +259,8 @@ fn render_template(
         .replace("{{BENCH_HARDWARE}}", BENCH_HARDWARE)
         .replace("{{FIXTURE_CANADA}}", FIXTURE_CANADA)
         .replace("{{FIXTURE_CITM_CATALOG}}", FIXTURE_CITM_CATALOG)
-        .replace("{{FIXTURE_TWITTER}}", FIXTURE_TWITTER);
+        .replace("{{FIXTURE_TWITTER}}", FIXTURE_TWITTER)
+        .replace("{{FIXTURE_SMALL}}", FIXTURE_SMALL);
 
     for (needle, replacement) in replacements {
         processed = processed.replace(needle, replacement.trim());
@@ -262,6 +292,9 @@ pub fn write_readmes() {
     fs::write(CLI_BENCH_OUT_PATH_STR, cli_bench_rendered).unwrap();
     fs::write(BYTES2CHARS_BENCH_OUT_PATH_STR, bytes2chars_bench_rendered).unwrap();
     fs::write(JSON_BENCH_OUT_PATH_STR, json_bench_rendered).unwrap();
+    if let Some(lsp_bench_rendered) = generate_lsp_bench_readme() {
+        fs::write(LSP_BENCH_OUT_PATH_STR, lsp_bench_rendered).unwrap();
+    }
 }
 
 fn check_readme(path: &str, existing: &str, generated: &str) -> anyhow::Result<()> {
@@ -316,5 +349,9 @@ pub fn are_readmes_updated() -> anyhow::Result<()> {
         &bytes2chars_bench_rendered,
     )?;
     check_readme("benches/json.md", EXISTING_JSON_BENCH, &json_bench_rendered)?;
+    if let Some(lsp_bench_rendered) = generate_lsp_bench_readme() {
+        let existing = fs::read_to_string(LSP_BENCH_OUT_PATH_STR).unwrap_or_default();
+        check_readme("benches/lsp/README.md", &existing, &lsp_bench_rendered)?;
+    }
     Ok(())
 }
