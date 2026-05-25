@@ -181,7 +181,8 @@ impl Error {
 
     pub(crate) fn from_unterminated(kind: ErrorKind, text: &str) -> Self {
         let trimmed = trim_end_whitespace(text);
-        Self::new(kind, trimmed.len().saturating_sub(1)..trimmed.len(), text)
+        let last_char_start = trimmed.char_indices().next_back().map_or(0, |(i, _)| i);
+        Self::new(kind, last_char_start..trimmed.len(), text)
     }
 
     /// # Panics
