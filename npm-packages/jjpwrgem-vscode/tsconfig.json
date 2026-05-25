@@ -8,17 +8,15 @@
     "moduleDetection": "force",
     "isolatedModules": true,
     "forceConsistentCasingInFileNames": true,
-
     "strict": true,
     "noUncheckedIndexedAccess": true,
     "noImplicitOverride": true,
-
     "module": "NodeNext",
     "rootDir": "src",
     "outDir": "dist",
     "sourceMap": true,
-
-    "lib": ["ES2022"]
+    "lib": ["ES2022"],
+    "types": ["mocha", "node"]
   },
   "exclude": ["dist/", "out/"],
   "include": [

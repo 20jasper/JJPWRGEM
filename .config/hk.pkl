@@ -54,6 +54,14 @@ local check_steps = new Mapping<String, Step> {
     glob = List("**/*.rs")
     check = "mise run test"
   }
+  ["check-types"] {
+    glob = List("**/*.ts")
+    check = "pnpm --filter jjpwrgem-vscode run check-types"
+  }
+  ["knip"] {
+    glob = List("npm-packages/jjpwrgem-vscode/**")
+    check = "knip --workspace npm-packages/jjpwrgem-vscode"
+  }
 }
 
 // Sync mise tools whenever mise config files change in a checkout/merge.

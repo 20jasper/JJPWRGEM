@@ -7,7 +7,9 @@ shellcheck = "0.11.0"
 "cargo:committed" = "1.1.11"
 "cargo:tracey" = "1.3.0"
 "cargo:typos-cli" = "1.46.2"
+"npm:knip" = "6.14.2"
 "npm:oxfmt" = "0.51.0"
+"npm:oxlint" = "1.66.0"
 
 [tasks.typos]
 run = "typos"
@@ -31,7 +33,8 @@ run = [
 env = { RUSTFLAGS = "-Dwarnings" }
 run = [
   "cargo clippy -q --all-targets --all-features --workspace",
-  "pnpm --if-present lint > /dev/null",
+  "pnpm --filter jjpwrgem-vscode run check-types",
+  "knip --workspace npm-packages/jjpwrgem-vscode",
   "actionlint",
 ]
 

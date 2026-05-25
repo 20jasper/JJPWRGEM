@@ -11,35 +11,29 @@
   "main": "./dist/extension.js",
   "scripts": {
     "vscode:prepublish": "pnpm run package",
-    "compile": "pnpm run check-types && pnpm run lint && node esbuild.js",
+    "compile": "pnpm run check-types && node esbuild.js",
     "watch": "npm-run-all -p watch:*",
     "watch:esbuild": "node esbuild.js --watch",
-    "watch:tsc": "tsc --noEmit --watch --project tsconfig.json",
-    "package": "pnpm run check-types && pnpm run lint && node esbuild.js --production",
-    "compile-tests": "tsc -p . --outDir out",
-    "watch-tests": "tsc -p . -w --outDir out",
-    "pretest": "pnpm run compile-tests && pnpm run compile && pnpm run lint",
-    "check-types": "tsc --noEmit",
-    "lint": "eslint src --max-warnings=0",
+    "watch:tsgo": "tsgo --watch --project tsconfig.json",
+    "package": "pnpm run check-types && node esbuild.js --production",
+    "compile-tests": "tsgo -p . --outDir out",
+    "watch-tests": "tsgo -p . -w --outDir out",
+    "pretest": "pnpm run compile-tests && pnpm run compile",
+    "check-types": "tsgo --noEmit",
     "test": "vscode-test"
   },
   "dependencies": {
     "vscode-languageclient": "^9.0.1"
   },
   "devDependencies": {
-    "@eslint/js": "^9.39.2",
     "@types/mocha": "^10.0.10",
     "@types/node": "22.x",
     "@types/vscode": "^1.107.0",
     "@vscode/test-cli": "^0.0.12",
     "@vscode/test-electron": "^2.5.2",
     "esbuild": "^0.27.1",
-    "eslint": "^9.39.2",
-    "globals": "^16.5.0",
-    "jiti": "^2.6.1",
     "npm-run-all": "^4.1.5",
-    "typescript": "^5.9.3",
-    "typescript-eslint": "^8.50.0"
+    "typescript": "npm:@typescript/native-preview@7.0.0-dev.20260523.1"
   },
   "contributes": {},
   "activationEvents": [

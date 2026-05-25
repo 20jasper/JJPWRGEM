@@ -171,9 +171,17 @@ backend = "aqua:jdx/hk"
 version = "1.8.1"
 backend = "aqua:jqlang/jq"
 
+[[tools."npm:knip"]]
+version = "6.14.2"
+backend = "npm:knip"
+
 [[tools."npm:oxfmt"]]
 version = "0.51.0"
 backend = "npm:oxfmt"
+
+[[tools."npm:oxlint"]]
+version = "1.66.0"
+backend = "npm:oxlint"
 
 [[tools."npm:prettier"]]
 version = "3.8.3"

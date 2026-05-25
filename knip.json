@@ -1,0 +1,13 @@
+{
+  "workspaces": {
+    "npm-packages/jjpwrgem-vscode": {
+      "entry": [
+        ".vscode-test.mjs",
+        "src/extension.ts",
+        "src/test/**/*.test.ts",
+        "esbuild.js"
+      ],
+      "ignoreDependencies": ["@vscode/test-electron"]
+    }
+  }
+}
