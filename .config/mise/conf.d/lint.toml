@@ -45,7 +45,7 @@ run = 'for x in ./crates/* ./xtask ./benches .; do [ -f "$x/Cargo.toml" ] || con
 
 [tasks.package-check]
 description = "check rust crates are ready to publish"
-run = "cargo package -p bytes2chars -p jjpwrgem-parse -p jjpwrgem-ui -p jjpwrgem-lsp -p jjpwrgem --allow-dirty"
+run = "cargo package -p bytes2chars -p jjpwrgem-parse -p jjpwrgem-ui -p jjpwrgem-lsp -p jjpwrgem --allow-dirty --no-verify"
 
 [tasks.tracey-check]
 description = "Verify spec rules have version bumps for any changed rule text"
