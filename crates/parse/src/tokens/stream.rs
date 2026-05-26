@@ -178,6 +178,10 @@ impl<'a> TokenStream<'a> {
         Self::new_at_range(s, 0..s.len())
     }
 
+    pub(crate) fn pos(&self) -> usize {
+        self.inner.pos
+    }
+
     pub fn peek_token(&mut self) -> Result<Option<&TokenWithContext>> {
         if self.cached.is_none() {
             match self.inner.next() {

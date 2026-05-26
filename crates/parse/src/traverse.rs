@@ -51,9 +51,10 @@ fn parse_tokens_at_depth<'a>(
     }
     let peeked = tokens.peek_token()?.copied();
     let Some(peeked) = peeked else {
-        return Err(Error::from_maybe_token_with_context(
-            |tok| ErrorKind::ExpectedValue(None, tok),
-            None,
+        let pos = tokens.pos();
+        return Err(Error::new(
+            ErrorKind::ExpectedValue(None, None.into()),
+            pos..pos,
             text,
         ));
     };

@@ -1,14 +1,8 @@
 use crate::{
-    Error,
+    Result,
     ast::{Value, parse_at},
     format::uglify_str_into,
 };
-
-#[derive(Debug)]
-pub struct JsonlinesParseError {
-    pub line: usize,
-    pub error: Error,
-}
 
 #[derive(Debug)]
 pub struct JsonlinesDocument<S> {
@@ -18,7 +12,7 @@ pub struct JsonlinesDocument<S> {
 
 impl<S: AsRef<str>> JsonlinesDocument<S> {
     // jsonlines[impl utf8] — `S: AsRef<str>` is always valid UTF-8 in Rust.
-    pub fn parse(source: S) -> Result<Self, JsonlinesParseError> {
+    pub fn parse(source: S) -> Result<Self> {
         let text = source.as_ref();
         // jsonlines[impl end-of-file]
         let text = text.strip_suffix('\n').unwrap_or(text);
@@ -27,13 +21,11 @@ impl<S: AsRef<str>> JsonlinesDocument<S> {
         let mut offset = 0usize;
 
         // jsonlines[impl newline-delimiter]
-        for (i, line) in text.split('\n').enumerate() {
+        for line in text.split('\n') {
             let r = offset..offset + line.len();
 
             // jsonlines[impl each-line-is-a-valid-json-value]
-            let doc =
-                parse_at(text, r).map_err(|error| JsonlinesParseError { line: i + 1, error })?;
-            values.push(doc.root);
+            values.push(parse_at(text, r)?.root);
 
             offset = r.end + 1;
         }
@@ -54,26 +46,24 @@ impl<S: AsRef<str>> JsonlinesDocument<S> {
     }
 }
 
-pub fn parse(source: &str) -> Result<JsonlinesDocument<&str>, JsonlinesParseError> {
+pub fn parse(source: &str) -> Result<JsonlinesDocument<&str>> {
     JsonlinesDocument::parse(source)
 }
 
-pub fn format(source: &str) -> Result<String, JsonlinesParseError> {
+pub fn format(source: &str) -> Result<String> {
     let text = source.strip_suffix('\n').unwrap_or(source);
-    let mut lines = text.split('\n').enumerate();
+    let mut lines = text.split('\n');
 
-    let Some((i, line)) = lines.next() else {
+    let Some(line) = lines.next() else {
         return Ok(String::new());
     };
 
     let mut result = String::new();
-    uglify_str_into(&mut result, line)
-        .map_err(|error| JsonlinesParseError { line: i + 1, error })?;
+    uglify_str_into(&mut result, line)?;
 
-    for (i, line) in lines {
+    for line in lines {
         result.push('\n');
-        uglify_str_into(&mut result, line)
-            .map_err(|error| JsonlinesParseError { line: i + 1, error })?;
+        uglify_str_into(&mut result, line)?;
     }
     Ok(result)
 }
@@ -105,7 +95,13 @@ mod tests {
     #[case("\n{\"a\":1}", 1)]
     #[case("{\"a\":1}\n\n{\"b\":2}", 2)]
     #[case("{\"a\":1}\n{bad}", 2)]
-    fn invalid_lines_fail(#[case] input: &str, #[case] error_line: usize) {
-        assert_eq!(parse(input).unwrap_err().line, error_line);
+    fn invalid_lines_fail(#[case] input: &str, #[case] expected_line: usize) {
+        let err = parse(input).unwrap_err();
+        let line = input[..err.range().start]
+            .chars()
+            .filter(|&c| c == '\n')
+            .count()
+            + 1;
+        assert_eq!(line, expected_line);
     }
 }
