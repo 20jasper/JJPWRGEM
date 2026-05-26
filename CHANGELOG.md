@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.3](https://github.com/20jasper/JJPWRGEM/compare/jjpwrgem-v0.6.2...jjpwrgem-v0.6.3) - 2026-05-26
+
+### Added
+
+- *(cli)* json lines support
+- *(parse)* JSON lines formatting and checking
+
 ## [0.6.2](https://github.com/20jasper/JJPWRGEM/compare/jjpwrgem-v0.6.1...jjpwrgem-v0.6.2) - 2026-05-25
 
 ### Fixed
