@@ -1,0 +1,14 @@
+---
+source: tests/integration/commands/jsonlines.rs
+expression: output.snapshot_display()
+---
+args: ["format", "--json-lines"]
+status: 0
+success: true
+stdin ---
+{ "a" : 1 }
+
+stdout ---
+{"a":1}
+
+stderr ---

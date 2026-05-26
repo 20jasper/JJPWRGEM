@@ -1,0 +1,18 @@
+---
+source: tests/integration/commands/jsonlines.rs
+expression: output.snapshot_display()
+---
+args: ["check", "--json-lines"]
+status: 1
+success: false
+stdin ---
+{"a":1}
+{bad}
+stdout ---
+
+stderr ---
+error: unexpected character `b`. expected start of a json value
+ --> stdin:2:2
+  |
+2 | {bad}
+  |  ^

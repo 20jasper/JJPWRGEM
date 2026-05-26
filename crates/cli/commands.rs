@@ -37,8 +37,13 @@ pub enum Commands {
     ))]
     Format {
         /// Removes all insignificant whitespace instead of pretty printing,
-        /// also known as minifying. Cannot be combined with --preferred-width
-        #[arg(short, long, conflicts_with = "preferred_width")]
+        /// also known as minifying. Cannot be combined with --preferred-width or --json-lines
+        #[arg(
+            short,
+            long,
+            conflicts_with = "preferred_width",
+            conflicts_with = "json_lines"
+        )]
         uglify: bool,
 
         /// Preferred maximum line width. Note this is not a hard maximum width
@@ -48,6 +53,10 @@ pub enum Commands {
         /// Line ending to use when formatting output
         #[arg(value_enum, long, visible_alias = "eol", default_value_t)]
         end_of_line: LineEndingArg,
+
+        /// Parses as JSON Lines and uglifies each value. Cannot be combined with --uglify
+        #[arg(long, conflicts_with = "uglify")]
+        json_lines: bool,
     },
     #[command(after_help = format!(
         "Examples:\n{}\n\n{}",
@@ -55,7 +64,11 @@ pub enum Commands {
         indent(strip_front_matter(get_docs_snapshot!("check_failure"))),
     ))]
     /// Validates json syntax
-    Check,
+    Check {
+        /// Parse input as JSON Lines
+        #[arg(long)]
+        json_lines: bool,
+    },
     /// Start a language server over stdio
     Lsp,
 }

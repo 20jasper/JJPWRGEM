@@ -18,9 +18,9 @@ pub fn uglify_str_into(buf: &mut String, json: &str) -> Result<()> {
     let mut visitor = UglifyEmitVisitor {
         buf: std::mem::take(buf),
     };
-    let result = parse_tokens(&mut TokenStream::new(json), json, true, &mut visitor);
+    parse_tokens(&mut TokenStream::new(json), json, true, &mut visitor)?;
     *buf = visitor.buf;
-    result.map(|_| ())
+    Ok(())
 }
 
 #[derive(Debug, Default)]

@@ -10,10 +10,11 @@ stdin ---
 stdout ---
 Validates json syntax
 
-Usage: jjp check
+Usage: jjp check [OPTIONS]
 
 Options:
-  -h, --help  Print help
+      --json-lines  Parse input as JSON Lines
+  -h, --help        Print help
 
 Examples:
 	$ echo -en "{\"hello I am valid\": null} " | jjp check

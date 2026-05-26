@@ -60,11 +60,18 @@ pub fn parse(source: &str) -> Result<JsonlinesDocument<&str>, JsonlinesParseErro
 
 pub fn format(source: &str) -> Result<String, JsonlinesParseError> {
     let text = source.strip_suffix('\n').unwrap_or(source);
+    let mut lines = text.split('\n').enumerate();
+
+    let Some((i, line)) = lines.next() else {
+        return Ok(String::new());
+    };
+
     let mut result = String::new();
-    for (i, line) in text.split('\n').enumerate() {
-        if i > 0 {
-            result.push('\n');
-        }
+    uglify_str_into(&mut result, line)
+        .map_err(|error| JsonlinesParseError { line: i + 1, error })?;
+
+    for (i, line) in lines {
+        result.push('\n');
         uglify_str_into(&mut result, line)
             .map_err(|error| JsonlinesParseError { line: i + 1, error })?;
     }

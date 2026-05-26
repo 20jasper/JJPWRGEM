@@ -43,22 +43,17 @@ fn skip_whitespace(bytes: &[u8]) -> usize {
 struct TokenStreamInner<'a> {
     input: &'a str,
     pos: usize,
-    end: usize,
 }
 
 impl<'a> TokenStreamInner<'a> {
     fn new_at_range(full_source: &'a str, range: Range<usize>) -> Self {
         Self {
-            input: full_source,
+            input: &full_source[..range.end],
             pos: range.start,
-            end: range.end,
         }
     }
 
     fn peek_byte_with_context(&self) -> Option<ByteWithContext> {
-        if self.pos >= self.end {
-            return None;
-        }
         self.input
             .as_bytes()
             .get(self.pos)
@@ -106,7 +101,7 @@ impl<'a> TokenStreamInner<'a> {
             return;
         }
 
-        self.pos += skip_whitespace(&self.input.as_bytes()[self.pos..self.end]);
+        self.pos += skip_whitespace(&self.input.as_bytes()[self.pos..]);
     }
 }
 

@@ -1,0 +1,17 @@
+---
+source: tests/integration/commands/jsonlines.rs
+expression: output.snapshot_display()
+---
+args: ["format", "--json-lines", "--uglify"]
+status: 2
+success: false
+stdin ---
+{}
+stdout ---
+
+stderr ---
+error: the argument '--json-lines' cannot be used with '--uglify'
+
+Usage: jjp format --json-lines
+
+For more information, try '--help'.

@@ -3,6 +3,10 @@
     clippy::print_stderr,
     reason = "CLI should write to stdout/err"
 )]
+#![allow(
+    variant_size_differences,
+    reason = "commands are different sizes and not perf sensitive"
+)]
 mod commands;
 mod error;
 mod output;
@@ -17,7 +21,7 @@ pub use error::{Error, Result};
 use jjpwrgem_parse::{
     diagnostics::Diagnostic,
     format::{self, LineEnding},
-    validate_str,
+    jsonlines, validate_str,
 };
 use jjpwrgem_ui::{Color, Style};
 
@@ -42,14 +46,27 @@ fn main() -> ExitCode {
             uglify,
             preferred_width,
             end_of_line,
-        } => format(
-            &json,
-            style,
-            *uglify,
-            *preferred_width,
-            end_of_line.into_parse(),
-        ),
-        Commands::Check => check(&json, style),
+            json_lines,
+        } => {
+            if *json_lines {
+                format_jsonlines(&json, style)
+            } else {
+                format(
+                    &json,
+                    style,
+                    *uglify,
+                    *preferred_width,
+                    end_of_line.into_parse(),
+                )
+            }
+        }
+        Commands::Check { json_lines } => {
+            if *json_lines {
+                check_jsonlines(&json, style)
+            } else {
+                check(&json, style)
+            }
+        }
         Commands::Lsp => unreachable!("LSP command handled above"),
     };
 
@@ -117,6 +134,20 @@ pub fn check(json: &str, style: Style) -> Output {
     match validate_str(json) {
         Ok(()) => Output::success(""),
         Err(error) => Output::failure_diagnostic(Diagnostic::from(&error), style),
+    }
+}
+
+fn check_jsonlines(json: &str, style: Style) -> Output {
+    match jsonlines::parse(json) {
+        Ok(_) => Output::success(""),
+        Err(e) => Output::failure_diagnostic(Diagnostic::from(&e), style),
+    }
+}
+
+fn format_jsonlines(json: &str, style: Style) -> Output {
+    match jsonlines::format(json) {
+        Ok(result) => Output::success(result),
+        Err(e) => Output::failure_diagnostic(Diagnostic::from(&e), style),
     }
 }
 
