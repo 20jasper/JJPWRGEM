@@ -4,6 +4,7 @@ mod check;
 pub mod diagnostics;
 pub mod error;
 pub mod format;
+pub mod jsonlines;
 pub mod tokens;
 mod traverse;
 

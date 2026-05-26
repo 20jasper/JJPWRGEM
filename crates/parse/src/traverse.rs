@@ -150,22 +150,22 @@ pub fn visit_document<'a, S: AsRef<str>>(
     doc: &'a crate::ast::Document<S>,
     visitor: &mut impl Visitor<'a>,
 ) {
-    visit_value(doc, doc.root(), visitor);
+    visit_value(doc.source.as_ref(), doc.root(), visitor);
 }
 
-fn visit_value<'a, S: AsRef<str>>(
-    doc: &'a crate::ast::Document<S>,
-    val: &crate::ast::Value,
+pub(crate) fn visit_value<'a>(
+    source: &'a str,
+    val: &'a crate::ast::Value,
     visitor: &mut impl Visitor<'a>,
 ) {
     use crate::ast::{ObjectEntries, Value};
     match val {
         Value::Null => visitor.on_null(),
-        Value::String(r) => visitor.on_string(*r, doc.slice(*r)),
+        Value::String(r) => visitor.on_string(*r, &source[*r]),
         Value::Number { mantissa, exponent } => {
-            visitor.on_mantissa(*mantissa, doc.slice(*mantissa));
+            visitor.on_mantissa(*mantissa, &source[*mantissa]);
             if let Some(exponent) = exponent {
-                visitor.on_exponent(*exponent, doc.slice(*exponent));
+                visitor.on_exponent(*exponent, &source[*exponent]);
             }
         }
         Value::Boolean(b) => visitor.on_boolean(*b),
@@ -175,9 +175,9 @@ fn visit_value<'a, S: AsRef<str>>(
                 visitor,
                 items,
                 |visitor, (kr, v)| {
-                    visitor.on_object_key(*kr, doc.slice(*kr));
+                    visitor.on_object_key(*kr, &source[*kr]);
                     visitor.on_object_key_val_delim();
-                    visit_value(doc, v, visitor);
+                    visit_value(source, v, visitor);
                 },
                 |visitor, _| visitor.on_item_delim(),
             );
@@ -188,7 +188,7 @@ fn visit_value<'a, S: AsRef<str>>(
             join(
                 visitor,
                 items,
-                |visitor, val| visit_value(doc, val, visitor),
+                |visitor, val| visit_value(source, val, visitor),
                 |visitor, _| visitor.on_item_delim(),
             );
             visitor.on_array_close();

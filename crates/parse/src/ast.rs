@@ -59,22 +59,16 @@ impl Value {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Document<S> {
-    source: S,
-    root: Value,
+    pub(crate) source: S,
+    pub(crate) root: Value,
 }
 
 impl<S: AsRef<str>> Document<S> {
     pub fn parse(source: S) -> Result<Self> {
-        let mut ast = AstVisitor::new();
-        parse_tokens(
-            &mut TokenStream::new(source.as_ref()),
-            source.as_ref(),
-            true,
-            &mut ast,
-        )?;
-        let root = ast
-            .finish()
-            .expect("visitor should error if empty or unfinished");
+        let root = {
+            let text = source.as_ref();
+            parse_at(text, 0..text.len())?.root
+        };
         Ok(Self { source, root })
     }
 
@@ -100,6 +94,23 @@ impl<S: AsRef<str>> Document<S> {
     pub fn parse_f64(&self, value: &Value) -> Option<f64> {
         value.to_f64(self.source.as_ref())
     }
+}
+
+pub(crate) fn parse_at(full_source: &str, range: Range<usize>) -> Result<Document<&str>> {
+    let mut ast = AstVisitor::new();
+    parse_tokens(
+        &mut TokenStream::new_at_range(full_source, range),
+        full_source,
+        true,
+        &mut ast,
+    )?;
+    let root = ast
+        .finish()
+        .expect("visitor should error if empty or unfinished");
+    Ok(Document {
+        source: full_source,
+        root,
+    })
 }
 
 mod visitor {

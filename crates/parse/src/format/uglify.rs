@@ -9,9 +9,18 @@ use crate::{
 };
 
 pub fn uglify_str(json: &str) -> Result<String> {
-    let mut visitor = UglifyEmitVisitor::default();
-    parse_tokens(&mut TokenStream::new(json), json, true, &mut visitor)?;
-    Ok(visitor.buf)
+    let mut buf = String::new();
+    uglify_str_into(&mut buf, json)?;
+    Ok(buf)
+}
+
+pub fn uglify_str_into(buf: &mut String, json: &str) -> Result<()> {
+    let mut visitor = UglifyEmitVisitor {
+        buf: std::mem::take(buf),
+    };
+    let result = parse_tokens(&mut TokenStream::new(json), json, true, &mut visitor);
+    *buf = visitor.buf;
+    result.map(|_| ())
 }
 
 #[derive(Debug, Default)]

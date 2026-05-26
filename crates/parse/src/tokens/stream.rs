@@ -1,4 +1,4 @@
-use core::iter::Peekable;
+use core::{iter::Peekable, range::Range};
 
 use crate::{
     Error, ErrorKind, Result,
@@ -43,14 +43,22 @@ fn skip_whitespace(bytes: &[u8]) -> usize {
 struct TokenStreamInner<'a> {
     input: &'a str,
     pos: usize,
+    end: usize,
 }
 
 impl<'a> TokenStreamInner<'a> {
-    fn new(s: &'a str) -> Self {
-        Self { input: s, pos: 0 }
+    fn new_at_range(full_source: &'a str, range: Range<usize>) -> Self {
+        Self {
+            input: full_source,
+            pos: range.start,
+            end: range.end,
+        }
     }
 
     fn peek_byte_with_context(&self) -> Option<ByteWithContext> {
+        if self.pos >= self.end {
+            return None;
+        }
         self.input
             .as_bytes()
             .get(self.pos)
@@ -98,7 +106,7 @@ impl<'a> TokenStreamInner<'a> {
             return;
         }
 
-        self.pos += skip_whitespace(&self.input.as_bytes()[self.pos..]);
+        self.pos += skip_whitespace(&self.input.as_bytes()[self.pos..self.end]);
     }
 }
 
@@ -164,11 +172,15 @@ pub struct TokenStream<'a> {
 }
 
 impl<'a> TokenStream<'a> {
-    pub fn new(s: &'a str) -> Self {
+    pub(crate) fn new_at_range(full_source: &'a str, range: Range<usize>) -> Self {
         Self {
-            inner: TokenStreamInner::new(s),
+            inner: TokenStreamInner::new_at_range(full_source, range),
             cached: None,
         }
+    }
+
+    pub fn new(s: &'a str) -> Self {
+        Self::new_at_range(s, 0..s.len())
     }
 
     pub fn peek_token(&mut self) -> Result<Option<&TokenWithContext>> {
