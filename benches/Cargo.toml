@@ -41,3 +41,7 @@ harness = false
 [[bench]]
 name = "json_tokens"
 harness = false
+
+[[bench]]
+name = "json_jsonlines"
+harness = false
