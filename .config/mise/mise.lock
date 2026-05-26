@@ -151,6 +151,10 @@ backend = "cargo:committed"
 version = "0.19.0"
 backend = "cargo:gungraun-runner"
 
+[[tools."cargo:lsp-bench"]]
+version = "0.3.3"
+backend = "cargo:lsp-bench"
+
 [[tools."cargo:rustfilt"]]
 version = "0.2.1"
 backend = "cargo:rustfilt"
@@ -190,6 +194,10 @@ backend = "npm:prettier"
 [[tools."npm:renovate"]]
 version = "42.99.0"
 backend = "npm:renovate"
+
+[[tools."npm:vscode-langservers-extracted"]]
+version = "4.10.0"
+backend = "npm:vscode-langservers-extracted"
 
 [[tools.shellcheck]]
 version = "0.11.0"
