@@ -11,7 +11,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- *(cli)* json lines support
 - *(parse)* JSON lines formatting and checking
 
 ## [0.13.1](https://github.com/20jasper/JJPWRGEM/compare/jjpwrgem-parse-v0.13.0...jjpwrgem-parse-v0.13.1) - 2026-05-25
