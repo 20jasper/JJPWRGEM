@@ -1,13 +1,10 @@
 use std::collections::HashMap;
 
-use jjpwrgem_parse::{
-    ast::Document,
-    diagnostics::{Context, Patch},
-};
+use jjpwrgem_parse::diagnostics::{Context, Patch};
 use tower_lsp_server::ls_types::*;
 
 use crate::{
-    backend::SOURCE,
+    backend::{ParsedDocument, SOURCE},
     range::{PositionEncoding, span_to_range},
 };
 
@@ -38,14 +35,11 @@ pub fn diagnostics_from_error(
     }]
 }
 
-pub fn build_code_actions(
+fn actions_from_error(
     uri: &Uri,
-    document: &jjpwrgem_parse::Result<Document<String>>,
+    err: &jjpwrgem_parse::Error,
     encoding: PositionEncoding,
 ) -> CodeActionResponse {
-    let Err(err) = document else {
-        return vec![];
-    };
     let text = err.source_text();
     let diagnostics = Some(diagnostics_from_error(uri, text, err, encoding));
     Vec::<Patch<'_>>::from(err)
@@ -70,4 +64,17 @@ pub fn build_code_actions(
             })
         })
         .collect()
+}
+
+pub fn build_code_actions(
+    uri: &Uri,
+    document: &ParsedDocument,
+    encoding: PositionEncoding,
+) -> CodeActionResponse {
+    match document {
+        ParsedDocument::Json(Err(err)) | ParsedDocument::JsonLines(Err(err)) => {
+            actions_from_error(uri, err, encoding)
+        }
+        _ => vec![],
+    }
 }

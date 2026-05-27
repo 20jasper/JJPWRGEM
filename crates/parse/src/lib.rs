@@ -3,6 +3,7 @@ pub mod ast;
 mod check;
 pub mod diagnostics;
 pub mod error;
+pub mod file_kind;
 pub mod format;
 pub mod jsonlines;
 pub mod tokens;
