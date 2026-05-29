@@ -1,4 +1,4 @@
-project: .
+project: ../../benches/data
 file: small.json
 line: 1
 col: 0

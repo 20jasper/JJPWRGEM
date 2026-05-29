@@ -2,13 +2,7 @@ const FILES: &[&str] = &["canada", "citm_catalog", "twitter"];
 
 fn data_path(name: &str) -> std::path::PathBuf {
     let manifest = env!("CARGO_MANIFEST_DIR");
-    [
-        manifest,
-        "docker/data/json-benchmark/data",
-        &format!("{name}.json"),
-    ]
-    .iter()
-    .collect()
+    [manifest, "data", &format!("{name}.json")].iter().collect()
 }
 
 pub fn include_impl(name: &str) -> bool {

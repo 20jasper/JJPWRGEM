@@ -12,11 +12,11 @@ Throughput is normalized by input and output bytes and benchmarks do not measure
 
 The following JSON fixtures are used across benchmarks:
 
-- [canada.json](/benches/docker/data/json-benchmark/data/canada.json) — 2.2MB, lots of lightly nested arrays, no strings
+- [canada.json](/benches/data/canada.json) — 2.2MB, lots of lightly nested arrays, no strings
 
-- [citm_catalog.json](/benches/docker/data/json-benchmark/data/citm_catalog.json) — 1.7MB, lots of lightly nested long objects, ASCII strings
+- [citm_catalog.json](/benches/data/citm_catalog.json) — 1.7MB, lots of lightly nested long objects, ASCII strings
 
-- [twitter.json](/benches/docker/data/json-benchmark/data/twitter.json) — 0.6MB, lots of lightly nested short objects, multibyte strings
+- [twitter.json](/benches/data/twitter.json) — 0.6MB, lots of lightly nested short objects, multibyte strings
 
 ## deser
 

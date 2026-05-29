@@ -5,7 +5,7 @@ use jjpwrgem_parse::jsonlines;
 
 fn bench_jsonlines_format(c: &mut Criterion) {
     let data = std::fs::read_to_string(
-        std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("docker/data/logs.jsonl"),
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("data/logs.jsonl"),
     )
     .expect("logs.jsonl missing");
 

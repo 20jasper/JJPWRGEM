@@ -1,7 +1,7 @@
 [files]
 extend-exclude = [
   "tests/conformance/",
-  "benches/docker/data/",
+  "benches/data/",
   "**/__snapshots__/",
   "**/snapshots/",
   "**/*.snap",

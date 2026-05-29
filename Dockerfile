@@ -38,7 +38,7 @@ WORKDIR /benchmark
 
 COPY --chmod=0755 ${BENCHMARK_PATH}/benchmark.sh .
 COPY ${BENCHMARK_PATH}/dprint.json .
-COPY ${BENCHMARK_PATH}/data/json-benchmark/data/ ./data
+COPY benches/data/ ./data
 
 ENV OUTPUT_DIR=/benchmark/output
 

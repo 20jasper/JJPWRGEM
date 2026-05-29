@@ -8,7 +8,7 @@ These benchmarks are run with `AMD Ryzen 5 5600X 6-Core Processor (3.70 GHz)`
 
 ## small
 
-[small.json](/benches/lsp/small.json) — 163B, small nested objects and arrays, mixed scalar values
+[small.json](/benches/data/small.json) — 163B, small nested objects and arrays, mixed scalar values
 
 Baseline performance for minimal parsing work. VSCode's diagnostics calculation has a 500ms delay
 
@@ -23,7 +23,7 @@ Note: memory values are RSS (resident set size), shown in megabytes.
 
 ## twitter
 
-[twitter.json](/benches/docker/data/json-benchmark/data/twitter.json) — 0.6MB, lots of lightly nested short objects, multibyte strings
+[twitter.json](/benches/data/twitter.json) — 0.6MB, lots of lightly nested short objects, multibyte strings
 
 Note: memory values are RSS (resident set size), shown in megabytes.
 
@@ -36,7 +36,7 @@ Note: memory values are RSS (resident set size), shown in megabytes.
 
 ## citm catalog
 
-[citm_catalog.json](/benches/docker/data/json-benchmark/data/citm_catalog.json) — 1.7MB, lots of lightly nested long objects, ASCII strings
+[citm_catalog.json](/benches/data/citm_catalog.json) — 1.7MB, lots of lightly nested long objects, ASCII strings
 
 Note: memory values are RSS (resident set size), shown in megabytes.
 
@@ -49,7 +49,7 @@ Note: memory values are RSS (resident set size), shown in megabytes.
 
 ## canada
 
-[canada.json](/benches/docker/data/json-benchmark/data/canada.json) — 2.2MB, lots of lightly nested arrays, no strings
+[canada.json](/benches/data/canada.json) — 2.2MB, lots of lightly nested arrays, no strings
 
 Note: memory values are RSS (resident set size), shown in megabytes.
 

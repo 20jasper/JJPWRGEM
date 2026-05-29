@@ -10,9 +10,9 @@ use jjpwrgem_parse::{
     tokens::TokenStream,
 };
 
-const CITM: &str = include_str!("../docker/data/json-benchmark/data/citm_catalog.json");
-const CANADA: &str = include_str!("../docker/data/json-benchmark/data/canada.json");
-const TWITTER: &str = include_str!("../docker/data/json-benchmark/data/twitter.json");
+const CITM: &str = include_str!("../data/citm_catalog.json");
+const CANADA: &str = include_str!("../data/canada.json");
+const TWITTER: &str = include_str!("../data/twitter.json");
 
 fn branch_sim_config() -> LibraryBenchmarkConfig {
     let mut config = LibraryBenchmarkConfig::default();

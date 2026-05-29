@@ -1,4 +1,4 @@
-project: ../../benches/docker/data/json-benchmark/data
+project: ../../benches/data
 file: canada.json
 line: 1
 col: 0
