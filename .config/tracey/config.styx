@@ -9,7 +9,6 @@ specs (
                     crates/bytes2chars/**/*.rs
                     tests/integration/utf8_conformance.rs
                 )
-                exclude (target/**)
             }
         )
     }
@@ -24,7 +23,6 @@ specs (
                     crates/cli/main.rs
                     tests/integration/commands/jsonlines.rs
                 )
-                exclude (target/**)
             }
         )
     }

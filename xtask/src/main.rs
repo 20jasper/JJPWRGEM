@@ -1,9 +1,11 @@
 use clap::{Parser, Subcommand};
 
+mod badge;
 mod bench_table;
 mod lsp_bench_report;
 mod npm;
 mod plot;
+mod spec_badges;
 mod template;
 
 #[derive(Parser)]
@@ -27,6 +29,8 @@ enum Commands {
     BenchTable,
     /// Read lsp-bench results.json and write a markdown table for the named fixture
     LspBenchReport { name: String },
+    /// Build Tracey spec coverage badges
+    SpecCoverageBadges,
 }
 
 fn main() -> anyhow::Result<()> {
@@ -42,5 +46,6 @@ fn main() -> anyhow::Result<()> {
         Commands::GenerateNpmPackage => npm::write_package_json(),
         Commands::BenchTable => bench_table::write_bench_table(),
         Commands::LspBenchReport { name } => lsp_bench_report::write_lsp_bench_report(&name),
+        Commands::SpecCoverageBadges => spec_badges::write_spec_badges(),
     }
 }

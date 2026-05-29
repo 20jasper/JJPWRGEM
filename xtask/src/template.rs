@@ -108,14 +108,7 @@ const COVERAGE: &str = include_str!(concat!(
 
 fn coverage_badge(pct_str: &str) -> String {
     let pct: f64 = pct_str.trim().parse().unwrap_or(0.0);
-    let color = match pct as u32 {
-        90..=100 => "brightgreen",
-        80..=89 => "green",
-        70..=79 => "yellowgreen",
-        60..=69 => "yellow",
-        50..=59 => "orange",
-        _ => "red",
-    };
+    let color = crate::badge::badge_color(pct);
     format!(
         "![coverage: {:.1}%](https://img.shields.io/badge/coverage-{:.1}%25-{})",
         pct, pct, color
