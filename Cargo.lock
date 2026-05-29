@@ -1095,7 +1095,6 @@ dependencies = [
  "proptest",
  "rstest",
  "rstest_reuse",
- "thiserror",
 ]
 
 [[package]]
@@ -1118,7 +1117,6 @@ dependencies = [
  "rstest",
  "rstest_reuse",
  "serde",
- "thiserror",
 ]
 
 [[package]]

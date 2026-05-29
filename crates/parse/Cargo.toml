@@ -15,7 +15,6 @@ categories = ["parser-implementations", "text-processing"]
 bytes2chars = { workspace = true }
 displaydoc = { workspace = true }
 serde = { version = "1.0.228", optional = true, features = ["derive"] }
-thiserror = { workspace = true }
 
 [dev-dependencies]
 rstest = { workspace = true }

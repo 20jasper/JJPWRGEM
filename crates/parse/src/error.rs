@@ -1,7 +1,6 @@
 use core::{ops::Deref, range::Range};
 
 use displaydoc::Display;
-use thiserror::Error;
 
 use crate::tokens::{
     CharWithContext, ErrorToken, JsonCharOption, Token, TokenOption, TokenWithContext,
@@ -126,13 +125,15 @@ fn closing_delimiter_for_open(token: Token) -> Option<JsonChar> {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, Display, Error, Clone)]
+#[derive(Debug, PartialEq, Eq, Display, Clone)]
 // box inner error for performance--a Rust enum is as large as the largest
 // variant so happy path case becomes 100s of bytes otherwise
 /// {0}
 pub struct Error(pub(crate) Box<ErrorInner>);
 
-#[derive(Debug, PartialEq, Eq, Display, Error, Clone)]
+impl std::error::Error for Error {}
+
+#[derive(Debug, PartialEq, Eq, Display, Clone)]
 /// {kind}
 pub struct ErrorInner {
     pub(crate) kind: ErrorKind,
