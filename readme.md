@@ -23,7 +23,7 @@ help: insert colon and placeholder value
 
 ```
 
-![coverage: 87.3%](https://img.shields.io/badge/coverage-87.3%25-green) [![See codspeed dashboard](https://img.shields.io/endpoint?url=https://codspeed.io/badge.json)](https://codspeed.io/20jasper/JJPWRGEM?utm_source=badge)
+![coverage: 85.4%](https://img.shields.io/badge/coverage-85.4%25-green) [![See codspeed dashboard](https://img.shields.io/endpoint?url=https://codspeed.io/badge.json)](https://codspeed.io/20jasper/JJPWRGEM?utm_source=badge)
 
 ## Why JJP?
 

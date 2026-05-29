@@ -34,6 +34,7 @@ run = "cargo test --test integration {{vars.test_flags}} -- --include-ignored pr
 [tasks.test-cov]
 description = "Compute and write line-coverage percentage to benches/output/coverage.txt"
 run = '''cargo llvm-cov --exclude xtask {{vars.test_flags}} --json --summary-only "$@" \
+  -- --skip prop_ --skip matches_prettier \
   | jq -r '(.data[0].totals.lines.percent * 10 | round) / 10' > benches/output/coverage.txt'''
 
 [tasks.test-snapshot]
