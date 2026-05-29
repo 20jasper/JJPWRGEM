@@ -6,6 +6,27 @@ use std::{
 
 use anyhow::bail;
 
+const BYTES2CHARS_README_PATH: &str = concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/../crates/bytes2chars/README.md"
+);
+const BYTES2CHARS_TEMPLATE: &str = include_str!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/templates/bytes2chars.template.md"
+));
+const RDME_START: &str = "<!-- cargo-rdme start -->";
+
+fn rdme_content(readme: &str) -> &str {
+    readme
+        .find(RDME_START)
+        .map(|pos| &readme[pos..])
+        .unwrap_or(readme)
+}
+
+fn inject_pre_rdme(readme: &str, pre_rdme: &str) -> String {
+    format!("{}\n\n{}", pre_rdme.trim_end(), rdme_content(readme))
+}
+
 fn strip_front_matter(raw: &str) -> &str {
     const FRONT_MATTER_SEP: &str = "\n---\n";
     raw.split_once(FRONT_MATTER_SEP)
@@ -265,9 +286,15 @@ fn render_template(
 
 pub fn write_readmes() {
     let badge = coverage_badge(COVERAGE);
+    let jsonlines_badge = crate::spec_badges::badge_for("jsonlines");
+    let utf8_badge = crate::spec_badges::badge_for("utf8");
     let root_rendered =
         render_template(JJPWREGEM_TEMPLATE, &[("{{COVERAGE_BADGE}}", &badge)]).unwrap();
-    let parse_rendered = render_template(JJPWREGEM_PARSE_TEMPLATE, &[]).unwrap();
+    let parse_rendered = render_template(
+        JJPWREGEM_PARSE_TEMPLATE,
+        &[("{{JSONLINES_SPEC_BADGE}}", &jsonlines_badge)],
+    )
+    .unwrap();
     let bench_rendered = render_template(BENCH_TEMPLATE, &[]).unwrap();
     let cli_bench_rendered =
         render_template(CLI_BENCH_TEMPLATE, &BENCH_TABLE_REPLACEMENTS).unwrap();
@@ -285,6 +312,13 @@ pub fn write_readmes() {
     fs::write(CLI_BENCH_OUT_PATH_STR, cli_bench_rendered).unwrap();
     fs::write(BYTES2CHARS_BENCH_OUT_PATH_STR, bytes2chars_bench_rendered).unwrap();
     fs::write(JSON_BENCH_OUT_PATH_STR, json_bench_rendered).unwrap();
+    let bytes2chars_pre_rdme = BYTES2CHARS_TEMPLATE.replace("{{UTF8_SPEC_BADGE}}", &utf8_badge);
+    let existing = fs::read_to_string(BYTES2CHARS_README_PATH).unwrap();
+    fs::write(
+        BYTES2CHARS_README_PATH,
+        inject_pre_rdme(&existing, &bytes2chars_pre_rdme),
+    )
+    .unwrap();
     if let Some(lsp_bench_rendered) = generate_lsp_bench_readme() {
         fs::write(LSP_BENCH_OUT_PATH_STR, lsp_bench_rendered).unwrap();
     }
@@ -314,9 +348,15 @@ fn check_readme(path: &str, existing: &str, generated: &str) -> anyhow::Result<(
 
 pub fn are_readmes_updated() -> anyhow::Result<()> {
     let badge = coverage_badge(COVERAGE);
+    let jsonlines_badge = crate::spec_badges::badge_for("jsonlines");
+    let utf8_badge = crate::spec_badges::badge_for("utf8");
     let root_rendered =
         render_template(JJPWREGEM_TEMPLATE, &[("{{COVERAGE_BADGE}}", &badge)]).unwrap();
-    let parse_rendered = render_template(JJPWREGEM_PARSE_TEMPLATE, &[]).unwrap();
+    let parse_rendered = render_template(
+        JJPWREGEM_PARSE_TEMPLATE,
+        &[("{{JSONLINES_SPEC_BADGE}}", &jsonlines_badge)],
+    )
+    .unwrap();
     let bench_rendered = render_template(BENCH_TEMPLATE, &[]).unwrap();
     let cli_bench_rendered =
         render_template(CLI_BENCH_TEMPLATE, &BENCH_TABLE_REPLACEMENTS).unwrap();
@@ -342,6 +382,10 @@ pub fn are_readmes_updated() -> anyhow::Result<()> {
         &bytes2chars_bench_rendered,
     )?;
     check_readme("benches/json.md", EXISTING_JSON_BENCH, &json_bench_rendered)?;
+    let bytes2chars_pre_rdme = BYTES2CHARS_TEMPLATE.replace("{{UTF8_SPEC_BADGE}}", &utf8_badge);
+    let existing = fs::read_to_string(BYTES2CHARS_README_PATH).unwrap_or_default();
+    let generated = inject_pre_rdme(&existing, &bytes2chars_pre_rdme);
+    check_readme("crates/bytes2chars/README.md", &existing, &generated)?;
     if let Some(lsp_bench_rendered) = generate_lsp_bench_readme() {
         let existing = fs::read_to_string(LSP_BENCH_OUT_PATH_STR).unwrap_or_default();
         check_readme("benches/lsp/README.md", &existing, &lsp_bench_rendered)?;

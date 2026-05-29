@@ -4,6 +4,10 @@
 
 JSON parser and formatter with rich errors. Currently unstable—expect breaking changes.
 
+Tracey is used to track spec compliance.
+
+[![jsonlines: 60%](https://img.shields.io/badge/spec:jsonlines-60%25-yellow)](spec/jsonlines.md)
+
 ## Indeterminate Handling
 
 How cases undefined by the spec are handled

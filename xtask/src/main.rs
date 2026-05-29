@@ -29,7 +29,7 @@ enum Commands {
     BenchTable,
     /// Read lsp-bench results.json and write a markdown table for the named fixture
     LspBenchReport { name: String },
-    /// Build Tracey spec coverage badges
+    /// Print shields.io spec coverage badges for all tracked specs
     SpecCoverageBadges,
 }
 

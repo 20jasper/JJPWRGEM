@@ -1,3 +1,5 @@
+[![crates.io](https://img.shields.io/crates/v/bytes2chars)](https://crates.io/crates/bytes2chars) [![docs.rs](https://img.shields.io/docsrs/bytes2chars)](https://docs.rs/bytes2chars) [![utf8: 100%](https://img.shields.io/badge/spec:utf8-100%25-brightgreen)](spec/utf8.md)
+
 <!-- cargo-rdme start -->
 
 # bytes2chars
