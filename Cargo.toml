@@ -46,6 +46,7 @@ members = [
   "crates/bytes2chars",
   "crates/lsp",
   "benches",
+  "crates/json-schema",
 ]
 exclude = ["fuzz"]
 

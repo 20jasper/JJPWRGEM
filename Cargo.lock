@@ -1147,6 +1147,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "jjpwrgem-schema"
+version = "0.1.0"
+dependencies = [
+ "displaydoc",
+ "jjpwrgem-parse",
+ "rstest",
+]
+
+[[package]]
 name = "jjpwrgem-ui"
 version = "0.3.3"
 dependencies = [

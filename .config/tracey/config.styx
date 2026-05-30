@@ -26,4 +26,16 @@ specs (
             }
         )
     }
+    {
+        name json-schema-v7
+        include (spec/json-schema-v7.md)
+        impls (
+            {
+                name rust
+                include (
+                    crates/json-schema/**/*.rs
+                )
+            }
+        )
+    }
 )
