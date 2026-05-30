@@ -10,17 +10,17 @@ use crate::{
 };
 
 pub trait Visitor<'a> {
-    fn on_object_open(&mut self);
+    fn on_object_open(&mut self, range: Range<usize>);
     fn on_object_key(&mut self, range: Range<usize>, key: &'a str);
     fn on_object_key_val_delim(&mut self);
-    fn on_object_close(&mut self);
-    fn on_array_open(&mut self);
-    fn on_array_close(&mut self);
-    fn on_null(&mut self);
+    fn on_object_close(&mut self, range: Range<usize>);
+    fn on_array_open(&mut self, range: Range<usize>);
+    fn on_array_close(&mut self, range: Range<usize>);
+    fn on_null(&mut self, range: Range<usize>);
     fn on_string(&mut self, range: Range<usize>, value: &'a str);
     fn on_mantissa(&mut self, range: Range<usize>, mantissa: &'a str);
     fn on_exponent(&mut self, range: Range<usize>, exponent: &'a str);
-    fn on_boolean(&mut self, value: bool);
+    fn on_boolean(&mut self, range: Range<usize>, value: bool);
     fn on_item_delim(&mut self);
 }
 
@@ -87,9 +87,9 @@ fn parse_tokens_at_depth<'a>(
                         visitor.on_exponent(er, &text[er]);
                     }
                 }
-                Token::Null => visitor.on_null(),
-                Token::True => visitor.on_boolean(true),
-                Token::False => visitor.on_boolean(false),
+                Token::Null => visitor.on_null(range),
+                Token::True => visitor.on_boolean(range, true),
+                Token::False => visitor.on_boolean(range, false),
                 _ => unreachable!("guard prevents non scalars"),
             }
 
@@ -115,7 +115,7 @@ fn parse_tokens_at_depth<'a>(
     Ok(range)
 }
 
-pub fn validate_start_of_value(
+pub(crate) fn validate_start_of_value(
     text: &str,
     expect_ctx: TokenWithContext,
     maybe_token: Option<TokenWithContext>,
@@ -161,7 +161,7 @@ pub(crate) fn visit_value<'a>(
 ) {
     use crate::ast::{ObjectEntries, Value};
     match val {
-        Value::Null => visitor.on_null(),
+        Value::Null(r) => visitor.on_null(*r),
         Value::String(r) => visitor.on_string(*r, &source[*r]),
         Value::Number { mantissa, exponent } => {
             visitor.on_mantissa(*mantissa, &source[*mantissa]);
@@ -169,9 +169,9 @@ pub(crate) fn visit_value<'a>(
                 visitor.on_exponent(*exponent, &source[*exponent]);
             }
         }
-        Value::Boolean(b) => visitor.on_boolean(*b),
-        Value::Object(ObjectEntries(items)) => {
-            visitor.on_object_open();
+        Value::Boolean(r, b) => visitor.on_boolean(*r, *b),
+        Value::Object(r, ObjectEntries(items)) => {
+            visitor.on_object_open(r.start..r.start + 1);
             join(
                 visitor,
                 items,
@@ -182,17 +182,17 @@ pub(crate) fn visit_value<'a>(
                 },
                 |visitor, _| visitor.on_item_delim(),
             );
-            visitor.on_object_close();
+            visitor.on_object_close(r.end - 1..r.end);
         }
-        Value::Array(items) => {
-            visitor.on_array_open();
+        Value::Array(r, items) => {
+            visitor.on_array_open(r.start..r.start + 1);
             join(
                 visitor,
                 items,
                 |visitor, val| visit_value(source, val, visitor),
                 |visitor, _| visitor.on_item_delim(),
             );
-            visitor.on_array_close();
+            visitor.on_array_close(r.end - 1..r.end);
         }
     }
 }
@@ -202,24 +202,19 @@ mod tests {
     use super::*;
     use crate::ast::Document;
 
-    fn range_of(source: &str, needle: &str) -> Range<usize> {
-        let start = source.find(needle).expect("needle in source");
-        start..start + needle.len()
-    }
-
     #[derive(Debug, PartialEq, Eq)]
     enum Event {
-        ObjectOpen,
+        ObjectOpen(Range<usize>),
         ObjectKey(Range<usize>),
         ObjectKeyValDelim,
-        ObjectClose,
-        ArrayOpen,
-        ArrayClose,
-        Null,
+        ObjectClose(Range<usize>),
+        ArrayOpen(Range<usize>),
+        ArrayClose(Range<usize>),
+        Null(Range<usize>),
         String(Range<usize>),
         Mantissa(Range<usize>),
         Exponent(Range<usize>),
-        Boolean(bool),
+        Boolean(Range<usize>, bool),
         ItemDelim,
     }
 
@@ -229,8 +224,8 @@ mod tests {
     }
 
     impl<'a> Visitor<'a> for RecordingVisitor {
-        fn on_object_open(&mut self) {
-            self.events.push(Event::ObjectOpen);
+        fn on_object_open(&mut self, range: Range<usize>) {
+            self.events.push(Event::ObjectOpen(range));
         }
 
         fn on_object_key(&mut self, range: Range<usize>, _key: &'a str) {
@@ -241,20 +236,20 @@ mod tests {
             self.events.push(Event::ObjectKeyValDelim);
         }
 
-        fn on_object_close(&mut self) {
-            self.events.push(Event::ObjectClose);
+        fn on_object_close(&mut self, range: Range<usize>) {
+            self.events.push(Event::ObjectClose(range));
         }
 
-        fn on_array_open(&mut self) {
-            self.events.push(Event::ArrayOpen);
+        fn on_array_open(&mut self, range: Range<usize>) {
+            self.events.push(Event::ArrayOpen(range));
         }
 
-        fn on_array_close(&mut self) {
-            self.events.push(Event::ArrayClose);
+        fn on_array_close(&mut self, range: Range<usize>) {
+            self.events.push(Event::ArrayClose(range));
         }
 
-        fn on_null(&mut self) {
-            self.events.push(Event::Null);
+        fn on_null(&mut self, range: Range<usize>) {
+            self.events.push(Event::Null(range));
         }
 
         fn on_string(&mut self, range: Range<usize>, _value: &'a str) {
@@ -269,8 +264,8 @@ mod tests {
             self.events.push(Event::Exponent(range));
         }
 
-        fn on_boolean(&mut self, value: bool) {
-            self.events.push(Event::Boolean(value));
+        fn on_boolean(&mut self, range: Range<usize>, value: bool) {
+            self.events.push(Event::Boolean(range, value));
         }
 
         fn on_item_delim(&mut self) {
@@ -282,24 +277,24 @@ mod tests {
     fn visit_document_matches_token_traversal_events() {
         let json = r#"{"a":["b",{"c":1e5}],"d":true}"#;
         let expected = vec![
-            Event::ObjectOpen,
-            Event::ObjectKey(range_of(json, "a")),
+            Event::ObjectOpen(0..1),
+            Event::ObjectKey(2..3),
             Event::ObjectKeyValDelim,
-            Event::ArrayOpen,
-            Event::String(range_of(json, "b")),
+            Event::ArrayOpen(5..6),
+            Event::String(7..8),
             Event::ItemDelim,
-            Event::ObjectOpen,
-            Event::ObjectKey(range_of(json, "c")),
+            Event::ObjectOpen(10..11),
+            Event::ObjectKey(12..13),
             Event::ObjectKeyValDelim,
-            Event::Mantissa(range_of(json, "1")),
-            Event::Exponent(range_of(json, "5")),
-            Event::ObjectClose,
-            Event::ArrayClose,
+            Event::Mantissa(15..16),
+            Event::Exponent(17..18),
+            Event::ObjectClose(18..19),
+            Event::ArrayClose(19..20),
             Event::ItemDelim,
-            Event::ObjectKey(range_of(json, "d")),
+            Event::ObjectKey(22..23),
             Event::ObjectKeyValDelim,
-            Event::Boolean(true),
-            Event::ObjectClose,
+            Event::Boolean(25..29, true),
+            Event::ObjectClose(29..30),
         ];
 
         let mut from_tokens: RecordingVisitor = RecordingVisitor::default();

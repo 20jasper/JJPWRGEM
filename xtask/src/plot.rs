@@ -30,7 +30,7 @@ impl TryFrom<(&Document<&str>, &Value)> for BenchmarkResult {
     type Error = Error;
 
     fn try_from((doc, item): (&Document<&str>, &Value)) -> std::result::Result<Self, Self::Error> {
-        let ast::Value::Object(entry) = item else {
+        let ast::Value::Object(_, entry) = item else {
             bail!("must be a JSON object");
         };
 
@@ -45,7 +45,7 @@ impl TryFrom<(&Document<&str>, &Value)> for BenchmarkResult {
         let times_value = doc
             .get_object_value(entry, "times")
             .with_context(|| "missing 'times' field")?;
-        let ast::Value::Array(times_array) = times_value else {
+        let ast::Value::Array(_, times_array) = times_value else {
             bail!("must be an array");
         };
 
@@ -67,14 +67,14 @@ impl TryFrom<(&Document<&str>, &Value)> for BenchmarkResult {
 fn parse_benchmark_results(raw: &str) -> Result<Vec<BenchmarkResult>> {
     let doc = Document::parse(raw)
         .map_err(|err| anyhow!("failed to parse JSON with jjpwrgem parser: {err}"))?;
-    let ast::Value::Object(entries) = doc.root() else {
+    let ast::Value::Object(_, entries) = doc.root() else {
         bail!("benchmark data must be a JSON object");
     };
 
     let results_value = doc
         .get_object_value(entries, "results")
         .context("benchmark data missing 'results' field")?;
-    let ast::Value::Array(items) = results_value else {
+    let ast::Value::Array(_, items) = results_value else {
         bail!("'results' field must be an array");
     };
 

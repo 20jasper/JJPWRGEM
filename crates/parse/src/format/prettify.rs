@@ -140,7 +140,7 @@ fn format_document_value_into<S: AsRef<str>>(
     depth: usize,
 ) {
     match val {
-        Value::Null => buf.push_str(NULL),
+        Value::Null(_) => buf.push_str(NULL),
         Value::String(r) => buf.push_quoted(doc.slice(*r)),
         Value::Number { mantissa, exponent } => {
             buf.push_str(doc.slice(*mantissa));
@@ -149,16 +149,16 @@ fn format_document_value_into<S: AsRef<str>>(
                 buf.push_str(doc.slice(*exponent));
             }
         }
-        Value::Object(entries) if entries.0.is_empty() => buf.push_str("{}"),
-        Value::Object(entries) => {
+        Value::Object(_, entries) if entries.0.is_empty() => buf.push_str("{}"),
+        Value::Object(_, entries) => {
             if !len::should_expand(doc, val, buf.available_bytes(), buf.delimiter_len()) {
                 compact_format_obj_into(buf, doc, entries.0.as_slice(), depth);
             } else {
                 expanded_format_obj_into(buf, doc, entries.0.as_slice(), depth);
             }
         }
-        Value::Array(items) if items.is_empty() => buf.push_str("[]"),
-        Value::Array(items) => {
+        Value::Array(_, items) if items.is_empty() => buf.push_str("[]"),
+        Value::Array(_, items) => {
             if !len::should_expand(doc, val, buf.available_bytes(), buf.delimiter_len()) {
                 compact_format_arr_into(buf, doc, items, depth);
             } else if items.iter().all(|v| matches!(v, Value::Number { .. })) {
@@ -167,7 +167,7 @@ fn format_document_value_into<S: AsRef<str>>(
                 expanded_format_arr_into(buf, doc, items, depth);
             }
         }
-        Value::Boolean(b) => buf.push_str(if *b { TRUE } else { FALSE }),
+        Value::Boolean(_, b) => buf.push_str(if *b { TRUE } else { FALSE }),
     }
 }
 
@@ -380,10 +380,10 @@ mod len {
         }
 
         let len = match val {
-            Value::Null => NULL.len(),
+            Value::Null(_) => NULL.len(),
             Value::String(r) => quoted_len(doc.slice(*r)),
             Value::Number { mantissa, exponent } => number_len(*mantissa, *exponent),
-            Value::Object(entries) => {
+            Value::Object(_, entries) => {
                 if entries.is_empty() {
                     BRACE_PAIR_LEN
                 } else {
@@ -405,7 +405,7 @@ mod len {
                     sum
                 }
             }
-            Value::Array(values) => {
+            Value::Array(_, values) => {
                 let brackets_len = BRACKET_PAIR_LEN;
                 let mut sum = brackets_len;
                 for (i, value) in values.iter().enumerate() {
@@ -421,7 +421,7 @@ mod len {
                 }
                 sum
             }
-            Value::Boolean(b) => {
+            Value::Boolean(_, b) => {
                 if *b {
                     TRUE.len()
                 } else {

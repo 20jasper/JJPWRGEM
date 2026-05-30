@@ -39,7 +39,7 @@ impl ArrayState {
                         ..
                     },
                 ) => {
-                    visitor.on_array_open();
+                    visitor.on_array_open(open_ctx.range);
                     ArrayState::ValueOrEnd { open_ctx }
                 }
                 maybe_token => {
@@ -61,7 +61,7 @@ impl ArrayState {
                     range: closed_range,
                 }) => {
                     tokens.next_token()?;
-                    visitor.on_array_close();
+                    visitor.on_array_close(closed_range);
                     ArrayState::End(open_ctx.range.start..closed_range.end)
                 }
                 Some(token_ctx) if token_ctx.token.is_start_of_value() => ArrayState::Value {
@@ -109,8 +109,7 @@ impl ArrayState {
                     range: closed_range,
                 }) => {
                     tokens.next_token()?;
-
-                    visitor.on_array_close();
+                    visitor.on_array_close(closed_range);
                     ArrayState::End(open_ctx.range.start..closed_range.end)
                 }
                 Some(

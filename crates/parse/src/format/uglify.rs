@@ -39,7 +39,7 @@ impl Emitter for UglifyEmitVisitor {
 }
 
 impl<'a> Visitor<'a> for UglifyEmitVisitor {
-    fn on_object_open(&mut self) {
+    fn on_object_open(&mut self, _range: Range<usize>) {
         self.emit_object_open();
     }
 
@@ -51,19 +51,19 @@ impl<'a> Visitor<'a> for UglifyEmitVisitor {
         self.emit_key_val_delim();
     }
 
-    fn on_object_close(&mut self) {
+    fn on_object_close(&mut self, _range: Range<usize>) {
         self.emit_object_close();
     }
 
-    fn on_array_open(&mut self) {
+    fn on_array_open(&mut self, _range: Range<usize>) {
         self.emit_array_open();
     }
 
-    fn on_array_close(&mut self) {
+    fn on_array_close(&mut self, _range: Range<usize>) {
         self.emit_array_close();
     }
 
-    fn on_null(&mut self) {
+    fn on_null(&mut self, _range: Range<usize>) {
         self.emit_null();
     }
 
@@ -79,7 +79,7 @@ impl<'a> Visitor<'a> for UglifyEmitVisitor {
         self.emit_exponent(exponent);
     }
 
-    fn on_boolean(&mut self, b: bool) {
+    fn on_boolean(&mut self, _range: Range<usize>, b: bool) {
         self.emit_boolean(b);
     }
 

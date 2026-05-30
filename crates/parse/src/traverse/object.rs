@@ -44,7 +44,7 @@ impl ObjectState {
                         ..
                     },
                 ) => {
-                    visitor.on_object_open();
+                    visitor.on_object_open(ctx.range);
                     ObjectState::KeyOrEnd {
                         open_ctx: ctx,
                         last_pair: None,
@@ -76,7 +76,7 @@ impl ObjectState {
                         },
                     ),
                 ) => {
-                    visitor.on_object_close();
+                    visitor.on_object_close(ctx.range);
                     ObjectState::End(open_ctx.range.start..ctx.range.end)
                 }
                 (

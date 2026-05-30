@@ -30,19 +30,32 @@ impl ObjectEntries {
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Value {
-    Null,
+    Null(Range<usize>),
     /// excludes surrounding quotes
     String(Range<usize>),
     Number {
         mantissa: Range<usize>,
         exponent: Option<Range<usize>>,
     },
-    Object(ObjectEntries),
-    Array(Vec<Value>),
-    Boolean(bool),
+    Object(Range<usize>, ObjectEntries),
+    Array(Range<usize>, Vec<Value>),
+    Boolean(Range<usize>, bool),
 }
 
 impl Value {
+    pub fn range(&self) -> Range<usize> {
+        match self {
+            Value::Null(r)
+            | Value::String(r)
+            | Value::Boolean(r, _)
+            | Value::Object(r, _)
+            | Value::Array(r, _) => *r,
+            Value::Number { mantissa, exponent } => {
+                mantissa.start..exponent.map_or(mantissa.end, |e| e.end)
+            }
+        }
+    }
+
     pub(crate) fn to_f64(&self, source: &str) -> Option<f64> {
         let Value::Number { mantissa, exponent } = self else {
             return None;
@@ -130,10 +143,12 @@ mod visitor {
     #[derive(Debug)]
     enum AstFrame {
         Object {
+            open_range: Range<usize>,
             entries: ObjectEntries,
             current_key: Option<Range<usize>>,
         },
         Array {
+            open_range: Range<usize>,
             items: Vec<Value>,
         },
     }
@@ -149,7 +164,7 @@ mod visitor {
         fn last_emitted_mut(&mut self) -> &mut Value {
             match self.stack.last_mut() {
                 None => self.result.as_mut().expect("must have emitted a value"),
-                Some(AstFrame::Array { items }) => items.last_mut().expect("must have item"),
+                Some(AstFrame::Array { items, .. }) => items.last_mut().expect("must have item"),
                 Some(AstFrame::Object { entries, .. }) => {
                     &mut entries.0.last_mut().expect("must have entry").1
                 }
@@ -162,10 +177,11 @@ mod visitor {
                     self.result = Some(value);
                 }
                 Some(frame) => match frame {
-                    AstFrame::Array { items } => items.push(value),
+                    AstFrame::Array { items, .. } => items.push(value),
                     AstFrame::Object {
                         entries,
                         current_key,
+                        ..
                     } => {
                         let k = current_key
                             .take()
@@ -182,8 +198,9 @@ mod visitor {
     }
 
     impl<'a> Visitor<'a> for AstVisitor {
-        fn on_object_open(&mut self) {
+        fn on_object_open(&mut self, range: Range<usize>) {
             self.stack.push(AstFrame::Object {
+                open_range: range,
                 entries: ObjectEntries::new(),
                 current_key: None,
             });
@@ -197,36 +214,44 @@ mod visitor {
             }
         }
 
-        fn on_object_close(&mut self) {
+        fn on_object_close(&mut self, close_range: Range<usize>) {
             let frame = self
                 .stack
                 .pop()
                 .expect("traverser will not emit unbalanced brackets");
-            if let AstFrame::Object { entries, .. } = frame {
-                self.emit_value(Value::Object(entries));
+            if let AstFrame::Object {
+                open_range,
+                entries,
+                ..
+            } = frame
+            {
+                self.emit_value(Value::Object(open_range.start..close_range.end, entries));
             } else {
                 unreachable!("must be an object to close object")
             }
         }
 
-        fn on_array_open(&mut self) {
-            self.stack.push(AstFrame::Array { items: Vec::new() });
+        fn on_array_open(&mut self, range: Range<usize>) {
+            self.stack.push(AstFrame::Array {
+                open_range: range,
+                items: Vec::new(),
+            });
         }
 
-        fn on_array_close(&mut self) {
+        fn on_array_close(&mut self, close_range: Range<usize>) {
             let frame = self
                 .stack
                 .pop()
                 .expect("traverser will not emit unbalanced brackets");
-            if let AstFrame::Array { items } = frame {
-                self.emit_value(Value::Array(items));
+            if let AstFrame::Array { open_range, items } = frame {
+                self.emit_value(Value::Array(open_range.start..close_range.end, items));
             } else {
                 unreachable!("must be an array to close array")
             }
         }
 
-        fn on_null(&mut self) {
-            self.emit_value(Value::Null);
+        fn on_null(&mut self, range: Range<usize>) {
+            self.emit_value(Value::Null(range));
         }
 
         fn on_string(&mut self, range: Range<usize>, _s: &'a str) {
@@ -247,8 +272,8 @@ mod visitor {
             *exponent = Some(range);
         }
 
-        fn on_boolean(&mut self, b: bool) {
-            self.emit_value(Value::Boolean(b));
+        fn on_boolean(&mut self, range: Range<usize>, b: bool) {
+            self.emit_value(Value::Boolean(range, b));
         }
 
         fn on_object_key_val_delim(&mut self) {}
@@ -270,13 +295,13 @@ mod tests {
             .into_iter()
             .map(|(k, v)| (range_of(source, k), v))
             .collect::<Vec<_>>();
-        Value::Object(ObjectEntries(entries))
+        Value::Object(0..source.len(), ObjectEntries(entries))
     }
 
     #[test]
     fn empty_object() {
         let doc = Document::parse("{}").unwrap();
-        assert_eq!(doc.root(), &Value::Object(ObjectEntries::new()));
+        assert_eq!(doc.root(), &Value::Object(0..2, ObjectEntries::new()));
     }
 
     #[test]
@@ -291,9 +316,9 @@ mod tests {
 
     #[rstest_reuse::template]
     #[rstest::rstest]
-    #[case("null", |_: &str| Value::Null)]
-    #[case("true", |_: &str| Value::Boolean(true))]
-    #[case("false", |_: &str| Value::Boolean(false))]
+    #[case("null", |s: &str| Value::Null(range_of(s, "null")))]
+    #[case("true", |s: &str| Value::Boolean(range_of(s, "true"), true))]
+    #[case("false", |s: &str| Value::Boolean(range_of(s, "false"), false))]
     #[case("\"burger\"", |s: &str| Value::String(range_of(s, "burger")))]
     fn primitive_template(#[case] primitive: &str, #[case] expected: fn(&str) -> Value) {}
 
