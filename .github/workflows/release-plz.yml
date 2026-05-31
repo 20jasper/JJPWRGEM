@@ -23,8 +23,7 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
-      - name: update rust
-        run: rustup update stable && rustup default stable
+      - uses: ./.github/actions/setup-rust
       - uses: ./.github/actions/setup-mise
       - uses: ./.github/actions/setup-node
       - uses: release-plz/action@1528104d2ca23787631a1c1f022abb64b34c1e11 # v0.5.128
@@ -82,8 +81,7 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
-      - name: update rust
-        run: rustup update stable && rustup default stable
+      - uses: ./.github/actions/setup-rust
       - uses: release-plz/action@1528104d2ca23787631a1c1f022abb64b34c1e11 # v0.5.128
         with:
           command: release
