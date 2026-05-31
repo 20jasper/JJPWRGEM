@@ -13,7 +13,4 @@ wildcards = "deny"
 unknown-registry = "deny"
 unknown-git = "deny"
 allow-registry = ["https://github.com/rust-lang/crates.io-index"]
-allow-git = [
-  # required for local lint patching until displaydoc 0.2.6 comes out
-  "https://github.com/yaahc/displaydoc",
-]
+allow-git = []

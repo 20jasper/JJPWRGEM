@@ -639,8 +639,9 @@ dependencies = [
 
 [[package]]
 name = "displaydoc"
-version = "0.2.5"
-source = "git+https://github.com/yaahc/displaydoc?rev=14f7acdba7a15e40097ec57034a3ddd7195286cd#14f7acdba7a15e40097ec57034a3ddd7195286cd"
+version = "0.2.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1ac70aa55017e108007fbaf5aa0f54b021c98f92ff8af59d42eda9da96e3dd4f"
 dependencies = [
  "proc-macro2",
  "quote",
