@@ -11,6 +11,6 @@ stdout ---
 
 stderr ---
 error: a value is required for '--end-of-line <END_OF_LINE>' but none was supplied
-  [possible values: lf, crlf, cr]
+  [possible values: lf, crlf]
 
 For more information, try '--help'.

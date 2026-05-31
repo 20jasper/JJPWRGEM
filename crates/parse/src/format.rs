@@ -76,7 +76,6 @@ pub enum LineEnding {
     #[default]
     Lf,
     CrLf,
-    Cr,
 }
 
 impl LineEnding {
@@ -84,7 +83,6 @@ impl LineEnding {
         match self {
             Self::Lf => "\n",
             Self::CrLf => "\r\n",
-            Self::Cr => "\r",
         }
     }
 }

@@ -11,6 +11,6 @@ stdout ---
 
 stderr ---
 error: invalid value '899889' for '--end-of-line <END_OF_LINE>'
-  [possible values: lf, crlf, cr]
+  [possible values: lf, crlf]
 
 For more information, try '--help'.

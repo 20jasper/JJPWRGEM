@@ -55,10 +55,8 @@ fn preferred_width_threshold(#[case] preferred_width: usize, #[case] label: &str
 #[rstest::rstest]
 #[case(&["--end-of-line", "lf"], "[\n  null\n]\n")]
 #[case(&["--end-of-line", "crlf"], "[\r\n  null\r\n]\n")]
-#[case(&["--end-of-line", "cr"], "[\r  null\r]\n")]
 #[case(&["--eol", "lf"], "[\n  null\n]\n")]
 #[case(&["--eol", "crlf"], "[\r\n  null\r\n]\n")]
-#[case(&["--eol", "cr"], "[\r  null\r]\n")]
 fn preferred_line_endings(#[case] args: &[&str], #[case] expected: &str) {
     let mut cmd = cli();
     cmd.args(["format", "--preferred-width", "0"]);

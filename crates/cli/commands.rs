@@ -80,8 +80,6 @@ pub enum LineEndingArg {
     Lf,
     #[value(name = "crlf")]
     CrLf,
-    #[value(name = "cr")]
-    Cr,
 }
 
 impl LineEndingArg {
@@ -89,7 +87,6 @@ impl LineEndingArg {
         match self {
             Self::Lf => LineEnding::Lf,
             Self::CrLf => LineEnding::CrLf,
-            Self::Cr => LineEnding::Cr,
         }
     }
 }

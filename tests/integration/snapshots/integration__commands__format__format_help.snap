@@ -18,7 +18,7 @@ Options:
       --preferred-width <PREFERRED_WIDTH>
           Preferred maximum line width. Note this is not a hard maximum width [default: 80]
       --end-of-line <END_OF_LINE>
-          Line ending to use when formatting output [default: lf] [aliases: --eol] [possible values: lf, crlf, cr]
+          Line ending to use when formatting output [default: lf] [aliases: --eol] [possible values: lf, crlf]
       --json-lines
           Parses as JSON Lines and uglifies each value. Cannot be combined with --uglify
   -h, --help
