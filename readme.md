@@ -4,7 +4,7 @@
 
 JJPWRGEM JSON Parser With Really Good Error Messages
 
-An RFC 8259 compliant JSON Parser and formatter!
+An RFC 8259 compliant JSON language server and formatter!
 
 ```
 $ echo -en "{\"coolKey\"}" | jjp check
@@ -32,6 +32,8 @@ help: insert colon and placeholder value
 - Parses and pretty prints a 1.7MB file in ~11ms — [benchmarks](./benches/BENCHMARKS.md)
 
 ![animation of JJPWRGEM's LSP. file changes are made quickly and feedback is shown quickly. code actions fix common issues like missing colons](./crates/lsp/lsp-demo.gif)
+
+Also there's a really cool axolotl riding a skateboard as the logo
 
 ![A logo of an axolotl riding a skateboard](./logo.webp)
 
