@@ -1,14 +1,12 @@
 name: mise setup
-description: Install mise and cargo-binstall so mise auto-installs cargo:* tools on demand
+description: Install and cache mise tools
 
 runs:
   using: composite
   steps:
-    - uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151 # v4.0.1
-      with:
-        install: false
-      env:
-        GITHUB_TOKEN: ${{ github.token }}
     - uses: taiki-e/install-action@e3134ec54b36203e18f2d1e80652058bd078dd91 # v2.77.3
       with:
         tool: cargo-binstall
+    - uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151 # v4.0.1
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
