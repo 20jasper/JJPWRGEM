@@ -1,5 +1,20 @@
 {
   "$schema": "./node_modules/oxfmt/configuration_schema.json",
   "printWidth": 80,
-  "ignorePatterns": []
+  "ignorePatterns": [
+    "dist-workspace.toml",
+    ".claude/",
+    "crates/bytes2chars/README.md",
+    "tests/conformance",
+    "xtask/bench/data",
+    "benches/data",
+    "benches/docker/output/",
+    ".github/workflows/jjpwrgem-v-release.yml",
+    "CHANGELOG.md",
+    "pnpm-lock.yaml",
+    "out",
+    "dist",
+    ".vscode-test/",
+    "*.vsix"
+  ]
 }

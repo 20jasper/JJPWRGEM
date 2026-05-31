@@ -1,5 +1,5 @@
 [tools]
-"cargo:cargo-dist" = "0.31.0"
+"cargo:cargo-dist" = "0.32.0"
 
 [tasks.release-notes]
 description = "Print GitHub release notes from dist host JSON"
