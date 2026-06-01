@@ -10,6 +10,7 @@ binstall = true
 
 [tools]
 hk = "1.45.0"
+"aqua:apple/pkl" = "0.31.1"
 jq = "1.8.1"
 
 [hooks]

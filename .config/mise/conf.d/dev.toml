@@ -1,8 +1,3 @@
-[tools]
-"aqua:jdx/hk" = "1.45.0"
-"aqua:apple/pkl" = "0.31.1"
-"cargo:bacon" = "3.23.0"
-
 [tasks.submodules]
 description = "Initialize and update all git submodules"
 run = "git submodule update --init --recursive"
@@ -15,10 +10,16 @@ run = "cargo install --path ."
 description = "Interactive dev loop (clippy/test/install/build via bacon TUI)"
 run = "bacon"
 
+[tasks.dev.tools]
+"cargo:bacon" = "3.23.0"
+
 [tasks.install-watch]
 description = "Re-install jjp on every source change"
 depends = ["install"]
 run = "bacon install"
+
+[tasks.install-watch.tools]
+"cargo:bacon" = "3.23.0"
 
 [tasks.vscode-test-wsl]
 description = "Run the vscode extension test suite under WSL (Xvfb + dbus + pnpm) (Linux/WSL only)"
@@ -46,4 +47,3 @@ fi
 export DISPLAY=":99.0"
 pnpm --filter jjpwrgem-vscode test
 '''
-

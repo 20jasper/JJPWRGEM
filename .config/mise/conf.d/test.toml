@@ -1,8 +1,3 @@
-[tools]
-"cargo:cargo-insta" = "1.46"
-"cargo:cargo-llvm-cov" = "0.8"
-"npm:prettier" = "3.8.3"
-
 [vars]
 test_flags = "--all-features --workspace -q"
 
@@ -13,6 +8,10 @@ run = [
   "echo 'tests passed!'",
 ]
 
+[tasks.test.tools]
+"cargo:cargo-insta" = "1.46"
+"npm:prettier" = "3.8.3"
+
 [tasks.test-all]
 description = "Run full test suite including snapshots and large prettier props"
 depends_post = ["test-snapshot", "test-prettier-large"]
@@ -21,15 +20,25 @@ run = [
   "echo 'tests passed!'",
 ]
 
+[tasks.test-all.tools]
+"cargo:cargo-insta" = "1.46"
+"npm:prettier" = "3.8.3"
+
 [tasks.test-prettier-prop]
 description = "Run all prettier property tests with full case count (slow)"
 env = { PROPTEST_CASES = "256" }
 run = "cargo test --test integration {{vars.test_flags}} -- prop_"
 
+[tasks.test-prettier-prop.tools]
+"npm:prettier" = "3.8.3"
+
 [tasks.test-prettier-large]
 description = "Run slow prettier property tests on large objects"
 env = { PROPTEST_CASES = "256" }
 run = "cargo test --test integration {{vars.test_flags}} -- --include-ignored prop_large_object_expanded"
+
+[tasks.test-prettier-large.tools]
+"npm:prettier" = "3.8.3"
 
 [tasks.test-cov]
 description = "Compute and write line-coverage percentage to benches/output/coverage.txt"
@@ -37,9 +46,16 @@ run = '''cargo llvm-cov --exclude xtask {{vars.test_flags}} --json --summary-onl
   -- --skip prop_ --skip matches_prettier \
   | jq -r '(.data[0].totals.lines.percent * 10 | round) / 10' > benches/output/coverage.txt'''
 
+[tasks.test-cov.tools]
+"cargo:cargo-llvm-cov" = "0.8"
+"cargo:cargo-insta" = "1.46"
+
 [tasks.test-snapshot]
 description = "Run insta snapshot tests; deletes unreferenced snapshots locally and rejects in CI"
 run = [
   "cargo insta test --unreferenced auto --all-features --workspace",
   "cargo insta review",
 ]
+
+[tasks.test-snapshot.tools]
+"cargo:cargo-insta" = "1.46"

@@ -151,6 +151,15 @@
   "customManagers": [
     {
       "customType": "regex",
+      "description": "Track cargo-fuzz version pinned in install-fuzz task (not in [tools] to avoid auto-install)",
+      "managerFilePatterns": ["/^\\.config/mise/conf\\.d/fuzz\\.toml$/"],
+      "matchStrings": ["cargo:cargo-fuzz@(?<currentValue>[\\d.]+)"],
+      "depNameTemplate": "cargo-fuzz",
+      "packageNameTemplate": "cargo-fuzz",
+      "datasourceTemplate": "crate"
+    },
+    {
+      "customType": "regex",
       "description": "Bump hk's pkl amends URL in hk.pkl alongside the mise hk tool",
       "managerFilePatterns": ["/^\\.config/hk\\.pkl$/"],
       "matchStrings": [

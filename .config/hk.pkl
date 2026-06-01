@@ -36,18 +36,21 @@ local check_steps = new Mapping<String, Step> {
     check = "mise run package-check"
   }
   ["cargo-shear"] {
-    check = "cargo shear"
+    check = "mise run cargo-shear"
   }
   ["cargo-deny"] {
     check = "mise run deny"
   }
   ["dist-plan"] {
-    check = "dist plan > /dev/null"
+    check = "mise run dist-plan"
   }
   ["readmes-check"] {
     check = "mise run readmes-check"
   }
-  ["shellcheck"] = Builtins.shellcheck
+  ["shellcheck"] {
+    glob = List("**/*.sh", "**/*.bash")
+    check = "mise run shellcheck"
+  }
   ["typos"] {
     check = "mise run typos"
   }
@@ -64,11 +67,11 @@ local check_steps = new Mapping<String, Step> {
   }
   ["oxlint"] {
     glob = List("**/*.ts")
-    check = "pnpm run lint"
+    check = "mise run oxlint"
   }
   ["knip"] {
     glob = List("npm-packages/jjpwrgem-vscode/**")
-    check = "knip --workspace npm-packages/jjpwrgem-vscode"
+    check = "mise run knip"
   }
 }
 
@@ -83,7 +86,7 @@ local sync_mise = new Mapping<String, Step> {
 // Validate the commit message format against conventional-commits.
 local commit_msg_steps = new Mapping<String, Step> {
   ["committed"] {
-    check = "committed --commit-file {{commit_msg_file}} --no-merge-commit --no-fixup --no-wip"
+    check = "mise run committed {{commit_msg_file}}"
   }
 }
 

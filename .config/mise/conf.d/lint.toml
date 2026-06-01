@@ -1,22 +1,14 @@
-[tools]
-actionlint = "1.7.12"
-shellcheck = "0.11.0"
-"cargo:cargo-deny" = "0.19.6"
-"cargo:cargo-shear" = "1.11"
-"cargo:cargo-diet" = "1.3.0"
-"cargo:committed" = "1.1.11"
-"cargo:tracey" = "1.3.0"
-"cargo:typos-cli" = "1.46.2"
-"npm:knip" = "6.14.2"
-"npm:oxfmt" = "0.51.0"
-"npm:oxlint" = "1.66.0"
-"npm:renovate" = "42.99.0"
-
 [tasks.typos]
 run = "typos"
 
+[tasks.typos.tools]
+"cargo:typos-cli" = "1.46.2"
+
 [tasks.deny]
 run = "cargo deny check"
+
+[tasks.deny.tools]
+"cargo:cargo-deny" = "0.19.6"
 
 [tasks.format]
 run = [
@@ -24,11 +16,17 @@ run = [
   "oxfmt './**/*.{md,toml,yaml,yml,ts,js,json}' --write",
 ]
 
+[tasks.format.tools]
+"npm:oxfmt" = "0.51.0"
+
 [tasks.format-check]
 run = [
   "cargo fmt --all -- --check",
   "oxfmt './**/*.{md,toml,yaml,yml,ts,js,json}' --check",
 ]
+
+[tasks.format-check.tools]
+"npm:oxfmt" = "0.51.0"
 
 [tasks.lint]
 env = { RUSTFLAGS = "-Dwarnings" }
@@ -39,9 +37,48 @@ run = [
   "actionlint",
 ]
 
+[tasks.lint.tools]
+actionlint = "1.7.12"
+"npm:knip" = "6.14.2"
+"npm:oxlint" = "1.66.0"
+
+[tasks.knip]
+run = "knip --workspace npm-packages/jjpwrgem-vscode"
+
+[tasks.knip.tools]
+"npm:knip" = "6.14.2"
+
+[tasks.oxlint]
+run = "pnpm run lint"
+
+[tasks.oxlint.tools]
+"npm:oxlint" = "1.66.0"
+
 [tasks.diet]
 description = "Trim publishable crate dirs before release"
 run = 'for x in ./crates/* ./xtask ./benches .; do [ -f "$x/Cargo.toml" ] || continue; (cd "$x" && cargo diet -q); done'
+
+[tasks.diet.tools]
+"cargo:cargo-diet" = "1.3.0"
+
+[tasks.cargo-shear]
+run = "cargo shear"
+
+[tasks.cargo-shear.tools]
+"cargo:cargo-shear" = "1.11"
+
+[tasks.shellcheck]
+run = "shellcheck --shell=bash $(git ls-files '*.sh' '*.bash')"
+
+[tasks.shellcheck.tools]
+shellcheck = "0.11.0"
+
+[tasks.committed]
+usage = 'arg "<commit-file>"'
+run = 'committed --commit-file "$usage_commit_file" --no-merge-commit --no-fixup --no-wip'
+
+[tasks.committed.tools]
+"cargo:committed" = "1.1.11"
 
 [tasks.package-check]
 description = "check rust crates are ready to publish"
@@ -51,5 +88,11 @@ run = "cargo package -p bytes2chars -p jjpwrgem-parse -p jjpwrgem-ui -p jjpwrgem
 description = "Verify spec rules have version bumps for any changed rule text"
 run = "tracey pre-commit"
 
+[tasks.tracey-check.tools]
+"cargo:tracey" = "1.3.0"
+
 [tasks.renovate-check]
 run = "renovate-config-validator .github/renovate.json"
+
+[tasks.renovate-check.tools]
+"npm:renovate" = "42.99.0"

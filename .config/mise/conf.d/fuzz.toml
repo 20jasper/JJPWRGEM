@@ -1,6 +1,4 @@
-[tools]
-"cargo:cargo-fuzz" = "0.13.1"
-
+# cargo-fuzz must be installed from source with stable (mise installs incorrect musl build).
+# The version is pinned below and tracked by renovate via customManagers in renovate.json.
 [tasks.install-fuzz]
-# must be installed from source with stable. Mise installs incorrect musl build
-run = "RUSTUP_TOOLCHAIN=stable mise install cargo:cargo-fuzz"
+run = "RUSTUP_TOOLCHAIN=stable mise install 'cargo:cargo-fuzz@0.13.1'"
