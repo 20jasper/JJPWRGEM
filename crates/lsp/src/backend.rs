@@ -59,6 +59,7 @@ impl Backend {
     }
 }
 
+#[expect(clippy::unused_async_trait_impl, reason = "trait requires async fn")]
 impl LanguageServer for Backend {
     async fn initialize(&self, params: InitializeParams) -> Result<InitializeResult> {
         let client_supports_utf8 = params
