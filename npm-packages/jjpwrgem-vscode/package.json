@@ -26,13 +26,13 @@
     "vscode-languageclient": "^9.0.1"
   },
   "devDependencies": {
-    "@types/mocha": "^10.0.10",
-    "@types/node": "22.x",
-    "@types/vscode": "^1.107.0",
-    "@vscode/test-cli": "^0.0.12",
-    "@vscode/test-electron": "^2.5.2",
-    "esbuild": "^0.27.1",
-    "npm-run-all2": "^5.0.0",
+    "@types/mocha": "10.0.10",
+    "@types/node": "22.19.19",
+    "@types/vscode": "1.120.0",
+    "@vscode/test-cli": "0.0.12",
+    "@vscode/test-electron": "2.5.2",
+    "esbuild": "0.27.7",
+    "npm-run-all2": "5.0.2",
     "typescript": "npm:@typescript/native-preview@7.0.0-dev.20260523.1"
   },
   "contributes": {},

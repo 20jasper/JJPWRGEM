@@ -9,7 +9,7 @@ importers:
   .:
     devDependencies:
       oxlint-tsgolint:
-        specifier: ^0.23.0
+        specifier: 0.23.0
         version: 0.23.0
 
   npm-packages/jjpwrgem-vscode:
@@ -19,25 +19,25 @@ importers:
         version: 9.0.1
     devDependencies:
       '@types/mocha':
-        specifier: ^10.0.10
+        specifier: 10.0.10
         version: 10.0.10
       '@types/node':
-        specifier: 22.x
+        specifier: 22.19.19
         version: 22.19.19
       '@types/vscode':
-        specifier: ^1.107.0
+        specifier: 1.120.0
         version: 1.120.0
       '@vscode/test-cli':
-        specifier: ^0.0.12
+        specifier: 0.0.12
         version: 0.0.12
       '@vscode/test-electron':
-        specifier: ^2.5.2
+        specifier: 2.5.2
         version: 2.5.2
       esbuild:
-        specifier: ^0.27.1
+        specifier: 0.27.7
         version: 0.27.7
       npm-run-all2:
-        specifier: ^5.0.0
+        specifier: 5.0.2
         version: 5.0.2
       typescript:
         specifier: npm:@typescript/native-preview@7.0.0-dev.20260523.1
