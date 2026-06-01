@@ -2,7 +2,7 @@
 source: tests/integration/commands/jsonlines.rs
 expression: output.snapshot_display()
 ---
-args: ["format", "--json-lines"]
+args: ["format", "--parser", "jsonlines"]
 status: 0
 success: true
 stdin ---

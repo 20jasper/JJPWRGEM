@@ -20,20 +20,6 @@ pub enum JsonMode {
     Uglify,
 }
 
-#[derive(bon::Builder, Debug, Clone, PartialEq, Eq)]
-pub struct PrettifyOptions {
-    #[builder(default = 80)]
-    pub preferred_width: usize,
-    #[builder(default)]
-    pub line_ending: LineEnding,
-}
-
-#[derive(bon::Builder, Debug, Clone, PartialEq, Eq)]
-pub struct JsonlinesOptions {
-    #[builder(default)]
-    pub line_ending: LineEnding,
-}
-
 impl Default for FormatRequest {
     fn default() -> Self {
         Self::Json(JsonMode::default())
@@ -42,8 +28,28 @@ impl Default for FormatRequest {
 
 impl Default for JsonMode {
     fn default() -> Self {
-        Self::Prettify(PrettifyOptions::builder().build())
+        Self::Prettify(PrettifyOptions::default())
     }
+}
+
+#[derive(bon::Builder, Debug, Clone, PartialEq, Eq)]
+pub struct PrettifyOptions {
+    #[builder(default = 80)]
+    pub preferred_width: usize,
+    #[builder(default)]
+    pub line_ending: LineEnding,
+}
+
+impl Default for PrettifyOptions {
+    fn default() -> Self {
+        Self::builder().build()
+    }
+}
+
+#[derive(bon::Builder, Default, Debug, Clone, PartialEq, Eq)]
+pub struct JsonlinesOptions {
+    #[builder(default)]
+    pub line_ending: LineEnding,
 }
 
 pub fn format_document<S: AsRef<str>>(doc: &Document<S>, mode: &JsonMode) -> String {

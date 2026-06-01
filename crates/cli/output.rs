@@ -19,6 +19,14 @@ impl Output {
         }
     }
 
+    pub fn failure(stderr: impl Into<String>) -> Self {
+        Output {
+            stdout: None,
+            stderr: Some(stderr.into()),
+            exit_code: ExitCode::FAILURE,
+        }
+    }
+
     pub fn failure_diagnostic(diagnostic: Diagnostic<'_>, style: Style) -> Self {
         Output {
             stdout: None,

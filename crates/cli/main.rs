@@ -20,12 +20,15 @@ use clap::Parser;
 pub use error::{Error, Result};
 use jjpwrgem_parse::{
     diagnostics::Diagnostic,
-    format::{self, LineEnding},
-    jsonlines, validate_str,
+    format::{FormatRequest, JsonMode, JsonlinesOptions, PrettifyOptions},
+    format_str, validate_str,
 };
 use jjpwrgem_ui::{Color, Style};
 
-use crate::{commands::Commands, output::Output};
+use crate::{
+    commands::{Commands, ParserArg},
+    output::Output,
+};
 
 fn main() -> ExitCode {
     let cli = commands::Cli::parse();
@@ -46,27 +49,44 @@ fn main() -> ExitCode {
             uglify,
             preferred_width,
             end_of_line,
-            json_lines,
-        } => {
-            if *json_lines {
-                format_jsonlines(&json, style)
-            } else {
-                format(
-                    &json,
-                    style,
-                    *uglify,
-                    *preferred_width,
-                    end_of_line.into_parse(),
-                )
+            parser,
+        } => match parser {
+            ParserArg::Jsonlines => {
+                if *uglify {
+                    Output::failure(
+                        "error: the argument '--parser jsonlines' cannot be used with '--uglify'\n\nUsage: jjp format --parser jsonlines\n\nFor more information, try '--help'.",
+                    )
+                } else if preferred_width.is_some() {
+                    Output::failure(
+                        "error: the argument '--parser jsonlines' cannot be used with '--preferred-width'\n\nUsage: jjp format --parser jsonlines\n\nFor more information, try '--help'.",
+                    )
+                } else {
+                    let request = FormatRequest::Jsonlines(
+                        JsonlinesOptions::builder()
+                            .line_ending(end_of_line.into_parse())
+                            .build(),
+                    );
+                    format_input(&json, style, &request)
+                }
             }
-        }
-        Commands::Check { json_lines } => {
-            if *json_lines {
-                check_jsonlines(&json, style)
-            } else {
-                check(&json, style)
+            ParserArg::Json => {
+                let mode = if *uglify {
+                    JsonMode::Uglify
+                } else {
+                    JsonMode::Prettify(
+                        PrettifyOptions::builder()
+                            .line_ending(end_of_line.into_parse())
+                            .maybe_preferred_width(*preferred_width)
+                            .build(),
+                    )
+                };
+                format_input(&json, style, &FormatRequest::Json(mode))
             }
-        }
+        },
+        Commands::Check { parser } => match parser {
+            ParserArg::Jsonlines => check_jsonlines(&json, style),
+            ParserArg::Json => check(&json, style),
+        },
         Commands::Lsp => unreachable!("LSP command handled above"),
     };
 
@@ -111,21 +131,9 @@ fn read_stdin(style: Style) -> Option<String> {
     }
 }
 
-pub fn format(
-    json: &str,
-    style: Style,
-    uglify: bool,
-    preferred_width: usize,
-    line_ending: LineEnding,
-) -> Output {
-    let result = if uglify {
-        format::uglify_str(json)
-    } else {
-        format::prettify_str(json, preferred_width, line_ending)
-    };
-
-    match result {
-        Ok(pretty) => Output::success(pretty),
+fn format_input(json: &str, style: Style, request: &FormatRequest) -> Output {
+    match format_str(json, request) {
+        Ok(result) => Output::success(result),
         Err(error) => Output::failure_diagnostic(Diagnostic::from(&error), style),
     }
 }
@@ -138,15 +146,8 @@ pub fn check(json: &str, style: Style) -> Output {
 }
 
 fn check_jsonlines(json: &str, style: Style) -> Output {
-    match jsonlines::parse(json) {
+    match jjpwrgem_parse::jsonlines::parse(json) {
         Ok(_) => Output::success(""),
-        Err(e) => Output::failure_diagnostic(Diagnostic::from(&e), style),
-    }
-}
-
-fn format_jsonlines(json: &str, style: Style) -> Output {
-    match jsonlines::format(json, LineEnding::Lf) {
-        Ok(result) => Output::success(result),
         Err(e) => Output::failure_diagnostic(Diagnostic::from(&e), style),
     }
 }

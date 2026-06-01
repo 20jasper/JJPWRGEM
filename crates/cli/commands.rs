@@ -37,26 +37,21 @@ pub enum Commands {
     ))]
     Format {
         /// Removes all insignificant whitespace instead of pretty printing,
-        /// also known as minifying. Cannot be combined with --preferred-width or --json-lines
-        #[arg(
-            short,
-            long,
-            conflicts_with = "preferred_width",
-            conflicts_with = "json_lines"
-        )]
+        /// also known as minifying. Cannot be combined with --preferred-width or --parser jsonlines
+        #[arg(short, long, conflicts_with = "preferred_width")]
         uglify: bool,
 
-        /// Preferred maximum line width. Note this is not a hard maximum width
-        #[arg(long, default_value_t = 80, conflicts_with = "uglify")]
-        preferred_width: usize,
+        /// Preferred maximum line width. Note this is not a hard maximum width [default: 80]
+        #[arg(long, conflicts_with = "uglify")]
+        preferred_width: Option<usize>,
 
         /// Line ending to use when formatting output
         #[arg(value_enum, long, visible_alias = "eol", default_value_t)]
         end_of_line: LineEndingArg,
 
-        /// Parses as JSON Lines and uglifies each value. Cannot be combined with --uglify
-        #[arg(long, conflicts_with = "uglify")]
-        json_lines: bool,
+        /// Parser to use for input. jsonlines cannot be combined with --uglify
+        #[arg(value_enum, long, default_value_t)]
+        parser: ParserArg,
     },
     #[command(after_help = format!(
         "Examples:\n{}\n\n{}",
@@ -65,9 +60,9 @@ pub enum Commands {
     ))]
     /// Validates json syntax
     Check {
-        /// Parse input as JSON Lines
-        #[arg(long)]
-        json_lines: bool,
+        /// Parser to use for input
+        #[arg(value_enum, long, default_value_t)]
+        parser: ParserArg,
     },
     /// Start a language server over stdio
     Lsp,
@@ -80,6 +75,15 @@ pub enum LineEndingArg {
     Lf,
     #[value(name = "crlf")]
     CrLf,
+}
+
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq, ValueEnum)]
+pub enum ParserArg {
+    #[default]
+    #[value(name = "json")]
+    Json,
+    #[value(name = "jsonlines")]
+    Jsonlines,
 }
 
 impl LineEndingArg {

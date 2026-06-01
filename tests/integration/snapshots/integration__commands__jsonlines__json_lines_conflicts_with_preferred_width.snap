@@ -2,7 +2,7 @@
 source: tests/integration/commands/jsonlines.rs
 expression: output.snapshot_display()
 ---
-args: ["format", "--parser", "jsonlines", "--uglify"]
+args: ["format", "--parser", "jsonlines", "--preferred-width", "100"]
 status: 1
 success: false
 stdin ---
@@ -10,7 +10,7 @@ stdin ---
 stdout ---
 
 stderr ---
-error: the argument '--parser jsonlines' cannot be used with '--uglify'
+error: the argument '--parser jsonlines' cannot be used with '--preferred-width'
 
 Usage: jjp format --parser jsonlines
 
