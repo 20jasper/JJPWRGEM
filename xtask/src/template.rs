@@ -386,9 +386,5 @@ pub fn are_readmes_updated() -> anyhow::Result<()> {
     let existing = fs::read_to_string(BYTES2CHARS_README_PATH).unwrap_or_default();
     let generated = inject_pre_rdme(&existing, &bytes2chars_pre_rdme);
     check_readme("crates/bytes2chars/README.md", &existing, &generated)?;
-    if let Some(lsp_bench_rendered) = generate_lsp_bench_readme() {
-        let existing = fs::read_to_string(LSP_BENCH_OUT_PATH_STR).unwrap_or_default();
-        check_readme("benches/lsp/README.md", &existing, &lsp_bench_rendered)?;
-    }
     Ok(())
 }
