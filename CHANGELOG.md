@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.0](https://github.com/20jasper/JJPWRGEM/compare/jjpwrgem-v0.6.3...jjpwrgem-v0.7.0) - 2026-06-01
+
+### Added
+
+- *(cli)* [**breaking**] replace --json-lines flag with --parser <type>
+- *(parse)* [**breaking**] builders and structs for configurations
+- [**breaking**] add range to value struct and visitor methods
+
+### Deprecated
+
+- *(cli)* [**breaking**] remove cr line ending option
+
 ## [0.6.3](https://github.com/20jasper/JJPWRGEM/compare/jjpwrgem-v0.6.2...jjpwrgem-v0.6.3) - 2026-05-26
 
 ### Added
