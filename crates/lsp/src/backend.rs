@@ -3,7 +3,7 @@ use std::sync::OnceLock;
 use dashmap::DashMap;
 use jjpwrgem_parse::{
     ast::Document,
-    format::{LineEnding, prettify_document},
+    format::{JsonMode, format_document},
 };
 use tower_lsp_server::{Client, LanguageServer, jsonrpc::Result, ls_types::*};
 
@@ -131,7 +131,7 @@ impl LanguageServer for Backend {
             return Ok(None);
         };
 
-        let formatted = prettify_document(document, 80, LineEnding::Lf);
+        let formatted = format_document(document, &JsonMode::default());
         Ok(Some(vec![TextEdit {
             range: FULL_DOCUMENT_RANGE,
             new_text: formatted,

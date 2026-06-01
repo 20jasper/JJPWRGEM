@@ -145,7 +145,7 @@ fn check_jsonlines(json: &str, style: Style) -> Output {
 }
 
 fn format_jsonlines(json: &str, style: Style) -> Output {
-    match jsonlines::format(json) {
+    match jsonlines::format(json, LineEnding::Lf) {
         Ok(result) => Output::success(result),
         Err(e) => Output::failure_diagnostic(Diagnostic::from(&e), style),
     }
