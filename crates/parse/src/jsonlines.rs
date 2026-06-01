@@ -1,7 +1,7 @@
 use crate::{
     Result,
     ast::{Value, parse_at},
-    format::uglify_str_into,
+    format::{LineEnding, uglify_str_into},
 };
 
 #[derive(Debug)]
@@ -50,7 +50,7 @@ pub fn parse(source: &str) -> Result<JsonlinesDocument<&str>> {
     JsonlinesDocument::parse(source)
 }
 
-pub fn format(source: &str) -> Result<String> {
+pub fn format(source: &str, line_ending: LineEnding) -> Result<String> {
     let text = source.strip_suffix('\n').unwrap_or(source);
     let mut lines = text.split('\n');
 
@@ -62,7 +62,7 @@ pub fn format(source: &str) -> Result<String> {
     uglify_str_into(&mut result, line)?;
 
     for line in lines {
-        result.push('\n');
+        result.push_str(line_ending.as_str());
         uglify_str_into(&mut result, line)?;
     }
     Ok(result)

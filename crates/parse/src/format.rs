@@ -6,6 +6,53 @@ pub(crate) mod uglify;
 pub use prettify::{prettify_document, prettify_document_into, prettify_str};
 pub use uglify::{uglify_document, uglify_document_into, uglify_str, uglify_str_into};
 
+use crate::ast::Document;
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum FormatRequest {
+    Json(JsonMode),
+    Jsonlines(JsonlinesOptions),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum JsonMode {
+    Prettify(PrettifyOptions),
+    Uglify,
+}
+
+#[derive(bon::Builder, Debug, Clone, PartialEq, Eq)]
+pub struct PrettifyOptions {
+    #[builder(default = 80)]
+    pub preferred_width: usize,
+    #[builder(default)]
+    pub line_ending: LineEnding,
+}
+
+#[derive(bon::Builder, Debug, Clone, PartialEq, Eq)]
+pub struct JsonlinesOptions {
+    #[builder(default)]
+    pub line_ending: LineEnding,
+}
+
+impl Default for FormatRequest {
+    fn default() -> Self {
+        Self::Json(JsonMode::default())
+    }
+}
+
+impl Default for JsonMode {
+    fn default() -> Self {
+        Self::Prettify(PrettifyOptions::builder().build())
+    }
+}
+
+pub fn format_document<S: AsRef<str>>(doc: &Document<S>, mode: &JsonMode) -> String {
+    match mode {
+        JsonMode::Prettify(opts) => prettify_document(doc, opts.preferred_width, opts.line_ending),
+        JsonMode::Uglify => uglify_document(doc),
+    }
+}
+
 use crate::tokens::{FALSE, NULL, TRUE};
 
 pub(crate) fn join_into<T, B>(
@@ -24,8 +71,9 @@ pub(crate) fn join_into<T, B>(
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 pub enum LineEnding {
+    #[default]
     Lf,
     CrLf,
     Cr,

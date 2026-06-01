@@ -12,6 +12,7 @@ keywords = ["json", "parser", "formatter", "diagnostics"]
 categories = ["parser-implementations", "text-processing"]
 
 [dependencies]
+bon = "3.9"
 bytes2chars = { workspace = true }
 displaydoc = { workspace = true }
 serde = { version = "1.0.228", optional = true, features = ["derive"] }
