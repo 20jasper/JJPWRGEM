@@ -29,6 +29,7 @@ sources = [
 outputs = [
   "readme.md",
   "crates/parse/readme.md",
+  "crates/json-schema/README.md",
   "benches/BENCHMARKS.md",
   "benches/json.md",
   "benches/cli-formatter.md",

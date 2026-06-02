@@ -14,6 +14,14 @@ const BYTES2CHARS_TEMPLATE: &str = include_str!(concat!(
     env!("CARGO_MANIFEST_DIR"),
     "/templates/bytes2chars.template.md"
 ));
+const JSON_SCHEMA_README_PATH: &str = concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/../crates/json-schema/README.md"
+);
+const JSON_SCHEMA_TEMPLATE: &str = include_str!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/templates/json-schema.template.md"
+));
 const RDME_START: &str = "<!-- cargo-rdme start -->";
 
 fn rdme_content(readme: &str) -> &str {
@@ -319,6 +327,15 @@ pub fn write_readmes() {
         inject_pre_rdme(&existing, &bytes2chars_pre_rdme),
     )
     .unwrap();
+    let json_schema_badge = crate::spec_badges::badge_for("json-schema-v7");
+    let json_schema_pre_rdme =
+        JSON_SCHEMA_TEMPLATE.replace("{{JSON_SCHEMA_V7_SPEC_BADGE}}", &json_schema_badge);
+    let existing = fs::read_to_string(JSON_SCHEMA_README_PATH).unwrap();
+    fs::write(
+        JSON_SCHEMA_README_PATH,
+        inject_pre_rdme(&existing, &json_schema_pre_rdme),
+    )
+    .unwrap();
     if let Some(lsp_bench_rendered) = generate_lsp_bench_readme() {
         fs::write(LSP_BENCH_OUT_PATH_STR, lsp_bench_rendered).unwrap();
     }
@@ -386,5 +403,11 @@ pub fn are_readmes_updated() -> anyhow::Result<()> {
     let existing = fs::read_to_string(BYTES2CHARS_README_PATH).unwrap_or_default();
     let generated = inject_pre_rdme(&existing, &bytes2chars_pre_rdme);
     check_readme("crates/bytes2chars/README.md", &existing, &generated)?;
+    let json_schema_badge = crate::spec_badges::badge_for("json-schema-v7");
+    let json_schema_pre_rdme =
+        JSON_SCHEMA_TEMPLATE.replace("{{JSON_SCHEMA_V7_SPEC_BADGE}}", &json_schema_badge);
+    let existing = fs::read_to_string(JSON_SCHEMA_README_PATH).unwrap_or_default();
+    let generated = inject_pre_rdme(&existing, &json_schema_pre_rdme);
+    check_readme("crates/json-schema/README.md", &existing, &generated)?;
     Ok(())
 }

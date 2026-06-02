@@ -148,7 +148,7 @@ mod tests {
     use super::*;
     use crate::primitive::PrimitiveType;
 
-    // r[json-schema-v7.type.primitive]
+    // r[verify json-schema-v7.type.primitive]
     #[rstest::rstest]
     #[case("true", Schema::Bool)]
     #[case("false", Schema::Bool)]
@@ -162,7 +162,7 @@ mod tests {
         assert!(validate(&doc, &schema).is_ok());
     }
 
-    // r[json-schema-v7.type.integer-subset]
+    // r[verify json-schema-v7.type.integer-subset]
     #[rstest::rstest]
     #[case("123.0", Schema::Number)]
     #[case("123.0", Schema::Integer)]
