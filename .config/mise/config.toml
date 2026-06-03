@@ -9,7 +9,7 @@ idiomatic_version_file_enable_tools = ["node", "pnpm"]
 binstall = true
 
 [tools]
-hk = "1.45.0"
+hk = "1.46.0"
 "aqua:apple/pkl" = "0.31.1"
 jq = "1.8.1"
 
