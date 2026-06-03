@@ -17,7 +17,7 @@ run = [
 ]
 
 [tasks.format.tools]
-"npm:oxfmt" = "0.51.0"
+"npm:oxfmt" = "0.52.0"
 
 [tasks.format-check]
 run = [
@@ -26,7 +26,7 @@ run = [
 ]
 
 [tasks.format-check.tools]
-"npm:oxfmt" = "0.51.0"
+"npm:oxfmt" = "0.52.0"
 
 [tasks.lint]
 env = { RUSTFLAGS = "-Dwarnings" }
@@ -40,7 +40,7 @@ run = [
 [tasks.lint.tools]
 actionlint = "1.7.12"
 "npm:knip" = "6.14.2"
-"npm:oxlint" = "1.66.0"
+"npm:oxlint" = "1.67.0"
 
 [tasks.knip]
 run = "knip --workspace npm-packages/jjpwrgem-vscode"
@@ -52,7 +52,7 @@ run = "knip --workspace npm-packages/jjpwrgem-vscode"
 run = "pnpm run lint"
 
 [tasks.oxlint.tools]
-"npm:oxlint" = "1.66.0"
+"npm:oxlint" = "1.67.0"
 
 [tasks.diet]
 description = "Trim publishable crate dirs before release"

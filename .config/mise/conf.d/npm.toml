@@ -20,4 +20,4 @@ run = [
 ]
 
 [tasks.package-json.tools]
-"npm:oxfmt" = "0.51.0"
+"npm:oxfmt" = "0.52.0"
