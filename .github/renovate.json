@@ -147,7 +147,6 @@
       "dependencyDashboardApproval": true
     }
   ],
-  "allowedUnsafeExecutions": ["mise"],
   "ignorePaths": [
     ".github/workflows/jjpwrgem-v-release.yml",
     "npm-template/package.json"
