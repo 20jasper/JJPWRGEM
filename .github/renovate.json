@@ -86,6 +86,12 @@
       "automerge": true
     },
     {
+      "matchManagers": ["npm"],
+      "matchDepTypes": ["packageManager"],
+      "matchPackageNames": ["pnpm"],
+      "automerge": true
+    },
+    {
       "matchManagers": ["mise"],
       "matchFileNames": [
         ".config/mise/config.toml",
@@ -147,6 +153,14 @@
     "npm-template/package.json"
   ],
   "customManagers": [
+    {
+      "customType": "regex",
+      "description": "Update renovate version in renovate workflow",
+      "managerFilePatterns": ["/.github/workflows/renovate\\.yml$/"],
+      "matchStrings": [
+        "RENOVATE_VERSION: (?<currentValue>[^\\s]+) # renovate: datasource=(?<datasource>[^\\s]+) depName=(?<depName>[^\\s]+)"
+      ]
+    },
     {
       "customType": "regex",
       "description": "Track cargo-fuzz version pinned in install-fuzz task (not in [tools] to avoid auto-install)",
