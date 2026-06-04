@@ -1,10 +1,17 @@
 [package]
 name = "jjpwrgem-schema"
 version = "0.1.0"
+description = "JSON schema validator"
 edition.workspace = true
 authors.workspace = true
 license.workspace = true
 repository.workspace = true
+readme = "README.md"
+keywords = ["json", "jsonschema", "validation"]
+categories = ["web-programming"]
+
+[lib]
+doctest = false
 
 [dependencies]
 displaydoc.workspace = true

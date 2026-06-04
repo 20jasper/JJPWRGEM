@@ -82,7 +82,7 @@ run = 'committed --commit-file "$usage_commit_file" --no-merge-commit --no-fixup
 
 [tasks.package-check]
 description = "check rust crates are ready to publish"
-run = "cargo package -p bytes2chars -p jjpwrgem-parse -p jjpwrgem-ui -p jjpwrgem-lsp -p jjpwrgem --allow-dirty --no-verify"
+run = "cargo package -p bytes2chars -p jjpwrgem-parse -p jjpwrgem-ui -p jjpwrgem-lsp -p jjpwrgem-schema -p jjpwrgem --allow-dirty --no-verify"
 
 [tasks.tracey-check]
 description = "Verify spec rules have version bumps for any changed rule text"
