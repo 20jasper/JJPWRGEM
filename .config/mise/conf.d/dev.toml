@@ -21,29 +21,6 @@ run = "bacon install"
 [tasks.install-watch.tools]
 "cargo:bacon" = "3.23.0"
 
-[tasks.vscode-test-wsl]
-description = "Run the vscode extension test suite under WSL (Xvfb + dbus + pnpm) (Linux/WSL only)"
+[tasks.vscode-test-linux]
 depends = ["install"]
-shell = "bash -c"
-run = '''
-export XDG_RUNTIME_DIR="/tmp/runtime-$(id -u)"
-mkdir -p "$XDG_RUNTIME_DIR" && chmod 700 "$XDG_RUNTIME_DIR"
-if command -v dbus-launch >/dev/null 2>&1; then
-  echo "Starting dbus-launch"
-  eval "$(dbus-launch --sh-syntax)" || true
-elif command -v dbus-daemon >/dev/null 2>&1; then
-  dbus-daemon --session --fork --print-address > "$XDG_RUNTIME_DIR/bus" 2>/dev/null || true
-  echo "Started dbus-daemon (if available)"
-else
-  echo "dbus not found; continuing without session bus"
-fi
-if command -v Xvfb >/dev/null 2>&1; then
-  /usr/bin/Xvfb :99 -screen 0 1024x768x24 > /dev/null 2>&1 &
-  sleep 1
-  echo "Started Xvfb"
-else
-  echo "Xvfb not found; attempting to run tests without X server"
-fi
-export DISPLAY=":99.0"
-pnpm --filter jjpwrgem-vscode test
-'''
+run = "xvfb-run -a pnpm --filter jjpwrgem-vscode test"
