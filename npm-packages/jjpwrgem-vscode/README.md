@@ -1,71 +1,47 @@
-# jjpwrgem-vscode README
+<!-- GENERATED FILE - update the templates in the xtask -->
 
-This is the README for your extension "jjpwrgem-vscode". After writing up a brief description, we recommend including the following sections.
+# JJPWRGEM
 
-## Features
+JSON language server with rich error messages
 
-Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
-
-For example if there is an image subfolder under your extension project workspace:
-
-\!\[feature X\]\(images/feature-x.png\)
-
-> Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.
+[16–56× faster and uses 6–10× less RAM](https://github.com/20jasper/JJPWRGEM/blob/main/benches/lsp/README.md) than VS Code's built-in JSON LSP
 
 ## Requirements
 
-If you have any requirements or dependencies, add a section describing those and how to install and configure them.
+Install `jjp`
 
-## Extension Settings
+```bash
+mise use -g github:20jasper/jjpwrgem
+```
 
-Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
+See [releases](https://github.com/20jasper/JJPWRGEM/releases) for shell and PowerShell installation scripts, or
+`npm install -g jjpwrgem`
 
-For example:
+## Features
 
-This extension contributes the following settings:
+LSP providing
 
-- `myExtension.enable`: Enable/disable this extension.
-- `myExtension.thing`: Set to `blah` to do something.
+- diagnostics
+- code actions
+- formatting
 
-## Known Issues
+Scales well for large files. There is no perceivable delay when editing a 68k line, 5MB file. Diagnostics, code actions, and formatting take less than 20ms
 
-Calling out known issues can help limit users opening duplicate issues against your extension.
+![animation of JJPWRGEM's LSP. file changes are made quickly and feedback is shown quickly. code actions fix common issues like missing colons](./vscode-jjp.gif)
 
-## Release Notes
+```
+$ echo -en "{\"coolKey\"}" | jjp check
+error: expected colon after key, found `}`
+ --> stdin:1:11
+  |
+1 | {"coolKey"}
+  |  ---------^
+  |  |
+  |  expected due to `"coolKey"`
+  |
+help: insert colon and placeholder value
+  |
+1 | {"coolKey": "🐟🛹"}
+  |           ++++++++
 
-Users appreciate release notes as you update your extension.
-
-### 1.0.0
-
-Initial release of ...
-
-### 1.0.1
-
-Fixed issue #.
-
-### 1.1.0
-
-Added features X, Y, and Z.
-
----
-
-## Following extension guidelines
-
-Ensure that you've read through the extensions guidelines and follow the best practices for creating your extension.
-
-- [Extension Guidelines](https://code.visualstudio.com/api/references/extension-guidelines)
-
-## Working with Markdown
-
-You can author your README using Visual Studio Code. Here are some useful editor keyboard shortcuts:
-
-- Split the editor (`Cmd+\` on macOS or `Ctrl+\` on Windows and Linux).
-- Toggle preview (`Shift+Cmd+V` on macOS or `Shift+Ctrl+V` on Windows and Linux).
-- Press `Ctrl+Space` (Windows, Linux, macOS) to see a list of Markdown snippets.
-
-## For more information
-
-- [Visual Studio Code's Markdown Support](http://code.visualstudio.com/docs/languages/markdown)
-- [Markdown Syntax Reference](https://help.github.com/articles/markdown-basics/)
-
-**Enjoy!**
+```

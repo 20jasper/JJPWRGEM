@@ -34,6 +34,8 @@ outputs = [
   "benches/json.md",
   "benches/cli-formatter.md",
   "benches/utf8.md",
+  "npm-packages/jjpwrgem-vscode/README.md",
+  "crates/lsp/readme.md",
 ]
 run = "cargo xtask generate-readmes"
 

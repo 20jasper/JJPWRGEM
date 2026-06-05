@@ -1,11 +1,26 @@
 {
   "name": "jjpwrgem-vscode",
-  "displayName": "jjpwrgem-vscode",
+  "displayName": "JJPWRGEM",
   "version": "0.0.1",
-  "description": "format json with jjpwrgem!",
+  "description": "JSON language server with rich error messages",
   "categories": [
-    "Other"
+    "Formatters",
+    "Linters"
   ],
+  "keywords": [
+    "diagnostics",
+    "formatter",
+    "json",
+    "language-server",
+    "linter",
+    "lsp"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/20jasper/JJPWRGEM"
+  },
+  "qna": "https://github.com/20jasper/JJPWRGEM/discussions",
   "publisher": "20jasper",
   "type": "commonjs",
   "main": "./dist/extension.js",
@@ -20,7 +35,9 @@
     "watch-tests": "tsgo -p . -w --outDir out",
     "pretest": "pnpm run compile-tests && pnpm run compile",
     "check-types": "tsgo --noEmit",
-    "test": "vscode-test"
+    "test": "vscode-test",
+    "vsce:ls": "vsce ls",
+    "vsce:pack": "vsce package"
   },
   "dependencies": {
     "vscode-languageclient": "^10.0.0"
@@ -31,15 +48,26 @@
     "@types/vscode": "1.82.0",
     "@vscode/test-cli": "0.0.12",
     "@vscode/test-electron": "2.5.2",
+    "@vscode/vsce": "^3.4.2",
     "esbuild": "0.28.0",
     "npm-run-all2": "5.0.2",
+    "ovsx": "^0.9.5",
     "typescript": "npm:@typescript/native-preview@7.0.0-dev.20260527.2"
   },
   "contributes": {},
   "activationEvents": [
     "onLanguage:json"
   ],
+  "extensionKind": [
+    "workspace"
+  ],
   "engines": {
     "vscode": "^1.82.0"
+  },
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": false,
+      "description": "JJPWRGEM runs the jjp binary from PATH"
+    }
   }
 }

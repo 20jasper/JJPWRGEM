@@ -1,0 +1,50 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Run JJPWRGEM VS Code Extension",
+      "presentation": {
+        "group": "JJPWRGEM",
+        "order": 1
+      },
+      "type": "extensionHost",
+      "request": "launch",
+      "args": [
+        "--extensionDevelopmentPath=${workspaceFolder}/npm-packages/jjpwrgem-vscode",
+        "--disable-extensions",
+        "--disable-extension=vscode.json-language-features",
+        "--folder-uri",
+        "vscode-remote://wsl+Ubuntu/home/jacob/coding/json-parser-lsp-min",
+        "--file-uri",
+        "vscode-remote://wsl+Ubuntu/home/jacob/coding/json-parser-lsp-min/benches/data/twitter.json"
+      ],
+      "outFiles": [
+        "${workspaceFolder}/npm-packages/jjpwrgem-vscode/dist/**/*.js"
+      ],
+      "preLaunchTask": "build jjpwrgem-vscode"
+    },
+    {
+      "name": "Run JJPWRGEM VS Code Extension (Dev Profile)",
+      "presentation": {
+        "group": "JJPWRGEM",
+        "order": 2
+      },
+      "type": "extensionHost",
+      "request": "launch",
+      "args": [
+        "--profile",
+        "JJPWRGEM Dev",
+        "--extensionDevelopmentPath=${workspaceFolder}/npm-packages/jjpwrgem-vscode",
+        "--disable-extension=vscode.json-language-features",
+        "--folder-uri",
+        "vscode-remote://wsl+Ubuntu/home/jacob/coding/json-parser-lsp-min",
+        "--file-uri",
+        "vscode-remote://wsl+Ubuntu/home/jacob/coding/json-parser-lsp-min/benches/data/twitter.json"
+      ],
+      "outFiles": [
+        "${workspaceFolder}/npm-packages/jjpwrgem-vscode/dist/**/*.js"
+      ],
+      "preLaunchTask": "build jjpwrgem-vscode"
+    }
+  ]
+}

@@ -7,7 +7,7 @@
         "src/test/**/*.test.ts",
         "esbuild.js"
       ],
-      "ignoreDependencies": ["@vscode/test-electron"]
+      "ignoreDependencies": ["@vscode/test-electron", "ovsx"]
     }
   }
 }

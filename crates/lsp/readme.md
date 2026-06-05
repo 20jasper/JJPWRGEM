@@ -1,3 +1,5 @@
+<!-- GENERATED FILE - update the templates in the xtask -->
+
 LSP providing
 
 - diagnostics

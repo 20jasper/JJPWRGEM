@@ -48,6 +48,17 @@ const CHECK_EXAMPLE: &str = include_str!(concat!(
 
 const BANNER: &str = "<!-- GENERATED FILE - update the templates in the xtask -->\n\n";
 
+const INSTALL_QUICK: &str = include_str!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/templates/install_quick.md"
+));
+const LSP_PERF_CLAIM: &str = "[16–56× faster and uses 6–10× less RAM](https://github.com/20jasper/JJPWRGEM/blob/main/benches/lsp/README.md) than VS Code's built-in JSON LSP";
+const LSP_DEMO_ALT: &str = "animation of JJPWRGEM's LSP. file changes are made quickly and feedback is shown quickly. code actions fix common issues like missing colons";
+const LSP_FEATURES: &str = include_str!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/templates/lsp_features.md"
+));
+
 const JJPWREGEM_TEMPLATE: &str = include_str!(concat!(
     env!("CARGO_MANIFEST_DIR"),
     "/templates/root.template.md"
@@ -107,6 +118,29 @@ const FIXTURE_SMALL: &str = include_str!(concat!(
 const LSP_BENCH_TEMPLATE: &str = include_str!(concat!(
     env!("CARGO_MANIFEST_DIR"),
     "/templates/lsp-bench.template.md"
+));
+const VSCODE_TEMPLATE: &str = include_str!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/templates/vscode.template.md"
+));
+const VSCODE_OUT_PATH_STR: &str = concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/../npm-packages/jjpwrgem-vscode/README.md"
+);
+const EXISTING_VSCODE: &str = include_str!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/../npm-packages/jjpwrgem-vscode/README.md"
+));
+
+const LSP_CRATE_TEMPLATE: &str = include_str!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/templates/lsp_crate.template.md"
+));
+const LSP_CRATE_OUT_PATH_STR: &str =
+    concat!(env!("CARGO_MANIFEST_DIR"), "/../crates/lsp/readme.md");
+const EXISTING_LSP_CRATE: &str = include_str!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/../crates/lsp/readme.md"
 ));
 
 const LSP_BENCH_OUT_PATH_STR: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/../benches/lsp/lsp.md");
@@ -275,6 +309,10 @@ fn render_template(
     let mut processed = template
         .replace("{{IND}}", SHARED_FRAGMENT)
         .replace("{{CHECK_EXAMPLE}}", strip_front_matter(CHECK_EXAMPLE))
+        .replace("{{INSTALL_QUICK}}", INSTALL_QUICK.trim())
+        .replace("{{LSP_PERF_CLAIM}}", LSP_PERF_CLAIM)
+        .replace("{{LSP_DEMO_ALT}}", LSP_DEMO_ALT)
+        .replace("{{LSP_FEATURES}}", LSP_FEATURES.trim())
         .replace("{{BENCH_SUMMARY}}", BENCH_SUMMARY)
         .replace("{{BENCH_INPUTS}}", BENCH_INPUTS)
         .replace("{{BENCH_HARDWARE}}", BENCH_HARDWARE)
@@ -313,12 +351,17 @@ pub fn write_readmes() {
     let json_bench_rendered =
         render_template(JSON_BENCH_TEMPLATE, &JSON_BENCH_TABLE_REPLACEMENTS).unwrap();
 
+    let vscode_rendered = render_template(VSCODE_TEMPLATE, &[]).unwrap();
+    let lsp_crate_rendered = render_template(LSP_CRATE_TEMPLATE, &[]).unwrap();
+
     fs::write(ROOT_OUT_PATH_STR, root_rendered).unwrap();
     fs::write(PARSE_OUT_PATH_STR, parse_rendered).unwrap();
     fs::write(BENCH_OUT_PATH_STR, bench_rendered).unwrap();
     fs::write(CLI_BENCH_OUT_PATH_STR, cli_bench_rendered).unwrap();
     fs::write(BYTES2CHARS_BENCH_OUT_PATH_STR, bytes2chars_bench_rendered).unwrap();
     fs::write(JSON_BENCH_OUT_PATH_STR, json_bench_rendered).unwrap();
+    fs::write(VSCODE_OUT_PATH_STR, vscode_rendered).unwrap();
+    fs::write(LSP_CRATE_OUT_PATH_STR, lsp_crate_rendered).unwrap();
     let bytes2chars_pre_rdme = BYTES2CHARS_TEMPLATE.replace("{{UTF8_SPEC_BADGE}}", &utf8_badge);
     let existing = fs::read_to_string(BYTES2CHARS_README_PATH).unwrap();
     fs::write(
@@ -384,6 +427,9 @@ pub fn are_readmes_updated() -> anyhow::Result<()> {
     let json_bench_rendered =
         render_template(JSON_BENCH_TEMPLATE, &JSON_BENCH_TABLE_REPLACEMENTS).unwrap();
 
+    let vscode_rendered = render_template(VSCODE_TEMPLATE, &[]).unwrap();
+    let lsp_crate_rendered = render_template(LSP_CRATE_TEMPLATE, &[]).unwrap();
+
     check_readme("readme.md", EXISTING_ROOT, &root_rendered)?;
     check_readme("crates/parse/readme.md", EXISTING_PARSE, &parse_rendered)?;
     check_readme("benches/BENCHMARKS.md", EXISTING_BENCH, &bench_rendered)?;
@@ -398,6 +444,16 @@ pub fn are_readmes_updated() -> anyhow::Result<()> {
         &bytes2chars_bench_rendered,
     )?;
     check_readme("benches/json.md", EXISTING_JSON_BENCH, &json_bench_rendered)?;
+    check_readme(
+        "npm-packages/jjpwrgem-vscode/README.md",
+        EXISTING_VSCODE,
+        &vscode_rendered,
+    )?;
+    check_readme(
+        "crates/lsp/readme.md",
+        EXISTING_LSP_CRATE,
+        &lsp_crate_rendered,
+    )?;
     let bytes2chars_pre_rdme = BYTES2CHARS_TEMPLATE.replace("{{UTF8_SPEC_BADGE}}", &utf8_badge);
     let existing = fs::read_to_string(BYTES2CHARS_README_PATH).unwrap_or_default();
     let generated = inject_pre_rdme(&existing, &bytes2chars_pre_rdme);
