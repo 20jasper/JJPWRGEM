@@ -7,6 +7,6 @@ runs:
     - uses: taiki-e/install-action@e3134ec54b36203e18f2d1e80652058bd078dd91 # v2.77.3
       with:
         tool: cargo-binstall
-    - uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151 # v4.0.1
+    - uses: jdx/mise-action@dba19683ed58901619b14f395a24841710cb4925 # v4.1.0
       env:
         GITHUB_TOKEN: ${{ github.token }}

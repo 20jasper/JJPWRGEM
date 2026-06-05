@@ -86,12 +86,6 @@
       "automerge": true
     },
     {
-      "matchManagers": ["npm"],
-      "matchDepTypes": ["packageManager"],
-      "matchPackageNames": ["pnpm"],
-      "automerge": true
-    },
-    {
       "matchManagers": ["mise"],
       "matchFileNames": [
         ".config/mise/config.toml",
@@ -145,6 +139,11 @@
       ],
       "groupName": "mise release tools",
       "dependencyDashboardApproval": true
+    },
+    {
+      "matchPackageNames": ["pnpm", "aqua:pnpm/pnpm"],
+      "groupName": "pnpm",
+      "automerge": true
     }
   ],
   "ignorePaths": [

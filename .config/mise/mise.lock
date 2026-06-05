@@ -60,6 +60,40 @@ url = "https://github.com/jdx/hk/releases/download/v1.45.0/hk-aarch64-apple-darw
 checksum = "sha256:94c7c460d05748524a96583b656e8dec31a11a30ce6a997b9a5b5d8ec4d1b7e7"
 url = "https://github.com/jdx/hk/releases/download/v1.45.0/hk-x86_64-pc-windows-msvc.zip"
 
+[[tools."aqua:pnpm/pnpm"]]
+version = "11.5.0"
+backend = "aqua:pnpm/pnpm"
+
+[tools."aqua:pnpm/pnpm"."platforms.linux-arm64"]
+checksum = "sha256:f817841be043e2be465cb8b8c7ddd19dcedf3120214783dc473a6da7f8c84da9"
+url = "https://github.com/pnpm/pnpm/releases/download/v11.5.0/pnpm-linux-arm64.tar.gz"
+provenance = "github-attestations"
+
+[tools."aqua:pnpm/pnpm"."platforms.linux-arm64-musl"]
+checksum = "sha256:6733e0f4295a09e3465224639d212cb0c01cc438e3db1b2e47d61e49fd3f4d0a"
+url = "https://github.com/pnpm/pnpm/releases/download/v11.5.0/pnpm-linux-arm64-musl.tar.gz"
+provenance = "github-attestations"
+
+[tools."aqua:pnpm/pnpm"."platforms.linux-x64"]
+checksum = "sha256:d45c4338299cae5b7fcaf5e95294643edb10de98258fc0b1d566ffa00b0c353c"
+url = "https://github.com/pnpm/pnpm/releases/download/v11.5.0/pnpm-linux-x64.tar.gz"
+provenance = "github-attestations"
+
+[tools."aqua:pnpm/pnpm"."platforms.linux-x64-musl"]
+checksum = "sha256:f114fa068bb5b45472e3389b19722feb9cb47b72ca656fb5a5cbb7d5fbb7ed06"
+url = "https://github.com/pnpm/pnpm/releases/download/v11.5.0/pnpm-linux-x64-musl.tar.gz"
+provenance = "github-attestations"
+
+[tools."aqua:pnpm/pnpm"."platforms.macos-arm64"]
+checksum = "sha256:966f2ed3587457e1135b7102569b08f21c717f49d5676d63f9435bac9682c45b"
+url = "https://github.com/pnpm/pnpm/releases/download/v11.5.0/pnpm-darwin-arm64.tar.gz"
+provenance = "github-attestations"
+
+[tools."aqua:pnpm/pnpm"."platforms.windows-x64"]
+checksum = "sha256:f85f5c399caa41e2fbce8a2127b69ea4d2ab9b45296756a557b26110d01dcefd"
+url = "https://github.com/pnpm/pnpm/releases/download/v11.5.0/pnpm-win32-x64.zip"
+provenance = "github-attestations"
+
 [[tools.hk]]
 version = "1.46.0"
 backend = "aqua:jdx/hk"
@@ -126,3 +160,7 @@ provenance = "github-attestations"
 checksum = "sha256:23cb60a1354eed6bcc8d9b9735e8c7b388cd1fdcb75726b93bc299ef22dd9334"
 url = "https://github.com/jqlang/jq/releases/download/jq-1.8.1/jq-windows-amd64.exe"
 provenance = "github-attestations"
+
+[[tools.pnpm]]
+version = "11.5.0"
+backend = "asdf:pnpm"
