@@ -32,6 +32,7 @@ jobs:
           command: release-pr
         env:
           GITHUB_TOKEN: ${{ secrets.RELEASE_PLZ_TOKEN }}
+          HK: "0"
       - name: Sync npm package metadata into release PR
         if: ${{ steps.release-plz.outputs.prs_created == 'true' || steps.release-plz.outputs.prs_updated == 'true' }}
         env:
