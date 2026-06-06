@@ -94,6 +94,10 @@ checksum = "sha256:f85f5c399caa41e2fbce8a2127b69ea4d2ab9b45296756a557b26110d01dc
 url = "https://github.com/pnpm/pnpm/releases/download/v11.5.0/pnpm-win32-x64.zip"
 provenance = "github-attestations"
 
+[[tools."cargo:cargo-insta"]]
+version = "1.46.3"
+backend = "cargo:cargo-insta"
+
 [[tools.hk]]
 version = "1.46.0"
 backend = "aqua:jdx/hk"
@@ -160,7 +164,3 @@ provenance = "github-attestations"
 checksum = "sha256:23cb60a1354eed6bcc8d9b9735e8c7b388cd1fdcb75726b93bc299ef22dd9334"
 url = "https://github.com/jqlang/jq/releases/download/jq-1.8.1/jq-windows-amd64.exe"
 provenance = "github-attestations"
-
-[[tools.pnpm]]
-version = "11.5.0"
-backend = "asdf:pnpm"
