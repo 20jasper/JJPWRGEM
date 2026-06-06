@@ -28,6 +28,11 @@ jobs:
           node-version: "24.x"
           registry-url: "https://registry.npmjs.org"
 
+      - name: Copy readme and changelog
+        run: |
+          cp -f readme.md npm-template/README.md
+          cp -f CHANGELOG.md npm-template/CHANGELOG.md
+
       - name: Pack npm
         run: |
           mkdir -p ./npm
