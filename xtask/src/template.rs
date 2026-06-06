@@ -109,8 +109,7 @@ const LSP_BENCH_TEMPLATE: &str = include_str!(concat!(
     "/templates/lsp-bench.template.md"
 ));
 
-const LSP_BENCH_OUT_PATH_STR: &str =
-    concat!(env!("CARGO_MANIFEST_DIR"), "/../benches/lsp/README.md");
+const LSP_BENCH_OUT_PATH_STR: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/../benches/lsp/lsp.md");
 const LSP_BENCH_RESULTS_DIR: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/../benches/lsp/results");
 
 fn generate_lsp_bench_readme() -> Option<String> {
