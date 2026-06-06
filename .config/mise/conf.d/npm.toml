@@ -1,18 +1,5 @@
-[tasks.npm-markdown]
-description = "Copy top-level readme and changelog"
-sources = ["readme.md", "CHANGELOG.md"]
-outputs = [
-  "npm-packages/jjpwrgem/README.md",
-  "npm-packages/jjpwrgem/CHANGELOG.md",
-]
-run = [
-  "cp -f readme.md npm-packages/jjpwrgem/README.md",
-  "cp -f CHANGELOG.md npm-packages/jjpwrgem/CHANGELOG.md",
-]
-
 [tasks.package-json]
 description = "Regenerate package.json and shrinkwrap"
-depends = ["npm-markdown"]
 sources = ["xtask/src/**/*.rs", "Cargo.toml", "dist-workspace.toml"]
 outputs = [
   "npm-packages/jjpwrgem/package.json",
