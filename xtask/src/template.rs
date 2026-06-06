@@ -249,8 +249,8 @@ const BENCH_TABLE_REPLACEMENTS: [(&str, &str); 6] = [
 ];
 
 fn oxfmt_format(input: &str) -> Result<String, Box<dyn std::error::Error>> {
-    let mut child = Command::new("pnpm")
-        .args(["--silent", "exec", "oxfmt", "--stdin-filepath", "file.md"])
+    let mut child = Command::new("oxfmt")
+        .args(["--stdin-filepath", "file.md"])
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .spawn()?;
