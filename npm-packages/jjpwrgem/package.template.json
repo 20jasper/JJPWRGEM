@@ -1,0 +1,35 @@
+{
+  "name": "jjpwrgem",
+  "version": "0.0.0",
+  "private": false,
+  "description": "",
+  "keywords": [],
+  "homepage": "https://github.com/20jasper/jjpwrgem",
+  "license": "MIT",
+  "author": "",
+  "repository": "https://github.com/20jasper/jjpwrgem",
+  "bin": {
+    "jjp": "run-jjp.js"
+  },
+  "files": ["*.js", "README.md", "CHANGELOG.md", "LICENSE"],
+  "type": "",
+  "main": "",
+  "scripts": {
+    "postinstall": "node ./install.js"
+  },
+  "dependencies": {
+    "detect-libc": "^2.1.2"
+  },
+  "devDependencies": {},
+  "engines": {
+    "node": ">=14",
+    "npm": ">=6"
+  },
+  "artifactDownloadUrl": "",
+  "glibcMinimum": {
+    "major": 2,
+    "series": 35
+  },
+  "preferUnplugged": true,
+  "supportedPlatforms": {}
+}

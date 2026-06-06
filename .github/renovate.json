@@ -74,6 +74,23 @@
       "dependencyDashboardApproval": true
     },
     {
+      "matchManagers": ["npm"],
+      "matchDepTypes": ["engines"],
+      "matchPackageNames": ["vscode"],
+      "enabled": false
+    },
+    {
+      "matchManagers": ["npm"],
+      "matchPackageNames": ["@types/vscode"],
+      "enabled": false
+    },
+    {
+      "matchManagers": ["npm"],
+      "matchPackageNames": ["@types/node"],
+      "matchUpdateTypes": ["major"],
+      "enabled": false
+    },
+    {
       "matchManagers": ["github-actions"],
       "groupName": "github actions",
       "matchUpdateTypes": ["patch", "minor", "digest"],
@@ -139,16 +156,37 @@
       ],
       "groupName": "mise release tools",
       "dependencyDashboardApproval": true
+    },
+    {
+      "matchPackageNames": ["pnpm", "aqua:pnpm/pnpm"],
+      "groupName": "pnpm",
+      "automerge": true
+    },
+    {
+      "matchPackageNames": [
+        "ghcr.io/renovatebot/renovate",
+        "renovate",
+        "npm:renovate"
+      ],
+      "groupName": "renovate tooling"
     }
   ],
-  "customEnvVariables": {
-    "MISE_TRUSTED_CONFIG_PATHS": "/tmp/renovate/repos/github/20jasper"
-  },
   "ignorePaths": [
     ".github/workflows/jjpwrgem-v-release.yml",
-    "npm-template/package.json"
+    "npm-packages/jjpwrgem/package.json"
   ],
+  "npm": {
+    "managerFilePatterns": ["/(^|/)package\\.template\\.json$/"]
+  },
   "customManagers": [
+    {
+      "customType": "regex",
+      "description": "Update renovate version in renovate workflow",
+      "managerFilePatterns": ["/.github/workflows/renovate\\.yml$/"],
+      "matchStrings": [
+        "RENOVATE_VERSION: (?<currentValue>[^\\s]+) # renovate: datasource=(?<datasource>[^\\s]+) depName=(?<depName>[^\\s]+)"
+      ]
+    },
     {
       "customType": "regex",
       "description": "Track cargo-fuzz version pinned in install-fuzz task (not in [tools] to avoid auto-install)",

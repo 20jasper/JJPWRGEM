@@ -11,10 +11,10 @@ run = "MISE_CEILING_PATHS=\"$(cd '{{config_root}}/../..' && pwd)\" mise oci buil
 [tools]
 bun = "1.3.14"
 python = "3.14.5"
-uv = "0.11.16"
+uv = "0.11.18"
 "npm:json-minify" = "1.0.0"
 "npm:prettier" = "3.8.3"
-"npm:oxfmt" = "0.51.0"
+"npm:oxfmt" = "0.52.0"
 jaq = "3.0.0"
 gojq = "0.12.19"
 jq = "1.8.1"

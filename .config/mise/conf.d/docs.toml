@@ -29,6 +29,7 @@ sources = [
 outputs = [
   "readme.md",
   "crates/parse/readme.md",
+  "crates/json-schema/README.md",
   "benches/BENCHMARKS.md",
   "benches/json.md",
   "benches/cli-formatter.md",
@@ -39,7 +40,7 @@ run = "cargo xtask generate-readmes"
 [tasks.readmes.tools]
 "cargo:cargo-rdme" = "1.5"
 "cargo:tracey" = "1.3.0"
-"npm:oxfmt" = "0.51.0"
+"npm:oxfmt" = "0.52.0"
 
 [tasks."readmes-check"]
 description = "Verify markdown files match generated templates"
@@ -49,4 +50,4 @@ run = "cargo xtask verify-readmes"
 [tasks."readmes-check".tools]
 "cargo:cargo-rdme" = "1.5"
 "cargo:tracey" = "1.3.0"
-"npm:oxfmt" = "0.51.0"
+"npm:oxfmt" = "0.52.0"

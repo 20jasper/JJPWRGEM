@@ -23,7 +23,7 @@ cargo rdme --workspace-project bytes2chars --force
 "cargo:cargo-criterion" = "1.1.0"
 "cargo:cargo-rdme" = "1.5"
 "cargo:tracey" = "1.3.0"
-"npm:oxfmt" = "0.51.0"
+"npm:oxfmt" = "0.52.0"
 
 [tasks.bench-json]
 description = "Run the four standard json criterion benches and regenerate readmes"
@@ -37,7 +37,7 @@ run = [
 "cargo:cargo-criterion" = "1.1.0"
 "cargo:cargo-rdme" = "1.5"
 "cargo:tracey" = "1.3.0"
-"npm:oxfmt" = "0.51.0"
+"npm:oxfmt" = "0.52.0"
 
 [tasks.bench-codspeed]
 description = "Build and run all criterion benches via codspeed"
@@ -114,7 +114,7 @@ cargo rdme --workspace-project bytes2chars --force
 '''
 
 [tasks.bench-docker.tools]
-"npm:oxfmt" = "0.51.0"
+"npm:oxfmt" = "0.52.0"
 "cargo:cargo-rdme" = "1.5"
 "cargo:tracey" = "1.3.0"
 
@@ -147,5 +147,5 @@ cargo xtask generate-readmes
 "cargo:lsp-bench" = "0.3.3"
 "npm:vscode-langservers-extracted" = "4.10.0"
 "cargo:tracey" = "1.3.0"
-"npm:oxfmt" = "0.51.0"
+"npm:oxfmt" = "0.52.0"
 "cargo:cargo-rdme" = "1.5"

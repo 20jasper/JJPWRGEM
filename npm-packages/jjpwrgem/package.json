@@ -1,6 +1,6 @@
 {
   "name": "jjpwrgem",
-  "version": "0.6.3",
+  "version": "0.7.1",
   "private": false,
   "description": "jjpwrgem json parser with really good error messages",
   "keywords": [
@@ -19,6 +19,12 @@
   "bin": {
     "jjp": "run-jjp.js"
   },
+  "files": [
+    "*.js",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
   "type": "",
   "main": "",
   "scripts": {
@@ -32,7 +38,7 @@
     "node": ">=14",
     "npm": ">=6"
   },
-  "artifactDownloadUrl": "https://github.com/20jasper/jjpwrgem/releases/download/jjpwrgem-v0.6.3",
+  "artifactDownloadUrl": "https://github.com/20jasper/jjpwrgem/releases/download/jjpwrgem-v0.7.1",
   "glibcMinimum": {
     "major": 2,
     "series": 35

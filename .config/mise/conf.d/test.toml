@@ -1,3 +1,6 @@
+[tools]
+"cargo:cargo-insta" = "1.46"
+
 [vars]
 test_flags = "--all-features --workspace -q"
 
