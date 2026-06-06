@@ -35,7 +35,7 @@ jobs:
       - name: Sync npm package metadata into release PR
         if: ${{ steps.release-plz.outputs.prs_created == 'true' || steps.release-plz.outputs.prs_updated == 'true' }}
         env:
-          HEAD_BRANCH: ${{ fromJSON(steps.release-plz.outputs.pr).head_branch }}
+          HEAD_BRANCH: ${{ fromJSON(steps.release-plz.outputs.pr || '{}').head_branch }}
           RELEASE_PLZ_TOKEN: ${{ secrets.RELEASE_PLZ_TOKEN }}
           COMMIT_MESSAGE: "chore: sync npm package metadata"
           HK: "0"
