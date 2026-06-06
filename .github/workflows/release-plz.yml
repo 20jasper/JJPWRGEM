@@ -48,7 +48,7 @@ jobs:
 
           mise run package-json
 
-          git add npm-template/
+          git add npm-packages/jjpwrgem/
 
           if git diff --cached --quiet; then
             echo "npm metadata already in sync"

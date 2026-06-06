@@ -21,7 +21,7 @@ const ZIP_EXT_KEY: &str = "zipExt";
 
 const TEMPLATE: &str = include_str!(concat!(
     env!("CARGO_MANIFEST_DIR"),
-    "/../npm-template/package.template.json"
+    "/../npm-packages/jjpwrgem/package.template.json"
 ));
 
 pub fn write_package_json() -> Result<()> {
@@ -30,7 +30,10 @@ pub fn write_package_json() -> Result<()> {
     let ast = Document::parse(compact.as_str()).map_err(|err| anyhow!(err.to_string()))?;
     let formatted = jjpwrgem_parse::format::prettify_document(&ast, 80, LineEnding::Lf);
 
-    let out_path = concat!(env!("CARGO_MANIFEST_DIR"), "/../npm-template/package.json");
+    let out_path = concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../npm-packages/jjpwrgem/package.json"
+    );
     fs::write(out_path, formatted)?;
 
     println!("generated package json");

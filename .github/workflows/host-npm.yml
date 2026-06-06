@@ -31,7 +31,7 @@ jobs:
       - name: Pack npm
         run: |
           mkdir -p ./npm
-          npm pack ./npm-template --pack-destination ./npm
+          npm pack ./npm-packages/jjpwrgem --pack-destination ./npm
 
       - name: Upload npm package artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1

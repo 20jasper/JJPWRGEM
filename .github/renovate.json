@@ -148,8 +148,11 @@
   ],
   "ignorePaths": [
     ".github/workflows/jjpwrgem-v-release.yml",
-    "npm-template/package.json"
+    "npm-packages/jjpwrgem/package.json"
   ],
+  "npm": {
+    "fileMatch": ["(^|/)package\\.template\\.json$"]
+  },
   "customManagers": [
     {
       "customType": "regex",

@@ -43,12 +43,6 @@ importers:
         specifier: npm:@typescript/native-preview@7.0.0-dev.20260527.2
         version: '@typescript/native-preview@7.0.0-dev.20260527.2'
 
-  npm-template:
-    dependencies:
-      detect-libc:
-        specifier: ^2.1.2
-        version: 2.1.2
-
 packages:
 
   '@babel/code-frame@7.29.7':
@@ -475,10 +469,6 @@ packages:
   decamelize@4.0.0:
     resolution: {integrity: sha512-9iE1PgSik9HeIIw2JO94IidnE3eBoQrFJ3w7sFuzSX4DpmZ3v5sZpUiV5Swcf6mQEF+Y0ru8Neo+p+nyh2J+hQ==}
     engines: {node: '>=10'}
-
-  detect-libc@2.1.2:
-    resolution: {integrity: sha512-Btj2BOOO83o3WyH59e8MgXsxEQVcarkUOpEYrubB0urwnN10yQ364rsiByU11nZlqWYZm05i/of7io4mzihBtQ==}
-    engines: {node: '>=8'}
 
   diff@7.0.0:
     resolution: {integrity: sha512-PJWHUb1RFevKCwaFA9RlG5tCd+FO5iRh9A8HEtkmBH2Li03iJriB6m6JIN4rGz3K3JLawI7/veA1xzRKP6ISBw==}
@@ -1339,8 +1329,6 @@ snapshots:
       supports-color: 8.1.1
 
   decamelize@4.0.0: {}
-
-  detect-libc@2.1.2: {}
 
   diff@7.0.0: {}
 

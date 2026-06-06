@@ -1,5 +1,4 @@
 packages:
-  - "npm-packages/*"
-  - "npm-template"
+  - "npm-packages/jjpwrgem-vscode"
 allowBuilds:
   esbuild: true

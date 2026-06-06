@@ -1,22 +1,28 @@
 [tasks.npm-markdown]
-description = "Copy top-level readme and changelog into npm-template/"
+description = "Copy top-level readme and changelog"
 sources = ["readme.md", "CHANGELOG.md"]
-outputs = ["npm-template/README.md", "npm-template/CHANGELOG.md"]
+outputs = [
+  "npm-packages/jjpwrgem/README.md",
+  "npm-packages/jjpwrgem/CHANGELOG.md",
+]
 run = [
-  "cp -f readme.md npm-template/README.md",
-  "cp -f CHANGELOG.md npm-template/CHANGELOG.md",
+  "cp -f readme.md npm-packages/jjpwrgem/README.md",
+  "cp -f CHANGELOG.md npm-packages/jjpwrgem/CHANGELOG.md",
 ]
 
 [tasks.package-json]
-description = "Regenerate npm-template/package.json and shrinkwrap"
+description = "Regenerate package.json and shrinkwrap"
 depends = ["npm-markdown"]
 sources = ["xtask/src/**/*.rs", "Cargo.toml", "dist-workspace.toml"]
-outputs = ["npm-template/package.json", "npm-template/npm-shrinkwrap.json"]
+outputs = [
+  "npm-packages/jjpwrgem/package.json",
+  "npm-packages/jjpwrgem/npm-shrinkwrap.json",
+]
 run = [
   "cargo xtask generate-npm-package",
-  "oxfmt npm-template/package.json --write",
-  "npm install --prefix npm-template --ignore-scripts --no-fund",
-  "npm shrinkwrap --prefix npm-template",
+  "oxfmt npm-packages/jjpwrgem/package.json --write",
+  "npm install --prefix npm-packages/jjpwrgem --ignore-scripts --no-fund",
+  "npm shrinkwrap --prefix npm-packages/jjpwrgem",
 ]
 
 [tasks.package-json.tools]
