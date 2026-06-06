@@ -176,7 +176,9 @@
     "npm-packages/jjpwrgem/package.json"
   ],
   "npm": {
-    "fileMatch": ["(^|/)package\\.template\\.json$"]
+    "managerFilePatterns": [
+      "/(^|/)package\\.template\\.json$/"
+    ]
   },
   "customManagers": [
     {
