@@ -25,8 +25,8 @@ importers:
         specifier: 22.19.19
         version: 22.19.19
       '@types/vscode':
-        specifier: 1.120.0
-        version: 1.120.0
+        specifier: 1.82.0
+        version: 1.82.0
       '@vscode/test-cli':
         specifier: 0.0.12
         version: 0.0.12
@@ -277,8 +277,8 @@ packages:
   '@types/normalize-package-data@2.4.4':
     resolution: {integrity: sha512-37i+OaWTh9qeK4LSHPsyRC7NahnGotNuZvjLSgcPzblpHB3rrCJxAOgI5gCdKm7coonsaX1Of0ILiTcnZjbfxA==}
 
-  '@types/vscode@1.120.0':
-    resolution: {integrity: sha512-feaT4Rst+FkTch5zz/ZbNCxoIvo55YU80Be2kiL7OJcod4+CUYf2lUBPdIJzozNnSEMq1VRTGrWEcCGFB3fBmA==}
+  '@types/vscode@1.82.0':
+    resolution: {integrity: sha512-VSHV+VnpF8DEm8LNrn8OJ8VuUNcBzN3tMvKrNpbhhfuVjFm82+6v44AbDhLvVFgCzn6vs94EJNTp7w8S6+Q1Rw==}
 
   '@typescript/native-preview-darwin-arm64@7.0.0-dev.20260527.2':
     resolution: {integrity: sha512-3LqSu4DlxkEfeC/Z/29QMCJn5jjkDtXI7LYuxfmjdmAatS6umDKqm8J17fnP/7fyrZUMBTIYRwSDpChGV3G1ew==}
@@ -1149,7 +1149,7 @@ snapshots:
 
   '@types/normalize-package-data@2.4.4': {}
 
-  '@types/vscode@1.120.0': {}
+  '@types/vscode@1.82.0': {}
 
   '@typescript/native-preview-darwin-arm64@7.0.0-dev.20260527.2':
     optional: true
