@@ -74,6 +74,23 @@
       "dependencyDashboardApproval": true
     },
     {
+      "matchManagers": ["npm"],
+      "matchDepTypes": ["engines"],
+      "matchPackageNames": ["vscode"],
+      "enabled": false
+    },
+    {
+      "matchManagers": ["npm"],
+      "matchPackageNames": ["@types/vscode"],
+      "enabled": false
+    },
+    {
+      "matchManagers": ["npm"],
+      "matchPackageNames": ["@types/node"],
+      "matchUpdateTypes": ["major"],
+      "enabled": false
+    },
+    {
       "matchManagers": ["github-actions"],
       "groupName": "github actions",
       "matchUpdateTypes": ["patch", "minor", "digest"],
@@ -144,6 +161,14 @@
       "matchPackageNames": ["pnpm", "aqua:pnpm/pnpm"],
       "groupName": "pnpm",
       "automerge": true
+    },
+    {
+      "matchPackageNames": [
+        "ghcr.io/renovatebot/renovate",
+        "renovate",
+        "npm:renovate"
+      ],
+      "groupName": "renovate tooling"
     }
   ],
   "ignorePaths": [
