@@ -9,9 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.7.1](https://github.com/20jasper/JJPWRGEM/compare/jjpwrgem-v0.7.0...jjpwrgem-v0.7.1) - 2026-06-06
 
-### Added
+### Documentation
 
-- primitive json schema
+- add readme to npm package
 
 ## [0.7.0](https://github.com/20jasper/JJPWRGEM/compare/jjpwrgem-v0.6.3...jjpwrgem-v0.7.0) - 2026-06-01
 
