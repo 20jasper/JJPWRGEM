@@ -151,6 +151,12 @@ fn generate_package_json(
                 .into_iter()
                 .collect(),
         ),
+        files: Some(vec![
+            "*.js".to_string(),
+            "README.md".to_string(),
+            "CHANGELOG.md".to_string(),
+            "LICENSE".to_string(),
+        ]),
         scripts: package_config.scripts.clone().into_iter().collect(),
         engines: Some(package_config.engines.clone().into_iter().collect()),
         repository: Some(package_json::PackageRepository::Url(

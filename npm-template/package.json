@@ -19,6 +19,12 @@
   "bin": {
     "jjp": "run-jjp.js"
   },
+  "files": [
+    "*.js",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
   "type": "",
   "main": "",
   "scripts": {
