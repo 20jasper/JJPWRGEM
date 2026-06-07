@@ -42,6 +42,9 @@ actionlint = "1.7.12"
 "npm:knip" = "6.14.2"
 "npm:oxlint" = "1.67.0"
 
+[tasks.vsce-pack-check]
+run = "pnpm --filter jjpwrgem-vscode run vsce:pack"
+
 [tasks.knip]
 run = "knip --workspace npm-packages/jjpwrgem-vscode"
 

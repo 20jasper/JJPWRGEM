@@ -1,6 +1,6 @@
 # JJPWRGEM
 
-JSON language server with rich error messages — formatting, diagnostics, and code actions for VS Code.
+JSON language server with rich error messages
 
 ## Requirements
 
@@ -15,7 +15,3 @@ Install `jjp`
 ![{{LSP_DEMO_ALT}}](./vscode-jjp.gif)
 
 {{LSP_PERF_CLAIM}}
-
-```
-{{CHECK_EXAMPLE}}
-```

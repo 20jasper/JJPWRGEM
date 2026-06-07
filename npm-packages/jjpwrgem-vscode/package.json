@@ -37,7 +37,7 @@
     "check-types": "tsgo --noEmit",
     "test": "vscode-test",
     "vsce:ls": "vsce ls",
-    "vsce:pack": "vsce package"
+    "vsce:pack": "vsce package --no-dependencies"
   },
   "dependencies": {
     "vscode-languageclient": "^10.0.0"
@@ -61,6 +61,7 @@
   "extensionKind": [
     "workspace"
   ],
+  "icon": "axolotl-thumb.png",
   "engines": {
     "vscode": "^1.82.0"
   },

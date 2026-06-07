@@ -7,14 +7,14 @@ Run locally with `mise run bench bytes2chars`
 
 ## ascii
 
-|                     | `bytes2chars` | `utf8_decode` |   `bstr`   |
+|                     | `utf8_decode` | `bytes2chars` |   `bstr`   |
 | :------------------ | :-----------: | :-----------: | :--------: |
-| time (64 KiB)       |   146.69 µs   |   45.05 µs    |  21.99 µs  |
-| throughput (64 KiB) | 426.08 MiB/s  |  1.35 GiB/s   | 2.78 GiB/s |
+| time (64 KiB)       |   162.16 µs   |   136.51 µs   |  22.21 µs  |
+| throughput (64 KiB) | 385.42 MiB/s  | 457.84 MiB/s  | 2.75 GiB/s |
 
 ## non_ascii
 
-|                     | `bytes2chars` |   `bstr`   | `utf8_decode` |
-| :------------------ | :-----------: | :--------: | :-----------: |
-| time (64 KiB)       |   150.80 µs   |  51.73 µs  |   41.85 µs    |
-| throughput (64 KiB) | 414.46 MiB/s  | 1.18 GiB/s |  1.46 GiB/s   |
+|                     | `bytes2chars` | `utf8_decode` |   `bstr`   |
+| :------------------ | :-----------: | :-----------: | :--------: |
+| time (64 KiB)       |   159.18 µs   |   113.22 µs   |  44.96 µs  |
+| throughput (64 KiB) | 392.65 MiB/s  | 552.03 MiB/s  | 1.36 GiB/s |

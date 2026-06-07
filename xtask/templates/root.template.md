@@ -13,7 +13,7 @@ An RFC 8259 compliant JSON language server and formatter!
 ## Why JJP?
 
 - Rich errors with context, descriptions, and patches
-- LSP reports diagnostics around 16-56x faster and uses 6-10x less RAM than VSCode's JSON LSP — [LSP benchmarks](./benches/lsp/lsp.md)
+- {{LSP_PERF_CLAIM}}
 - Parses and pretty prints a 1.7MB file in ~11ms — [benchmarks](./benches/BENCHMARKS.md)
 
 ![animation of JJPWRGEM's LSP. file changes are made quickly and feedback is shown quickly. code actions fix common issues like missing colons](./crates/lsp/lsp-demo.gif)

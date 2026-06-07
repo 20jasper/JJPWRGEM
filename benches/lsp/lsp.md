@@ -6,11 +6,15 @@ Wall-clock timing and memory usage against VSCode's JSON LSP via `lsp-bench`. Ru
 
 These benchmarks are run with `AMD Ryzen 5 5600X 6-Core Processor (3.70 GHz)`
 
+VSCode's diagnostics calculation has a 500ms delay for push only diagnostics. The LSP client can pull as of LSP 3.17 (2022), so most modern editors request diagnostics earlier than 500ms
+
+JJPWRGEM does not delay anything
+
 ## small
 
 [small.json](/benches/data/small.json) — 163B, small nested objects and arrays, mixed scalar values
 
-Baseline performance for minimal parsing work. VSCode's diagnostics calculation has a 500ms delay
+Baseline performance for minimal parsing work
 
 Note: memory values are RSS (resident set size), shown in megabytes.
 

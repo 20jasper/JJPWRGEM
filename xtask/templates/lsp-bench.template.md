@@ -4,11 +4,15 @@ Wall-clock timing and memory usage against VSCode's JSON LSP via `lsp-bench`. Ru
 
 {{BENCH_HARDWARE}}
 
+VSCode's diagnostics calculation has a 500ms delay for push only diagnostics. The LSP client can pull as of LSP 3.17 (2022), so most modern editors request diagnostics earlier than 500ms
+
+JJPWRGEM does not delay anything
+
 ## small
 
 {{FIXTURE_SMALL}}
 
-Baseline performance for minimal parsing work. VSCode's diagnostics calculation has a 500ms delay
+Baseline performance for minimal parsing work
 
 {{LSP_BENCH_SMALL_TABLE}}
 

@@ -73,6 +73,10 @@ local check_steps = new Mapping<String, Step> {
     glob = List("npm-packages/jjpwrgem-vscode/**")
     check = "mise run knip"
   }
+  ["vsce-pack-check"] {
+    glob = List("npm-packages/jjpwrgem-vscode/**")
+    check = "mise run vsce-pack-check"
+  }
 }
 
 // Sync mise tools whenever mise config files change in a checkout/merge.
