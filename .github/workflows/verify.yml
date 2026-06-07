@@ -46,4 +46,5 @@ jobs:
       - uses: ./.github/actions/setup-rust
       - uses: ./.github/actions/setup-mise
       - uses: ./.github/actions/setup-node
-      - run: mise run vscode-test-linux
+      - run: mise run install
+      - run: mise run test-vscode-linux

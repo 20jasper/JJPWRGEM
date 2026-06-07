@@ -62,3 +62,6 @@ run = [
 
 [tasks.test-snapshot.tools]
 "cargo:cargo-insta" = "1.46"
+
+[tasks.test-vscode-linux]
+run = "xvfb-run -a pnpm --filter jjpwrgem-vscode test"

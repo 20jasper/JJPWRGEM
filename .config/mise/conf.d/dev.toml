@@ -20,7 +20,3 @@ run = "bacon install"
 
 [tasks.install-watch.tools]
 "cargo:bacon" = "3.23.0"
-
-[tasks.vscode-test-linux]
-depends = ["install"]
-run = "xvfb-run -a pnpm --filter jjpwrgem-vscode test"
