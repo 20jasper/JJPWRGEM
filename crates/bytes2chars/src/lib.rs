@@ -160,3 +160,9 @@ mod error {
 
     impl core::error::Error for Error {}
 }
+
+pub(crate) mod hint {
+
+    #[cold]
+    pub(crate) fn cold_path() {}
+}

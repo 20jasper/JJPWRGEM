@@ -163,16 +163,19 @@ mod inner {
 
         // utf8[impl validate.no-surrogates]
         if SURROGATE_RANGE.contains(&codepoint) {
+            crate::hint::cold_path();
             return Err(ErrorKind::InvalidSurrogate(codepoint));
         }
 
         // utf8[impl validate.max-codepoint]
         if codepoint > MAX_CODEPOINT {
+            crate::hint::cold_path();
             return Err(ErrorKind::OutOfRange(codepoint));
         }
 
         // utf8[impl validate.no-overlong]
         if bytes.bytes != min_bytes_for_code_point(codepoint) {
+            crate::hint::cold_path();
             return Err(ErrorKind::Overlong(codepoint));
         }
 
