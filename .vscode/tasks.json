@@ -1,0 +1,42 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "build jjpwrgem-vscode",
+      "type": "shell",
+      "command": "pnpm",
+      "args": ["--dir", "npm-packages/jjpwrgem-vscode", "run", "compile"],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "presentation": {
+        "reveal": "never"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "watch jjpwrgem-vscode",
+      "type": "shell",
+      "command": "pnpm",
+      "args": ["--dir", "npm-packages/jjpwrgem-vscode", "run", "watch"],
+      "isBackground": true,
+      "presentation": {
+        "reveal": "never",
+        "group": "jjpwrgem-vscode"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "test jjpwrgem-vscode",
+      "type": "shell",
+      "command": "pnpm",
+      "args": ["--dir", "npm-packages/jjpwrgem-vscode", "run", "test"],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "problemMatcher": []
+    }
+  ]
+}

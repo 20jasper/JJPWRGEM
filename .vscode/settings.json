@@ -1,6 +1,9 @@
 {
   "glspc.server.command": "tracey",
   "glspc.server.commandArguments": ["lsp"],
+  "[json]": {
+    "editor.defaultFormatter": "20jasper.jjpwrgem-vscode"
+  },
   "glspc.server.languageId": [
     "rust",
     "typescript",
