@@ -12,6 +12,6 @@ Install `jjp`
 
 {{LSP_FEATURES}}
 
-![{{LSP_DEMO_ALT}}](./vscode-jjp.gif)
+![{{LSP_DEMO_ALT}}]({{LSP_DEMO_URL}})
 
 {{LSP_PERF_CLAIM}}
