@@ -1,7 +1,7 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": ["config:best-practices"],
-  "schedule": ["before 8am on wednesday"],
+  "schedule": ["on tuesday and wednesday"],
   "packageRules": [
     {
       "matchManagers": ["dockerfile", "mise", "cargo"],
@@ -98,15 +98,13 @@
       "minimumReleaseAge": "14 days",
       "prCreation": "not-pending"
     },
-    {
-      "matchManagers": ["git-submodules"],
-      "automerge": true
-    },
+    { "matchManagers": ["git-submodules"], "automerge": true },
     {
       "matchManagers": ["mise"],
       "matchFileNames": [
         ".config/mise/config.toml",
-        ".config/mise/conf.d/*.toml"
+        ".config/mise/conf.d/*.toml",
+        "benches/docker/mise.toml"
       ],
       "matchUpdateTypes": ["patch", "minor"],
       "groupName": "mise dev tools (patch + minor)",
@@ -175,9 +173,7 @@
     ".github/workflows/jjpwrgem-v-release.yml",
     "npm-packages/jjpwrgem/package.json"
   ],
-  "npm": {
-    "managerFilePatterns": ["/(^|/)package\\.template\\.json$/"]
-  },
+  "npm": { "managerFilePatterns": ["/(^|/)package\\.template\\.json$/"] },
   "customManagers": [
     {
       "customType": "regex",
