@@ -3,7 +3,7 @@ name: Publish VSCode Extension
 on:
   push:
     tags:
-      - "jjpwrgem-vscode-v*"
+      - "vscode-v*"
   workflow_dispatch:
     inputs:
       publish_marketplace:
@@ -31,7 +31,9 @@ jobs:
 
       - uses: ./.github/actions/setup-node
       - run: pnpm --filter jjpwrgem-vscode run vsce:pack
-      - run: pnpm --filter jjpwrgem-vscode exec vsce publish --pat ${{ secrets.VSCE_PAT }}
+      - run: pnpm --filter jjpwrgem-vscode run vsce:publish
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
 
   # publish-ovsx:
   #   if: github.event_name == 'push' || inputs.publish_ovsx
@@ -43,4 +45,6 @@ jobs:
 
   #     - uses: ./.github/actions/setup-node
   #     - run: pnpm --filter jjpwrgem-vscode run vsce:pack
-  #     - run: pnpm --filter jjpwrgem-vscode exec ovsx publish --pat ${{ secrets.OVSX_TOKEN }}
+  #     - run: pnpm --filter jjpwrgem-vscode run ovsx:publish
+  #       env:
+  #         OVSX_PAT: ${{ secrets.OVSX_TOKEN }}

@@ -37,7 +37,9 @@
     "check-types": "tsgo --noEmit",
     "test": "vscode-test",
     "vsce:ls": "vsce ls",
-    "vsce:pack": "vsce package --no-dependencies"
+    "vsce:pack": "vsce package --no-dependencies",
+    "vsce:publish": "vsce publish --no-dependencies",
+    "ovsx:publish": "ovsx publish --no-dependencies"
   },
   "dependencies": {
     "vscode-languageclient": "^10.0.0"
