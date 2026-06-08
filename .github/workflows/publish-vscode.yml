@@ -4,12 +4,25 @@ on:
   push:
     tags:
       - "jjpwrgem-vscode-v*"
+  workflow_dispatch:
+    inputs:
+      publish_marketplace:
+        description: Publish to VSCode Marketplace
+        required: true
+        type: boolean
+        default: true
+      # publish_ovsx:
+      #   description: Publish to Open VSX
+      #   required: true
+      #   type: boolean
+      #   default: true
 
 permissions:
   contents: read
 
 jobs:
   publish-marketplace:
+    if: github.event_name == 'push' || inputs.publish_marketplace
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -20,13 +33,14 @@ jobs:
       - run: pnpm --filter jjpwrgem-vscode run vsce:pack
       - run: pnpm --filter jjpwrgem-vscode exec vsce publish --pat ${{ secrets.VSCE_PAT }}
 
-  publish-ovsx:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-        with:
-          persist-credentials: false
+  # publish-ovsx:
+  #   if: github.event_name == 'push' || inputs.publish_ovsx
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+  #       with:
+  #         persist-credentials: false
 
-      - uses: ./.github/actions/setup-node
-      - run: pnpm --filter jjpwrgem-vscode run vsce:pack
-      - run: pnpm --filter jjpwrgem-vscode exec ovsx publish --pat ${{ secrets.OVSX_TOKEN }}
+  #     - uses: ./.github/actions/setup-node
+  #     - run: pnpm --filter jjpwrgem-vscode run vsce:pack
+  #     - run: pnpm --filter jjpwrgem-vscode exec ovsx publish --pat ${{ secrets.OVSX_TOKEN }}
