@@ -2,11 +2,15 @@
 
 ![{{LSP_DEMO_ALT}}](./lsp-demo.gif)
 
-## quick start
+## Installation
 
-[Install `jjp`](../../readme.md#installation)
+[Install `jjp`](../../readme.md#installation), then configure based on your editor
 
-Configure your lsp client of choice to run `jjp lsp`
+### VSCode
+
+[VSCode extension](https://marketplace.visualstudio.com/items?itemName=20jasper.jjpwrgem-vscode)
+
+### Generic LSP Client
 
 For example, here's a Helix configuration
 

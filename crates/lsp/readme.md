@@ -10,11 +10,15 @@ Scales well for large files. There is no perceivable delay when editing a 68k li
 
 ![animation of JJPWRGEM's LSP in a 60,000 line file. file changes are made quickly and feedback is shown quickly. code actions fix common issues like missing colons](./lsp-demo.gif)
 
-## quick start
+## Installation
 
-[Install `jjp`](../../readme.md#installation)
+[Install `jjp`](../../readme.md#installation), then configure based on your editor
 
-Configure your lsp client of choice to run `jjp lsp`
+### VSCode
+
+[VSCode extension](https://marketplace.visualstudio.com/items?itemName=20jasper.jjpwrgem-vscode)
+
+### Generic LSP Client
 
 For example, here's a Helix configuration
 
