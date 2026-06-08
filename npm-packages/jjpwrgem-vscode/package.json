@@ -53,7 +53,7 @@
     "@vscode/vsce": "^3.4.2",
     "esbuild": "0.28.0",
     "npm-run-all2": "5.0.2",
-    "ovsx": "^0.9.5",
+    "ovsx": "^1.0.0",
     "typescript": "npm:@typescript/native-preview@7.0.0-dev.20260527.2"
   },
   "contributes": {},
