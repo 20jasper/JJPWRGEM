@@ -4,3 +4,5 @@ allowBuilds:
   "@vscode/vsce-sign": true
   esbuild: true
   keytar: true
+minimumReleaseAgeExclude:
+  - "@vscode/test-electron@3.0.0"
