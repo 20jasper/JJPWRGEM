@@ -46,7 +46,7 @@
   },
   "devDependencies": {
     "@types/mocha": "10.0.10",
-    "@types/node": "22.19.19",
+    "@types/node": "22.19.20",
     "@types/vscode": "1.82.0",
     "@vscode/test-cli": "0.0.12",
     "@vscode/test-electron": "3.0.0",
@@ -54,7 +54,7 @@
     "esbuild": "0.28.0",
     "npm-run-all2": "5.0.2",
     "ovsx": "1.0.0",
-    "typescript": "npm:@typescript/native-preview@7.0.0-dev.20260527.2"
+    "typescript": "npm:@typescript/native-preview@7.0.0-dev.20260607.1"
   },
   "contributes": {},
   "activationEvents": [
