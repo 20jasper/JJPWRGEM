@@ -71,7 +71,7 @@ lsp = { workspace = true }
 bytes2chars = { workspace = true }
 const_format = "=0.2.36"
 
-insta = "=1.47.2"
+insta = "=1.48.0"
 proptest = "=1.11.0"
 rstest = { workspace = true }
 rstest_reuse = { workspace = true }
