@@ -8,7 +8,7 @@ edition = "2024"
 cargo-fuzz = true
 
 [dependencies]
-libfuzzer-sys = "=0.4.12"
+libfuzzer-sys = "=0.4.13"
 jjpwrgem-parse = { path = "../crates/parse" }
 jjpwrgem-ui = { path = "../crates/ui" }
 
