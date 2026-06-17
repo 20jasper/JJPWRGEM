@@ -97,23 +97,23 @@ checksum = "sha256:538f9c846355d9e847b2671bc00c47da4229a0befb24df3282b739770f3b4
 url = "https://github.com/oven-sh/bun/releases/download/bun-v1.3.14/bun-windows-x64-baseline.zip"
 
 [[tools."cargo:json-pp-rust"]]
-version = "=0.1.0"
+version = "0.1.0"
 backend = "cargo:json-pp-rust"
 
 [[tools."cargo:jsonformat-cli"]]
-version = "=1.0.0"
+version = "1.0.0"
 backend = "cargo:jsonformat-cli"
 
 [[tools."cargo:jsonice"]]
-version = "=0.2.1"
+version = "0.2.1"
 backend = "cargo:jsonice"
 
 [[tools."cargo:jsonxf"]]
-version = "=1.1.1"
+version = "1.1.1"
 backend = "cargo:jsonxf"
 
 [[tools."cargo:sjq"]]
-version = "=0.1.4"
+version = "0.1.4"
 backend = "cargo:sjq"
 
 [[tools."github:caarlos0/jsonfmt"]]
@@ -532,8 +532,12 @@ provenance = "github-attestations"
 version = "1.0.0"
 backend = "npm:json-minify"
 
+[[tools."npm:oxfmt"]]
+version = "0.54.0"
+backend = "npm:oxfmt"
+
 [[tools."npm:prettier"]]
-version = "3.8.3"
+version = "3.8.4"
 backend = "npm:prettier"
 
 [[tools.python]]
