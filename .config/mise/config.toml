@@ -13,7 +13,7 @@ binstall = true
 hk = "1.48.0"
 "aqua:apple/pkl" = "0.31.1"
 jq = "1.8.1"
-"aqua:pnpm/pnpm" = "11.6.0"
+"aqua:pnpm/pnpm" = "11.8.0"
 
 [hooks]
 postinstall = "hk install --mise"
