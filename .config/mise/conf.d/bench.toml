@@ -48,7 +48,7 @@ run = [
 ]
 
 [tasks.bench-codspeed.tools]
-"cargo:cargo-codspeed" = "4.6.0"
+"cargo:cargo-codspeed" = "5.0.0"
 
 [tasks.bench-iai]
 description = "Run the iai (gungraun) bench"
