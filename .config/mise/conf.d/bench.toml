@@ -21,7 +21,7 @@ cargo rdme --workspace-project bytes2chars --force
 
 [tasks.bench.tools]
 "cargo:cargo-criterion" = "1.1.0"
-"cargo:cargo-rdme" = "1.5"
+"cargo:cargo-rdme" = "2.0"
 "cargo:tracey" = "1.3.0"
 "npm:oxfmt" = "0.55.0"
 
@@ -35,7 +35,7 @@ run = [
 
 [tasks.bench-json.tools]
 "cargo:cargo-criterion" = "1.1.0"
-"cargo:cargo-rdme" = "1.5"
+"cargo:cargo-rdme" = "2.0"
 "cargo:tracey" = "1.3.0"
 "npm:oxfmt" = "0.55.0"
 
@@ -115,7 +115,7 @@ cargo rdme --workspace-project bytes2chars --force
 
 [tasks.bench-docker.tools]
 "npm:oxfmt" = "0.55.0"
-"cargo:cargo-rdme" = "1.5"
+"cargo:cargo-rdme" = "2.0"
 "cargo:tracey" = "1.3.0"
 
 [tasks.bench-lsp]
@@ -148,4 +148,4 @@ cargo xtask generate-readmes
 "npm:vscode-langservers-extracted" = "4.10.0"
 "cargo:tracey" = "1.3.0"
 "npm:oxfmt" = "0.55.0"
-"cargo:cargo-rdme" = "1.5"
+"cargo:cargo-rdme" = "2.0"
