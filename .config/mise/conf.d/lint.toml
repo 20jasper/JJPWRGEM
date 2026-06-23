@@ -98,4 +98,4 @@ run = "tracey pre-commit"
 run = "renovate-config-validator .github/renovate.json"
 
 [tasks.renovate-check.tools]
-"npm:renovate" = "43.233.3"
+"npm:renovate" = "43.233.4"
