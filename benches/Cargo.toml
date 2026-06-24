@@ -16,7 +16,7 @@ serde_json = "=1.0.150"
 simd-json = "=0.17.0"
 sonic-rs = "=0.5.8"
 utf8-decode = "=2.0.0"
-bstr = "=1.12.1"
+bstr = "=1.12.2"
 
 [[bench]]
 name = "bytes2chars"
