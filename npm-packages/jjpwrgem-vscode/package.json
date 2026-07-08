@@ -54,7 +54,7 @@
     "esbuild": "0.28.1",
     "npm-run-all2": "9.0.2",
     "ovsx": "1.0.2",
-    "typescript": "npm:@typescript/native-preview@7.0.0-dev.20260704.1"
+    "typescript": "npm:@typescript/native-preview@7.0.0-dev.20260705.1"
   },
   "contributes": {},
   "activationEvents": [
