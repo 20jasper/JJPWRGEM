@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.2](https://github.com/20jasper/JJPWRGEM/compare/jjpwrgem-v0.7.1...jjpwrgem-v0.7.2) - 2026-07-08
+
+### Documentation
+
+- update vscode and LSP perf claims
+- add vscode extension URL
+- add metadata and docs for vscode extension
+
+### Fixed
+
+- *(deps)* update rust deps (minor + patch) ([#393](https://github.com/20jasper/JJPWRGEM/pull/393))
+
 ## [0.7.1](https://github.com/20jasper/JJPWRGEM/compare/jjpwrgem-v0.7.0...jjpwrgem-v0.7.1) - 2026-06-06
 
 ### Documentation
