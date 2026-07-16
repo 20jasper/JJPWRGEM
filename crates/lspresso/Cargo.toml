@@ -13,5 +13,60 @@ keywords = ["lsp", "language-server", "benchmarking", "testing", "client"]
 categories = ["development-tools", "development-tools::testing"]
 include = ["src/**/*", "README.md", "lspresso.webp"]
 
+[features]
+test-binaries = []
+
+[[bin]]
+name = "lspresso_exits_immediately"
+required-features = ["test-binaries"]
+
+[[bin]]
+name = "lspresso_exit_code_reflects_shutdown"
+required-features = ["test-binaries"]
+
+[[bin]]
+name = "lspresso_stall_after_init"
+required-features = ["test-binaries"]
+
+[[bin]]
+name = "lspresso_bad_frame_after_init"
+required-features = ["test-binaries"]
+
+[[bin]]
+name = "lspresso_stop_reading_stdin"
+required-features = ["test-binaries"]
+
+[[bin]]
+name = "lspresso_records_trace"
+required-features = ["test-binaries"]
+
+[[bin]]
+name = "lspresso_sends_unmatched_response_id"
+required-features = ["test-binaries"]
+
+[[bin]]
+name = "lspresso_answers_shutdown_with_error"
+required-features = ["test-binaries"]
+
+[[bin]]
+name = "lspresso_tolerates_and_acknowledges_server_messages"
+required-features = ["test-binaries"]
+
+[dependencies]
+crossbeam-channel = "0.5.15"
+displaydoc = { workspace = true }
+fluent-uri = "0.4.1"
+gen-lsp-types = { version = "0.10.0", features = ["fluent-uri"] }
+lsp-server = "0.9.0"
+serde = { workspace = true, features = ["derive"] }
+serde_json = "1.0.150"
+sysinfo = "0.38"
+thiserror = "2.0.18"
+tracing = { version = "0.1", features = ["log"] }
+
+[dev-dependencies]
+googletest = "0.14.3"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
 [lints]
 workspace = true
