@@ -1,0 +1,17 @@
+[package]
+name = "lspresso"
+description = "language server test client"
+version = "0.1.0"
+edition.workspace = true
+rust-version = "1.88"
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+documentation = "https://docs.rs/lspresso"
+readme = "README.md"
+keywords = ["lsp", "language-server", "benchmarking", "testing", "client"]
+categories = ["development-tools", "development-tools::testing"]
+include = ["src/**/*", "README.md", "lspresso.webp"]
+
+[lints]
+workspace = true

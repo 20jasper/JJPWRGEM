@@ -17,9 +17,28 @@ run = "cargo rdme --workspace-project bytes2chars --check"
 [tasks."bytes2chars-readme-check".tools]
 "cargo:cargo-rdme" = "2.0"
 
+[tasks."lspresso-readme"]
+description = "Regenerate the lspresso README from its lib.rs docs"
+sources = ["crates/lspresso/src/**/*.rs", "crates/lspresso/Cargo.toml"]
+outputs = ["crates/lspresso/README.md"]
+run = [
+  "cargo +nightly fmt -p lspresso",
+  "cargo rdme --workspace-project lspresso --force",
+]
+
+[tasks."lspresso-readme".tools]
+"cargo:cargo-rdme" = "2.0"
+
+[tasks."lspresso-readme-check"]
+description = "Verify the lspresso README matches its lib.rs docs"
+run = "cargo rdme --workspace-project lspresso --check"
+
+[tasks."lspresso-readme-check".tools]
+"cargo:cargo-rdme" = "2.0"
+
 [tasks.readmes]
 description = "Generate markdown files from templates"
-depends_post = ["bytes2chars-readme"]
+depends_post = ["bytes2chars-readme", "lspresso-readme"]
 sources = [
   "xtask/templates/**",
   "xtask/src/template.rs",
@@ -46,7 +65,7 @@ run = "cargo xtask generate-readmes"
 
 [tasks."readmes-check"]
 description = "Verify markdown files match generated templates"
-depends_post = ["bytes2chars-readme-check"]
+depends_post = ["bytes2chars-readme-check", "lspresso-readme-check"]
 run = "cargo xtask verify-readmes"
 
 [tasks."readmes-check".tools]

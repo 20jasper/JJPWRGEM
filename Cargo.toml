@@ -45,6 +45,7 @@ members = [
   "xtask",
   "crates/bytes2chars",
   "crates/lsp",
+  "crates/lspresso",
   "benches",
   "crates/json-schema",
 ]
