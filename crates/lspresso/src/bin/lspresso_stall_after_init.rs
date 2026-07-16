@@ -1,4 +1,4 @@
-use lspresso::server_helpers as helpers;
+use lspresso::test_server as helpers;
 use serde_json::json;
 
 fn main() {

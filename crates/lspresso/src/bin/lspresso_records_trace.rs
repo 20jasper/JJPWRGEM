@@ -1,7 +1,7 @@
 // Records whether $/setTrace arrived with the expected value, failing the
 // shutdown response unless it did.
 use lsp_server::Message;
-use lspresso::server_helpers as helpers;
+use lspresso::test_server as helpers;
 
 fn main() {
     let (conn, _io) = lsp_server::Connection::stdio();

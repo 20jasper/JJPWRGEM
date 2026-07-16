@@ -1,22 +1,7 @@
-// Right after answering `initialize`, sends two purely-informational
-// notifications ($/logTrace, telemetry/event) followed by three
-// server-initiated requests (window/workDoneProgress/create,
-// window/showMessageRequest, workspace/semanticTokens/refresh) -- all five
-// sit queued on the client's stdin until it next blocks reading (inside
-// shutdown()'s wait for its own response), exercising notification
-// tolerance and server-request acknowledgment before shutdown completes.
-//
-// Can't reuse run_event_loop_with_shutdown_check here: that helper answers
-// `shutdown` the instant it sees the request, but this fixture needs to
-// defer answering until it's read the three acknowledgment responses that
-// follow -- the client can't send those until it drains its own read queue,
-// which only starts after it's already sent `ShutdownRequest`. Answering
-// early (as the helper does) means checking the acks before they exist.
-//
-// The one thing worth reusing is tolerance: the client's own `initialized`
-// notification arrives here before any of this, so the wait for
-// ShutdownRequest below skips non-matching messages rather than assuming
-// it's the first thing read.
+// Can't reuse run_event_loop_with_shutdown_check: it answers `shutdown` the
+// instant it sees the request, but this needs to defer until it's read the
+// three acks that follow (the client can't send those before it drains its
+// own read queue, which only starts after it sends `ShutdownRequest`).
 use lsp_server::{
     Connection, ErrorCode, Message, Notification, Request, RequestId, Response, ResponseKind,
 };
@@ -25,7 +10,7 @@ use lspresso::{
         MessageType, ProgressToken, Request as _, ShowMessageRequestParams, ShutdownRequest,
         WorkDoneProgressCreateParams,
     },
-    server_helpers as helpers,
+    test_server as helpers,
 };
 use serde_json::json;
 

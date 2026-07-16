@@ -1,11 +1,8 @@
-// Answers `shutdown` with an error response instead of success -- used to
-// test that the client surfaces a server error response as ErrorKind::Response
-// with the code/message/data preserved, rather than treating any response as
-// success or losing the error code.
+// Answers `shutdown` with an error response instead of success.
 use lsp_server::{Connection, ErrorCode, Message, Response};
 use lspresso::{
     gen_lsp_types::{Request as _, ShutdownRequest},
-    server_helpers as helpers,
+    test_server as helpers,
 };
 
 fn main() {
@@ -27,11 +24,7 @@ fn main() {
         }
     }
 
-    // The client treats this error response as fatal to shutdown() and
-    // never sends `exit`, so there's no further message to synchronize on --
-    // drop the sender to close the writer thread's channel and join it,
-    // guaranteeing the response above is actually flushed before this
-    // process can exit.
+    // client never sends `exit` here; join to guarantee the write flushed
     drop(conn);
     drop(io.join());
 }

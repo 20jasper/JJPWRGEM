@@ -19,8 +19,6 @@ fn init_tracing() {
     );
 }
 
-/// Spawns `server` and completes the `initialize`/`initialized` handshake --
-/// the common first step of nearly every test here.
 fn spawn_and_init(server: std::process::Command) -> Client {
     let mut client = Client::spawn(server).expect("spawn");
     client
@@ -75,9 +73,6 @@ fn initialize_records_server_capabilities() -> Result<()> {
     let mut client = Client::spawn(server)?.with_operation_timeout(Duration::from_millis(100));
     client.initialize(ClientCapabilities::default())?;
 
-    // A client left fully initialized (not just "the request came back
-    // ok") records the server's capabilities internally, queryable
-    // afterward -- not just a side effect only observable indirectly.
     assert_that!(client.server_capabilities(), some(anything()));
     Ok(())
 }
@@ -137,9 +132,7 @@ fn second_shutdown_is_a_no_op() -> Result<()> {
         std::process::Command::new(env!("CARGO_BIN_EXE_lspresso_exit_code_reflects_shutdown"));
     let mut client = spawn_and_init(server);
     client.shutdown()?;
-    // A second shutdown() must not re-send `shutdown`/`exit` -- the fixture
-    // only answers `shutdown` once, so a resend would hang until timeout
-    // rather than returning immediately.
+    // fixture only answers `shutdown` once -- a resend would hang
     client.shutdown()?;
     Ok(())
 }
@@ -179,11 +172,7 @@ fn tolerates_and_acknowledges_server_messages() -> Result<()> {
         "CARGO_BIN_EXE_lspresso_tolerates_and_acknowledges_server_messages"
     ));
     let mut client = spawn_and_init(server);
-    // The fixture only answers `shutdown` successfully if it saw a `null`
-    // response to each of window/workDoneProgress/create,
-    // window/showMessageRequest, and workspace/semanticTokens/refresh, and
-    // never errors on the two informational notifications it also sends --
-    // a failing shutdown() here means one of those wasn't handled correctly.
+    // fixture only answers `shutdown` if everything above was handled right
     client.shutdown()?;
     Ok(())
 }

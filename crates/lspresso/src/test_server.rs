@@ -61,10 +61,8 @@ where
 }
 
 /// Like [`run_event_loop`], but `shutdown_check` decides the shutdown
-/// response: `Ok(())` answers normally, `Err(message)` answers with an error
-/// carrying `message`. Lets a mock server report a client-side protocol
-/// violation (e.g. wrong message order or content) through the shutdown
-/// response the test is already checking, instead of a side-channel file.
+/// response, letting a mock server fail a test through the response it's
+/// already checking instead of a side-channel file.
 pub fn run_event_loop_with_shutdown_check<F, C>(
     conn: &Connection,
     mut handler: F,

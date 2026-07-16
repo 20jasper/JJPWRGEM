@@ -17,10 +17,6 @@ include = ["src/**/*", "README.md", "lspresso.webp"]
 test-binaries = []
 
 [[bin]]
-name = "lspresso_exits_immediately"
-required-features = ["test-binaries"]
-
-[[bin]]
 name = "lspresso_exit_code_reflects_shutdown"
 required-features = ["test-binaries"]
 
@@ -30,10 +26,6 @@ required-features = ["test-binaries"]
 
 [[bin]]
 name = "lspresso_bad_frame_after_init"
-required-features = ["test-binaries"]
-
-[[bin]]
-name = "lspresso_stop_reading_stdin"
 required-features = ["test-binaries"]
 
 [[bin]]

@@ -1,8 +1,6 @@
-// Right after answering initialize, sends a stray response for an id the
-// client never requested -- used to test that the client errors rather than
-// silently buffering it forever.
+// Sends a response for an id the client never requested.
 use lsp_server::{Connection, Message, Response};
-use lspresso::server_helpers as helpers;
+use lspresso::test_server as helpers;
 use serde_json::json;
 
 fn main() {

@@ -148,21 +148,12 @@ fn to_value(params: impl serde::Serialize, method: &str) -> Result<Value> {
 }
 
 fn from_value<T: serde::de::DeserializeOwned>(value: Value, method: &str) -> Result<T> {
-    // Deserialize by reference so the success path (presumably the common
-    // one) doesn't pay for a clone that's only needed if this fails --
-    // `value` is still owned and available afterward either way.
     T::deserialize(&value).map_err(|source| {
         trace::log_deser_error(method, &value, &source);
         Error::deserialize_error(source, method, value)
     })
 }
 
-/// The client's own session lifecycle -- separate from any per-document
-/// state a later feature slice adds. `shutdown()` is reachable from either
-/// state (a server can be asked to shut down before it was ever
-/// initialized; the server is expected to reject that itself, not
-/// something lspresso blocks locally), so `ShutdownRequested` carries
-/// whatever capabilities were on hand, if any, rather than requiring them.
 #[derive(Debug)]
 enum Lifecycle {
     Uninitialized,
@@ -184,17 +175,48 @@ impl Lifecycle {
     }
 }
 
-/// A request's tracked state between `send_request` and `recv_response`.
-/// Kept as one enum per id (rather than an "is it outstanding" set and a
-/// separately-populated "buffered responses" map) so a response arriving
-/// for an id that's already `Buffered` -- a duplicate the server sent
-/// before the first copy was ever consumed -- is a state transition this
-/// makes explicit, not a silent second `HashMap::insert` overwriting the
-/// first with no error.
 #[derive(Debug)]
-pub(super) enum RequestState {
+enum RequestState {
     Outstanding,
     Buffered(lsp_server::Response),
+}
+
+#[derive(Debug, Default)]
+struct PendingRequests(std::collections::HashMap<lsp_server::RequestId, RequestState>);
+
+impl PendingRequests {
+    fn mark_outstanding(&mut self, id: lsp_server::RequestId) {
+        self.0.insert(id, RequestState::Outstanding);
+    }
+
+    fn resolve(&mut self, id: &lsp_server::RequestId) {
+        self.0.remove(id);
+    }
+
+    /// Takes `id`'s buffered response if present, leaving anything else
+    /// (an `Outstanding` entry, or no entry at all) untouched.
+    fn take_buffered(&mut self, id: &lsp_server::RequestId) -> Option<lsp_server::Response> {
+        match self.0.remove(id) {
+            Some(RequestState::Buffered(resp)) => Some(resp),
+            Some(other) => {
+                self.0.insert(id.clone(), other);
+                None
+            }
+            None => None,
+        }
+    }
+
+    /// Buffers `resp` if its id is outstanding. Returns `false` for an id
+    /// lspresso never sent or that already has a buffered response -- a
+    /// protocol violation on the server's part, for the caller to report.
+    fn try_buffer(&mut self, resp: lsp_server::Response) -> bool {
+        if matches!(self.0.get(&resp.id), Some(RequestState::Outstanding)) {
+            self.0.insert(resp.id.clone(), RequestState::Buffered(resp));
+            true
+        } else {
+            false
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -205,7 +227,7 @@ pub struct Client {
     peak_rss_bytes: Option<u64>,
     lifecycle: Lifecycle,
     server_name: String,
-    requests: std::collections::HashMap<lsp_server::RequestId, RequestState>,
+    requests: PendingRequests,
 }
 
 impl Client {
@@ -244,7 +266,7 @@ impl Client {
             peak_rss_bytes: None,
             lifecycle: Lifecycle::Uninitialized,
             server_name,
-            requests: std::collections::HashMap::new(),
+            requests: PendingRequests::default(),
         }
     }
 }
@@ -263,11 +285,6 @@ impl Client {
             return Err(ErrorKind::AlreadyInitialized.into());
         }
         let result = self.request::<InitializeRequest>(params)?;
-        // Confirm `initialized` actually sent before flipping lifecycle --
-        // otherwise a transport failure here would leave the client marked
-        // Initialized (satisfying require_initialized() everywhere else)
-        // while the server never received it, with no way to retry since
-        // the guard above would immediately reject a second attempt.
         self.notify::<gen_lsp_types::InitializedNotification>(
             &gen_lsp_types::InitializedParams {},
         )?;
@@ -288,9 +305,6 @@ impl Client {
         Ok(())
     }
 
-    /// Polls until the server process exits or `self.timeout` passes.
-    /// Returns its exit code, or `None` if it hasn't exited within the
-    /// timeout, or the OS couldn't report a code (e.g. killed by signal).
     // lspclient[impl shutdown-exit-terminates]
     // lspclient[impl shutdown-exit-code-reflects-shutdown]
     pub fn wait_for_exit(&mut self) -> Option<i32> {
@@ -360,7 +374,7 @@ impl Client {
     // lspclient[impl reqorder-response-matches-id]
     fn await_response(&mut self, id: i32, method: &str, deadline: Instant) -> Result<Value> {
         let request_id: lsp_server::RequestId = id.into();
-        if let Some(resp) = self.take_buffered_response(&request_id) {
+        if let Some(resp) = self.requests.take_buffered(&request_id) {
             return Self::response_to_result(resp, method, id);
         }
         let start = Instant::now();
@@ -380,28 +394,12 @@ impl Client {
             self.sample_rss();
             match msg {
                 Message::Response(resp) if resp.id == request_id => {
-                    self.requests.remove(&request_id);
+                    self.requests.resolve(&request_id);
                     return Self::response_to_result(resp, method, id);
                 }
                 _ => self.handle_background(msg)?,
             }
         }
-    }
-
-    /// Removes and returns `id`'s response if one is already buffered,
-    /// leaving anything else (an `Outstanding` entry, or no entry at all)
-    /// untouched.
-    fn take_buffered_response(
-        &mut self,
-        id: &lsp_server::RequestId,
-    ) -> Option<lsp_server::Response> {
-        if matches!(self.requests.get(id), Some(RequestState::Buffered(_))) {
-            let Some(RequestState::Buffered(resp)) = self.requests.remove(id) else {
-                unreachable!("checked Buffered above");
-            };
-            return Some(resp);
-        }
-        None
     }
 
     fn recv_until<F, G>(
@@ -439,16 +437,9 @@ impl Client {
             }
             Message::Request(req) => self.answer_server_request(req)?,
             Message::Response(resp) => {
-                let is_outstanding =
-                    matches!(self.requests.get(&resp.id), Some(RequestState::Outstanding));
-                if is_outstanding {
-                    self.requests
-                        .insert(resp.id.clone(), RequestState::Buffered(resp));
-                } else {
-                    return Err(ErrorKind::UnmatchedResponseId {
-                        id: resp.id.to_string(),
-                    }
-                    .into());
+                let id = resp.id.clone();
+                if !self.requests.try_buffer(resp) {
+                    return Err(ErrorKind::UnmatchedResponseId { id: id.to_string() }.into());
                 }
             }
         }
@@ -456,11 +447,6 @@ impl Client {
     }
 
     fn answer_server_request(&mut self, req: RpcRequest) -> Result<()> {
-        // Expands `req.method == "a" || req.method == "b" || ...` for the
-        // listed types, each guarded by a compile-time assertion that it's
-        // actually declared `MessageDirection::ServerToClient` in
-        // gen_lsp_types -- catches a typo'd or wrong-direction type landing
-        // in the list, rather than silently miscompiling the check.
         macro_rules! any_server_to_client_method {
             ($($t:ty),+ $(,)?) => {{
                 $(
@@ -490,16 +476,10 @@ impl Client {
             // lspclient[impl window-showmessagerequest-responds]
             // lspclient[impl progress-create-acknowledged]
             // lspclient[impl refresh-client-recomputes]
-            // `null` is spec-valid for all of these: `T | null` or `void`
-            // results. Answering null doesn't itself trigger recomputation
-            // for the refresh requests, that's on whatever caller re-issues
-            // the underlying pull afterward.
             Response::new_ok(req.id, Value::Null)
         } else {
-            // Everything else (workspace/configuration, workspace/applyEdit,
-            // window/showDocument not yet special-cased here, or a method
-            // lspresso doesn't recognize at all) gets an error, not a
-            // silent success.
+            // workspace/configuration, workspace/applyEdit, and window/showDocument
+            // are deliberately unimplemented, not missed -- they fall here too.
             tracing::warn!(
                 method = %req.method,
                 "unrecognized server-initiated request; answering MethodNotFound"
@@ -515,8 +495,6 @@ impl Client {
 }
 
 impl Client {
-    /// Waits for a notification of type `N` matching `predicate`, tolerating
-    /// (and dropping) anything else that arrives in the meantime.
     pub fn wait_for<N, F>(&mut self, mut predicate: F) -> Result<N::Params>
     where
         N: Notification,
@@ -574,7 +552,7 @@ impl Client {
             method.to_owned(),
             params,
         )))?;
-        self.requests.insert(id.into(), RequestState::Outstanding);
+        self.requests.mark_outstanding(id.into());
         Ok(id)
     }
 

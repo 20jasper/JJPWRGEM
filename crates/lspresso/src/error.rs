@@ -2,7 +2,6 @@ use std::{fmt, io, time::Instant};
 
 use displaydoc::Display;
 
-/// Shown when a disconnect error includes an OS exit code.
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct ExitCode(pub(crate) Option<i32>);
 
@@ -41,7 +40,6 @@ impl std::ops::Deref for Error {
 }
 
 impl Error {
-    /// The specific kind of error that occurred.
     pub fn kind(&self) -> &ErrorKind {
         &self.0
     }
@@ -68,7 +66,6 @@ pub enum ErrorKind {
         message: String,
         method: String,
         id: i32,
-        /// optional structured data from the server's ResponseError.data field
         data: Option<serde_json::Value>,
     },
     /// timed out after {after_ms}ms waiting for response to {method} (id={id}); set RUST_LOG=lspresso=debug for a message trace

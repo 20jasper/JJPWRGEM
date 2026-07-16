@@ -1,10 +1,8 @@
-// Exits 0 if shutdown was received before exit, 1 otherwise -- used to test
-// that Client::wait_for_exit can observe the server's exit code reflecting
-// whether shutdown happened first, per the LSP spec.
+// Exits 0 if shutdown was received before exit, 1 otherwise.
 use lsp_server::Message;
 use lspresso::{
     gen_lsp_types::{ExitNotification, Notification as _, Request as _, ShutdownRequest},
-    server_helpers as helpers,
+    test_server as helpers,
 };
 
 fn main() {

@@ -5,7 +5,9 @@ use super::Client;
 pub(crate) fn initialize_params(capabilities: ClientCapabilities) -> InitializeParams {
     InitializeParams {
         capabilities,
-        process_id: Some(i32::try_from(std::process::id()).unwrap()),
+        process_id: Some(
+            i32::try_from(std::process::id()).expect("pid fits in i32 on all supported OSes"),
+        ),
         ..Default::default()
     }
 }

@@ -189,9 +189,6 @@ impl Transport {
             })
     }
 
-    /// Polls until the process exits or `deadline` passes. Returns its exit
-    /// code, or `None` if it hasn't exited yet, or the OS couldn't report a
-    /// code (e.g. killed by signal).
     pub fn wait_for_exit(&mut self, deadline: Instant) -> Option<i32> {
         loop {
             if let Some(code) = self.process.try_exit_code() {

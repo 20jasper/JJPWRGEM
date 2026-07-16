@@ -11,27 +11,9 @@ pub use client::Client;
 pub use error::{Error, ErrorKind, Result};
 pub use gen_lsp_types::{self, LanguageKind};
 
-/// Parses `s` as a [`gen_lsp_types::Uri`], panicking with a clear message if
-/// it isn't a syntactically valid RFC 3986 URI. For literals in tests and
-/// benchmarks, where a malformed URI is a bug in the caller to surface
-/// immediately, not a runtime condition to propagate as a `Result`.
-pub fn parse_uri(s: &str) -> gen_lsp_types::Uri {
-    s.parse()
-        .unwrap_or_else(|e| panic!("invalid URI {s:?}: {e}"))
-}
-
-/// Builds a `file://` [`gen_lsp_types::Uri`] for `path`, percent-encoding
-/// characters (spaces, non-ASCII, etc.) a raw path string would need
-/// escaped to form a valid URI -- `fluent_uri` (which `Uri` is built on)
-/// has no `from_file_path` of its own, unlike `url::Url`, so lspresso
-/// provides one rather than leaving every caller to hand-encode paths.
-/// Handles Windows drive-letter prefixes (`C:\...` becomes
-/// `file:///C:/...`) the same way as Unix paths.
-///
 /// # Panics
 ///
-/// Panics if `path` isn't absolute -- a relative path has no fixed
-/// `file://` form.
+/// Panics if `path` isn't absolute.
 pub fn path_to_uri(path: &std::path::Path) -> gen_lsp_types::Uri {
     use std::path::Component;
 
@@ -42,22 +24,24 @@ pub fn path_to_uri(path: &std::path::Path) -> gen_lsp_types::Uri {
         "path_to_uri requires an absolute path, got {path:?}"
     );
 
-    let mut encoded = String::new();
+    let mut joined = String::new();
     for component in path.components() {
-        let segment = match component {
-            Component::Prefix(prefix) => prefix.as_os_str().to_string_lossy().into_owned(),
+        let segment: std::borrow::Cow<'_, str> = match component {
+            Component::Prefix(prefix) => prefix.as_os_str().to_string_lossy().into_owned().into(),
             Component::RootDir => continue,
-            Component::CurDir => ".".to_owned(),
-            Component::ParentDir => "..".to_owned(),
-            Component::Normal(s) => s.to_string_lossy().into_owned(),
+            Component::CurDir => ".".into(),
+            Component::ParentDir => "..".into(),
+            Component::Normal(s) => s.to_string_lossy(),
         };
-        let mut e = EString::<PathEncoder>::new();
-        e.encode_str::<PathEncoder>(&segment);
-        encoded.push('/');
-        encoded.push_str(e.as_estr().as_str());
+        joined.push('/');
+        joined.push_str(&segment);
     }
 
-    parse_uri(&format!("file://{encoded}"))
+    let mut encoded = EString::<PathEncoder>::new();
+    encoded.encode_str::<PathEncoder>(&joined);
+    let uri = format!("file://{}", encoded.as_estr().as_str());
+    uri.parse()
+        .unwrap_or_else(|e| panic!("invalid URI {uri:?}: {e}"))
 }
 
 #[cfg(test)]
@@ -93,4 +77,4 @@ mod path_to_uri_tests {
 }
 
 #[cfg(feature = "test-binaries")]
-pub mod server_helpers;
+pub mod test_server;
