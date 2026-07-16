@@ -3,16 +3,6 @@
 //! language server test client
 //!
 //! ![an orange axolotl in a blue coffee cup falling over. coffee is spilling out and the axolotl looks distressed](./lspresso.webp)
-//!
-//! Under active development. So far, the client lifecycle is implemented:
-//! spawning a server process, the `initialize`/`initialized` handshake,
-//! `shutdown`/`exit`, RSS sampling, and wire-level tracing via `tracing`.
-//! Text document sync, diagnostics, and every other language feature land
-//! incrementally in follow-up changes, each checked against the [LSP client
-//! conformance spec] this crate is held to.
-//!
-//! [Language Server Protocol]: https://microsoft.github.io/language-server-protocol/
-//! [LSP client conformance spec]: https://github.com/20jasper/jjpwrgem/blob/main/spec/lsp-client.md
 
 mod client;
 mod error;

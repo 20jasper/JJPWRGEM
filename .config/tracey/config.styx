@@ -38,4 +38,17 @@ specs (
             }
         )
     }
+    {
+        name lsp-client
+        include (spec/lsp-client.md)
+        impls (
+            {
+                name rust
+                include (
+                    crates/lspresso/src/**/*.rs
+                    crates/lspresso/tests/**/*.rs
+                )
+            }
+        )
+    }
 )

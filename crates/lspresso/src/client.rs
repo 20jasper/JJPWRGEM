@@ -205,17 +205,9 @@ pub struct Client {
     peak_rss_bytes: Option<u64>,
     lifecycle: Lifecycle,
     server_name: String,
-    /// The state of every request sent but not yet matched by
-    /// `await_response`. Needed once more than one request can be
-    /// in-flight at a time: a response not matching the id currently being
-    /// awaited isn't a stray message to drop -- it's owed to a later
-    /// `await_response` call, unless its id isn't here at all or is
-    /// already `Buffered`, in which case it's a protocol violation on the
-    /// server's part (an id lspresso never sent, or a duplicate).
     requests: std::collections::HashMap<lsp_server::RequestId, RequestState>,
 }
 
-// --- Constructor -----------------------------------------------------------
 impl Client {
     #[must_use]
     pub fn with_operation_timeout(mut self, timeout: Duration) -> Self {
@@ -257,16 +249,12 @@ impl Client {
     }
 }
 
-// --- Lifecycle ------------------------------------------------------------
 impl Client {
     // lspclient[impl init-initialized-after-response]
     pub fn initialize(&mut self, capabilities: ClientCapabilities) -> Result<InitializeResult> {
         self.initialize_hook(initialize_params(capabilities))
     }
 
-    // Can't require_initialized() first -- sending Initialize is what makes
-    // the client initialized -- so this records the server's capabilities
-    // and sends Initialized itself instead.
     fn initialize_hook(
         &mut self,
         params: gen_lsp_types::InitializeParams,
@@ -318,7 +306,6 @@ impl Drop for Client {
     }
 }
 
-// --- Metrics --------------------------------------------------------------
 impl Client {
     fn sample_rss(&mut self) {
         if let Some(bytes) = self.transport.current_rss_bytes() {
@@ -331,10 +318,7 @@ impl Client {
     }
 }
 
-// --- Message IO -----------------------------------------------------------
 impl Client {
-    // Every notification/request is written to the transport synchronously,
-    // before the call that sent it returns.
     fn send(&mut self, message: &Message) -> Result<()> {
         trace::log_rpc(trace::Direction::Send, message);
         let method = match message {
@@ -450,22 +434,11 @@ impl Client {
         match msg {
             // lspclient[impl trace-logtrace-tolerated]
             // lspclient[impl window-telemetry-tolerated]
-            // Any notification method is tolerated uniformly here, whether
-            // it's one lspresso specifically acts on or not -- $/logTrace
-            // and telemetry/event are purely informational and just need to
-            // not cause an error.
             Message::Notification(note) => {
                 tracing::trace!(method = %note.method, "dropped unsolicited notification");
             }
             Message::Request(req) => self.answer_server_request(req)?,
             Message::Response(resp) => {
-                // Not necessarily stray: with more than one request in
-                // flight, this can be owed to an `await_response` call for
-                // a different id that hasn't happened yet. But if its id
-                // was never sent, or already has a response buffered (a
-                // duplicate, whether or not the first was ever consumed),
-                // that's a protocol violation on the server's part -- error
-                // instead of silently dropping or overwriting it.
                 let is_outstanding =
                     matches!(self.requests.get(&resp.id), Some(RequestState::Outstanding));
                 if is_outstanding {
@@ -517,23 +490,15 @@ impl Client {
             // lspclient[impl window-showmessagerequest-responds]
             // lspclient[impl progress-create-acknowledged]
             // lspclient[impl refresh-client-recomputes]
-            // `null` is a spec-valid response for all of these:
-            // showMessageRequest's result is `MessageActionItem | null`
-            // (null meaning no action selected), `workspace/workspaceFolders`
-            // is `WorkspaceFolder[] | null`, and workDoneProgress/create,
-            // client/registerCapability, client/unregisterCapability, and
-            // every `workspace/*/refresh` request (semanticTokens,
-            // diagnostic, codeLens, foldingRange, inlayHint, inlineValue,
-            // textDocumentContent) have a `void` result -- answering null
-            // doesn't itself trigger recomputation, that's on whatever
-            // caller decides to re-issue the underlying pull afterward.
+            // `null` is spec-valid for all of these: `T | null` or `void`
+            // results. Answering null doesn't itself trigger recomputation
+            // for the refresh requests, that's on whatever caller re-issues
+            // the underlying pull afterward.
             Response::new_ok(req.id, Value::Null)
         } else {
-            // Every other `MessageDirection::ServerToClient` request
-            // (including `workspace/configuration`, `workspace/applyEdit`,
-            // and `window/showDocument`, not yet special-cased here) is a
-            // method lspresso doesn't recognize at all -- per spec,
-            // `$/`-prefixed or not, that's answered with an error, not a
+            // Everything else (workspace/configuration, workspace/applyEdit,
+            // window/showDocument not yet special-cased here, or a method
+            // lspresso doesn't recognize at all) gets an error, not a
             // silent success.
             tracing::warn!(
                 method = %req.method,
@@ -549,7 +514,6 @@ impl Client {
     }
 }
 
-// --- Notification Wait ----------------------------------------------------
 impl Client {
     /// Waits for a notification of type `N` matching `predicate`, tolerating
     /// (and dropping) anything else that arrives in the meantime.
@@ -593,7 +557,6 @@ impl Client {
     }
 }
 
-// --- Request / Notify Plumbing -------------------------------------------
 impl Client {
     fn check_not_shutdown(&self) -> Result<()> {
         if self.lifecycle.is_shutdown() {

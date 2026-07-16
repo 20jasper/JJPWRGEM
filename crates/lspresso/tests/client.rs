@@ -1,3 +1,9 @@
+#![cfg(feature = "test-binaries")]
+#![expect(
+    clippy::unnecessary_wraps,
+    reason = "tests return Result uniformly for ?, even ones that only ever build Ok(())"
+)]
+
 use std::time::Duration;
 
 use googletest::prelude::*;
