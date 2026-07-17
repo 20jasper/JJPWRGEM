@@ -37,11 +37,31 @@ name = "lspresso_sends_unmatched_response_id"
 required-features = ["test-binaries"]
 
 [[bin]]
-name = "lspresso_answers_shutdown_with_error"
+name = "lspresso_shutdown_returns_configurable_error"
 required-features = ["test-binaries"]
 
 [[bin]]
 name = "lspresso_tolerates_and_acknowledges_server_messages"
+required-features = ["test-binaries"]
+
+[[bin]]
+name = "lspresso_records_doc_sync"
+required-features = ["test-binaries"]
+
+[[bin]]
+name = "lspresso_exits_immediately"
+required-features = ["test-binaries"]
+
+[[bin]]
+name = "lspresso_stop_reading_stdin"
+required-features = ["test-binaries"]
+
+[[bin]]
+name = "lspresso_never_responds"
+required-features = ["test-binaries"]
+
+[[bin]]
+name = "lspresso_wrong_response_type"
 required-features = ["test-binaries"]
 
 [dependencies]
@@ -58,6 +78,7 @@ tracing = { version = "0.1", features = ["log"] }
 
 [dev-dependencies]
 googletest = "0.14.3"
+rstest = { workspace = true }
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 [lints]

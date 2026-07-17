@@ -12,7 +12,6 @@ pub(crate) fn initialize_params(capabilities: ClientCapabilities) -> InitializeP
     }
 }
 
-// lspclient[impl init-capabilities-gate-features]
 impl Client {
     pub fn server_capabilities(&self) -> Option<&ServerCapabilities> {
         self.lifecycle.capabilities()

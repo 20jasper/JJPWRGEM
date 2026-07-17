@@ -5,9 +5,10 @@ derived from the
 [LSP 3.18 specification](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/).
 
 Scoped to what `lspresso` currently implements (client lifecycle: spawn,
-`initialize`/`initialized`, `shutdown`/`exit`, and the server-initiated
-requests/notifications it must tolerate or acknowledge along the way).
-Grows incrementally alongside the implementation.
+`initialize`/`initialized`, `shutdown`/`exit`; document sync: `did_open`,
+`did_change`, `did_close`; and the server-initiated requests/notifications
+it must tolerate or acknowledge along the way). Grows incrementally
+alongside the implementation.
 
 ## Request ordering
 
@@ -29,6 +30,15 @@ Grows incrementally alongside the implementation.
 
 ## Initialization
 
+> lspclient[init-first]
+> Per the [LSP 3.18 spec, Initialize Request](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#initialize):
+>
+> > The initialize request is sent as the first request from the client to
+> > the server... Until the server has responded to the `initialize` request
+> > with an `InitializeResult`, the client must not send any additional
+> > requests or notifications to the server... The `initialize` request may
+> > only be sent once.
+
 > lspclient[init-initialized-after-response]
 > Per the [LSP 3.18 spec, Initialized Notification](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#initialized):
 >
@@ -36,16 +46,6 @@ Grows incrementally alongside the implementation.
 > > after the client received the result of the `initialize` request, but
 > > before the client is sending any other request or notification to the
 > > server... The `initialized` notification may only be sent once.
-
-> lspclient[init-capabilities-gate-features]
-> Per the [LSP 3.18 spec, Capabilities](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#initialize):
->
-> > Capabilities that existed in the 2.x version of the protocol are still
-> > mandatory for clients. Clients cannot opt out of providing them.
->
-> Capabilities negotiated during initialization (both the mandatory 2.x
-> baseline and anything declared via `ClientCapabilities`/`ServerCapabilities`)
-> determine which features may be used later.
 
 ## Shutdown / Exit
 
@@ -71,6 +71,60 @@ Grows incrementally alongside the implementation.
 >
 > > The server should exit with `success` code 0 if the shutdown request
 > > has been received before; otherwise with `error` code 1.
+
+## Document synchronization
+
+> lspclient[sync-mandatory]
+> Per the [LSP 3.18 spec, Text Document Synchronization](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#textDocument_synchronization):
+>
+> > Client support for `textDocument/didOpen`, `textDocument/didChange` and
+> > `textDocument/didClose` notifications is mandatory in the protocol and
+> > clients can not opt out supporting them.
+>
+> So a client can't treat text sync as an optional feature gated behind a
+> capability -- it must always be able to send these three.
+
+> lspclient[didopen-max-one-open]
+> Per the [LSP 3.18 spec, DidOpenTextDocument Notification](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#textDocument_didOpen):
+>
+> > An open notification must not be sent more than once without a
+> > corresponding close notification send before. This means open and close
+> > notification must be balanced and the max open count for a particular
+> > textDocument is one.
+
+> lspclient[didopen-close-open-balanced]
+> Per the [LSP 3.18 spec, DidOpenTextDocument Notification](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#textDocument_didOpen):
+>
+> > An open notification must not be sent more than once without a
+> > corresponding close notification send before. This means open and
+> > close notification must be balanced and the max open count for a
+> > particular textDocument is one.
+
+> lspclient[lifecycle-didchange-only-when-open]
+> Per the [LSP 3.18 spec, DidChangeTextDocument Notification](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#textDocument_didChange):
+>
+> > Before a client can change a text document it must claim ownership of
+> > its content using the `textDocument/didOpen` notification.
+
+## URIs
+
+> lspclient[uri-identifies-document]
+> Per the [LSP 3.18 spec, DidOpenTextDocument Notification](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#textDocument_didOpen)
+> and [URI](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#uri):
+>
+> > The document's content is now managed by the client and the server
+> > must not try to read the document's content using the document's Uri.
+>
+> Every text-document operation in the protocol keys off a `TextDocumentIdentifier.uri`,
+> not a filesystem path.
+
+> lspclient[uri-consistent]
+> Per the [LSP 3.18 spec, URI](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#uri):
+>
+> > Clients and servers should be consistent with the form they use
+> > themselves to ensure the other party doesn't interpret them as distinct
+> > URIs... Clients and servers should not assume that each other are
+> > encoding the same way.
 
 ## Error codes
 

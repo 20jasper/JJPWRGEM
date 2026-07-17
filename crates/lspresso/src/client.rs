@@ -101,18 +101,65 @@ mod trace {
     }
 }
 
+// lspclient[impl uri-identifies-document]
+// lspclient[impl uri-consistent]
+// Uri equality is exact string match, not normalized -- lspresso doesn't
+// paper over a caller using inconsistent representations of "the same"
+// document, since doing so would require guessing which representation
+// the server also considers canonical.
+mod open_docs {
+    use std::collections::HashSet;
+
+    use gen_lsp_types::Uri;
+
+    use crate::error::{ErrorKind, Result};
+
+    #[derive(Debug, Default)]
+    pub(super) struct OpenDocs(HashSet<Uri>);
+
+    impl OpenDocs {
+        // lspclient[impl didopen-max-one-open]
+        // lspclient[impl didopen-close-open-balanced]
+        pub(super) fn require_not_open(&self, uri: &Uri) -> Result<()> {
+            if self.0.contains(uri) {
+                return Err(ErrorKind::AlreadyOpen { uri: uri.clone() }.into());
+            }
+            Ok(())
+        }
+
+        // lspclient[impl lifecycle-didchange-only-when-open]
+        pub(super) fn require_open(&self, uri: &Uri) -> Result<()> {
+            if self.0.contains(uri) {
+                Ok(())
+            } else {
+                Err(ErrorKind::NotOpen { uri: uri.clone() }.into())
+            }
+        }
+
+        pub(super) fn mark_open(&mut self, uri: Uri) {
+            self.0.insert(uri);
+        }
+
+        pub(super) fn close(&mut self, uri: &Uri) {
+            self.0.remove(uri);
+        }
+    }
+}
+
 use std::{
     process::Command,
     time::{Duration, Instant},
 };
 
 use gen_lsp_types::{
-    ClientCapabilities, CodeLensRefreshRequest, DiagnosticRefreshRequest, ExitNotification,
-    FoldingRangeRefreshRequest, InitializeRequest, InitializeResult, InlayHintRefreshRequest,
-    InlineValueRefreshRequest, MessageDirection, Notification, RegistrationRequest, Request,
-    SemanticTokensRefreshRequest, ServerCapabilities, ShowMessageRequest, ShutdownRequest,
-    TextDocumentContentRefreshRequest, UnregistrationRequest, WorkDoneProgressCreateRequest,
-    WorkspaceFoldersRequest,
+    ClientCapabilities, CodeLensRefreshRequest, DiagnosticRefreshRequest,
+    DidChangeTextDocumentNotification, DidChangeTextDocumentParams,
+    DidCloseTextDocumentNotification, DidCloseTextDocumentParams, DidOpenTextDocumentNotification,
+    DidOpenTextDocumentParams, ExitNotification, FoldingRangeRefreshRequest, InitializeRequest,
+    InitializeResult, InlayHintRefreshRequest, InlineValueRefreshRequest, MessageDirection,
+    Notification, RegistrationRequest, Request, SemanticTokensRefreshRequest, ServerCapabilities,
+    ShowMessageRequest, ShutdownRequest, TextDocumentContentRefreshRequest, UnregistrationRequest,
+    WorkDoneProgressCreateRequest, WorkspaceFoldersRequest,
 };
 use lsp_server::{Message, Notification as RpcNotification, Request as RpcRequest, Response};
 use serde_json::Value;
@@ -228,6 +275,7 @@ pub struct Client {
     lifecycle: Lifecycle,
     server_name: String,
     requests: PendingRequests,
+    open_docs: open_docs::OpenDocs,
 }
 
 impl Client {
@@ -267,6 +315,7 @@ impl Client {
             lifecycle: Lifecycle::Uninitialized,
             server_name,
             requests: PendingRequests::default(),
+            open_docs: open_docs::OpenDocs::default(),
         }
     }
 }
@@ -310,6 +359,45 @@ impl Client {
     pub fn wait_for_exit(&mut self) -> Option<i32> {
         let deadline = Instant::now() + self.timeout;
         self.transport.wait_for_exit(deadline)
+    }
+
+    // lspclient[impl init-first]
+    fn require_initialized(&self) -> Result<()> {
+        if self.lifecycle.capabilities().is_some() {
+            Ok(())
+        } else {
+            Err(ErrorKind::NotInitialized.into())
+        }
+    }
+}
+
+impl Client {
+    // lspclient[impl sync-mandatory]
+    pub fn did_open(&mut self, params: DidOpenTextDocumentParams) -> Result<()> {
+        self.require_initialized()?;
+        self.open_docs.require_not_open(&params.text_document.uri)?;
+        let uri = params.text_document.uri.clone();
+        self.notify::<DidOpenTextDocumentNotification>(&params)?;
+        self.open_docs.mark_open(uri);
+        Ok(())
+    }
+
+    // lspclient[impl sync-mandatory]
+    pub fn did_change(&mut self, params: DidChangeTextDocumentParams) -> Result<()> {
+        self.require_initialized()?;
+        self.open_docs
+            .require_open(&params.text_document.text_document_identifier.uri)?;
+        self.notify::<DidChangeTextDocumentNotification>(&params)
+    }
+
+    // lspclient[impl sync-mandatory]
+    pub fn did_close(&mut self, params: DidCloseTextDocumentParams) -> Result<()> {
+        self.require_initialized()?;
+        self.open_docs.require_open(&params.text_document.uri)?;
+        let uri = params.text_document.uri.clone();
+        self.notify::<DidCloseTextDocumentNotification>(&params)?;
+        self.open_docs.close(&uri);
+        Ok(())
     }
 }
 
@@ -556,6 +644,8 @@ impl Client {
         Ok(id)
     }
 
+    /// Low-level escape hatch. Does not enforce invariants like document
+    /// open or server initialization since it accepts arbitrary requests.
     pub fn request<R: Request>(&mut self, params: R::Params) -> Result<R::Result> {
         let deadline = Instant::now() + self.timeout;
         let id =
@@ -564,6 +654,8 @@ impl Client {
         from_value(value, R::METHOD.as_str())
     }
 
+    /// Low-level escape hatch. Does not enforce invariants like document
+    /// open or server initialization since it accepts arbitrary requests.
     pub fn notify<N: Notification>(&mut self, params: &N::Params) -> Result<()> {
         self.notify_value(N::METHOD.as_str(), to_value(params, N::METHOD.as_str())?)
     }

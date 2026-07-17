@@ -1,6 +1,7 @@
 use std::{fmt, io, time::Instant};
 
 use displaydoc::Display;
+use gen_lsp_types::Uri;
 
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct ExitCode(pub(crate) Option<i32>);
@@ -86,8 +87,14 @@ pub enum ErrorKind {
     NotificationDisconnected { method: String, exit_code: ExitCode },
     /// server closed the connection{exit_code} while sending {method}
     SendDisconnected { method: String, exit_code: ExitCode },
+    /// document not open ({uri}): call did_open first
+    NotOpen { uri: Uri },
+    /// document already open ({uri}): call did_close before opening again
+    AlreadyOpen { uri: Uri },
     /// client already shut down: call spawn/spawn_initialized for a new session
     AlreadyShutdown,
+    /// not yet initialized: call initialize before sending protocol requests
+    NotInitialized,
     /// already initialized: call initialize only once per session
     AlreadyInitialized,
     /// response id {id} doesn't match any request lspresso sent (a bogus or duplicate id from the server)
