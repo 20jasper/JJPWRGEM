@@ -60,6 +60,7 @@ rstest = "0.26"
 rstest_reuse = "0.7"
 bytes2chars = { version = "0.2", path = "crates/bytes2chars" }
 lsp = { path = "crates/lsp", version = "0.1", package = "jjpwrgem-lsp" }
+lspresso = { path = "crates/lspresso", version = "0.1" }
 
 [dependencies]
 anstream = "1"
@@ -74,6 +75,7 @@ bytes2chars = { workspace = true }
 const_format = "=0.2.36"
 
 insta = "=1.48.0"
+lspresso = { workspace = true }
 proptest = "=1.11.0"
 rstest = { workspace = true }
 rstest_reuse = { workspace = true }
