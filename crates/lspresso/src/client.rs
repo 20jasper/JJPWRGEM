@@ -1,7 +1,9 @@
 pub(crate) mod capabilities;
 pub(crate) mod transport;
+mod with_uri;
 
 use capabilities::initialize_params;
+use with_uri::WithUri;
 
 mod trace {
     use lsp_server::Message;
@@ -153,13 +155,13 @@ use std::{
 
 use gen_lsp_types::{
     ClientCapabilities, CodeLensRefreshRequest, DiagnosticRefreshRequest,
-    DidChangeTextDocumentNotification, DidChangeTextDocumentParams,
-    DidCloseTextDocumentNotification, DidCloseTextDocumentParams, DidOpenTextDocumentNotification,
-    DidOpenTextDocumentParams, ExitNotification, FoldingRangeRefreshRequest, InitializeRequest,
-    InitializeResult, InlayHintRefreshRequest, InlineValueRefreshRequest, MessageDirection,
-    Notification, RegistrationRequest, Request, SemanticTokensRefreshRequest, ServerCapabilities,
-    ShowMessageRequest, ShutdownRequest, TextDocumentContentRefreshRequest, UnregistrationRequest,
-    WorkDoneProgressCreateRequest, WorkspaceFoldersRequest,
+    DidChangeTextDocumentNotification, DidCloseTextDocumentNotification,
+    DidCloseTextDocumentParams, DidOpenTextDocumentNotification, DidOpenTextDocumentParams,
+    ExitNotification, FoldingRangeRefreshRequest, InitializeRequest, InitializeResult,
+    InlayHintRefreshRequest, InlineValueRefreshRequest, MessageDirection, Notification,
+    RegistrationRequest, Request, SemanticTokensRefreshRequest, ServerCapabilities,
+    SetTraceNotification, ShowMessageRequest, ShutdownRequest, TextDocumentContentRefreshRequest,
+    UnregistrationRequest, WorkDoneProgressCreateRequest, WorkspaceFoldersRequest,
 };
 use lsp_server::{Message, Notification as RpcNotification, Request as RpcRequest, Response};
 use serde_json::Value;
@@ -199,6 +201,53 @@ fn from_value<T: serde::de::DeserializeOwned>(value: Value, method: &str) -> Res
         trace::log_deser_error(method, &value, &source);
         Error::deserialize_error(source, method, value)
     })
+}
+
+macro_rules! assert_client_to_server {
+    ($item:ty, $trait:ident) => {
+        const {
+            assert!(matches!(
+                <$item as $trait>::MESSAGE_DIRECTION,
+                MessageDirection::ClientToServer | MessageDirection::Both
+            ));
+        }
+    };
+}
+
+macro_rules! lsp_request {
+    ($name:ident, $request:path $(, pre: $pre:ident)?) => {
+        pub fn $name(
+            &mut self,
+            params: <$request as Request>::Params,
+        ) -> Result<<$request as Request>::Result> {
+            assert_client_to_server!($request, Request);
+            self.require_initialized()?;
+            $( self.$pre(&params)?; )?
+            self.request::<$request>(params)
+        }
+    };
+    ($name:ident, $request:path, hook: $hook:ident) => {
+        pub fn $name(
+            &mut self,
+            params: <$request as Request>::Params,
+        ) -> Result<<$request as Request>::Result> {
+            assert_client_to_server!($request, Request);
+            self.$hook(params)
+        }
+    };
+}
+
+macro_rules! lsp_notify {
+    ($name:ident, $notification:path $(, pre: $pre:ident $(, post: $post:ident)?)?) => {
+        pub fn $name(&mut self, params: <$notification as Notification>::Params) -> Result<()> {
+            assert_client_to_server!($notification, Notification);
+            self.require_initialized()?;
+            $( self.$pre(&params)?; )?
+            self.notify::<$notification>(&params)?;
+            $( $( self.$post(params)?; )? )?
+            Ok(())
+        }
+    };
 }
 
 #[derive(Debug)]
@@ -321,11 +370,11 @@ impl Client {
 }
 
 impl Client {
-    // lspclient[impl init-initialized-after-response]
     pub fn initialize(&mut self, capabilities: ClientCapabilities) -> Result<InitializeResult> {
-        self.initialize_hook(initialize_params(capabilities))
+        self.protocol_initialize_request(initialize_params(capabilities))
     }
 
+    // lspclient[impl init-initialized-after-response]
     fn initialize_hook(
         &mut self,
         params: gen_lsp_types::InitializeParams,
@@ -341,6 +390,8 @@ impl Client {
         tracing::info!(server = %self.server_name, "initialized");
         Ok(result)
     }
+
+    lsp_request!(protocol_initialize_request, InitializeRequest, hook: initialize_hook);
 
     // lspclient[impl shutdown-before-exit]
     pub fn shutdown(&mut self) -> Result<()> {
@@ -369,36 +420,67 @@ impl Client {
             Err(ErrorKind::NotInitialized.into())
         }
     }
+
+    // lspclient[impl trace-client-may-set]
+    lsp_notify!(protocol_set_trace_notification, SetTraceNotification);
+    lsp_notify!(protocol_exit_notification, ExitNotification);
+    lsp_request!(protocol_shutdown_request, ShutdownRequest);
 }
 
 impl Client {
-    // lspclient[impl sync-mandatory]
-    pub fn did_open(&mut self, params: DidOpenTextDocumentParams) -> Result<()> {
-        self.require_initialized()?;
-        self.open_docs.require_not_open(&params.text_document.uri)?;
-        let uri = params.text_document.uri.clone();
-        self.notify::<DidOpenTextDocumentNotification>(&params)?;
-        self.open_docs.mark_open(uri);
+    fn require_not_open<P: WithUri>(&self, params: &P) -> Result<()> {
+        self.open_docs.require_not_open(params.uri())
+    }
+
+    fn require_open<P: WithUri>(&self, params: &P) -> Result<()> {
+        self.open_docs.require_open(params.uri())
+    }
+
+    #[expect(
+        clippy::unnecessary_wraps,
+        reason = "every post: hook returns Result<()> so lsp_notify! can call them uniformly, even though this one can't actually fail"
+    )]
+    fn track_opened(&mut self, params: DidOpenTextDocumentParams) -> Result<()> {
+        self.open_docs.mark_open(params.text_document.uri);
+        Ok(())
+    }
+
+    #[expect(
+        clippy::unnecessary_wraps,
+        reason = "every post: hook returns Result<()> so lsp_notify! can call them uniformly, even though this one can't actually fail"
+    )]
+    #[expect(
+        clippy::needless_pass_by_value,
+        reason = "every post: hook takes owned Params so lsp_notify! can call them uniformly; this one just doesn't need to move anything out"
+    )]
+    fn track_closed(&mut self, params: DidCloseTextDocumentParams) -> Result<()> {
+        self.open_docs.close(&params.text_document.uri);
         Ok(())
     }
 
     // lspclient[impl sync-mandatory]
-    pub fn did_change(&mut self, params: DidChangeTextDocumentParams) -> Result<()> {
-        self.require_initialized()?;
-        self.open_docs
-            .require_open(&params.text_document.text_document_identifier.uri)?;
-        self.notify::<DidChangeTextDocumentNotification>(&params)
-    }
+    lsp_notify!(
+        protocol_did_open_notification,
+        DidOpenTextDocumentNotification,
+        pre: require_not_open,
+        post: track_opened
+    );
 
     // lspclient[impl sync-mandatory]
-    pub fn did_close(&mut self, params: DidCloseTextDocumentParams) -> Result<()> {
-        self.require_initialized()?;
-        self.open_docs.require_open(&params.text_document.uri)?;
-        let uri = params.text_document.uri.clone();
-        self.notify::<DidCloseTextDocumentNotification>(&params)?;
-        self.open_docs.close(&uri);
-        Ok(())
-    }
+    lsp_notify!(
+        protocol_did_change_notification,
+        DidChangeTextDocumentNotification,
+        pre: require_open
+    );
+
+    // lspclient[impl sync-mandatory]
+    // lspclient[impl didopen-close-open-balanced]
+    lsp_notify!(
+        protocol_did_close_notification,
+        DidCloseTextDocumentNotification,
+        pre: require_open,
+        post: track_closed
+    );
 }
 
 impl Drop for Client {

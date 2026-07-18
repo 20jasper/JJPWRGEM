@@ -152,6 +152,15 @@ alongside the implementation.
 
 ## Trace
 
+> lspclient[trace-client-may-set]
+> Per the [LSP 3.18 spec, Set Trace Notification](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#setTrace):
+>
+> > A notification that should be used by the client to modify the trace
+> > setting of the server.
+>
+> `$/setTrace` is client-to-server; sending it is optional (the trace
+> value can also be set once at `initialize` time).
+
 > lspclient[trace-logtrace-tolerated]
 > Per the [LSP 3.18 spec, Log Trace Notification](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#logTrace):
 >

@@ -20,7 +20,7 @@ fn lsp_survives_a_document_sync_session() {
 
     let uri = lspresso::path_to_uri(&std::env::temp_dir().join("jjpwrgem-lsp-e2e.json"));
     client
-        .did_open(DidOpenTextDocumentParams {
+        .protocol_did_open_notification(DidOpenTextDocumentParams {
             text_document: TextDocumentItem {
                 uri: uri.clone(),
                 language_id: LanguageKind::JSON,
@@ -30,7 +30,7 @@ fn lsp_survives_a_document_sync_session() {
         })
         .expect("did_open");
     client
-        .did_change(DidChangeTextDocumentParams {
+        .protocol_did_change_notification(DidChangeTextDocumentParams {
             text_document: VersionedTextDocumentIdentifier {
                 version: 2,
                 text_document_identifier: TextDocumentIdentifier { uri: uri.clone() },
@@ -41,7 +41,7 @@ fn lsp_survives_a_document_sync_session() {
         })
         .expect("did_change");
     client
-        .did_close(DidCloseTextDocumentParams {
+        .protocol_did_close_notification(DidCloseTextDocumentParams {
             text_document: TextDocumentIdentifier { uri },
         })
         .expect("did_close");

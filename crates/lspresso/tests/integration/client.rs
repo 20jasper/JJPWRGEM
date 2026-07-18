@@ -39,7 +39,7 @@ fn wait_for_exit_reflects_exit_without_shutdown() -> Result<()> {
     let server =
         std::process::Command::new(env!("CARGO_BIN_EXE_lspresso_exit_code_reflects_shutdown"));
     let mut client = spawn_and_init(server);
-    client.notify::<ExitNotification>(&())?;
+    client.protocol_exit_notification(())?;
     assert_that!(client.wait_for_exit(), some(eq(1)));
     Ok(())
 }
@@ -160,7 +160,7 @@ fn notify_after_shutdown_is_already_shutdown() -> Result<()> {
     client.shutdown()?;
 
     let err = client
-        .notify::<SetTraceNotification>(&SetTraceParams {
+        .protocol_set_trace_notification(SetTraceParams {
             value: TraceValue::Off,
         })
         .expect_err("no requests/notifications other than exit after shutdown");
@@ -207,7 +207,6 @@ fn server_error_response_surfaces_with_code_and_message(
 // lspclient[verify window-telemetry-tolerated]
 // lspclient[verify progress-create-acknowledged]
 // lspclient[verify window-showmessagerequest-responds]
-// lspclient[verify refresh-client-recomputes]
 #[gtest]
 fn tolerates_and_acknowledges_server_messages() -> Result<()> {
     let server = std::process::Command::new(env!(
@@ -219,12 +218,13 @@ fn tolerates_and_acknowledges_server_messages() -> Result<()> {
     Ok(())
 }
 
+// lspclient[verify trace-client-may-set]
 #[gtest]
 fn set_trace_arrives_as_expected() -> Result<()> {
     let server = std::process::Command::new(env!("CARGO_BIN_EXE_lspresso_records_trace"));
     let mut client = spawn_and_init(server);
 
-    client.notify::<SetTraceNotification>(&SetTraceParams {
+    client.protocol_set_trace_notification(SetTraceParams {
         value: TraceValue::Verbose,
     })?;
 
@@ -243,24 +243,23 @@ fn text_document_item(uri: &Uri, text: &str) -> TextDocumentItem {
 
 // lspclient[verify sync-mandatory]
 // lspclient[verify lifecycle-didchange-only-when-open]
-// lspclient[verify uri-identifies-document]
 #[gtest]
 fn doc_sync_notifications_reach_server() -> Result<()> {
     let server = std::process::Command::new(env!("CARGO_BIN_EXE_lspresso_records_doc_sync"));
     let mut client = spawn_and_init(server);
     let uri = test_uri();
 
-    client.did_open(DidOpenTextDocumentParams {
+    client.protocol_did_open_notification(DidOpenTextDocumentParams {
         text_document: text_document_item(&uri, "v1"),
     })?;
-    client.did_change(DidChangeTextDocumentParams {
+    client.protocol_did_change_notification(DidChangeTextDocumentParams {
         text_document: VersionedTextDocumentIdentifier {
             version: 2,
             text_document_identifier: TextDocumentIdentifier { uri: uri.clone() },
         },
         content_changes: vec![TextDocumentContentChangeWholeDocument::new("v2".to_owned()).into()],
     })?;
-    client.did_close(DidCloseTextDocumentParams {
+    client.protocol_did_close_notification(DidCloseTextDocumentParams {
         text_document: TextDocumentIdentifier { uri },
     })?;
 
@@ -274,12 +273,12 @@ fn doc_sync_notifications_reach_server() -> Result<()> {
 fn did_open_twice_returns_already_open() -> Result<()> {
     let mut client = spawn_initialized();
     let uri = test_uri();
-    client.did_open(DidOpenTextDocumentParams {
+    client.protocol_did_open_notification(DidOpenTextDocumentParams {
         text_document: text_document_item(&uri, "v1"),
     })?;
 
     let err = client
-        .did_open(DidOpenTextDocumentParams {
+        .protocol_did_open_notification(DidOpenTextDocumentParams {
             text_document: text_document_item(&uri, "v1"),
         })
         .expect_err("already open");
@@ -291,7 +290,7 @@ fn did_open_twice_returns_already_open() -> Result<()> {
 // lspclient[verify didopen-close-open-balanced]
 #[rstest]
 #[case::did_change(|c: &mut Client| {
-    c.did_change(DidChangeTextDocumentParams {
+    c.protocol_did_change_notification(DidChangeTextDocumentParams {
         text_document: VersionedTextDocumentIdentifier {
             version: 2,
             text_document_identifier: TextDocumentIdentifier { uri: test_uri() },
@@ -300,7 +299,7 @@ fn did_open_twice_returns_already_open() -> Result<()> {
     })
 })]
 #[case::did_close(|c: &mut Client| {
-    c.did_close(DidCloseTextDocumentParams {
+    c.protocol_did_close_notification(DidCloseTextDocumentParams {
         text_document: TextDocumentIdentifier { uri: test_uri() },
     })
 })]
@@ -320,13 +319,13 @@ fn did_open_after_close_of_same_uri_succeeds() -> Result<()> {
     let mut client = spawn_initialized();
     let uri = test_uri();
 
-    client.did_open(DidOpenTextDocumentParams {
+    client.protocol_did_open_notification(DidOpenTextDocumentParams {
         text_document: text_document_item(&uri, "v1"),
     })?;
-    client.did_close(DidCloseTextDocumentParams {
+    client.protocol_did_close_notification(DidCloseTextDocumentParams {
         text_document: TextDocumentIdentifier { uri: uri.clone() },
     })?;
-    client.did_open(DidOpenTextDocumentParams {
+    client.protocol_did_open_notification(DidOpenTextDocumentParams {
         text_document: text_document_item(&uri, "v1"),
     })?;
     Ok(())
@@ -337,7 +336,7 @@ fn did_open_after_close_of_same_uri_succeeds() -> Result<()> {
 fn uri_matching_is_exact_not_normalized() -> Result<()> {
     let mut client = spawn_initialized();
     let uri = test_uri();
-    client.did_open(DidOpenTextDocumentParams {
+    client.protocol_did_open_notification(DidOpenTextDocumentParams {
         text_document: text_document_item(&uri, "hello"),
     })?;
 
@@ -347,7 +346,7 @@ fn uri_matching_is_exact_not_normalized() -> Result<()> {
         "/T.json"
     }));
     let err = client
-        .did_close(DidCloseTextDocumentParams {
+        .protocol_did_close_notification(DidCloseTextDocumentParams {
             text_document: TextDocumentIdentifier {
                 uri: differently_cased,
             },
@@ -365,14 +364,14 @@ fn did_open_can_retry_after_failing_before_initialize() -> Result<()> {
     let uri = test_uri();
 
     let err = client
-        .did_open(DidOpenTextDocumentParams {
+        .protocol_did_open_notification(DidOpenTextDocumentParams {
             text_document: text_document_item(&uri, "v1"),
         })
         .expect_err("not initialized");
     assert_that!(*err, matches_pattern!(ErrorKind::NotInitialized));
 
     client.initialize(ClientCapabilities::default())?;
-    client.did_open(DidOpenTextDocumentParams {
+    client.protocol_did_open_notification(DidOpenTextDocumentParams {
         text_document: text_document_item(&uri, "v1"),
     })?;
     Ok(())

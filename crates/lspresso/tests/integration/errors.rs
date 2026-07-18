@@ -51,7 +51,7 @@ fn drop_does_not_deadlock_when_server_stops_reading_stdin() {
     assert_completes_within(Duration::from_millis(3000), move || {
         let mut client = spawn_and_init(server);
         client
-            .did_open(DidOpenTextDocumentParams {
+            .protocol_did_open_notification(DidOpenTextDocumentParams {
                 text_document: TextDocumentItem {
                     uri: target_uri,
                     language_id: LanguageKind::JSON,
@@ -72,7 +72,7 @@ fn send_does_not_block_forever_when_server_stops_reading_stdin() {
         Duration::from_millis(1000),
         move || {
             let mut client = spawn_and_init(server);
-            client.did_open(DidOpenTextDocumentParams {
+            client.protocol_did_open_notification(DidOpenTextDocumentParams {
                 text_document: TextDocumentItem {
                     uri: target_uri,
                     language_id: LanguageKind::JSON,
