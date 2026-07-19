@@ -72,7 +72,58 @@ helper below is folded into the slice that adds the feature it gates, and
 client.md` in slice 2) gets re-added piecemeal as each one lands, not all at
 once.
 
-- **Slice 4 -- incremental sync, edits & save lifecycle**: `did_open`/
+Ordering below is prioritized by what this repo actually needs, not just
+reference file order. Two real consumers exist: the `tests/integration/lsp.rs`
+e2e test against the monorepo's own `jjpwrgem-lsp`, and the external
+`lsp-bench` benchmark tool (`cargo:lsp-bench` v0.3.3, run via `mise run
+bench-lsp-all`, output at `benches/lsp/lsp.md`) that this whole project is
+named after. Checked both: `jjpwrgem-lsp`'s entire real `LanguageServer` impl
+(`crates/lsp/src/backend.rs`) is `initialize`/`did_open`/`did_change`/
+`did_close`/`formatting`/`code_action`/`shutdown` -- it declares
+`TextDocumentSyncKind::Full` only (no incremental), implements no
+`will_save`/`did_save` hooks, and pushes diagnostics on every doc-sync call.
+`lsp-bench` itself measures exactly three things per fixture: `initialize`
+timing, `diagnostic` (wait-for-diagnostics) timing, and `formatting` timing +
+edit count, run against both `jjpwrgem-lsp` and `vscode-json`. So diagnostics
+and formatting are the two capabilities both real consumers actually need;
+code action is jjpwrgem-lsp's only other real capability and cheap to add
+alongside formatting's infrastructure. Incremental sync has zero real-server
+payoff in this repo (nothing here ever negotiates it) -- still worth building
+for lspresso's general server-agnostic completeness (see
+`project_lspresso_standalone`), just not urgently.
+
+- **Slice 4 -- diagnostics**: push + pull diagnostics, `wait_for_diagnostics`/
+  `wait_for_diagnostics_cleared`, result-id threading
+  (`resultid-pull-diagnostics-threaded`), `supports_pull_diagnostics()`. The
+  most complex remaining slice -- settle/timeout/pacing logic lives here in
+  the reference and the test file bulk (proptest_concurrency.rs-style)
+  reflects that. Should also introduce `FakeTransportHandle` (reference
+  `client/transport.rs`) + the `proptest` dev-dependency here, not earlier --
+  it's an in-memory `Transport` stand-in built specifically so property tests
+  over message-ordering/buffering can run fast and deterministically without
+  a real subprocess, and nothing before diagnostics/progress has buffering
+  complex enough to need it (if that infra turns out to slow this slice down,
+  it's fine to land basic push-diagnostics correctness against a real
+  fixture first and defer the property-test hardening a step). Update
+  `tests/integration/lsp.rs` to actually wait for jjpwrgem-lsp's pushed
+  diagnostics once this lands -- it publishes them on every did_open/
+  did_change/did_close already. `refresh-client-recomputes`'s `verify` tag
+  was dropped from slice 3's `tolerates_and_acknowledges_server_messages`
+  test (it wasn't actually proven there) pending this -- the reference
+  verifies it via `proptest_concurrency.rs`, not a hand-rolled fixture test;
+  re-add the tag once equivalent coverage lands here.
+- **Slice 5 -- formatting & code actions**: `formatting`/`range_formatting`/
+  `supports_formatting()`, `code_action`/`code_action_resolve`/
+  `supports_code_action()`. Pulled out of the language-feature batches below
+  and prioritized ahead of them specifically because these are
+  `jjpwrgem-lsp`'s only two real request/response capabilities and the only
+  two the `lsp-bench`/benchmark suite (`formatting` timing + edit count) and
+  `tests/integration/lsp.rs` actually need -- extend that e2e test to call
+  `formatting()` on the doc it already opens once this lands. Also where
+  position encoding negotiation (`lspclient[posenc-negotiated]`, reference
+  `capabilities.rs`'s `build_capabilities`) belongs -- the first slice where
+  `Position`/`Range` semantics actually matter to a caller.
+- **Slice 6 -- incremental sync, edits & save lifecycle**: `did_open`/
   `did_change_full`/`did_change_incremental`/`did_close` convenience wrappers
   (reclaiming the plain names slice 3 freed up, delegating to the
   `protocol_did_*` macro-generated methods) plus `apply_edits`/`TextEdit`
@@ -83,44 +134,29 @@ once.
   document-text tracking (`DocumentTracker` growing beyond slice 2/3's bare
   `OpenDocs` `HashSet<Uri>` into an actual `HashMap<Uri, OpenDoc>` with
   version+text) -- first slice that needs to read tracked content back. Also
-  where `did_save`/`save_applying_will_save_edits` belong (was planned as a
-  separate later slice, folded in here instead): the reference's
+  where `did_save`/`save_applying_will_save_edits` belong: the reference's
   `save_applying_will_save_edits` calls `did_change_incremental`/
   `did_change_full`/`apply_edits`/`docs.text()` directly, so it's not an
   independent feature -- it's built entirely on this slice's own machinery
-  and can't exist before it.
-- **Slice 5 -- diagnostics**: push + pull diagnostics, `wait_for_diagnostics`/
-  `wait_for_diagnostics_cleared`, result-id threading
-  (`resultid-pull-diagnostics-threaded`), `supports_pull_diagnostics()`. The
-  most complex remaining slice -- settle/timeout/pacing logic lives here in
-  the reference and the test file bulk (proptest_concurrency.rs-style)
-  reflects that. Should also introduce `FakeTransportHandle` (reference
-  `client/transport.rs`) + the `proptest` dev-dependency here, not earlier --
-  it's an in-memory `Transport` stand-in built specifically so property tests
-  over message-ordering/buffering can run fast and deterministically without
-  a real subprocess, and nothing before diagnostics/progress has buffering
-  complex enough to need it. `refresh-client-recomputes`'s `verify` tag was
-  dropped from slice 3's `tolerates_and_acknowledges_server_messages` test
-  (it wasn't actually proven there) pending this -- the reference verifies it
-  via `proptest_concurrency.rs`, not a hand-rolled fixture test; re-add the
-  tag once equivalent coverage lands here.
-- **Slice 6 -- language features, batch 1**: the mechanical `convenience.rs`
+  and can't exist before it. Deprioritized behind diagnostics/formatting/
+  code-action above since neither real consumer in this repo exercises
+  incremental sync or save hooks at all.
+- **Slice 7 -- language features, batch 1**: the mechanical `convenience.rs`
   sweep for simple no-special-state requests once slice 3's macro exists --
   `hover`, `completion`, `goto_definition`/`declaration`/`type_definition`/
   `implementation`, `references`, `rename`/`prepare_rename`, `document_symbol`,
-  `document_highlight`, `folding_range`, `selection_range`, `signature_help`,
-  `formatting`/`range_formatting`, `supports_formatting()`. Each request is
-  close to a one-line `lsp_request!` + wrapper once the macro exists. Also
-  where position encoding negotiation (`lspclient[posenc-negotiated]`,
-  reference `capabilities.rs`'s `build_capabilities`) belongs -- the first
-  slice where `Position`/`Range` semantics actually matter to a caller.
-- **Slice 7 -- language features, batch 2 (result-id / resolve pairs)**:
+  `document_highlight`, `folding_range`, `selection_range`, `signature_help`.
+  Each request is close to a one-line `lsp_request!` + wrapper once the macro
+  exists. None of these are implemented by `jjpwrgem-lsp` or measured by
+  `lsp-bench` -- lowest priority for this repo specifically, still valuable
+  for lspresso's general-purpose completeness.
+- **Slice 8 -- language features, batch 2 (result-id / resolve pairs)**:
   `semantic_tokens_full`/`_delta`/`_range` (result-id threading, mirrors
-  diagnostics' pattern), `code_action`/`code_action_resolve`
-  (`supports_code_action()`), `code_lens`/`code_lens_resolve`,
-  `document_link`/`_resolve`, `inlay_hint`/`_resolve` -- grouped because each
-  pairs a request with a `*/resolve` request sharing state.
-- **Slice 8 -- progress & cancellation**: `wait_for_progress` (begin/report/end
+  diagnostics' pattern), `code_lens`/`code_lens_resolve`, `document_link`/
+  `_resolve`, `inlay_hint`/`_resolve` -- grouped because each pairs a request
+  with a `*/resolve` request sharing state. Same low-priority-for-this-repo
+  caveat as batch 1.
+- **Slice 9 -- progress & cancellation**: `wait_for_progress` (begin/report/end
   aggregation, `ProgressToken` uniqueness), `cancel_request`
   (`$/cancelRequest`, `cancel-still-responds`), `work_done_progress_cancel`.
 
@@ -146,7 +182,7 @@ each requested item `null`) -- a few lines, addable whenever convenient
 alongside any slice already touching `answer_server_request`, not real
 feature work.
 
-- **Slice 9 -- everything else / cleanup**: file operations (`will*`/`did*`
+- **Slice 10 -- everything else / cleanup**: file operations (`will*`/`did*`
   create/rename/delete -- these ARE real convenience methods in the
   reference, unlike the workspace-edit items above), notebook documents (if
   in scope at all -- reference explicitly doesn't support them either, see
@@ -157,7 +193,7 @@ feature work.
   realistic `ClientCapabilities` than `ClientCapabilities::default()`, not
   necessarily here; reassess when that need actually shows up), plus the
   trivial `workspace/applyEdit`/`workspace/configuration` decline-answers
-  noted above. Reassess whether this is one slice or several once slice 8
+  noted above. Reassess whether this is one slice or several once slice 9
   lands -- likely fewer than previously estimated now that dynamic
   registration/file watching/command execution are confirmed either
   already-done or permanently out of scope.
