@@ -3,7 +3,8 @@ use lspresso::{
     gen_lsp_types::{
         ClientCapabilities, DidChangeTextDocumentParams, DidCloseTextDocumentParams,
         DidOpenTextDocumentParams, LanguageKind, TextDocumentContentChangeWholeDocument,
-        TextDocumentIdentifier, TextDocumentItem, VersionedTextDocumentIdentifier,
+        TextDocumentIdentifier, TextDocumentItem, TextDocumentSync, TextDocumentSyncKind,
+        VersionedTextDocumentIdentifier,
     },
 };
 
@@ -17,6 +18,22 @@ fn lsp_survives_a_document_sync_session() {
     client
         .initialize(ClientCapabilities::default())
         .expect("initialize");
+
+    // did_change below sends a whole-document replacement -- confirm the
+    // real server actually negotiated full sync, not incremental, since
+    // lspresso has no incremental-sync support yet to fall back on.
+    let sync = client
+        .server_capabilities()
+        .expect("initialize response recorded capabilities")
+        .text_document_sync
+        .clone();
+    assert!(
+        matches!(
+            sync,
+            Some(TextDocumentSync::Options(opts)) if opts.change == Some(TextDocumentSyncKind::Full)
+        ),
+        "expected full text document sync, got {sync:?}"
+    );
 
     let uri = lspresso::path_to_uri(&std::env::temp_dir().join("jjpwrgem-lsp-e2e.json"));
     client
