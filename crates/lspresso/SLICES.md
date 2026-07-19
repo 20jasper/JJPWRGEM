@@ -72,17 +72,23 @@ helper below is folded into the slice that adds the feature it gates, and
 client.md` in slice 2) gets re-added piecemeal as each one lands, not all at
 once.
 
-- **Slice 4 -- incremental sync + edits**: `did_open`/`did_change_full`/
-  `did_change_incremental`/`did_close` convenience wrappers (reclaiming the
-  plain names slice 3 freed up, delegating to the `protocol_did_*` macro-
-  generated methods) plus `apply_edits`/`TextEdit` application (reference
-  `edits.rs`), negotiating full vs. incremental via
+- **Slice 4 -- incremental sync, edits & save lifecycle**: `did_open`/
+  `did_change_full`/`did_change_incremental`/`did_close` convenience wrappers
+  (reclaiming the plain names slice 3 freed up, delegating to the
+  `protocol_did_*` macro-generated methods) plus `apply_edits`/`TextEdit`
+  application (reference `edits.rs`), negotiating full vs. incremental via
   `text_document_sync_kind()`/`supports_incremental_sync()` -- these two
   belong here, not a separate capabilities slice, since `did_change_full`/
   `did_change_incremental` are the only callers per the reference. Needs
   document-text tracking (`DocumentTracker` growing beyond slice 2/3's bare
   `OpenDocs` `HashSet<Uri>` into an actual `HashMap<Uri, OpenDoc>` with
-  version+text) -- first slice that needs to read tracked content back.
+  version+text) -- first slice that needs to read tracked content back. Also
+  where `did_save`/`save_applying_will_save_edits` belong (was planned as a
+  separate later slice, folded in here instead): the reference's
+  `save_applying_will_save_edits` calls `did_change_incremental`/
+  `did_change_full`/`apply_edits`/`docs.text()` directly, so it's not an
+  independent feature -- it's built entirely on this slice's own machinery
+  and can't exist before it.
 - **Slice 5 -- diagnostics**: push + pull diagnostics, `wait_for_diagnostics`/
   `wait_for_diagnostics_cleared`, result-id threading
   (`resultid-pull-diagnostics-threaded`), `supports_pull_diagnostics()`. The
@@ -117,22 +123,44 @@ once.
 - **Slice 8 -- progress & cancellation**: `wait_for_progress` (begin/report/end
   aggregation, `ProgressToken` uniqueness), `cancel_request`
   (`$/cancelRequest`, `cancel-still-responds`), `work_done_progress_cancel`.
-- **Slice 9 -- workspace edits & save lifecycle**: `save_applying_will_save_edits`
-  (`will_save`/`willSaveWaitUntil` before `didSave`), `workspace/applyEdit`
-  handling (atomic, no-overlap, version-checked), command execution
-  (`workspace/executeCommand`).
-- **Slice 10 -- everything else / cleanup**: dynamic registration, file
-  operations (`will*`/`did*` create/rename/delete), file watching,
-  `workspace/configuration`, workspace folders, notebook documents (if in
-  scope at all -- reference explicitly doesn't support them, see the
-  commented-out `lsp_notify!` calls in `protocol.rs`), completion item
+
+No "workspace edits & command execution" slice -- checked the reference and
+neither is actually implemented there. `workspace/applyEdit` is declined:
+`answer_server_request` answers it with `ApplyWorkspaceEditResult { applied:
+false, .. }` and a `tracing::warn!`, and the real client-initiated
+`apply_workspace_edit` is commented out in `protocol.rs` with a note that
+correct application needs overlap/version validation lspresso doesn't have.
+`workspace/executeCommand` is commented out too, never built at all. Same
+story for a few things previously listed under "everything else":
+**dynamic registration** is already fully done, as of slice 1 --
+`RegistrationRequest`/`UnregistrationRequest` are already in the generic
+null-answer group in `answer_server_request`, matching the reference exactly
+(it never tracks registration ids or implements `dynreg-unregister-same-id`/
+`dynreg-honor-until-unregistered`/`dynreg-scoped-by-document-selector` beyond
+that either) -- nothing to build, just optionally add the spec rules as
+documentation for coverage tracking. **File watching**
+(`DidChangeWatchedFilesNotification`) is never built in the reference,
+permanently out of scope, not deferred. **`workspace/configuration`** is the
+same tiny declined-with-an-explicit-answer pattern as `applyEdit` (answers
+each requested item `null`) -- a few lines, addable whenever convenient
+alongside any slice already touching `answer_server_request`, not real
+feature work.
+
+- **Slice 9 -- everything else / cleanup**: file operations (`will*`/`did*`
+  create/rename/delete -- these ARE real convenience methods in the
+  reference, unlike the workspace-edit items above), notebook documents (if
+  in scope at all -- reference explicitly doesn't support them either, see
+  the commented-out `lsp_notify!` calls in `protocol.rs`), completion item
   defaults, call hierarchy, moniker, linked editing range, document color,
   inline completion/value, editor capability presets (`capabilities::vscode`/
   `helix`/`neovim`/`zed` -- introduce whenever a slice first wants a more
   realistic `ClientCapabilities` than `ClientCapabilities::default()`, not
-  necessarily here; reassess when that need actually shows up). Reassess at
-  slice 9 whether this is one slice or several -- likely several once the
-  actual remaining surface is visible.
+  necessarily here; reassess when that need actually shows up), plus the
+  trivial `workspace/applyEdit`/`workspace/configuration` decline-answers
+  noted above. Reassess whether this is one slice or several once slice 8
+  lands -- likely fewer than previously estimated now that dynamic
+  registration/file watching/command execution are confirmed either
+  already-done or permanently out of scope.
 
 ## Notes for whoever picks this up
 
