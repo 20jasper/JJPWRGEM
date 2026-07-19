@@ -60,65 +60,79 @@ implementation) plus `convenience.rs` (629 lines, ~45 thin wrapper methods),
 `diagnostics.rs` (307 lines), `edits.rs` (296 lines), `with_uri.rs` (129
 lines).
 
-- **Slice 4 -- capability gating helpers**: `server_capabilities()`-based
-  query methods (`supports_formatting`, `supports_pull_diagnostics`,
-  `supports_code_action`, etc., see reference `capabilities.rs`). Small,
-  self-contained, no wire behavior. Restores `lspclient[init-capabilities-
-gate-features]`, which was removed from `spec/lsp-client.md` in slice 2
-  since nothing implemented it yet.
-- **Slice 5 -- incremental sync + edits**: `did_open`/`did_change_full`/
+No standalone "capability gating helpers" slice -- the reference's
+`capabilities.rs` bundles `supports_formatting`/`supports_pull_diagnostics`/
+`supports_code_action`/`text_document_sync_kind`/`supports_incremental_sync`
+into one `impl Client` block, but each one only means something once its
+paired feature exists (a `supports_formatting()` with no `formatting()` to
+gate is dead API, same anti-pattern as slice 3's `protocol_shutdown_request`
+finding). `server_capabilities()` itself already shipped in slice 2. Each
+helper below is folded into the slice that adds the feature it gates, and
+`lspclient[init-capabilities-gate-features]` (removed from `spec/lsp-
+client.md` in slice 2) gets re-added piecemeal as each one lands, not all at
+once.
+
+- **Slice 4 -- incremental sync + edits**: `did_open`/`did_change_full`/
   `did_change_incremental`/`did_close` convenience wrappers (reclaiming the
   plain names slice 3 freed up, delegating to the `protocol_did_*` macro-
   generated methods) plus `apply_edits`/`TextEdit` application (reference
   `edits.rs`), negotiating full vs. incremental via
-  `text_document_sync_kind()`. Needs document-text tracking
-  (`DocumentTracker` growing beyond slice 2/3's bare `OpenDocs`
-  `HashSet<Uri>` into an actual `HashMap<Uri, OpenDoc>` with version+text) --
-  first slice that needs to read tracked content back.
-- **Slice 6 -- diagnostics**: push + pull diagnostics, `wait_for_diagnostics`/
+  `text_document_sync_kind()`/`supports_incremental_sync()` -- these two
+  belong here, not a separate capabilities slice, since `did_change_full`/
+  `did_change_incremental` are the only callers per the reference. Needs
+  document-text tracking (`DocumentTracker` growing beyond slice 2/3's bare
+  `OpenDocs` `HashSet<Uri>` into an actual `HashMap<Uri, OpenDoc>` with
+  version+text) -- first slice that needs to read tracked content back.
+- **Slice 5 -- diagnostics**: push + pull diagnostics, `wait_for_diagnostics`/
   `wait_for_diagnostics_cleared`, result-id threading
-  (`resultid-pull-diagnostics-threaded`). The most complex remaining slice --
-  settle/timeout/pacing logic lives here in the reference and the test file
-  bulk (proptest_concurrency.rs-style) reflects that. Should also introduce
-  `FakeTransportHandle` (reference `client/transport.rs`) + the `proptest`
-  dev-dependency here, not earlier -- it's an in-memory `Transport` stand-in
-  built specifically so property tests over message-ordering/buffering can
-  run fast and deterministically without a real subprocess, and nothing
-  before diagnostics/progress has buffering complex enough to need it.
-  `refresh-client-recomputes`'s `verify` tag was dropped from slice 3's
-  `tolerates_and_acknowledges_server_messages` test (it wasn't actually
-  proven there) pending this -- the reference verifies it via
-  `proptest_concurrency.rs`, not a hand-rolled fixture test; re-add the tag
-  once equivalent coverage lands here.
-- **Slice 7 -- language features, batch 1**: the mechanical `convenience.rs`
+  (`resultid-pull-diagnostics-threaded`), `supports_pull_diagnostics()`. The
+  most complex remaining slice -- settle/timeout/pacing logic lives here in
+  the reference and the test file bulk (proptest_concurrency.rs-style)
+  reflects that. Should also introduce `FakeTransportHandle` (reference
+  `client/transport.rs`) + the `proptest` dev-dependency here, not earlier --
+  it's an in-memory `Transport` stand-in built specifically so property tests
+  over message-ordering/buffering can run fast and deterministically without
+  a real subprocess, and nothing before diagnostics/progress has buffering
+  complex enough to need it. `refresh-client-recomputes`'s `verify` tag was
+  dropped from slice 3's `tolerates_and_acknowledges_server_messages` test
+  (it wasn't actually proven there) pending this -- the reference verifies it
+  via `proptest_concurrency.rs`, not a hand-rolled fixture test; re-add the
+  tag once equivalent coverage lands here.
+- **Slice 6 -- language features, batch 1**: the mechanical `convenience.rs`
   sweep for simple no-special-state requests once slice 3's macro exists --
   `hover`, `completion`, `goto_definition`/`declaration`/`type_definition`/
   `implementation`, `references`, `rename`/`prepare_rename`, `document_symbol`,
   `document_highlight`, `folding_range`, `selection_range`, `signature_help`,
-  `formatting`/`range_formatting`. Each is close to a one-line
-  `lsp_request!` + wrapper once the macro exists.
-- **Slice 8 -- language features, batch 2 (result-id / resolve pairs)**:
+  `formatting`/`range_formatting`, `supports_formatting()`. Each request is
+  close to a one-line `lsp_request!` + wrapper once the macro exists. Also
+  where position encoding negotiation (`lspclient[posenc-negotiated]`,
+  reference `capabilities.rs`'s `build_capabilities`) belongs -- the first
+  slice where `Position`/`Range` semantics actually matter to a caller.
+- **Slice 7 -- language features, batch 2 (result-id / resolve pairs)**:
   `semantic_tokens_full`/`_delta`/`_range` (result-id threading, mirrors
-  diagnostics' pattern), `code_action`/`code_action_resolve`, `code_lens`/
-  `code_lens_resolve`, `document_link`/`_resolve`, `inlay_hint`/`_resolve` --
-  grouped because each pairs a request with a `*/resolve` request sharing
-  state.
-- **Slice 9 -- progress & cancellation**: `wait_for_progress` (begin/report/end
+  diagnostics' pattern), `code_action`/`code_action_resolve`
+  (`supports_code_action()`), `code_lens`/`code_lens_resolve`,
+  `document_link`/`_resolve`, `inlay_hint`/`_resolve` -- grouped because each
+  pairs a request with a `*/resolve` request sharing state.
+- **Slice 8 -- progress & cancellation**: `wait_for_progress` (begin/report/end
   aggregation, `ProgressToken` uniqueness), `cancel_request`
   (`$/cancelRequest`, `cancel-still-responds`), `work_done_progress_cancel`.
-- **Slice 10 -- workspace edits & save lifecycle**: `save_applying_will_save_edits`
+- **Slice 9 -- workspace edits & save lifecycle**: `save_applying_will_save_edits`
   (`will_save`/`willSaveWaitUntil` before `didSave`), `workspace/applyEdit`
   handling (atomic, no-overlap, version-checked), command execution
   (`workspace/executeCommand`).
-- **Slice 11 -- everything else / cleanup**: dynamic registration, file
+- **Slice 10 -- everything else / cleanup**: dynamic registration, file
   operations (`will*`/`did*` create/rename/delete), file watching,
   `workspace/configuration`, workspace folders, notebook documents (if in
   scope at all -- reference explicitly doesn't support them, see the
-  commented-out `lsp_notify!` calls in `protocol.rs`), position encoding
-  negotiation, completion item defaults, call hierarchy, moniker, linked
-  editing range, document color, inline completion/value. Reassess at slice
-  10 whether this is one slice or several -- likely several once the actual
-  remaining surface is visible.
+  commented-out `lsp_notify!` calls in `protocol.rs`), completion item
+  defaults, call hierarchy, moniker, linked editing range, document color,
+  inline completion/value, editor capability presets (`capabilities::vscode`/
+  `helix`/`neovim`/`zed` -- introduce whenever a slice first wants a more
+  realistic `ClientCapabilities` than `ClientCapabilities::default()`, not
+  necessarily here; reassess when that need actually shows up). Reassess at
+  slice 9 whether this is one slice or several -- likely several once the
+  actual remaining surface is visible.
 
 ## Notes for whoever picks this up
 
@@ -143,4 +157,4 @@ gate-features]`, which was removed from `spec/lsp-client.md` in slice 2
   `uri-identifies-document` is the same story: `impl`-tagged only, never
   `verify`-tagged anywhere in the mature reference either -- don't add a
   `verify` tag for it unless a test genuinely asserts on the `uri` field
-  itself (checked and reverted once already, see slice 3/4 history).
+  itself (checked and reverted once already, see slice 3's commit history).
