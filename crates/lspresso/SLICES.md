@@ -34,6 +34,22 @@ concrete reason to diverge (call out the reason when it happens).
   (`tests/integration/lsp.rs`, commit `71770add`) -- not part of the lspresso
   crate itself, but validates it against a real server rather than only
   synthetic fixtures.
+- **Slice 3 -- protocol macro system**: `lsp_request!`/`lsp_notify!` macros
+  (`pre:`/`post:`/`hook:` arms, matching the reference exactly) centralizing
+  the `require_initialized` check so future slices get it automatically
+  instead of hand-adding it per method. Renamed slice 2's `did_open`/
+  `did_change`/`did_close` to `protocol_did_open_notification`/
+  `protocol_did_change_notification`/`protocol_did_close_notification`
+  (matching the reference's raw/protocol-layer naming) and refactored them
+  onto the macro -- this frees up the plain `did_open`/`did_change`/
+  `did_close` names for slice 5's convenience layer, avoiding a second
+  breaking rename later. Added `with_uri.rs` (`WithUri` trait, minimal --
+  only the 3 params types slice 2/3 actually have, not the reference's full
+  set) so `pre: require_open`/`require_not_open` generalize over any future
+  params type. Also wired `protocol_set_trace_notification`,
+  `protocol_exit_notification`, `protocol_shutdown_request` through the
+  macro to prove it out (swapped in for the raw `notify`/`request` escape
+  hatch calls two tests were using). Commit: `8fbccf99`.
 
 ## Proposed remaining slices
 
@@ -44,35 +60,36 @@ implementation) plus `convenience.rs` (629 lines, ~45 thin wrapper methods),
 `diagnostics.rs` (307 lines), `edits.rs` (296 lines), `with_uri.rs` (129
 lines).
 
-- **Slice 3 -- protocol macro system**: the reference generates every
-  `protocol_*_request`/`protocol_*_notification` method via `lsp_request!`/
-  `lsp_notify!` macros (`pre:`/`post:`/`hook:` arms) that centralize the
-  `require_initialized` check every generated method gets automatically --
-  unlike slice 2's hand-written `did_open`/`did_change`/`did_close`, which
-  each call `require_initialized()` manually (flagged in review as a
-  divergence-risk: nothing forces a future hand-written method to remember
-  the check). Building the macro now and refactoring did_open/did_change/
-  did_close onto it fixes that structurally instead of per-callsite. Also
-  wire a couple of trivial notify-only methods through it to prove it out
-  (e.g. `protocol_set_trace_notification`, `protocol_cancel_request_notification`,
-  `protocol_exit_notification`) since they need no new fixture logic.
 - **Slice 4 -- capability gating helpers**: `server_capabilities()`-based
   query methods (`supports_formatting`, `supports_pull_diagnostics`,
   `supports_code_action`, etc., see reference `capabilities.rs`). Small,
   self-contained, no wire behavior. Restores `lspclient[init-capabilities-
 gate-features]`, which was removed from `spec/lsp-client.md` in slice 2
   since nothing implemented it yet.
-- **Slice 5 -- incremental sync + edits**: `did_change_incremental`,
-  `apply_edits`/`TextEdit` application (reference `edits.rs`), negotiating
-  full vs. incremental via `text_document_sync_kind()`. Needs document-text
-  tracking (`DocumentTracker` growing beyond slice 2's bare `OpenDocs`
+- **Slice 5 -- incremental sync + edits**: `did_open`/`did_change_full`/
+  `did_change_incremental`/`did_close` convenience wrappers (reclaiming the
+  plain names slice 3 freed up, delegating to the `protocol_did_*` macro-
+  generated methods) plus `apply_edits`/`TextEdit` application (reference
+  `edits.rs`), negotiating full vs. incremental via
+  `text_document_sync_kind()`. Needs document-text tracking
+  (`DocumentTracker` growing beyond slice 2/3's bare `OpenDocs`
   `HashSet<Uri>` into an actual `HashMap<Uri, OpenDoc>` with version+text) --
   first slice that needs to read tracked content back.
 - **Slice 6 -- diagnostics**: push + pull diagnostics, `wait_for_diagnostics`/
   `wait_for_diagnostics_cleared`, result-id threading
   (`resultid-pull-diagnostics-threaded`). The most complex remaining slice --
   settle/timeout/pacing logic lives here in the reference and the test file
-  bulk (proptest_concurrency.rs-style) reflects that.
+  bulk (proptest_concurrency.rs-style) reflects that. Should also introduce
+  `FakeTransportHandle` (reference `client/transport.rs`) + the `proptest`
+  dev-dependency here, not earlier -- it's an in-memory `Transport` stand-in
+  built specifically so property tests over message-ordering/buffering can
+  run fast and deterministically without a real subprocess, and nothing
+  before diagnostics/progress has buffering complex enough to need it.
+  `refresh-client-recomputes`'s `verify` tag was dropped from slice 3's
+  `tolerates_and_acknowledges_server_messages` test (it wasn't actually
+  proven there) pending this -- the reference verifies it via
+  `proptest_concurrency.rs`, not a hand-rolled fixture test; re-add the tag
+  once equivalent coverage lands here.
 - **Slice 7 -- language features, batch 1**: the mechanical `convenience.rs`
   sweep for simple no-special-state requests once slice 3's macro exists --
   `hover`, `completion`, `goto_definition`/`declaration`/`type_definition`/
@@ -123,3 +140,7 @@ gate-features]`, which was removed from `spec/lsp-client.md` in slice 2
   `didopen-close-open-balanced` spec rules, an "unused" `AlreadyShutdown`
   test path, a "too-loose" `uri-consistent` test) -- the reference itself
   has some accepted rough edges that are fine to carry forward faithfully.
+  `uri-identifies-document` is the same story: `impl`-tagged only, never
+  `verify`-tagged anywhere in the mature reference either -- don't add a
+  `verify` tag for it unless a test genuinely asserts on the `uri` field
+  itself (checked and reverted once already, see slice 3/4 history).
