@@ -96,9 +96,25 @@ just unblocked, same pattern as `tests/integration/lsp.rs` (its own
 "test:"-prefixed commit, colocated right after the slice it depends on) --
 not one deferred migration after slice 6 or 7:
 
-- After **slice 4** (`capabilities::vscode()`): port `bench_initialize` --
-  needs only slice 1 (already shipped) + slice 4. Portable today, as soon as
-  slice 4 lands.
+- **Now, right after slice 1** (already shipped): port `bench_initialize`
+  using `ClientCapabilities::default()` as a stand-in for
+  `capabilities::vscode()`. `bench_initialize` only calls `Client::spawn`/
+  `.initialize(...)`/`.shutdown()`/`.rss_bytes()`, all slice-1 surface --
+  slice 4 isn't actually a dependency, just the source of the "real" value
+  to swap in once it exists. Checked whether `default()` vs `vscode()` would
+  produce different runtime behavior against the profiles this benchmark
+  spawns: `jjpwrgem-lsp`'s `initialize` only reads
+  `capabilities.general.position_encodings` to decide UTF8 vs UTF16 (see
+  `crates/lsp/src/backend.rs`), which is `None` under both `default()` and
+  `vscode()` (the latter declares only `PositionEncodingKind::UTF16`, i.e.
+  no UTF8) -- so for every profile this benchmark can actually reach today,
+  the two are behaviorally identical. One-line swap once slice 4 lands.
+  Landed as its own `benches/`-scoped commit (`benches/Cargo.toml` gains the
+  `lspresso` dev-dependency + `[[bench]] name = "lsp"`; new
+  `benches/benches/lsp.rs` with just `Profile`/`Sidecar` (`initialize` field
+  only)/`profiles()`/`bench_initialize`), following the same "own commit,
+  colocated right after the slice it depends on" pattern as
+  `tests/integration/lsp.rs`.
 - After **slice 5** (diagnostics): port `bench_diagnostics` -- needs
   `client.next_diagnostics(&uri)` plus doc-open/doc-change, which can use
   the already-shipped raw `protocol_did_open_notification`/
@@ -145,9 +161,9 @@ needs, not ahead of it.
   spawning with instead of `ClientCapabilities::default()`. Cheapest
   possible slice; moved ahead of everything else specifically because every
   other slice's tests benefit from using a realistic capabilities value
-  from here on, and the benchmark needs it for literally every spawn
-  including ones slice 1 already supports. Port `bench_initialize` right
-  after (see above).
+  from here on. Swap `benches/benches/lsp.rs`'s `ClientCapabilities::default()`
+  stand-in for `capabilities::vscode()` here (see the "right after slice 1"
+  entry above -- `bench_initialize` itself already ported).
 - **Slice 5 -- diagnostics**: push + pull diagnostics, `wait_for_diagnostics`/
   `wait_for_diagnostics_cleared`/`next_diagnostics`, result-id threading
   (`resultid-pull-diagnostics-threaded`), `supports_pull_diagnostics()`. The
