@@ -81,24 +81,49 @@ has `lspresso = { path = "../crates/lspresso" }` as a dev-dependency, and
 (`bench_initialize`/`bench_diagnostics`/`bench_formatting`/
 `bench_code_action`) driving `jjpwrgem-lsp`, `vscode-json`, and a third
 `light-json-lsp` server directly through `Client`, writing an RSS sidecar
-alongside criterion's own timing. Once it lands, `.config/mise/conf.d/
-bench.toml`'s `cargo:lsp-bench` tool install and the `lsp-bench -c
-"benchmark-${fixture}.yaml"` invocation go away entirely, replaced by
-`cargo bench -p benches --bench lsp`. The `tests/integration/lsp.rs` e2e
-test against `jjpwrgem-lsp` is the other real consumer and wants the same
-things.
+alongside criterion's own timing. The `tests/integration/lsp.rs` e2e test
+against `jjpwrgem-lsp` is the other real consumer and wants the same things.
+
+This doesn't have to land as one big migration at the end -- each of the
+four `bench_*` functions has its own, smaller dependency chain, and three of
+them only need the **raw** `protocol_did_open_notification`/
+`protocol_did_change_notification` methods (already shipped, slice 3) with a
+version number the benchmark code tracks itself, not slice 7's convenience
+`did_open`/`did_change_full` wrappers or any document-tracking
+infrastructure at all. So each slice below should land its own small,
+incremental `benches/`-scoped commit porting whatever `bench_*` function it
+just unblocked, same pattern as `tests/integration/lsp.rs` (its own
+"test:"-prefixed commit, colocated right after the slice it depends on) --
+not one deferred migration after slice 6 or 7:
+
+- After **slice 4** (`capabilities::vscode()`): port `bench_initialize` --
+  needs only slice 1 (already shipped) + slice 4. Portable today, as soon as
+  slice 4 lands.
+- After **slice 5** (diagnostics): port `bench_diagnostics` -- needs
+  `client.next_diagnostics(&uri)` plus doc-open/doc-change, which can use
+  the already-shipped raw `protocol_did_open_notification`/
+  `protocol_did_change_notification` with a benchmark-local version
+  counter, not slice 7.
+- After **slice 6** (formatting & code actions): port `bench_formatting` and
+  `bench_code_action` -- same raw-doc-sync approach. **This is the point
+  where all four benchmarks are ported and the external tool can be fully
+  removed** (`.config/mise/conf.d/bench.toml`'s `cargo:lsp-bench` install +
+  `lsp-bench -c "benchmark-${fixture}.yaml"` invocation deleted, replaced by
+  `cargo bench -p benches --bench lsp`) -- a full slice earlier than treating
+  slice 7 as a prerequisite would have gotten there.
+- After **slice 7** (convenience doc-sync): no longer a blocker for anything
+  above, since it landed after the tool was already fully replaced. It's a
+  cleanup pass on the now-working benches code (swap the raw calls +
+  benchmark-local version counter for the nicer `did_open(uri, text, lang)`/
+  `did_change_full(uri, text)` signatures, matching the reference
+  byte-for-byte) plus the same simplification for `tests/integration/lsp.rs`.
+  Still worth doing soon since it's small, just not gating the main goal.
 
 Reading `benches/benches/lsp.rs` precisely (not just the external tool's
-3-metric yaml) is what this ordering is built from. It calls
-`capabilities::vscode()` for every client spawn,
-`client.did_open(uri, text, LanguageKind::JSON)` and
-`client.did_change_full(uri, text)` (the **convenience** signatures, not the
-raw `protocol_*` methods), `client.next_diagnostics(&uri)`,
-`client.supports_formatting()`/`client.formatting(uri, options)`,
-`client.supports_code_action()`/`client.code_action(uri, range)`, and
-`lspresso::parse_uri(...)` (used twice in this file alone, and throughout
-the reference's own tests) -- which this branch deleted earlier in its
-history on the reasoning that it was "simple and verbose" next to
+3-metric yaml) is what the dependency chains above are built from. It also
+calls `lspresso::parse_uri(...)` (used twice in this file alone, and
+throughout the reference's own tests) -- which this branch deleted earlier
+in its history on the reasoning that it was "simple and verbose" next to
 `path_to_uri`. Worth revisiting given concrete, repeated real-world use in
 the reference rather than reverting unilaterally; flagged here rather than
 silently restored. `jjpwrgem-lsp`'s entire real `LanguageServer` impl
@@ -121,7 +146,8 @@ needs, not ahead of it.
   possible slice; moved ahead of everything else specifically because every
   other slice's tests benefit from using a realistic capabilities value
   from here on, and the benchmark needs it for literally every spawn
-  including ones slice 1 already supports.
+  including ones slice 1 already supports. Port `bench_initialize` right
+  after (see above).
 - **Slice 5 -- diagnostics**: push + pull diagnostics, `wait_for_diagnostics`/
   `wait_for_diagnostics_cleared`/`next_diagnostics`, result-id threading
   (`resultid-pull-diagnostics-threaded`), `supports_pull_diagnostics()`. The
@@ -146,33 +172,29 @@ needs, not ahead of it.
   was dropped from slice 3's `tolerates_and_acknowledges_server_messages`
   test (it wasn't actually proven there) pending this -- the reference
   verifies it via `proptest_concurrency.rs`, not a hand-rolled fixture test;
-  re-add the tag once equivalent coverage lands here.
+  re-add the tag once equivalent coverage lands here. Port `bench_diagnostics`
+  right after (see above).
 - **Slice 6 -- formatting & code actions**: `formatting`/`range_formatting`/
   `supports_formatting()`, `code_action`/`code_action_resolve`/
   `supports_code_action()`. Pulled out of the language-feature batches below
   and prioritized ahead of them specifically because these are
   `jjpwrgem-lsp`'s only two real request/response capabilities, the only two
   `lsp-bench`/the benchmark suite need, and both are called directly in
-  `benches/benches/lsp.rs`.
+  `benches/benches/lsp.rs`. Port `bench_formatting`/`bench_code_action` right
+  after -- **the external tool can be fully removed once this lands** (see
+  above).
 - **Slice 7 -- convenience doc-sync**: `did_open(uri, text, lang)`/
   `did_change_full(uri, text)`/`did_close(uri)`, reclaiming the plain names
   slice 3 freed up and delegating to the `protocol_did_*` macro-generated
-  methods -- the exact signatures `benches/benches/lsp.rs` and a cleaner
-  `tests/integration/lsp.rs` both want. `did_change_full` needs
-  `docs.next_version(uri)` (bare version-number tracking, a much smaller
-  lift than full text tracking) and `text_document_sync_kind()` (a plain
-  read of the already-stored `server_capabilities()`, not real negotiation
-  logic) -- both scoped minimally here, not the full `DocumentTracker`
-  upgrade. Once slices 4-7 land, **migrate `benches/` off the external
-  tool**: add the `lspresso` dev-dependency to `benches/Cargo.toml`, port
-  `benches/benches/lsp.rs` (its `light_json_lsp_profile`/
-  `vscode_json_profile`/`jjp_profile` and RSS-sidecar scaffolding have no
-  lspresso dependency and can be ported verbatim), and remove the
-  `cargo:lsp-bench` tool + `lsp-bench -c ...` invocation from
-  `.config/mise/conf.d/bench.toml`. This is a `benches`-scoped commit, not a
-  lspresso slice -- same pattern already used for `tests/integration/lsp.rs`
-  (its own "test:"-prefixed commit, colocated right after the slice it
-  depends on).
+  methods. `did_change_full` needs `docs.next_version(uri)` (bare
+  version-number tracking, a much smaller lift than full text tracking) and
+  `text_document_sync_kind()` (a plain read of the already-stored
+  `server_capabilities()`, not real negotiation logic) -- both scoped
+  minimally here, not the full `DocumentTracker` upgrade. No longer gates
+  the benches migration (that finished at slice 6) -- this is where the
+  already-working `benches/benches/lsp.rs`/`tests/integration/lsp.rs` code
+  gets simplified to drop their benchmark/test-local version counters in
+  favor of these wrappers, matching the reference exactly.
 - **Slice 8 -- incremental sync, edits & save lifecycle**: `did_change_incremental`
   plus `apply_edits`/`TextEdit` application (reference `edits.rs`),
   negotiating full vs. incremental via `supports_incremental_sync()`. Needs
