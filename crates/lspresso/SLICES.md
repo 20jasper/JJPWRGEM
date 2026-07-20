@@ -50,6 +50,14 @@ concrete reason to diverge (call out the reason when it happens).
   `protocol_exit_notification`, `protocol_shutdown_request` through the
   macro to prove it out (swapped in for the raw `notify`/`request` escape
   hatch calls two tests were using). Commit: `8fbccf99`.
+- **Slice 4 -- capability presets**: `capabilities::vscode()` only (`helix`/
+  `neovim`/`zed` still deferred -- nothing in this repo calls them),
+  `build_capabilities`/`build_pull_diagnostics`, re-exported via `pub mod
+capabilities` in `lib.rs` matching the reference's re-export shape. No
+  `posenc-negotiated` `impl` tag yet -- that rule is about interpreting
+  positions/ranges in the negotiated encoding, which nothing calls yet
+  (still slice 9). `benches/benches/lsp.rs`'s `ClientCapabilities::default()`
+  stand-in swapped for `capabilities::vscode()`.
 
 ## Proposed remaining slices
 
@@ -151,19 +159,6 @@ Neither real consumer needs incremental sync, `apply_edits`, or save
 lifecycle at all, so that's pushed past everything the benches migration
 needs, not ahead of it.
 
-- **Slice 4 -- capability presets**: `capabilities::vscode()` only (defer
-  `helix`/`neovim`/`zed` -- nothing in this repo calls them). Pure data
-  construction (`build_capabilities`/`build_pull_diagnostics`, a
-  `ClientCapabilities` value with `PositionEncodingKind::UTF16` and pull-
-  diagnostics support declared) with zero `Client`-state dependency -- it
-  doesn't need diagnostics/formatting/anything else to exist first, it's
-  just what every later slice's tests and the benches migration should be
-  spawning with instead of `ClientCapabilities::default()`. Cheapest
-  possible slice; moved ahead of everything else specifically because every
-  other slice's tests benefit from using a realistic capabilities value
-  from here on. Swap `benches/benches/lsp.rs`'s `ClientCapabilities::default()`
-  stand-in for `capabilities::vscode()` here (see the "right after slice 1"
-  entry above -- `bench_initialize` itself already ported).
 - **Slice 5 -- diagnostics**: push + pull diagnostics, `wait_for_diagnostics`/
   `wait_for_diagnostics_cleared`/`next_diagnostics`, result-id threading
   (`resultid-pull-diagnostics-threaded`), `supports_pull_diagnostics()`. The
