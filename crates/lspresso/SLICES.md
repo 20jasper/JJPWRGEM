@@ -96,15 +96,19 @@ capabilities` in `lib.rs` matching the reference's re-export shape. No
   impl (`self`) that `require_open`/`require_not_open` need to accept a
   plain `&Uri` directly, matching the reference's `with_uri.rs` exactly.
   `track_closed` now also clears `diagnostic_result_ids`/`diagnostic_cache`
-  for the closed uri. Discovered and fixed pre-existing `mise run lint`
-  failures are explicitly NOT included here -- `cargo clippy --all-targets`
-  fails on ~16 unrelated `matches_pattern!`/googletest macro false
-  positives (`unnecessary_self_imports`) already present in
-  `tests/integration/{client,errors}.rs` before this slice, plus one
-  `clone_on_copy` in the root `tests/integration/lsp.rs` (now fixed
-  incidentally while editing that file for the diagnostics-wait
-  assertions) -- confirmed via `git stash` that the googletest ones predate
-  this slice; out of scope to fix broadly here.
+  for the closed uri. Also discovered (via `git stash`, confirmed pre-
+  existing) and fixed a `mise run lint` gap unrelated to diagnostics itself:
+  `cargo clippy --all-targets` was failing on ~16 `matches_pattern!`/
+  googletest macro false positives (`unnecessary_self_imports` -- the macro
+  expands to `use $crate::{self as googletest};` internally, not anything
+  call sites write) in `tests/integration/{client,errors}.rs`, plus a
+  `clone_on_copy` in the root `tests/integration/lsp.rs` (fixed incidentally
+  while editing that file for the diagnostics-wait assertions). Silenced
+  with a file-level `#![allow(clippy::unnecessary_self_imports, reason =
+"...")]` on the three affected test files rather than a workspace-wide
+  lint override, since the workspace deliberately opts into this lint under
+  `[workspace.lints.clippy]`'s restriction group for the rest of the
+  monorepo and a blanket allow would silence it there too.
 
 ## Proposed remaining slices
 
