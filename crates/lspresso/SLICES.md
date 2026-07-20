@@ -321,3 +321,17 @@ feature work.
   maturity, but turned out not to pull its weight for a single permanent
   caller and got removed anyway (see slice 3's entry above). Weigh reference
   fidelity as a strong prior, not a verdict.
+- `lib.rs`'s doc comment: keep it lean (currently just title/tagline/image,
+  matching `README.md` via cargo-rdme) -- don't port the reference's full
+  "why lspresso" guide (how-to examples, capability coverage table, error
+  catalog) piecemeal as each slice lands. That block is one interconnected
+  set of examples calling into most of the public API; growing it slice by
+  slice means every later slice that changes a signature has to remember to
+  go back and fix docs written slices earlier, or they silently rot (this
+  happened on the reference itself -- 5 of its doctest examples were still
+  passing `&uri` to methods that had moved to owned `Uri`, caught and fixed
+  in this repo's history rather than the reference's own, since nothing
+  had run `cargo test --doc` there in a while). Write it once, late, in a
+  dedicated slice once the API shape has mostly stabilized, and verify every
+  example against what's actually shipped at that point rather than copying
+  the reference's block wholesale.
