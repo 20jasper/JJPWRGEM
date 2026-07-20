@@ -133,7 +133,7 @@ redundant_closure_for_method_calls = "allow"
 doc_markdown = "allow"
 # can have different semantics for non disjoint. also prevents comments per match
 match_same_arms = "allow"
-# noisy, sometimes debug formatting is better 
+# noisy, sometimes debug formatting is better
 unnecessary_debug_formatting = "allow"
 # cargo
 negative_feature_names = "warn"

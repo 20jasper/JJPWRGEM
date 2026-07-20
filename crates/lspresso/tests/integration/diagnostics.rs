@@ -1,3 +1,8 @@
+#![allow(
+    clippy::unnecessary_self_imports,
+    reason = "googletest's matches_pattern!/assert_that! expand to `use $crate::{self as googletest};` internally, not anything call sites write"
+)]
+
 use std::time::Duration;
 
 use googletest::prelude::*;
