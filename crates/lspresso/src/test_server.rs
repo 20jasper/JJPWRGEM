@@ -39,25 +39,11 @@ pub fn handle_initialize_with(conn: &Connection, result: Value) {
     }
 }
 
-pub fn run_event_loop<F>(conn: &Connection, mut handler: F)
+pub fn run_event_loop<F>(conn: &Connection, handler: F)
 where
     F: FnMut(Message, &Connection),
 {
-    for msg in &conn.receiver {
-        if msg.is_notification::<ExitNotification>() {
-            return;
-        }
-        if let Some(req) = msg.as_request::<ShutdownRequest>() {
-            conn.sender
-                .send(Message::Response(Response::new_ok(
-                    req.id.clone(),
-                    Value::Null,
-                )))
-                .unwrap();
-            continue;
-        }
-        handler(msg, conn);
-    }
+    run_event_loop_with_shutdown_check(conn, handler, || Ok(()));
 }
 
 /// Like [`run_event_loop`], but `shutdown_check` decides the shutdown
