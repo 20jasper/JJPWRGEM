@@ -72,119 +72,121 @@ helper below is folded into the slice that adds the feature it gates, and
 client.md` in slice 2) gets re-added piecemeal as each one lands, not all at
 once.
 
-Ordering below is prioritized by what this repo actually needs, not just
-reference file order. Two real consumers exist today: the
-`tests/integration/lsp.rs` e2e test against the monorepo's own
-`jjpwrgem-lsp`, and the external `lsp-bench` benchmark tool (`cargo:lsp-bench`
-v0.3.3, run via `mise run bench-lsp-all`, output at `benches/lsp/lsp.md`)
-that this whole project is named after. `jjpwrgem-lsp`'s entire real
-`LanguageServer` impl (`crates/lsp/src/backend.rs`) is `initialize`/
-`did_open`/`did_change`/`did_close`/`formatting`/`code_action`/`shutdown` --
-it declares `TextDocumentSyncKind::Full` only (no incremental), implements
-no `will_save`/`did_save` hooks, and pushes diagnostics on every doc-sync
-call. The external `lsp-bench` tool measures exactly three things per
-fixture: `initialize` timing, `diagnostic` (wait-for-diagnostics) timing, and
-`formatting` timing + edit count, run against `jjpwrgem-lsp` and
-`vscode-json`.
-
-There's a third, more important consumer: **the full reference actually
-replaces the external `lsp-bench` tool with a lspresso-powered one.**
-`benches/Cargo.toml` there has `lspresso = { path = "../crates/lspresso" }`
-as a dev-dependency, and `benches/benches/lsp.rs` is a real criterion
-benchmark (`bench_initialize`/`bench_diagnostics`/`bench_formatting`/
+Ordering below is prioritized around one explicit goal: **replace the
+external `lsp-bench` tool** (`cargo:lsp-bench` v0.3.3, run via `mise run
+bench-lsp-all`, output at `benches/lsp/lsp.md`) with a lspresso-powered one,
+matching what the full reference actually does. `benches/Cargo.toml` there
+has `lspresso = { path = "../crates/lspresso" }` as a dev-dependency, and
+`benches/benches/lsp.rs` is a real criterion benchmark
+(`bench_initialize`/`bench_diagnostics`/`bench_formatting`/
 `bench_code_action`) driving `jjpwrgem-lsp`, `vscode-json`, and a third
 `light-json-lsp` server directly through `Client`, writing an RSS sidecar
-alongside criterion's own timing. This is the actual end goal, not the
-current external-tool shell-out -- once it lands, `.config/mise/conf.d/
+alongside criterion's own timing. Once it lands, `.config/mise/conf.d/
 bench.toml`'s `cargo:lsp-bench` tool install and the `lsp-bench -c
-"benchmark-${fixture}.yaml"` invocation can go away entirely, replaced by
-`cargo bench -p benches --bench lsp`.
+"benchmark-${fixture}.yaml"` invocation go away entirely, replaced by
+`cargo bench -p benches --bench lsp`. The `tests/integration/lsp.rs` e2e
+test against `jjpwrgem-lsp` is the other real consumer and wants the same
+things.
 
-Reading that file precisely (not just the external tool's 3-metric yaml)
-changes what's actually needed before benches can be migrated. It calls
+Reading `benches/benches/lsp.rs` precisely (not just the external tool's
+3-metric yaml) is what this ordering is built from. It calls
 `capabilities::vscode()` for every client spawn,
 `client.did_open(uri, text, LanguageKind::JSON)` and
-`client.did_change_full(uri, text)` (the **convenience** signatures --
-slice 6, not slices 4/5's raw `protocol_*` methods),
-`client.next_diagnostics(&uri)` (slice 4),
-`client.supports_formatting()`/`client.formatting(uri, options)` and
-`client.supports_code_action()`/`client.code_action(uri, range)` (slice 5),
-and `lspresso::parse_uri(...)` (used twice in this file alone, and
-throughout the reference's own tests) -- which this branch deleted earlier
-in its history on the reasoning that it was "simple and verbose" next to
+`client.did_change_full(uri, text)` (the **convenience** signatures, not the
+raw `protocol_*` methods), `client.next_diagnostics(&uri)`,
+`client.supports_formatting()`/`client.formatting(uri, options)`,
+`client.supports_code_action()`/`client.code_action(uri, range)`, and
+`lspresso::parse_uri(...)` (used twice in this file alone, and throughout
+the reference's own tests) -- which this branch deleted earlier in its
+history on the reasoning that it was "simple and verbose" next to
 `path_to_uri`. Worth revisiting given concrete, repeated real-world use in
 the reference rather than reverting unilaterally; flagged here rather than
-silently restored.
+silently restored. `jjpwrgem-lsp`'s entire real `LanguageServer` impl
+(`crates/lsp/src/backend.rs`) is `initialize`/`did_open`/`did_change`/
+`did_close`/`formatting`/`code_action`/`shutdown` -- declares
+`TextDocumentSyncKind::Full` only (no incremental), implements no
+`will_save`/`did_save` hooks, and pushes diagnostics on every doc-sync call.
+Neither real consumer needs incremental sync, `apply_edits`, or save
+lifecycle at all, so that's pushed past everything the benches migration
+needs, not ahead of it.
 
-So: diagnostics (4) and formatting/code-action (5) are still the right next
-two slices -- they're jjpwrgem-lsp's real capabilities and the external
-tool's real metrics -- but slice 6's convenience `did_open`/`did_change_full`
-wrappers and `capabilities::vscode()` (currently deferred to "slice 10,
-whenever needed" below) are _also_ on the critical path to actually building
-the benches replacement, not optional polish. `light_json_lsp_profile`/
-`vscode_json_profile`/`jjp_profile` and the sidecar/RSS-writing scaffolding
-in `benches/benches/lsp.rs` have no lspresso dependency and can be ported
-verbatim whenever the above lands. **Migrating `benches/` off the external
-tool and onto this** is real, concrete follow-up work once slices 4, 5, and
-slice 6's convenience layer exist -- worth its own tracked task (a
-`benches`-scoped commit adding the dev-dependency and porting `lsp.rs`,
-matching the "another crate consuming lspresso gets its own commit" pattern
-already used for `tests/integration/lsp.rs`), not assumed to happen for
-free. Incremental sync/`apply_edits`/save-lifecycle (also in slice 6, but not
-called by this benchmark) still have zero real-server payoff in this repo --
-worth building for lspresso's general server-agnostic completeness (see
-`project_lspresso_standalone`), just not on this critical path.
-
-- **Slice 4 -- diagnostics**: push + pull diagnostics, `wait_for_diagnostics`/
-  `wait_for_diagnostics_cleared`, result-id threading
+- **Slice 4 -- capability presets**: `capabilities::vscode()` only (defer
+  `helix`/`neovim`/`zed` -- nothing in this repo calls them). Pure data
+  construction (`build_capabilities`/`build_pull_diagnostics`, a
+  `ClientCapabilities` value with `PositionEncodingKind::UTF16` and pull-
+  diagnostics support declared) with zero `Client`-state dependency -- it
+  doesn't need diagnostics/formatting/anything else to exist first, it's
+  just what every later slice's tests and the benches migration should be
+  spawning with instead of `ClientCapabilities::default()`. Cheapest
+  possible slice; moved ahead of everything else specifically because every
+  other slice's tests benefit from using a realistic capabilities value
+  from here on, and the benchmark needs it for literally every spawn
+  including ones slice 1 already supports.
+- **Slice 5 -- diagnostics**: push + pull diagnostics, `wait_for_diagnostics`/
+  `wait_for_diagnostics_cleared`/`next_diagnostics`, result-id threading
   (`resultid-pull-diagnostics-threaded`), `supports_pull_diagnostics()`. The
   most complex remaining slice -- settle/timeout/pacing logic lives here in
   the reference and the test file bulk (proptest_concurrency.rs-style)
-  reflects that. Should also introduce `FakeTransportHandle` (reference
-  `client/transport.rs`) + the `proptest` dev-dependency here, not earlier --
-  it's an in-memory `Transport` stand-in built specifically so property tests
-  over message-ordering/buffering can run fast and deterministically without
-  a real subprocess, and nothing before diagnostics/progress has buffering
-  complex enough to need it (if that infra turns out to slow this slice down,
-  it's fine to land basic push-diagnostics correctness against a real
+  reflects that. Checked whether this could be scoped down to just
+  push-diagnostics (all `jjpwrgem-lsp` needs) to shrink this slice, but the
+  reference's `diagnostics_once`/`next_diagnostics` unconditionally branch
+  on `supports_pull_diagnostics()` and share result-id caching with the pull
+  path -- splitting push out cleanly would diverge from the reference's
+  actual structure for no strong reason, so keep it as one slice. Should
+  also introduce `FakeTransportHandle` (reference `client/transport.rs`) +
+  the `proptest` dev-dependency here, not earlier -- an in-memory
+  `Transport` stand-in built specifically so property tests over
+  message-ordering/buffering can run fast and deterministically without a
+  real subprocess, and nothing before diagnostics/progress has buffering
+  complex enough to need it (if that infra turns out to slow this slice
+  down, it's fine to land basic push-diagnostics correctness against a real
   fixture first and defer the property-test hardening a step). Update
   `tests/integration/lsp.rs` to actually wait for jjpwrgem-lsp's pushed
-  diagnostics once this lands -- it publishes them on every did_open/
-  did_change/did_close already. `refresh-client-recomputes`'s `verify` tag
+  diagnostics once this lands. `refresh-client-recomputes`'s `verify` tag
   was dropped from slice 3's `tolerates_and_acknowledges_server_messages`
   test (it wasn't actually proven there) pending this -- the reference
   verifies it via `proptest_concurrency.rs`, not a hand-rolled fixture test;
   re-add the tag once equivalent coverage lands here.
-- **Slice 5 -- formatting & code actions**: `formatting`/`range_formatting`/
+- **Slice 6 -- formatting & code actions**: `formatting`/`range_formatting`/
   `supports_formatting()`, `code_action`/`code_action_resolve`/
   `supports_code_action()`. Pulled out of the language-feature batches below
   and prioritized ahead of them specifically because these are
-  `jjpwrgem-lsp`'s only two real request/response capabilities and the only
-  two the `lsp-bench`/benchmark suite (`formatting` timing + edit count) and
-  `tests/integration/lsp.rs` actually need -- extend that e2e test to call
-  `formatting()` on the doc it already opens once this lands. Also where
-  position encoding negotiation (`lspclient[posenc-negotiated]`, reference
-  `capabilities.rs`'s `build_capabilities`) belongs -- the first slice where
-  `Position`/`Range` semantics actually matter to a caller.
-- **Slice 6 -- incremental sync, edits & save lifecycle**: `did_open`/
-  `did_change_full`/`did_change_incremental`/`did_close` convenience wrappers
-  (reclaiming the plain names slice 3 freed up, delegating to the
-  `protocol_did_*` macro-generated methods) plus `apply_edits`/`TextEdit`
-  application (reference `edits.rs`), negotiating full vs. incremental via
-  `text_document_sync_kind()`/`supports_incremental_sync()` -- these two
-  belong here, not a separate capabilities slice, since `did_change_full`/
-  `did_change_incremental` are the only callers per the reference. Needs
-  document-text tracking (`DocumentTracker` growing beyond slice 2/3's bare
-  `OpenDocs` `HashSet<Uri>` into an actual `HashMap<Uri, OpenDoc>` with
+  `jjpwrgem-lsp`'s only two real request/response capabilities, the only two
+  `lsp-bench`/the benchmark suite need, and both are called directly in
+  `benches/benches/lsp.rs`.
+- **Slice 7 -- convenience doc-sync**: `did_open(uri, text, lang)`/
+  `did_change_full(uri, text)`/`did_close(uri)`, reclaiming the plain names
+  slice 3 freed up and delegating to the `protocol_did_*` macro-generated
+  methods -- the exact signatures `benches/benches/lsp.rs` and a cleaner
+  `tests/integration/lsp.rs` both want. `did_change_full` needs
+  `docs.next_version(uri)` (bare version-number tracking, a much smaller
+  lift than full text tracking) and `text_document_sync_kind()` (a plain
+  read of the already-stored `server_capabilities()`, not real negotiation
+  logic) -- both scoped minimally here, not the full `DocumentTracker`
+  upgrade. Once slices 4-7 land, **migrate `benches/` off the external
+  tool**: add the `lspresso` dev-dependency to `benches/Cargo.toml`, port
+  `benches/benches/lsp.rs` (its `light_json_lsp_profile`/
+  `vscode_json_profile`/`jjp_profile` and RSS-sidecar scaffolding have no
+  lspresso dependency and can be ported verbatim), and remove the
+  `cargo:lsp-bench` tool + `lsp-bench -c ...` invocation from
+  `.config/mise/conf.d/bench.toml`. This is a `benches`-scoped commit, not a
+  lspresso slice -- same pattern already used for `tests/integration/lsp.rs`
+  (its own "test:"-prefixed commit, colocated right after the slice it
+  depends on).
+- **Slice 8 -- incremental sync, edits & save lifecycle**: `did_change_incremental`
+  plus `apply_edits`/`TextEdit` application (reference `edits.rs`),
+  negotiating full vs. incremental via `supports_incremental_sync()`. Needs
+  the full `DocumentTracker` upgrade slice 7 deliberately deferred (bare
+  version tracking growing into an actual `HashMap<Uri, OpenDoc>` with
   version+text) -- first slice that needs to read tracked content back. Also
   where `did_save`/`save_applying_will_save_edits` belong: the reference's
   `save_applying_will_save_edits` calls `did_change_incremental`/
   `did_change_full`/`apply_edits`/`docs.text()` directly, so it's not an
   independent feature -- it's built entirely on this slice's own machinery
-  and can't exist before it. Deprioritized behind diagnostics/formatting/
-  code-action above since neither real consumer in this repo exercises
-  incremental sync or save hooks at all.
-- **Slice 7 -- language features, batch 1**: the mechanical `convenience.rs`
+  and can't exist before it. Deprioritized behind the whole benches-migration
+  path above since neither real consumer in this repo exercises incremental
+  sync or save hooks at all.
+- **Slice 9 -- language features, batch 1**: the mechanical `convenience.rs`
   sweep for simple no-special-state requests once slice 3's macro exists --
   `hover`, `completion`, `goto_definition`/`declaration`/`type_definition`/
   `implementation`, `references`, `rename`/`prepare_rename`, `document_symbol`,
@@ -192,14 +194,18 @@ worth building for lspresso's general server-agnostic completeness (see
   Each request is close to a one-line `lsp_request!` + wrapper once the macro
   exists. None of these are implemented by `jjpwrgem-lsp` or measured by
   `lsp-bench` -- lowest priority for this repo specifically, still valuable
-  for lspresso's general-purpose completeness.
-- **Slice 8 -- language features, batch 2 (result-id / resolve pairs)**:
+  for lspresso's general-purpose completeness. Also where full position
+  encoding negotiation (`lspclient[posenc-negotiated]`, consuming what
+  slice 4's `vscode()` preset declares) matters for the first time --
+  the first slice where `Position`/`Range` semantics actually matter to a
+  caller.
+- **Slice 10 -- language features, batch 2 (result-id / resolve pairs)**:
   `semantic_tokens_full`/`_delta`/`_range` (result-id threading, mirrors
   diagnostics' pattern), `code_lens`/`code_lens_resolve`, `document_link`/
   `_resolve`, `inlay_hint`/`_resolve` -- grouped because each pairs a request
   with a `*/resolve` request sharing state. Same low-priority-for-this-repo
   caveat as batch 1.
-- **Slice 9 -- progress & cancellation**: `wait_for_progress` (begin/report/end
+- **Slice 11 -- progress & cancellation**: `wait_for_progress` (begin/report/end
   aggregation, `ProgressToken` uniqueness), `cancel_request`
   (`$/cancelRequest`, `cancel-still-responds`), `work_done_progress_cancel`.
 
@@ -225,17 +231,16 @@ each requested item `null`) -- a few lines, addable whenever convenient
 alongside any slice already touching `answer_server_request`, not real
 feature work.
 
-- **Slice 10 -- everything else / cleanup**: file operations (`will*`/`did*`
+- **Slice 12 -- everything else / cleanup**: file operations (`will*`/`did*`
   create/rename/delete -- these ARE real convenience methods in the
   reference, unlike the workspace-edit items above), notebook documents (if
   in scope at all -- reference explicitly doesn't support them either, see
   the commented-out `lsp_notify!` calls in `protocol.rs`), completion item
   defaults, call hierarchy, moniker, linked editing range, document color,
   inline completion/value, the `helix`/`neovim`/`zed` editor capability
-  presets (`capabilities::vscode()` itself is needed earlier -- see the
-  benches-migration note above, it's not deferred to this slice), plus the
-  trivial `workspace/applyEdit`/`workspace/configuration` decline-answers
-  noted above. Reassess whether this is one slice or several once slice 9
+  presets (`capabilities::vscode()` itself already shipped in slice 4), plus
+  the trivial `workspace/applyEdit`/`workspace/configuration` decline-answers
+  noted above. Reassess whether this is one slice or several once slice 11
   lands -- likely fewer than previously estimated now that dynamic
   registration/file watching/command execution are confirmed either
   already-done or permanently out of scope.
