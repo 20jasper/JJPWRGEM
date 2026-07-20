@@ -6,7 +6,7 @@ use std::{
 };
 
 use criterion::{Criterion, criterion_group, criterion_main};
-use lspresso::{Client, gen_lsp_types::ClientCapabilities};
+use lspresso::{Client, capabilities};
 use serde::Serialize;
 
 /// RSS-only sidecar: time comes from criterion's stored estimates.
@@ -89,7 +89,7 @@ fn available(profile: &Profile) -> bool {
     let Ok(mut client) = Client::spawn(profile.command()) else {
         return false;
     };
-    client.initialize(ClientCapabilities::default()).is_ok()
+    client.initialize(capabilities::vscode()).is_ok()
 }
 
 fn profiles() -> Vec<Profile> {
@@ -119,7 +119,7 @@ fn bench_initialize(c: &mut Criterion) {
             b.iter(|| {
                 let mut client = Client::spawn(profile.command()).expect("spawn");
                 client
-                    .initialize(ClientCapabilities::default())
+                    .initialize(capabilities::vscode())
                     .expect("initialize");
                 client.shutdown().expect("shutdown");
             });
@@ -127,7 +127,7 @@ fn bench_initialize(c: &mut Criterion) {
         // Spawn one post-criterion client to capture peak RSS after initialization.
         let mut client = Client::spawn(profile.command()).expect("spawn");
         client
-            .initialize(ClientCapabilities::default())
+            .initialize(capabilities::vscode())
             .expect("initialize");
         if let Some(rss) = client.rss_bytes() {
             get_sidecar()
