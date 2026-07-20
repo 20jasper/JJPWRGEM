@@ -25,8 +25,7 @@ fn lsp_survives_a_document_sync_session() {
     let sync = client
         .server_capabilities()
         .expect("initialize response recorded capabilities")
-        .text_document_sync
-        .clone();
+        .text_document_sync;
     assert!(
         matches!(
             sync,
@@ -42,10 +41,18 @@ fn lsp_survives_a_document_sync_session() {
                 uri: uri.clone(),
                 language_id: LanguageKind::JSON,
                 version: 1,
-                text: r#"{"a": 1}"#.to_owned(),
+                text: r#"{"a" 1}"#.to_owned(),
             },
         })
         .expect("did_open");
+    let diagnostics = client
+        .wait_for_diagnostics(&uri)
+        .expect("wait_for_diagnostics");
+    assert!(
+        !diagnostics.is_empty(),
+        "expected a diagnostic for the missing colon"
+    );
+
     client
         .protocol_did_change_notification(DidChangeTextDocumentParams {
             text_document: VersionedTextDocumentIdentifier {
@@ -57,6 +64,10 @@ fn lsp_survives_a_document_sync_session() {
             ],
         })
         .expect("did_change");
+    client
+        .wait_for_diagnostics_cleared(&uri)
+        .expect("wait_for_diagnostics_cleared");
+
     client
         .protocol_did_close_notification(DidCloseTextDocumentParams {
             text_document: TextDocumentIdentifier { uri },
