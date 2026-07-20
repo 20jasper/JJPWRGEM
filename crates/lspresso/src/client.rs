@@ -226,15 +226,6 @@ macro_rules! lsp_request {
             self.request::<$request>(params)
         }
     };
-    ($name:ident, $request:path, hook: $hook:ident) => {
-        pub fn $name(
-            &mut self,
-            params: <$request as Request>::Params,
-        ) -> Result<<$request as Request>::Result> {
-            assert_client_to_server!($request, Request);
-            self.$hook(params)
-        }
-    };
 }
 
 macro_rules! lsp_notify {
@@ -375,10 +366,16 @@ impl Client {
     }
 
     // lspclient[impl init-initialized-after-response]
-    fn initialize_hook(
+    //
+    // Can't go through `lsp_request!`/`require_initialized` like every other
+    // protocol method -- sending Initialize is what makes the client
+    // initialized, so this hand-rolls the same `assert_client_to_server!`
+    // check and does its own bookkeeping instead.
+    pub fn protocol_initialize_request(
         &mut self,
         params: gen_lsp_types::InitializeParams,
     ) -> Result<InitializeResult> {
+        assert_client_to_server!(InitializeRequest, Request);
         if self.lifecycle.capabilities().is_some() {
             return Err(ErrorKind::AlreadyInitialized.into());
         }
@@ -390,8 +387,6 @@ impl Client {
         tracing::info!(server = %self.server_name, "initialized");
         Ok(result)
     }
-
-    lsp_request!(protocol_initialize_request, InitializeRequest, hook: initialize_hook);
 
     // lspclient[impl shutdown-before-exit]
     pub fn shutdown(&mut self) -> Result<()> {

@@ -35,21 +35,33 @@ concrete reason to diverge (call out the reason when it happens).
   crate itself, but validates it against a real server rather than only
   synthetic fixtures.
 - **Slice 3 -- protocol macro system**: `lsp_request!`/`lsp_notify!` macros
-  (`pre:`/`post:`/`hook:` arms, matching the reference exactly) centralizing
-  the `require_initialized` check so future slices get it automatically
-  instead of hand-adding it per method. Renamed slice 2's `did_open`/
-  `did_change`/`did_close` to `protocol_did_open_notification`/
-  `protocol_did_change_notification`/`protocol_did_close_notification`
-  (matching the reference's raw/protocol-layer naming) and refactored them
-  onto the macro -- this frees up the plain `did_open`/`did_change`/
-  `did_close` names for slice 5's convenience layer, avoiding a second
-  breaking rename later. Added `with_uri.rs` (`WithUri` trait, minimal --
-  only the 3 params types slice 2/3 actually have, not the reference's full
-  set) so `pre: require_open`/`require_not_open` generalize over any future
-  params type. Also wired `protocol_set_trace_notification`,
-  `protocol_exit_notification`, `protocol_shutdown_request` through the
-  macro to prove it out (swapped in for the raw `notify`/`request` escape
-  hatch calls two tests were using). Commit: `8fbccf99`.
+  (`pre:`/`post:` arms) centralizing the `require_initialized` check so
+  future slices get it automatically instead of hand-adding it per method.
+  Renamed slice 2's `did_open`/`did_change`/`did_close` to
+  `protocol_did_open_notification`/`protocol_did_change_notification`/
+  `protocol_did_close_notification` (matching the reference's raw/protocol-
+  layer naming) and refactored them onto the macro -- this frees up the
+  plain `did_open`/`did_change`/`did_close` names for slice 5's convenience
+  layer, avoiding a second breaking rename later. Added `with_uri.rs`
+  (`WithUri` trait, minimal -- only the 3 params types slice 2/3 actually
+  have, not the reference's full set) so `pre: require_open`/
+  `require_not_open` generalize over any future params type. Also wired
+  `protocol_set_trace_notification`, `protocol_exit_notification`,
+  `protocol_shutdown_request` through the macro to prove it out (swapped in
+  for the raw `notify`/`request` escape hatch calls two tests were using).
+  Commit: `8fbccf99`. Initially also had a `hook:` arm for
+  `protocol_initialize_request` (the one request that can't use
+  `require_initialized` since sending it is what makes the client
+  initialized), matching the reference's shape -- removed after a later
+  review: with exactly one caller across the entire mature reference (all
+  slices, ~1109 lines), the arm didn't save meaningful code over hand-
+  writing the method (same ~3 lines either way, `assert_client_to_server!`
+  is a standalone macro usable outside `lsp_request!`) and cost readers of
+  the macro definition a second arm to parse for a permanent, unrepeatable
+  exception. `protocol_initialize_request` is hand-written now (the old
+  `initialize_hook` body merged directly into it). Diverges from the
+  reference here deliberately -- see the note below about not treating
+  reference-matching as automatically correct.
 - **Slice 4 -- capability presets**: `capabilities::vscode()` only (`helix`/
   `neovim`/`zed` still deferred -- nothing in this repo calls them),
   `build_capabilities`/`build_pull_diagnostics`, re-exported via `pub mod
@@ -302,3 +314,10 @@ feature work.
   `verify`-tagged anywhere in the mature reference either -- don't add a
   `verify` tag for it unless a test genuinely asserts on the `uri` field
   itself (checked and reverted once already, see slice 3's commit history).
+  That said, "matches the reference" isn't an automatic pass either -- it's
+  evidence the design was deliberate, not proof it's still the best call
+  once evaluated on its own merits. The `lsp_request!` `hook:` arm (slice 3)
+  is the counter-example: matched the reference exactly, including at full
+  maturity, but turned out not to pull its weight for a single permanent
+  caller and got removed anyway (see slice 3's entry above). Weigh reference
+  fidelity as a strong prior, not a verdict.
