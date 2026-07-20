@@ -230,3 +230,62 @@ alongside the implementation.
 > re-request, not a push of new data itself -- the client re-issues
 > whatever request(s) it cares about at its own pace, including never, if
 > the affected editor isn't currently relevant.
+
+## Diagnostics
+
+> lspclient[diag-replace-previous]
+> Per the [LSP 3.18 spec, PublishDiagnostics Notification](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#textDocument_publishDiagnostics):
+>
+> > Newly pushed diagnostics always replace previously pushed diagnostics.
+> > There is no merging that happens on the client side.
+
+> lspclient[diag-empty-clears]
+> Per the [LSP 3.18 spec, PublishDiagnostics Notification](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#textDocument_publishDiagnostics):
+>
+> > If the computed set is empty, the server has to push the empty array
+> > to clear former diagnostics.
+
+> lspclient[diag-version-checked]
+> Per the [LSP 3.18 spec, PublishDiagnostics Notification](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#textDocument_publishDiagnostics)
+> (`PublishDiagnosticsParams.version`, and the client capability `versionSupport`):
+>
+> > Optionally, the version number of the document the diagnostics are
+> > published for.
+>
+> > Whether the client interprets the version property of the
+> > `textDocument/publishDiagnostics` notification's parameter.
+>
+> A client that declares `versionSupport: true` should check the reported
+> version against the document's current version and may discard
+> diagnostics computed against a since-superseded version. Not implemented
+> here -- lspresso doesn't declare `versionSupport` and doesn't track a
+> document's current version yet (that's slice 7), so there's nothing to
+> check against.
+
+## Capability negotiation
+
+> lspclient[cap-missing-means-absent]
+> Per the [LSP 3.18 spec, Capabilities](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#initialize)
+> (`ClientCapabilities`, describing how a _server_ should read a client's
+> declared capabilities -- the same reading applies to a client parsing
+> `ServerCapabilities`):
+>
+> > A missing property should be interpreted as an absence of the
+> > capability. If a missing property normally defines sub properties,
+> > all missing sub properties should be interpreted as an absence of the
+> > corresponding capability.
+>
+> So a client reading `ServerCapabilities` must treat an absent field the
+> same as an explicit "not supported" -- there's no separate "try it
+> anyway" fallback for a capability the server didn't declare.
+
+## Result ID tracking
+
+> lspclient[resultid-pull-diagnostics-threaded]
+> Pull diagnostics hand the client an opaque previous-result ID that must
+> be tracked and supplied on the next request for that document. Per the
+> [LSP 3.18 spec, Pull Diagnostics](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#textDocument_pullDiagnostics)
+> (`FullDocumentDiagnosticReport.resultId`):
+>
+> > An optional result ID. If provided, it will be sent on the next
+> > diagnostic request for the same document.

@@ -64,6 +64,22 @@ required-features = ["test-binaries"]
 name = "lspresso_wrong_response_type"
 required-features = ["test-binaries"]
 
+[[bin]]
+name = "lspresso_pushes_diagnostics"
+required-features = ["test-binaries"]
+
+[[bin]]
+name = "lspresso_pulls_diagnostics"
+required-features = ["test-binaries"]
+
+[[bin]]
+name = "lspresso_pulls_empty_diagnostics"
+required-features = ["test-binaries"]
+
+[[bin]]
+name = "lspresso_pulls_then_clears_diagnostics"
+required-features = ["test-binaries"]
+
 [dependencies]
 crossbeam-channel = "0.5.15"
 displaydoc = { workspace = true }

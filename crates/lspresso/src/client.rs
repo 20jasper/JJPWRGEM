@@ -1,4 +1,5 @@
 pub(crate) mod capabilities;
+mod diagnostics;
 pub(crate) mod transport;
 mod with_uri;
 
@@ -148,28 +149,95 @@ mod open_docs {
     }
 }
 
+mod notification_buf {
+    use gen_lsp_types::{
+        Notification, PublishDiagnosticsNotification, PublishDiagnosticsParams, Uri,
+    };
+    use lsp_server::Notification as RpcNotification;
+
+    #[derive(Debug, Default)]
+    pub(super) struct NotificationBuffer {
+        buf: Vec<RpcNotification>,
+    }
+
+    impl NotificationBuffer {
+        pub(super) fn push(&mut self, note: RpcNotification) {
+            self.buf.push(note);
+        }
+
+        pub(super) fn take_first_where<N, F>(&mut self, predicate: &mut F) -> Option<N::Params>
+        where
+            N: Notification,
+            F: FnMut(&N::Params) -> bool,
+        {
+            self.buf.retain(|note| {
+                if note.method != N::METHOD.as_str() {
+                    return true;
+                }
+                match serde_json::from_value::<N::Params>(note.params.clone()) {
+                    Ok(_) => true,
+                    Err(e) => {
+                        tracing::warn!(method = N::METHOD.as_str(), error = %e, "dropped malformed notification from buffer");
+                        false
+                    }
+                }
+            });
+
+            let idx = self.buf.iter().position(|n| {
+                n.method == N::METHOD.as_str()
+                    && predicate(
+                        &serde_json::from_value::<N::Params>(n.params.clone())
+                            .expect("malformed entries already filtered above"),
+                    )
+            })?;
+
+            let note = self.buf.remove(idx);
+            Some(
+                serde_json::from_value::<N::Params>(note.params)
+                    .expect("malformed entries already filtered above"),
+            )
+        }
+
+        pub(super) fn drain_diagnostics(&mut self, uri: &Uri) {
+            self.buf.retain(|n| {
+                if n.method != PublishDiagnosticsNotification::METHOD.as_str() {
+                    return true;
+                }
+                match serde_json::from_value::<PublishDiagnosticsParams>(n.params.clone()) {
+                    Ok(p) => p.uri != *uri,
+                    Err(_) => true,
+                }
+            });
+        }
+    }
+}
+
 use std::{
+    collections::HashMap,
     process::Command,
     time::{Duration, Instant},
 };
 
 use gen_lsp_types::{
-    ClientCapabilities, CodeLensRefreshRequest, DiagnosticRefreshRequest,
+    ClientCapabilities, CodeLensRefreshRequest, Diagnostic, DiagnosticRefreshRequest,
     DidChangeTextDocumentNotification, DidCloseTextDocumentNotification,
     DidCloseTextDocumentParams, DidOpenTextDocumentNotification, DidOpenTextDocumentParams,
     ExitNotification, FoldingRangeRefreshRequest, InitializeRequest, InitializeResult,
     InlayHintRefreshRequest, InlineValueRefreshRequest, MessageDirection, Notification,
     RegistrationRequest, Request, SemanticTokensRefreshRequest, ServerCapabilities,
     SetTraceNotification, ShowMessageRequest, ShutdownRequest, TextDocumentContentRefreshRequest,
-    UnregistrationRequest, WorkDoneProgressCreateRequest, WorkspaceFoldersRequest,
+    TextDocumentIdentifier, UnregistrationRequest, Uri, WorkDoneProgressCreateRequest,
+    WorkspaceFoldersRequest,
 };
 use lsp_server::{Message, Notification as RpcNotification, Request as RpcRequest, Response};
+use notification_buf::NotificationBuffer;
 use serde_json::Value;
 
 use self::transport::Transport;
 use crate::error::{DisconnectKind, Error, ErrorKind, Result, elapsed_ms};
 
 pub(crate) const DEFAULT_TIMEOUT: Duration = Duration::from_secs(5);
+const DEFAULT_SETTLE: Duration = Duration::from_millis(50);
 
 fn default_duration(env_var: &str, parse: fn(u64) -> Duration, fallback: Duration) -> Duration {
     match std::env::var(env_var) {
@@ -190,6 +258,18 @@ fn default_timeout() -> Duration {
         Duration::from_secs,
         DEFAULT_TIMEOUT,
     )
+}
+
+fn default_settle() -> Duration {
+    default_duration(
+        "LSPRESSO_DEFAULT_SETTLE_MS",
+        Duration::from_millis,
+        DEFAULT_SETTLE,
+    )
+}
+
+fn text_document(uri: Uri) -> TextDocumentIdentifier {
+    TextDocumentIdentifier { uri }
 }
 
 fn to_value(params: impl serde::Serialize, method: &str) -> Result<Value> {
@@ -311,17 +391,27 @@ pub struct Client {
     transport: Transport,
     next_id: i32,
     timeout: Duration,
+    settle: Duration,
     peak_rss_bytes: Option<u64>,
     lifecycle: Lifecycle,
     server_name: String,
     requests: PendingRequests,
     open_docs: open_docs::OpenDocs,
+    notifications: NotificationBuffer,
+    diagnostic_cache: HashMap<Uri, Vec<Diagnostic>>,
+    diagnostic_result_ids: HashMap<Uri, String>,
 }
 
 impl Client {
     #[must_use]
     pub fn with_operation_timeout(mut self, timeout: Duration) -> Self {
         self.timeout = timeout;
+        self
+    }
+
+    #[must_use]
+    pub fn with_settle(mut self, settle: Duration) -> Self {
+        self.settle = settle;
         self
     }
 
@@ -351,11 +441,15 @@ impl Client {
             transport,
             next_id: 0,
             timeout: default_timeout(),
+            settle: default_settle(),
             peak_rss_bytes: None,
             lifecycle: Lifecycle::Uninitialized,
             server_name,
             requests: PendingRequests::default(),
             open_docs: open_docs::OpenDocs::default(),
+            notifications: NotificationBuffer::default(),
+            diagnostic_cache: HashMap::new(),
+            diagnostic_result_ids: HashMap::new(),
         }
     }
 }
@@ -450,6 +544,8 @@ impl Client {
     )]
     fn track_closed(&mut self, params: DidCloseTextDocumentParams) -> Result<()> {
         self.open_docs.close(&params.text_document.uri);
+        self.diagnostic_result_ids.remove(&params.text_document.uri);
+        self.diagnostic_cache.remove(&params.text_document.uri);
         Ok(())
     }
 
@@ -597,9 +693,7 @@ impl Client {
         match msg {
             // lspclient[impl trace-logtrace-tolerated]
             // lspclient[impl window-telemetry-tolerated]
-            Message::Notification(note) => {
-                tracing::trace!(method = %note.method, "dropped unsolicited notification");
-            }
+            Message::Notification(note) => self.notifications.push(note),
             Message::Request(req) => self.answer_server_request(req)?,
             Message::Response(resp) => {
                 let id = resp.id.clone();
@@ -660,13 +754,28 @@ impl Client {
 }
 
 impl Client {
-    pub fn wait_for<N, F>(&mut self, mut predicate: F) -> Result<N::Params>
+    pub fn wait_for<N, F>(&mut self, predicate: F) -> Result<N::Params>
     where
         N: Notification,
         F: FnMut(&N::Params) -> bool,
     {
+        self.wait_for_within::<N, F>(self.timeout, predicate)
+    }
+
+    pub(super) fn wait_for_within<N, F>(
+        &mut self,
+        timeout: Duration,
+        mut predicate: F,
+    ) -> Result<N::Params>
+    where
+        N: Notification,
+        F: FnMut(&N::Params) -> bool,
+    {
+        if let Some(params) = self.notifications.take_first_where::<N, _>(&mut predicate) {
+            return Ok(params);
+        }
         let start = Instant::now();
-        let deadline = Instant::now() + self.timeout;
+        let deadline = Instant::now() + timeout;
         loop {
             let msg = self.recv_until(
                 deadline,
@@ -686,12 +795,7 @@ impl Client {
                             tracing::warn!(method = N::METHOD.as_str(), error = %e, "dropped malformed notification");
                         }
                         Ok(params) if predicate(&params) => return Ok(params),
-                        Ok(_) => {
-                            tracing::trace!(
-                                method = N::METHOD.as_str(),
-                                "dropped non-matching notification"
-                            );
-                        }
+                        Ok(_) => self.notifications.push(note),
                     }
                 }
                 _ => self.handle_background(msg)?,
@@ -721,13 +825,26 @@ impl Client {
         Ok(id)
     }
 
+    fn request_value(&mut self, method: &str, params: Value) -> Result<Value> {
+        let deadline = Instant::now() + self.timeout;
+        self.request_value_before(method, params, deadline)
+    }
+
+    pub(super) fn request_value_before(
+        &mut self,
+        method: &str,
+        params: Value,
+        deadline: Instant,
+    ) -> Result<Value> {
+        let id = self.send_request_value(method, params)?;
+        self.await_response(id, method, deadline)
+    }
+
     /// Low-level escape hatch. Does not enforce invariants like document
     /// open or server initialization since it accepts arbitrary requests.
     pub fn request<R: Request>(&mut self, params: R::Params) -> Result<R::Result> {
-        let deadline = Instant::now() + self.timeout;
-        let id =
-            self.send_request_value(R::METHOD.as_str(), to_value(params, R::METHOD.as_str())?)?;
-        let value = self.await_response(id, R::METHOD.as_str(), deadline)?;
+        let value =
+            self.request_value(R::METHOD.as_str(), to_value(params, R::METHOD.as_str())?)?;
         from_value(value, R::METHOD.as_str())
     }
 

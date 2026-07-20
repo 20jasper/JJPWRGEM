@@ -1,10 +1,24 @@
 use gen_lsp_types::{
     DidChangeTextDocumentParams, DidCloseTextDocumentParams, DidOpenTextDocumentParams,
-    TextDocumentIdentifier, TextDocumentItem, Uri, VersionedTextDocumentIdentifier,
+    PublishDiagnosticsParams, TextDocumentIdentifier, TextDocumentItem, Uri,
+    VersionedTextDocumentIdentifier,
 };
 
 pub(super) trait WithUri {
     fn uri(&self) -> &Uri;
+}
+
+impl WithUri for Uri {
+    fn uri(&self) -> &Uri {
+        self
+    }
+}
+
+pub(super) fn for_uri<'a, T: WithUri>(
+    uri: &'a Uri,
+    mut predicate: impl FnMut(&T) -> bool + 'a,
+) -> impl FnMut(&T) -> bool + 'a {
+    move |p| p.uri() == uri && predicate(p)
 }
 
 impl WithUri for VersionedTextDocumentIdentifier {
@@ -25,7 +39,11 @@ macro_rules! with_uri_direct {
     };
 }
 
-with_uri_direct!(TextDocumentIdentifier, TextDocumentItem);
+with_uri_direct!(
+    TextDocumentIdentifier,
+    TextDocumentItem,
+    PublishDiagnosticsParams
+);
 
 macro_rules! with_uri_via_text_document {
     ($($t:ty),+ $(,)?) => {

@@ -51,6 +51,15 @@ impl Client {
     pub fn server_capabilities(&self) -> Option<&ServerCapabilities> {
         self.lifecycle.capabilities()
     }
+
+    // lspclient[impl cap-missing-means-absent]
+    // `is_some_and` treats a missing field the same as an explicit "not
+    // supported" -- there's no separate "try it anyway" path for an absent
+    // capability.
+    pub fn supports_pull_diagnostics(&self) -> bool {
+        self.server_capabilities()
+            .is_some_and(|caps| caps.diagnostic_provider.is_some())
+    }
 }
 
 /// vscode-languageclient 10.1.0

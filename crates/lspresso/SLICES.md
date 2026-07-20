@@ -70,6 +70,41 @@ capabilities` in `lib.rs` matching the reference's re-export shape. No
   positions/ranges in the negotiated encoding, which nothing calls yet
   (still slice 9). `benches/benches/lsp.rs`'s `ClientCapabilities::default()`
   stand-in swapped for `capabilities::vscode()`.
+- **Slice 5 -- diagnostics**: push + pull diagnostics
+  (`wait_for_diagnostics`/`wait_for_diagnostics_cleared`/`next_diagnostics`/
+  `check_no_diagnostics`), result-id threading, `supports_pull_diagnostics()`.
+  Diverges from the reference in two deliberate, scoped-down ways instead of
+  the full `FakeTransportHandle`/`proptest` property-test infra: (1) no
+  `OptUri` threading into the base `NotificationTimeout`/`ResponseTimeout`/
+  `Disconnected` error variants -- `into_diag_timeout` doesn't need it (it
+  takes `uri: Uri` from the caller's own local variable, not from the
+  source error), so the diagnostics-specific errors still carry a real uri
+  without the mechanical uri-plumbing through `send`/`recv_until`/
+  `handle_background`/etc. that the reference does; (2) tests are 4 new
+  fixture-binary servers (`lspresso_pushes_diagnostics`/
+  `lspresso_pulls_diagnostics`/`lspresso_pulls_empty_diagnostics`/
+  `lspresso_pulls_then_clears_diagnostics`) plus a real-server assertion in
+  `tests/integration/lsp.rs` (now exercises `wait_for_diagnostics`/
+  `wait_for_diagnostics_cleared` against `jjpwrgem-lsp` with genuinely
+  invalid JSON), not the reference's `proptest_concurrency.rs` message-
+  ordering property tests -- solid correctness coverage on both push and
+  pull paths, not exhaustive interleaving/timing coverage. Revisit
+  `FakeTransportHandle`/`proptest` in a later pass if that hardening turns
+  out to matter; nothing here blocks adding it on top. `port bench_diagnostics`
+  still pending (see the benches-migration section above). Added the
+  `WithUri` impl for `PublishDiagnosticsParams` and the bare `Uri` blanket
+  impl (`self`) that `require_open`/`require_not_open` need to accept a
+  plain `&Uri` directly, matching the reference's `with_uri.rs` exactly.
+  `track_closed` now also clears `diagnostic_result_ids`/`diagnostic_cache`
+  for the closed uri. Discovered and fixed pre-existing `mise run lint`
+  failures are explicitly NOT included here -- `cargo clippy --all-targets`
+  fails on ~16 unrelated `matches_pattern!`/googletest macro false
+  positives (`unnecessary_self_imports`) already present in
+  `tests/integration/{client,errors}.rs` before this slice, plus one
+  `clone_on_copy` in the root `tests/integration/lsp.rs` (now fixed
+  incidentally while editing that file for the diagnostics-wait
+  assertions) -- confirmed via `git stash` that the googletest ones predate
+  this slice; out of scope to fix broadly here.
 
 ## Proposed remaining slices
 
@@ -171,32 +206,14 @@ Neither real consumer needs incremental sync, `apply_edits`, or save
 lifecycle at all, so that's pushed past everything the benches migration
 needs, not ahead of it.
 
-- **Slice 5 -- diagnostics**: push + pull diagnostics, `wait_for_diagnostics`/
-  `wait_for_diagnostics_cleared`/`next_diagnostics`, result-id threading
-  (`resultid-pull-diagnostics-threaded`), `supports_pull_diagnostics()`. The
-  most complex remaining slice -- settle/timeout/pacing logic lives here in
-  the reference and the test file bulk (proptest_concurrency.rs-style)
-  reflects that. Checked whether this could be scoped down to just
-  push-diagnostics (all `jjpwrgem-lsp` needs) to shrink this slice, but the
-  reference's `diagnostics_once`/`next_diagnostics` unconditionally branch
-  on `supports_pull_diagnostics()` and share result-id caching with the pull
-  path -- splitting push out cleanly would diverge from the reference's
-  actual structure for no strong reason, so keep it as one slice. Should
-  also introduce `FakeTransportHandle` (reference `client/transport.rs`) +
-  the `proptest` dev-dependency here, not earlier -- an in-memory
-  `Transport` stand-in built specifically so property tests over
-  message-ordering/buffering can run fast and deterministically without a
-  real subprocess, and nothing before diagnostics/progress has buffering
-  complex enough to need it (if that infra turns out to slow this slice
-  down, it's fine to land basic push-diagnostics correctness against a real
-  fixture first and defer the property-test hardening a step). Update
-  `tests/integration/lsp.rs` to actually wait for jjpwrgem-lsp's pushed
-  diagnostics once this lands. `refresh-client-recomputes`'s `verify` tag
-  was dropped from slice 3's `tolerates_and_acknowledges_server_messages`
-  test (it wasn't actually proven there) pending this -- the reference
-  verifies it via `proptest_concurrency.rs`, not a hand-rolled fixture test;
-  re-add the tag once equivalent coverage lands here. Port `bench_diagnostics`
-  right after (see above).
+`refresh-client-recomputes`'s `verify` tag stays dropped from slice 3's
+`tolerates_and_acknowledges_server_messages` test even after slice 5 landed
+push/pull diagnostics -- slice 5 deliberately used fixture binaries instead
+of `FakeTransportHandle`/`proptest`, so the message-ordering property
+coverage that would actually prove this tag still doesn't exist. Re-add it
+if/when that infra lands. Still need to port `bench_diagnostics` (see
+above).
+
 - **Slice 6 -- formatting & code actions**: `formatting`/`range_formatting`/
   `supports_formatting()`, `code_action`/`code_action_resolve`/
   `supports_code_action()`. Pulled out of the language-feature batches below

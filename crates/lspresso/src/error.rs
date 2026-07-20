@@ -87,6 +87,12 @@ pub enum ErrorKind {
     NotificationDisconnected { method: String, exit_code: ExitCode },
     /// server closed the connection{exit_code} while sending {method}
     SendDisconnected { method: String, exit_code: ExitCode },
+    /// timed out after {after_ms}ms waiting for diagnostics to settle ({uri}); set RUST_LOG=lspresso=debug for a message trace
+    DiagnosticsSettleTimeout { uri: Uri, after_ms: u64 },
+    /// timed out after {after_ms}ms waiting for diagnostics to clear ({uri}); set RUST_LOG=lspresso=debug for a message trace
+    DiagnosticsClearedTimeout { uri: Uri, after_ms: u64 },
+    /// expected no diagnostics for {uri} but received {count}
+    UnexpectedDiagnostics { uri: Uri, count: usize },
     /// document not open ({uri}): call did_open first
     NotOpen { uri: Uri },
     /// document already open ({uri}): call did_close before opening again
@@ -132,6 +138,45 @@ impl Error {
             raw,
         }
         .into()
+    }
+
+    pub(crate) fn diagnostics_cleared_timeout(uri: Uri, start: &Instant) -> Self {
+        ErrorKind::DiagnosticsClearedTimeout {
+            uri,
+            after_ms: elapsed_ms(start),
+        }
+        .into()
+    }
+
+    pub(crate) fn unexpected_diagnostics(uri: Uri, count: usize) -> Self {
+        ErrorKind::UnexpectedDiagnostics { uri, count }.into()
+    }
+
+    pub(crate) fn is_notification_deadline(&self) -> bool {
+        matches!(
+            &*self.0,
+            ErrorKind::NotificationTimeout { .. } | ErrorKind::NotificationDisconnected { .. }
+        )
+    }
+
+    pub(crate) fn is_response_deadline(&self) -> bool {
+        matches!(
+            &*self.0,
+            ErrorKind::ResponseTimeout { .. } | ErrorKind::ResponseDisconnected { .. }
+        )
+    }
+
+    pub(crate) fn into_diag_timeout(
+        self,
+        uri: Uri,
+        after_ms: u64,
+        make: impl FnOnce(Uri, u64) -> ErrorKind,
+    ) -> Self {
+        if self.is_notification_deadline() {
+            make(uri, after_ms).into()
+        } else {
+            self
+        }
     }
 
     pub(crate) fn disconnected(context: DisconnectKind, exit_code: Option<i32>) -> Self {
