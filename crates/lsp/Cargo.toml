@@ -24,3 +24,6 @@ tower-lsp-server = "0.23"
 [lints]
 workspace = true
 
+[lib]
+doctest = false
+
