@@ -1,14 +1,9 @@
 {
   "workspaces": {
     "npm-packages/jjpwrgem-vscode": {
-      "entry": [
-        ".vscode-test.mjs",
-        "src/extension.ts",
-        "src/test/**/*.test.ts",
-        "esbuild.js"
-      ],
+      "entry": [".vscode-test.mjs", "src/test/**/*.test.ts"],
       "ignoreBinaries": ["jjp"],
-      "ignoreDependencies": ["@vscode/test-electron", "ovsx"]
+      "ignoreDependencies": ["@vscode/test-electron"]
     }
   }
 }
