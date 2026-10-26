@@ -65,7 +65,7 @@ run = "cargo diet -q --workspace --ignore-private"
 "cargo:cargo-diet" = "1.4.1"
 
 [tasks.cargo-shear]
-run = "cargo shear"
+run = "cargo shear --check-test-targets"
 
 [tasks.cargo-shear.tools]
 "cargo:cargo-shear" = "1.14"
