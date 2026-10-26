@@ -2,6 +2,7 @@
   "workspaces": {
     "npm-packages/jjpwrgem-vscode": {
       "entry": [".vscode-test.mjs", "src/test/**/*.test.ts"],
+      "ignoreBinaries": ["jjp"],
       "ignoreDependencies": ["@vscode/test-electron"]
     }
   }

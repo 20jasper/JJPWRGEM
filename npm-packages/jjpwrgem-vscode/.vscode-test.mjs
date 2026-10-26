@@ -1,15 +1,19 @@
+// @ts-check
 import { defineConfig } from "@vscode/test-cli";
 
-export default defineConfig({
-  files: "out/test/**/*.test.js",
-  launchArgs: [
-    "--skip-welcome",
-    "--disable-extensions",
-    "--disable-extension",
-    "vscode.json-language-features",
-    "--skip-release-notes",
-  ],
-  settings: {
-    "editor.defaultFormatter": "20jasper.jjpwrgem-vscode",
+const launchArgs = [
+  "--skip-welcome",
+  "--disable-extensions",
+  "--disable-extension",
+  "vscode.json-language-features",
+  "--skip-release-notes",
+];
+
+export default defineConfig([
+  { label: "default", files: "out/src/test/extension.test.js", launchArgs },
+  {
+    label: "custom-path",
+    files: "out/src/test/custom-path.test.js",
+    launchArgs,
   },
-});
+]);
