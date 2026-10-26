@@ -56,7 +56,19 @@
     "ovsx": "1.0.2",
     "typescript": "npm:@typescript/native-preview@7.0.0-dev.20260705.1"
   },
-  "contributes": {},
+  "contributes": {
+    "configuration": {
+      "title": "jjpwrgem",
+      "properties": {
+        "jjpwrgem.path": {
+          "type": "string",
+          "default": "jjp",
+          "scope": "machine",
+          "markdownDescription": "Path to the `jjp` executable used to run the language server. Defaults to `jjp` on your `PATH`. Reload the window after changing."
+        }
+      }
+    }
+  },
   "activationEvents": [
     "onLanguage:json"
   ],
@@ -70,7 +82,7 @@
   "capabilities": {
     "untrustedWorkspaces": {
       "supported": false,
-      "description": "JJPWRGEM runs the jjp binary from PATH"
+      "description": "JJPWRGEM runs the system jjp binary"
     }
   }
 }
