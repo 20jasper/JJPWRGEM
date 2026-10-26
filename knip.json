@@ -7,6 +7,7 @@
         "src/test/**/*.test.ts",
         "esbuild.js"
       ],
+      "ignoreBinaries": ["jjp"],
       "ignoreDependencies": ["@vscode/test-electron", "ovsx"]
     }
   }
