@@ -1,4 +1,5 @@
 import * as vscode from "vscode";
+import { getSetting } from "./settings";
 import {
   LanguageClient,
   type LanguageClientOptions,
@@ -11,7 +12,7 @@ export function activate(context: vscode.ExtensionContext): {
   whenReady: Promise<void>;
 } {
   const serverOptions: ServerOptions = {
-    command: "jjp",
+    command: getSetting("jjpwrgem.path").trim() || "jjp",
     args: ["lsp"],
   };
 
