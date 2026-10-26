@@ -9,6 +9,7 @@
     "isolatedModules": true,
     "forceConsistentCasingInFileNames": true,
     "strict": true,
+    "checkJs": true,
     "noUncheckedIndexedAccess": true,
     "noImplicitOverride": true,
     "module": "NodeNext",
@@ -20,6 +21,7 @@
   "exclude": ["dist/", "out/"],
   "include": [
     "src/**/*.ts",
+    ".vscode-test.mjs",
     "./node_modules/vscode/vscode.d.ts",
     "./node_modules/vscode/lib/*"
   ]

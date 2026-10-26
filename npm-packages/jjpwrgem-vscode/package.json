@@ -34,7 +34,7 @@
     "compile-tests": "tsgo -p . --outDir out",
     "watch-tests": "tsgo -p . -w --outDir out",
     "pretest": "pnpm run compile-tests && pnpm run compile",
-    "check-types": "tsgo --noEmit && tsgo --noEmit -p tsconfig.config.json",
+    "check-types": "tsgo --noEmit",
     "test": "vscode-test",
     "vsce:ls": "vsce ls",
     "vsce:pack": "vsce package --no-dependencies",
