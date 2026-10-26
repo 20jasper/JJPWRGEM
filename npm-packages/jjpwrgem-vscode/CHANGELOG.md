@@ -6,6 +6,8 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 ## [Unreleased]
 
+## [0.0.5] - 2026-10-26
+
 - Add `jjpwrgem.path` setting to choose the `jjp` executable
 
 ## [0.0.1] - 2026-06-04
