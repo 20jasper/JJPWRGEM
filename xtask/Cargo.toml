@@ -21,3 +21,5 @@ cargo_metadata = { version = "0.23.1", features = ["builder"] }
 serde_json = { version = "1.0.145", features = ["preserve_order"] }
 serde = { version = "1.0.228", features = ["derive"] }
 itertools = "0.15"
+
+[lints]
