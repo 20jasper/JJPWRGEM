@@ -172,7 +172,7 @@ mod tests {
             r#"{"a": 1}"#.to_owned(),
             PositionEncoding::Utf16,
         );
-        assert!(diagnostics.is_empty());
+        assert_eq!(diagnostics, Vec::new());
     }
 
     #[test]
@@ -193,7 +193,7 @@ mod tests {
         let (document, _) =
             analyze_document(&uri, r#"{"a": 1,}"#.to_owned(), PositionEncoding::Utf16);
         let actions = build_code_actions(&uri, &document, PositionEncoding::Utf16);
-        assert!(!actions.is_empty());
+        assert_ne!(actions, Vec::new());
     }
 
     #[test]
@@ -202,6 +202,6 @@ mod tests {
         let (document, _) =
             analyze_document(&uri, r#"{"a": 1}"#.to_owned(), PositionEncoding::Utf16);
         let actions = build_code_actions(&uri, &document, PositionEncoding::Utf16);
-        assert!(actions.is_empty());
+        assert_eq!(actions, Vec::new());
     }
 }

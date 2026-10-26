@@ -45,3 +45,5 @@ harness = false
 [[bench]]
 name = "json_jsonlines"
 harness = false
+
+[lints]
