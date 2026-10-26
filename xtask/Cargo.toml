@@ -7,7 +7,7 @@ include = ["src/**/*"]
 
 [dependencies]
 anyhow = "1"
-base64 = "0.22"
+base64 = { version = "0.23", default-features = false, features = ["std"] }
 clap = { version = "4", features = ["derive"] }
 jjpwrgem-parse = { workspace = true, features = ["serde"] }
 plotters = { version = "0.3", default-features = false, features = [
