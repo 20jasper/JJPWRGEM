@@ -21,9 +21,9 @@ cargo rdme --workspace-project bytes2chars --force
 
 [tasks.bench.tools]
 "cargo:cargo-criterion" = "1.1.0"
-"cargo:cargo-rdme" = "2.0"
+"cargo:cargo-rdme" = "2.2"
 "cargo:tracey" = "1.3.0"
-"npm:oxfmt" = "0.57.0"
+"npm:oxfmt" = "0.74.0"
 
 [tasks.bench-json]
 description = "Run the four standard json criterion benches and regenerate readmes"
@@ -35,9 +35,9 @@ run = [
 
 [tasks.bench-json.tools]
 "cargo:cargo-criterion" = "1.1.0"
-"cargo:cargo-rdme" = "2.0"
+"cargo:cargo-rdme" = "2.2"
 "cargo:tracey" = "1.3.0"
-"npm:oxfmt" = "0.57.0"
+"npm:oxfmt" = "0.74.0"
 
 [tasks.bench-codspeed]
 description = "Build and run all criterion benches via codspeed"
@@ -48,7 +48,7 @@ run = [
 ]
 
 [tasks.bench-codspeed.tools]
-"cargo:cargo-codspeed" = "5.0.0"
+"cargo:cargo-codspeed" = "6.0.0"
 
 [tasks.bench-iai]
 description = "Run the iai (gungraun) bench"
@@ -74,7 +74,7 @@ kcachegrind "${out%.out}.demangled.out" &
 '''
 
 [tasks.kcachegrind.tools]
-"cargo:rustfilt" = "0.2.1"
+"cargo:rustfilt" = "0.2.2"
 
 [tasks.iai-annotate]
 description = "callgrind_annotate a json_iai output, demangled by rustfilt (Linux only)"
@@ -88,7 +88,7 @@ callgrind_annotate \
 '''
 
 [tasks.iai-annotate.tools]
-"cargo:rustfilt" = "0.2.1"
+"cargo:rustfilt" = "0.2.2"
 
 [tasks.bench-docker]
 description = "Run perf tests against 10+ cli tools via docker and embed outputs in readmes"
@@ -114,8 +114,8 @@ cargo rdme --workspace-project bytes2chars --force
 '''
 
 [tasks.bench-docker.tools]
-"npm:oxfmt" = "0.57.0"
-"cargo:cargo-rdme" = "2.0"
+"npm:oxfmt" = "0.74.0"
+"cargo:cargo-rdme" = "2.2"
 "cargo:tracey" = "1.3.0"
 
 [tasks.bench-lsp]
@@ -147,5 +147,5 @@ cargo xtask generate-readmes
 "cargo:lsp-bench" = "0.3.3"
 "npm:vscode-langservers-extracted" = "4.10.0"
 "cargo:tracey" = "1.3.0"
-"npm:oxfmt" = "0.57.0"
-"cargo:cargo-rdme" = "2.0"
+"npm:oxfmt" = "0.74.0"
+"cargo:cargo-rdme" = "2.2"

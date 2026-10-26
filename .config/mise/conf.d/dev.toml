@@ -11,7 +11,7 @@ description = "Interactive dev loop (clippy/test/install/build via bacon TUI)"
 run = "bacon"
 
 [tasks.dev.tools]
-"cargo:bacon" = "3.23.0"
+"cargo:bacon" = "3.26.0"
 
 [tasks.install-watch]
 description = "Re-install jjp on every source change"
@@ -19,4 +19,4 @@ depends = ["install"]
 run = "bacon install"
 
 [tasks.install-watch.tools]
-"cargo:bacon" = "3.23.0"
+"cargo:bacon" = "3.26.0"
