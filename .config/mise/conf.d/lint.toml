@@ -98,4 +98,6 @@ run = "tracey pre-commit"
 run = "renovate-config-validator .github/renovate.json"
 
 [tasks.renovate-check.tools]
-"npm:renovate" = "43.252.1"
+"npm:renovate" = { version = "43.252.1", trust_policy_excludes = [
+  "@yarnpkg/libzip@3.2.2",
+] } # manual publish by a yarn maintainer, no provenance
