@@ -59,7 +59,7 @@ run = "pnpm run lint"
 
 [tasks.diet]
 description = "Trim publishable crate dirs before release"
-run = 'for x in ./crates/* ./xtask ./benches .; do [ -f "$x/Cargo.toml" ] || continue; (cd "$x" && cargo diet -q); done'
+run = "cargo diet -q --workspace --ignore-private"
 
 [tasks.diet.tools]
 "cargo:cargo-diet" = "1.4.1"
