@@ -6,11 +6,11 @@
     "lint": "oxlint --tsconfig npm-packages/jjpwrgem-vscode/tsconfig.json npm-packages/"
   },
   "devDependencies": {
-    "oxlint-tsgolint": "0.24.0"
+    "oxlint-tsgolint": "7.0.2005"
   },
   "engines": {
     "node": ">=22.22.3",
-    "pnpm": "11"
+    "pnpm": "12"
   },
-  "packageManager": "pnpm@11.10.0"
+  "packageManager": "pnpm@12.15.0"
 }
