@@ -46,6 +46,52 @@ url = "https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_
 url_api = "https://api.github.com/repos/rhysd/actionlint/releases/assets/384924919"
 provenance = "github-attestations"
 
+[[tools."aqua:axodotdev/cargo-dist"]]
+version = "0.33.1"
+backend = "aqua:axodotdev/cargo-dist"
+
+[tools."aqua:axodotdev/cargo-dist"."platforms.linux-arm64"]
+checksum = "sha256:e883f4c6c17f2458d6ced950d978c04b45423ed3a5fdbebcb8f8de568389e1c1"
+url = "https://github.com/axodotdev/cargo-dist/releases/download/v0.33.1/cargo-dist-aarch64-unknown-linux-gnu.tar.xz"
+url_api = "https://api.github.com/repos/axodotdev/cargo-dist/releases/assets/663402852"
+provenance = "github-attestations"
+
+[tools."aqua:axodotdev/cargo-dist"."platforms.linux-arm64-musl"]
+checksum = "sha256:251de7adfeabbabe51235739774a230a817cab803ac023004142575ad344d68d"
+url = "https://github.com/axodotdev/cargo-dist/releases/download/v0.33.1/cargo-dist-aarch64-unknown-linux-musl.tar.xz"
+url_api = "https://api.github.com/repos/axodotdev/cargo-dist/releases/assets/663402847"
+provenance = "github-attestations"
+
+[tools."aqua:axodotdev/cargo-dist"."platforms.linux-x64"]
+checksum = "sha256:da68e159d5fed1ee61b00284da444e719927dbd0b7d0e2c34e57a04414453cf9"
+url = "https://github.com/axodotdev/cargo-dist/releases/download/v0.33.1/cargo-dist-x86_64-unknown-linux-gnu.tar.xz"
+url_api = "https://api.github.com/repos/axodotdev/cargo-dist/releases/assets/663402934"
+provenance = "github-attestations"
+
+[tools."aqua:axodotdev/cargo-dist"."platforms.linux-x64-musl"]
+checksum = "sha256:85bb7c989c9845f0a49fa6dd222cd364620e1c6af083efc7362c7a9919fc3727"
+url = "https://github.com/axodotdev/cargo-dist/releases/download/v0.33.1/cargo-dist-x86_64-unknown-linux-musl.tar.xz"
+url_api = "https://api.github.com/repos/axodotdev/cargo-dist/releases/assets/663402947"
+provenance = "github-attestations"
+
+[tools."aqua:axodotdev/cargo-dist"."platforms.macos-arm64"]
+checksum = "sha256:b8bf041a38e9e54ecf41eee2574ca6644043796620bb0ee8340e9c0acbaaae8f"
+url = "https://github.com/axodotdev/cargo-dist/releases/download/v0.33.1/cargo-dist-aarch64-apple-darwin.tar.xz"
+url_api = "https://api.github.com/repos/axodotdev/cargo-dist/releases/assets/663402844"
+provenance = "github-attestations"
+
+[tools."aqua:axodotdev/cargo-dist"."platforms.macos-x64"]
+checksum = "sha256:e9dc303035fbb2f44295948e0a076f1d1d218a0328e9b84e16955863bba92bf4"
+url = "https://github.com/axodotdev/cargo-dist/releases/download/v0.33.1/cargo-dist-x86_64-apple-darwin.tar.xz"
+url_api = "https://api.github.com/repos/axodotdev/cargo-dist/releases/assets/663402908"
+provenance = "github-attestations"
+
+[tools."aqua:axodotdev/cargo-dist"."platforms.windows-x64"]
+checksum = "sha256:79dfcce84e6a8e69210f11fc23d445c3aac7af6a29e0e981867f053c0a869316"
+url = "https://github.com/axodotdev/cargo-dist/releases/download/v0.33.1/cargo-dist-x86_64-pc-windows-msvc.zip"
+url_api = "https://api.github.com/repos/axodotdev/cargo-dist/releases/assets/663402916"
+provenance = "github-attestations"
+
 [[tools."aqua:pnpm/pnpm"]]
 version = "12.15.0"
 backend = "aqua:pnpm/pnpm"
@@ -111,10 +157,6 @@ backend = "cargo:cargo-deny"
 [[tools."cargo:cargo-diet"]]
 version = "1.4.1"
 backend = "cargo:cargo-diet"
-
-[[tools."cargo:cargo-dist"]]
-version = "0.32.0"
-backend = "cargo:cargo-dist"
 
 [[tools."cargo:cargo-insta"]]
 version = "1.49.0"
