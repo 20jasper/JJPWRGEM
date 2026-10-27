@@ -42,7 +42,7 @@
     "ovsx:publish": "ovsx publish --no-dependencies"
   },
   "dependencies": {
-    "vscode-languageclient": "^10.0.0"
+    "vscode-languageclient": "^11.0.0"
   },
   "devDependencies": {
     "@types/mocha": "10.0.10",
