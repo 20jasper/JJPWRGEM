@@ -12,3 +12,4 @@ tests/integration/proptest-regressions/
 !/benches/output/json_uglify.md
 !/benches/output/coverage.txt
 benches/docker/.mise-oci/
+/npm

@@ -28,15 +28,8 @@ jobs:
           node-version: "24.x"
           registry-url: "https://registry.npmjs.org"
 
-      - name: Copy readme and changelog
-        run: |
-          cp -f readme.md npm-template/README.md
-          cp -f CHANGELOG.md npm-template/CHANGELOG.md
-
       - name: Pack npm
-        run: |
-          mkdir -p ./npm
-          npm pack ./npm-packages/jjpwrgem --pack-destination ./npm
+        run: ./scripts/pack-npm.sh
 
       - name: Upload npm package artifact
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
