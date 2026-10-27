@@ -23,6 +23,6 @@ serde = { version = "1.0.228", features = ["derive"] }
 itertools = "0.15"
 
 [dev-dependencies]
-cargo_metadata = { version = "0.23.1", features = ["builder"] }
+cargo_metadata = { version = "=0.23.1", features = ["builder"] }
 
 [lints]
