@@ -88,24 +88,24 @@ workspace = true
 
 [workspace.lints.rust]
 macro_use_extern_crate = "deny"
-unsafe-code = "deny"
-unsafe-op-in-unsafe-fn = "forbid"
+unsafe_code = "deny"
+unsafe_op_in_unsafe_fn = "forbid"
 # warn
 absolute_paths_not_starting_with_crate = "warn"
-ffi-unwind-calls = "warn"
-let-underscore-drop = "warn"
-missing-abi = "warn"
+ffi_unwind_calls = "warn"
+let_underscore_drop = "warn"
+missing_abi = "warn"
 missing_debug_implementations = "warn"
-non-ascii-idents = "warn"
+non_ascii_idents = "warn"
 tail_expr_drop_order = "warn"
-unit-bindings = "warn"
-variant-size-differences = "warn"
+unit_bindings = "warn"
+variant_size_differences = "warn"
 # groups
 unused = { level = "warn", priority = -1 }
-rust-2018-idioms = "warn"
-rust-2018-compatibility = "warn"
-rust-2021-compatibility = "warn"
-rust-2024-compatibility = "warn"
+rust_2018_idioms = { level = "warn", priority = -1 }
+rust_2018_compatibility = { level = "warn", priority = -1 }
+rust_2021_compatibility = { level = "warn", priority = -1 }
+rust_2024_compatibility = { level = "warn", priority = -1 }
 
 [workspace.lints.rustdoc]
 broken_intra_doc_links = "warn"
