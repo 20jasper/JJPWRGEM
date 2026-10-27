@@ -60,7 +60,7 @@ lsp = { path = "crates/lsp", version = "0.1", package = "jjpwrgem-lsp" }
 
 [dependencies]
 anstream = "1"
-clap = { version = "4.5.53", features = ["derive"] }
+clap = { version = "4.6.7", features = ["derive"] }
 displaydoc = { workspace = true }
 jjpwrgem-parse = { workspace = true }
 jjpwrgem-ui = { workspace = true }
