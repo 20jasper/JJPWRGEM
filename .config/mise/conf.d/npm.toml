@@ -14,3 +14,7 @@ run = [
 
 [tasks.package-json.tools]
 "npm:oxfmt" = "0.74.0"
+
+[tasks.pack-npm]
+description = "Pack the npm package into ./npm and verify README, CHANGELOG and LICENSE are included"
+run = "./scripts/pack-npm.sh"
