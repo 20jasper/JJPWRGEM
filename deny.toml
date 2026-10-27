@@ -8,6 +8,11 @@ ignore = []
 [bans]
 multiple-versions = "deny"
 wildcards = "deny"
+# https://github.com/tokio-rs/tracing/pull/3594
+# https://github.com/la10736/rstest/pull/350
+skip = [
+  { crate = "syn@2", reason = "tracing-attributes and rstest have not released syn 3 support" },
+]
 
 [sources]
 unknown-registry = "deny"
