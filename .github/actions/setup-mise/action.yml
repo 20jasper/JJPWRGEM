@@ -4,9 +4,12 @@ description: Install and cache mise tools
 runs:
   using: composite
   steps:
-    - uses: taiki-e/install-action@e3134ec54b36203e18f2d1e80652058bd078dd91 # v2.77.3
+    - uses: taiki-e/install-action@5488ac5a951645ce95062214902ac4b6bc1a1037 # v2.87.32
       with:
         tool: cargo-binstall
-    - uses: jdx/mise-action@dba19683ed58901619b14f395a24841710cb4925 # v4.1.0
+    - uses: jdx/mise-action@82a612c5ab8bcda7cc5db6b7e81a8e7584c3dc6e # v5.2.3
+      with:
+        # later steps (hk, mise run) install tools from GitHub and need this to avoid rate limits
+        persist_github_token: true
       env:
         GITHUB_TOKEN: ${{ github.token }}

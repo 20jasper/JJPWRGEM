@@ -148,7 +148,7 @@
         ".config/mise/conf.d/*.toml"
       ],
       "matchPackageNames": [
-        "cargo:cargo-dist",
+        "aqua:axodotdev/cargo-dist",
         "cargo:release-plz",
         "cargo:cargo-release"
       ],
