@@ -39,24 +39,42 @@ impl TryFrom<(&Document<&str>, &Value)> for BenchmarkResult {
             .with_context(|| "missing 'command' field")?;
         let command = doc
             .as_str(command_value)
-            .with_context(|| "command must be a string")?
+            .with_context(|| "command must be a string")?;
+        // `name` holds the `--command-name` label, `command` the full command line
+        let command = doc
+            .get_object_value(entry, "name")
+            .and_then(|name| doc.as_str(name))
+            .unwrap_or(command)
             .to_owned();
 
-        let times_value = doc
-            .get_object_value(entry, "times")
-            .with_context(|| "missing 'times' field")?;
-        let ast::Value::Array(_, times_array) = times_value else {
-            bail!("must be an array");
+        let measurements_value = doc
+            .get_object_value(entry, "measurements")
+            .with_context(|| "missing 'measurements' field")?;
+        let ast::Value::Array(_, measurements) = measurements_value else {
+            bail!("'measurements' must be an array");
         };
 
-        let times = times_array
+        let times = measurements
             .iter()
             .enumerate()
-            .map(|(time_index, time_value)| -> Result<f64> {
-                let parsed = doc
-                    .parse_f64(time_value)
-                    .with_context(|| format!("times[{time_index}] must be a number"))?;
-                Ok(parsed)
+            .map(|(index, measurement)| -> Result<f64> {
+                let ast::Value::Object(_, fields) = measurement else {
+                    bail!("measurements[{index}] must be an object");
+                };
+                let wall_clock = doc
+                    .get_object_value(fields, "time_wall_clock")
+                    .with_context(|| format!("measurements[{index}] missing 'time_wall_clock'"))?;
+                let ast::Value::Object(_, wall_clock_fields) = wall_clock else {
+                    bail!("measurements[{index}].time_wall_clock must be an object");
+                };
+                let value = doc
+                    .get_object_value(wall_clock_fields, "value")
+                    .with_context(|| {
+                        format!("measurements[{index}].time_wall_clock missing 'value'")
+                    })?;
+                doc.parse_f64(value).with_context(|| {
+                    format!("measurements[{index}].time_wall_clock.value must be a number")
+                })
             })
             .collect::<Result<Vec<_>>>()?;
 
@@ -460,4 +478,70 @@ fn linear_range(max: f64) -> std::ops::Range<f64> {
     let padding = (safe_max * 0.1).max(10.0);
     let end = (safe_max + padding).max(start + 1.0);
     start..end
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // trimmed from `hyperfine 2.0.0 --export-json`
+    const HYPERFINE_V2: &str = r#"{
+  "schema_version": 2,
+  "primary_metric": "time_wall_clock",
+  "results": [
+    {
+      "command": "jjp format < data.json",
+      "name": "jjp",
+      "measurements": [
+        { "time_wall_clock": { "value": 0.005, "unit": "second" }, "exit_code": 0 },
+        { "time_wall_clock": { "value": 0.006, "unit": "second" }, "exit_code": 0 }
+      ]
+    },
+    {
+      "command": "jq < data.json",
+      "measurements": [
+        { "time_wall_clock": { "value": 0.017, "unit": "second" }, "exit_code": 0 },
+        { "time_wall_clock": { "value": 0.018, "unit": "second" }, "exit_code": 0 }
+      ]
+    }
+  ]
+}"#;
+
+    #[test]
+    fn parses_hyperfine_v2_results() {
+        let results = parse_benchmark_results(HYPERFINE_V2).unwrap();
+
+        let summary: Vec<_> = results
+            .iter()
+            .map(|result| (result.command.as_str(), result.times.as_slice()))
+            .collect();
+        assert_eq!(
+            summary,
+            [
+                ("jjp", [0.005, 0.006].as_slice()),
+                ("jq < data.json", [0.017, 0.018].as_slice()),
+            ]
+        );
+    }
+
+    #[test]
+    fn rejects_hyperfine_v1_results() {
+        let v1 = r#"{ "results": [{ "command": "jjp", "times": [0.005] }] }"#;
+
+        assert!(parse_benchmark_results(v1).is_err());
+    }
+
+    #[test]
+    fn plots_hyperfine_v2_results() {
+        let dir = std::env::temp_dir().join(format!("xtask-plot-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let input = dir.join("bench.json");
+        let output = dir.join("bench.png");
+        std::fs::write(&input, HYPERFINE_V2).unwrap();
+
+        plot_benchmark_candlesticks(&input, &output, "title", "subtitle").unwrap();
+
+        assert!(std::fs::metadata(&output).unwrap().len() > 0);
+        std::fs::remove_dir_all(&dir).unwrap();
+    }
 }
