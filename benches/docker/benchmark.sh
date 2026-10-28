@@ -28,7 +28,7 @@ bench() {
   rm -f "$pretty_md" "$pretty_json" "$ugly_md" "$ugly_json"
 
   # pretty print
-  hyperfine --warmup 3 --sort mean-time \
+  hyperfine -S --warmup 3 \
     --export-markdown "$pretty_md" \
     --export-json "$pretty_json" \
     --command-name "jjp" \
@@ -63,7 +63,7 @@ bench() {
       "oxfmt --stdin-filepath foo.json < $FILE_PATH"
 
   # uglify
-  hyperfine --warmup 3 --sort mean-time \
+  hyperfine -S --warmup 3 \
     --export-markdown "$ugly_md" \
     --export-json "$ugly_json" \
     --command-name "jjp" \
