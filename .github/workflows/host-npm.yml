@@ -7,6 +7,11 @@ on:
         description: Dist release plan JSON payload
         required: true
         type: string
+      tag:
+        description: Release tag, defaults to the triggering tag
+        required: false
+        type: string
+        default: ""
 
 permissions:
   contents: read
@@ -17,9 +22,20 @@ jobs:
     runs-on: ubuntu-latest
     env:
       PLAN: ${{ inputs.plan }}
+      TAG: ${{ inputs.tag || github.ref_name }}
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      # script from the triggering ref so replays of old tags use the current one
+      - name: Checkout packing script
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          path: ci
+          persist-credentials: false
+
+      - name: Checkout release tag
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+          path: src
           persist-credentials: false
 
       - name: Setup Node
@@ -29,10 +45,22 @@ jobs:
           registry-url: "https://registry.npmjs.org"
 
       - name: Pack npm
-        run: ./scripts/pack-npm.sh
+        working-directory: src
+        run: ../ci/scripts/pack-npm.sh
+
+      - name: Check tarball version matches tag
+        working-directory: src/npm
+        run: |
+          set -euo pipefail
+          packed=$(tar -xzOf ./*.tgz package/package.json | jq -r .version)
+          expected="${TAG#jjpwrgem-v}"
+          if [ "$packed" != "$expected" ]; then
+            echo "tarball is version $packed but tag $TAG expects $expected" >&2
+            exit 1
+          fi
 
       - name: Upload npm package artifact
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: ${{ github.ref_name }}-npm-package.tgz
-          path: ./npm/*.tgz
+          name: ${{ inputs.tag || github.ref_name }}-npm-package.tgz
+          path: ./src/npm/*.tgz
