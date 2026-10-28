@@ -12,11 +12,11 @@ bytes2chars = { path = "../crates/bytes2chars" }
 criterion = { package = "codspeed-criterion-compat", version = "=6.0.0" }
 gungraun = "=0.20.0"
 jjpwrgem-parse = { path = "../crates/parse" }
-serde_json = "=1.0.150"
-simd-json = "=0.17.2"
-sonic-rs = "=0.5.8"
+serde_json = "=1.0.154"
+simd-json = "=0.19.0"
+sonic-rs = "=0.5.10"
 utf8-decode = "=2.0.0"
-bstr = "=1.12.3"
+bstr = "=1.13.1"
 
 [[bench]]
 name = "bytes2chars"
