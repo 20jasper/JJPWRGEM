@@ -179,9 +179,14 @@ impl From<(usize, u8)> for ByteWithContext {
     }
 }
 
+/// The range of the single byte at `at`
+pub(crate) fn byte_range(at: usize) -> Range<usize> {
+    at..at + 1
+}
+
 impl ByteWithContext {
     pub(crate) fn range(&self) -> Range<usize> {
-        self.0..self.0 + 1
+        byte_range(self.0)
     }
 
     pub(crate) fn as_token_with_context(&self) -> Option<TokenWithContext> {

@@ -126,7 +126,13 @@ impl Iterator for TokenStreamInner<'_> {
                     }
                     result
                 }
-                b'0'..=b'9' | b'-' => self.parse_with_bytes(parse_mantissa),
+                b'0'..=b'9' | b'-' => {
+                    let result = parse_mantissa(self.input, self.pos);
+                    if let Ok(token) = &result {
+                        self.pos = token.range.end;
+                    }
+                    result
+                }
                 b'e' | b'E' => {
                     match self.parse_with_bytes(|input, bytes| {
                         bytes.next();

@@ -3,178 +3,127 @@ use core::{iter::Peekable, range::Range};
 use crate::{
     Error, ErrorKind, Result,
     tokens::{
-        ByteWithContext, CharWithContext, Token, TokenWithContext, current_byte_pos,
+        ByteWithContext, CharWithContext, Token, TokenWithContext, byte_range, current_byte_pos,
         lexical::JsonByte,
     },
 };
+
+fn char_at(input: &str, pos: usize) -> Option<CharWithContext> {
+    input[pos..].chars().next().map(|c| (pos, c).into())
+}
 
 fn current_char_with_context(
     input: &str,
     bytes: &mut Peekable<impl Iterator<Item = ByteWithContext>>,
 ) -> Option<CharWithContext> {
-    let pos = current_byte_pos(bytes, input);
-    input[pos..].chars().next().map(|c| (pos, c).into())
+    char_at(input, current_byte_pos(bytes, input))
 }
 
-#[derive(Debug, PartialEq, Eq, Clone)]
+/// Where [`parse_mantissa`] is in the number grammar, without data so it stays one byte
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+#[repr(u8)]
 enum MantissaState {
     MinusOrInteger,
-    Leading(Range<usize>),
-    IntegerOrDecimalOrEnd {
-        leading_zero: Option<Range<usize>>,
-        mantissa: Range<usize>,
-    },
-    Fraction {
-        mantissa: Range<usize>,
-        dot_range: Range<usize>,
-    },
-    FractionOrEnd(Range<usize>),
-    End(TokenWithContext),
+    Minus,
+    Zero,
+    Integer,
+    Dot,
+    Fraction,
+    End,
 }
 
 impl MantissaState {
-    fn finish(mantissa: Range<usize>) -> Self {
-        MantissaState::End(TokenWithContext::new(Token::Mantissa, mantissa))
-    }
-
-    fn process(
-        self,
-        bytes: &mut Peekable<impl Iterator<Item = ByteWithContext>>,
-        input: &str,
-    ) -> Result<Self> {
+    /// The state after reading `bytes[at]`. The caller moves on to the next byte, unless the
+    /// state is [`MantissaState::End`].
+    fn step(self, bytes: &[u8], at: usize, input: &str, start: usize) -> Result<Self> {
+        let next = bytes.get(at).copied();
         let res = match self {
-            MantissaState::MinusOrInteger => match bytes.peek().copied() {
-                Some(byte @ ByteWithContext(_, JsonByte(b'-'))) => {
-                    bytes.next();
-                    MantissaState::Leading(byte.range())
-                }
-                Some(byte @ ByteWithContext(_, JsonByte(b'0'))) => {
-                    bytes.next();
-                    let range = byte.range();
-                    MantissaState::IntegerOrDecimalOrEnd {
-                        leading_zero: Some(range),
-                        mantissa: range,
-                    }
-                }
-                Some(byte @ ByteWithContext(_, JsonByte(b'1'..=b'9'))) => {
-                    bytes.next();
-                    let range = byte.range();
-                    MantissaState::IntegerOrDecimalOrEnd {
-                        leading_zero: None,
-                        mantissa: range,
-                    }
-                }
+            MantissaState::MinusOrInteger => match next {
+                Some(b'-') => MantissaState::Minus,
+                Some(b'0') => MantissaState::Zero,
+                Some(b'1'..=b'9') => MantissaState::Integer,
                 _ => {
                     return Err(Error::from_maybe_json_char_with_context(
                         ErrorKind::ExpectedMinusOrDigit,
-                        current_char_with_context(input, bytes),
+                        char_at(input, at),
                         input,
                     ));
                 }
             },
-            MantissaState::Leading(mantissa) => match bytes.peek().copied() {
-                Some(byte @ ByteWithContext(_, JsonByte(b'0'))) => {
-                    bytes.next();
-                    MantissaState::IntegerOrDecimalOrEnd {
-                        leading_zero: Some(byte.range()),
-                        mantissa: mantissa.start..byte.range().end,
-                    }
-                }
-                Some(byte @ ByteWithContext(_, JsonByte(b'1'..=b'9'))) => {
-                    bytes.next();
-                    MantissaState::IntegerOrDecimalOrEnd {
-                        leading_zero: None,
-                        mantissa: mantissa.start..byte.range().end,
-                    }
-                }
+            MantissaState::Minus => match next {
+                Some(b'0') => MantissaState::Zero,
+                Some(b'1'..=b'9') => MantissaState::Integer,
                 _ => {
+                    let minus = byte_range(start);
                     return Err(Error::new(
                         ErrorKind::ExpectedDigitFollowingMinus(
-                            mantissa,
-                            current_char_with_context(input, bytes)
-                                .map(|CharWithContext(_, c)| c)
-                                .into(),
+                            minus,
+                            char_at(input, at).map(|CharWithContext(_, c)| c).into(),
                         ),
-                        mantissa,
+                        minus,
                         input,
                     ));
                 }
             },
-            MantissaState::IntegerOrDecimalOrEnd {
-                leading_zero,
-                mantissa,
-            } => match (leading_zero, bytes.peek().copied()) {
-                (Some(initial_range), Some(ByteWithContext(_, JsonByte(b'0'..=b'9')))) => {
-                    let mut final_zero_range = initial_range;
-                    while let Some(byte @ ByteWithContext(_, JsonByte(b'0'))) =
-                        bytes.peek().copied()
-                    {
-                        final_zero_range = byte.range();
-                        bytes.next();
-                    }
-
-                    let extra_end = match bytes.peek().copied() {
-                        Some(ByteWithContext(_, JsonByte(b'1'..=b'9'))) => final_zero_range.end,
-                        _ => final_zero_range.start,
-                    };
-
-                    return Err(Error::new(
-                        ErrorKind::UnexpectedLeadingZero {
-                            initial: initial_range,
-                            extra: initial_range.start..extra_end,
-                        },
-                        mantissa.start..final_zero_range.end,
-                        input,
-                    ));
-                }
-                (_, Some(byte @ ByteWithContext(_, JsonByte(b'0'..=b'9')))) => {
-                    bytes.next();
-                    MantissaState::IntegerOrDecimalOrEnd {
-                        leading_zero: None,
-                        mantissa: mantissa.start..byte.range().end,
-                    }
-                }
-                (_, Some(byte @ ByteWithContext(_, JsonByte(b'.')))) => {
-                    bytes.next();
-                    MantissaState::Fraction {
-                        mantissa: mantissa.start..byte.range().end,
-                        dot_range: byte.range(),
-                    }
-                }
-                _ => Self::finish(mantissa),
+            MantissaState::Zero => match next {
+                Some(b'0'..=b'9') => return Err(leading_zero_error(bytes, at, input, start)),
+                Some(b'.') => MantissaState::Dot,
+                _ => MantissaState::End,
             },
-            MantissaState::Fraction {
-                mantissa,
-                dot_range,
-            } => match bytes.peek().copied() {
-                Some(byte @ ByteWithContext(_, JsonByte(b'0'..=b'9'))) => {
-                    bytes.next();
-                    MantissaState::FractionOrEnd(mantissa.start..byte.range().end)
-                }
+            MantissaState::Integer => match next {
+                Some(b'0'..=b'9') => MantissaState::Integer,
+                Some(b'.') => MantissaState::Dot,
+                _ => MantissaState::End,
+            },
+            MantissaState::Dot => match next {
+                Some(b'0'..=b'9') => MantissaState::Fraction,
                 _ => {
                     return Err(Error::from_maybe_json_char_with_context(
                         |c| ErrorKind::ExpectedDigitAfterDot {
-                            number_range: mantissa,
-                            dot_range,
+                            number_range: start..at,
+                            dot_range: byte_range(at - 1),
                             maybe_c: c,
                         },
-                        current_char_with_context(input, bytes),
+                        char_at(input, at),
                         input,
                     ));
                 }
             },
-            MantissaState::FractionOrEnd(mantissa) => match bytes.peek().copied() {
-                Some(byte @ ByteWithContext(_, JsonByte(b'0'..=b'9'))) => {
-                    bytes.next();
-                    MantissaState::FractionOrEnd(mantissa.start..byte.range().end)
-                }
-                _ => Self::finish(mantissa),
+            MantissaState::Fraction => match next {
+                Some(b'0'..=b'9') => MantissaState::Fraction,
+                _ => MantissaState::End,
             },
-            MantissaState::End(_) => self,
+            MantissaState::End => self,
         };
 
         Ok(res)
     }
+}
+
+/// `at` is the digit that follows the leading zero at `at - 1`.
+#[cold]
+fn leading_zero_error(bytes: &[u8], at: usize, input: &str, start: usize) -> Error {
+    let initial = byte_range(at - 1);
+    let mut end = at;
+    while bytes.get(end) == Some(&b'0') {
+        end += 1;
+    }
+
+    // the last zero, which is the first one when no more follow
+    let last_zero = byte_range(end - 1);
+    let extra_end = match bytes.get(end) {
+        Some(b'1'..=b'9') => last_zero.end,
+        _ => last_zero.start,
+    };
+
+    Error::new(
+        ErrorKind::UnexpectedLeadingZero {
+            initial,
+            extra: initial.start..extra_end,
+        },
+        start..last_zero.end,
+        input,
+    )
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -304,17 +253,17 @@ impl ExponentState {
 /// zero          = %x30              ; 0
 /// ```
 /// See [RFC 8259 Section 6](https://datatracker.ietf.org/doc/html/rfc8259#section-6)
-pub fn parse_mantissa(
-    input: &str,
-    bytes: &mut Peekable<impl Iterator<Item = ByteWithContext>>,
-) -> Result<TokenWithContext> {
+pub fn parse_mantissa(input: &str, start: usize) -> Result<TokenWithContext> {
+    let bytes = input.as_bytes();
+    let mut at = start;
     let mut state = MantissaState::MinusOrInteger;
 
     loop {
-        state = state.process(bytes, input)?;
-        if let MantissaState::End(tok) = state {
-            break Ok(tok);
+        state = state.step(bytes, at, input, start)?;
+        if state == MantissaState::End {
+            break Ok(TokenWithContext::new(Token::Mantissa, start..at));
         }
+        at += 1;
     }
 }
 
@@ -355,22 +304,10 @@ mod tests {
     use rstest::rstest;
 
     use super::*;
-    use crate::tokens::{BytesWithContext, stream};
+    use crate::tokens::stream;
 
     fn str_to_tokens(s: &str) -> Result<Vec<TokenWithContext>> {
         stream::TokenStream::new(s).collect()
-    }
-
-    fn parse_mantissa_from_start(input: &str) -> (Result<TokenWithContext>, usize) {
-        let mut bytes = BytesWithContext::new(input, 0).peekable();
-        let mut probe = bytes.clone();
-        let result = parse_mantissa(input, &mut probe);
-        let pos = if result.is_ok() {
-            current_byte_pos(&mut probe, input)
-        } else {
-            current_byte_pos(&mut bytes, input)
-        };
-        (result, pos)
     }
 
     #[rstest]
@@ -403,28 +340,21 @@ mod tests {
     }
 
     #[test]
-    fn mantissa_updates_position_on_success() {
-        let (token, pos) = parse_mantissa_from_start("-12.34x");
-        let token = token.unwrap();
+    fn mantissa_stops_at_the_first_byte_that_is_not_part_of_it() {
+        let token = parse_mantissa("-12.34x", 0).unwrap();
 
         assert_eq!(token.range, 0..6);
-        assert_eq!(pos, 6);
     }
 
     #[test]
     fn mantissa_keeps_utf8_boundary() {
-        let (token, pos) = parse_mantissa_from_start("1é");
-        let token = token.unwrap();
+        let token = parse_mantissa("1é", 0).unwrap();
 
         assert_eq!(token.range, 0..1);
-        assert_eq!(pos, 1);
     }
 
     #[test]
-    fn mantissa_does_not_advance_position_on_error() {
-        let (result, pos) = parse_mantissa_from_start("-é");
-
-        assert!(result.is_err());
-        assert_eq!(pos, 0);
+    fn mantissa_error_on_a_multibyte_char_does_not_split_it() {
+        assert!(parse_mantissa("-é", 0).is_err());
     }
 }
