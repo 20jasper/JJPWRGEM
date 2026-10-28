@@ -7,7 +7,7 @@ test_flags = "--all-features --workspace -q"
 [tasks.test]
 description = "Run tests excluding benchmarks and slow property tests"
 run = [
-  'cargo test {{vars.test_flags}} --tests --lib --bins --examples "$@" -- --skip prop_ --skip matches_prettier > /dev/null',
+  'cargo test {{vars.test_flags}} --tests --lib --bins --examples "$@" -- --skip prop_ --skip matches_prettier > {{get_env(name="TEST_OUTPUT", default="/dev/null")}}',
   "echo 'tests passed!'",
 ]
 

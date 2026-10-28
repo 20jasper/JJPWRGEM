@@ -28,7 +28,20 @@ jobs:
       - uses: ./.github/actions/setup-rust
       - uses: ./.github/actions/setup-node
       - uses: ./.github/actions/setup-mise
-      - run: mise exec -- hk check --all
+      - run: mise exec -- hk check --all --skip-step test
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: true
+      - uses: ./.github/actions/setup-rust
+      - uses: ./.github/actions/setup-node
+      - uses: ./.github/actions/setup-mise
+      - run: mise run test
+        env:
+          TEST_OUTPUT: /dev/stdout
 
   build-release:
     runs-on: ubuntu-latest
