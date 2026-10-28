@@ -327,74 +327,74 @@ url = "https://github.com/swaggest/json-cli/releases/download/v1.11.2/json-cli.t
 url_api = "https://api.github.com/repos/swaggest/json-cli/releases/assets/141365157"
 
 [[tools."github:tdewolff/minify"]]
-version = "2.24.23"
+version = "2.24.24"
 backend = "github:tdewolff/minify"
 
 [tools."github:tdewolff/minify"."platforms.linux-arm64"]
-checksum = "sha256:ee0064053378e0a48c6034115f8e12c5b66ae423c71a41ecfb9c28081d64ba8c"
+checksum = "sha256:b2a8d4babda8f29ade7bf8f6843719abc742591d18d0e53c71d18e1d1699cb3f"
 checksum_source = "mise-versions"
-url = "https://github.com/tdewolff/minify/releases/download/v2.24.23/minify_linux_arm64.tar.gz"
-url_api = "https://api.github.com/repos/tdewolff/minify/releases/assets/666187277"
+url = "https://github.com/tdewolff/minify/releases/download/v2.24.24/minify_linux_arm64.tar.gz"
+url_api = "https://api.github.com/repos/tdewolff/minify/releases/assets/678678933"
 
 [tools."github:tdewolff/minify"."platforms.linux-arm64-musl"]
-checksum = "sha256:ee0064053378e0a48c6034115f8e12c5b66ae423c71a41ecfb9c28081d64ba8c"
+checksum = "sha256:b2a8d4babda8f29ade7bf8f6843719abc742591d18d0e53c71d18e1d1699cb3f"
 checksum_source = "mise-versions"
-url = "https://github.com/tdewolff/minify/releases/download/v2.24.23/minify_linux_arm64.tar.gz"
-url_api = "https://api.github.com/repos/tdewolff/minify/releases/assets/666187277"
+url = "https://github.com/tdewolff/minify/releases/download/v2.24.24/minify_linux_arm64.tar.gz"
+url_api = "https://api.github.com/repos/tdewolff/minify/releases/assets/678678933"
 
 [tools."github:tdewolff/minify"."platforms.linux-x64"]
-checksum = "sha256:0cfc3102153f787cccfc24c028843efbd04bb31b2a427fef6486414af1909bba"
+checksum = "sha256:c374d40c73ac87fe2459fd1cfa0efce1ece02e7f7d30751ed6e707001733d085"
 checksum_source = "mise-versions"
-url = "https://github.com/tdewolff/minify/releases/download/v2.24.23/minify_linux_amd64.tar.gz"
-url_api = "https://api.github.com/repos/tdewolff/minify/releases/assets/666186822"
+url = "https://github.com/tdewolff/minify/releases/download/v2.24.24/minify_linux_amd64.tar.gz"
+url_api = "https://api.github.com/repos/tdewolff/minify/releases/assets/678678751"
 
 [tools."github:tdewolff/minify"."platforms.linux-x64-baseline"]
-checksum = "sha256:0cfc3102153f787cccfc24c028843efbd04bb31b2a427fef6486414af1909bba"
+checksum = "sha256:c374d40c73ac87fe2459fd1cfa0efce1ece02e7f7d30751ed6e707001733d085"
 checksum_source = "mise-versions"
-url = "https://github.com/tdewolff/minify/releases/download/v2.24.23/minify_linux_amd64.tar.gz"
-url_api = "https://api.github.com/repos/tdewolff/minify/releases/assets/666186822"
+url = "https://github.com/tdewolff/minify/releases/download/v2.24.24/minify_linux_amd64.tar.gz"
+url_api = "https://api.github.com/repos/tdewolff/minify/releases/assets/678678751"
 
 [tools."github:tdewolff/minify"."platforms.linux-x64-musl"]
-checksum = "sha256:0cfc3102153f787cccfc24c028843efbd04bb31b2a427fef6486414af1909bba"
+checksum = "sha256:c374d40c73ac87fe2459fd1cfa0efce1ece02e7f7d30751ed6e707001733d085"
 checksum_source = "mise-versions"
-url = "https://github.com/tdewolff/minify/releases/download/v2.24.23/minify_linux_amd64.tar.gz"
-url_api = "https://api.github.com/repos/tdewolff/minify/releases/assets/666186822"
+url = "https://github.com/tdewolff/minify/releases/download/v2.24.24/minify_linux_amd64.tar.gz"
+url_api = "https://api.github.com/repos/tdewolff/minify/releases/assets/678678751"
 
 [tools."github:tdewolff/minify"."platforms.linux-x64-musl-baseline"]
-checksum = "sha256:0cfc3102153f787cccfc24c028843efbd04bb31b2a427fef6486414af1909bba"
+checksum = "sha256:c374d40c73ac87fe2459fd1cfa0efce1ece02e7f7d30751ed6e707001733d085"
 checksum_source = "mise-versions"
-url = "https://github.com/tdewolff/minify/releases/download/v2.24.23/minify_linux_amd64.tar.gz"
-url_api = "https://api.github.com/repos/tdewolff/minify/releases/assets/666186822"
+url = "https://github.com/tdewolff/minify/releases/download/v2.24.24/minify_linux_amd64.tar.gz"
+url_api = "https://api.github.com/repos/tdewolff/minify/releases/assets/678678751"
 
 [tools."github:tdewolff/minify"."platforms.macos-arm64"]
-checksum = "sha256:e88bf2f1e0dfe67836ca9ae9053dd919f20229f37e2d6ac0475840667d98e40b"
+checksum = "sha256:58f7131431602025a96367ddcb8ef40f199ae4bcdb08b7b959fc5f76f3ba7cc9"
 checksum_source = "mise-versions"
-url = "https://github.com/tdewolff/minify/releases/download/v2.24.23/minify_darwin_arm64.tar.gz"
-url_api = "https://api.github.com/repos/tdewolff/minify/releases/assets/666186125"
+url = "https://github.com/tdewolff/minify/releases/download/v2.24.24/minify_darwin_arm64.tar.gz"
+url_api = "https://api.github.com/repos/tdewolff/minify/releases/assets/678678113"
 
 [tools."github:tdewolff/minify"."platforms.macos-x64"]
-checksum = "sha256:d66a1d5b2bce033308f3082044e389e90709d0c8e178aab8bab3aeecb273e185"
+checksum = "sha256:8d124a0a83ee609f732ee6d5d3276f6ad6ef0c9f1175e70a8e721a2ef4125990"
 checksum_source = "mise-versions"
-url = "https://github.com/tdewolff/minify/releases/download/v2.24.23/minify_darwin_amd64.tar.gz"
-url_api = "https://api.github.com/repos/tdewolff/minify/releases/assets/666185423"
+url = "https://github.com/tdewolff/minify/releases/download/v2.24.24/minify_darwin_amd64.tar.gz"
+url_api = "https://api.github.com/repos/tdewolff/minify/releases/assets/678677994"
 
 [tools."github:tdewolff/minify"."platforms.macos-x64-baseline"]
-checksum = "sha256:d66a1d5b2bce033308f3082044e389e90709d0c8e178aab8bab3aeecb273e185"
+checksum = "sha256:8d124a0a83ee609f732ee6d5d3276f6ad6ef0c9f1175e70a8e721a2ef4125990"
 checksum_source = "mise-versions"
-url = "https://github.com/tdewolff/minify/releases/download/v2.24.23/minify_darwin_amd64.tar.gz"
-url_api = "https://api.github.com/repos/tdewolff/minify/releases/assets/666185423"
+url = "https://github.com/tdewolff/minify/releases/download/v2.24.24/minify_darwin_amd64.tar.gz"
+url_api = "https://api.github.com/repos/tdewolff/minify/releases/assets/678677994"
 
 [tools."github:tdewolff/minify"."platforms.windows-x64"]
-checksum = "sha256:070553162abc3d2ef1f22fe79c9b95c7367e1240ae40d30ff8a622eeb64687b8"
+checksum = "sha256:da2a9b3a77141269a3cf63949cfd896e5f7ace6d319d1276c17eaaefe194e0c1"
 checksum_source = "mise-versions"
-url = "https://github.com/tdewolff/minify/releases/download/v2.24.23/minify_windows_amd64.zip"
-url_api = "https://api.github.com/repos/tdewolff/minify/releases/assets/666187861"
+url = "https://github.com/tdewolff/minify/releases/download/v2.24.24/minify_windows_amd64.zip"
+url_api = "https://api.github.com/repos/tdewolff/minify/releases/assets/678679418"
 
 [tools."github:tdewolff/minify"."platforms.windows-x64-baseline"]
-checksum = "sha256:070553162abc3d2ef1f22fe79c9b95c7367e1240ae40d30ff8a622eeb64687b8"
+checksum = "sha256:da2a9b3a77141269a3cf63949cfd896e5f7ace6d319d1276c17eaaefe194e0c1"
 checksum_source = "mise-versions"
-url = "https://github.com/tdewolff/minify/releases/download/v2.24.23/minify_windows_amd64.zip"
-url_api = "https://api.github.com/repos/tdewolff/minify/releases/assets/666187861"
+url = "https://github.com/tdewolff/minify/releases/download/v2.24.24/minify_windows_amd64.zip"
+url_api = "https://api.github.com/repos/tdewolff/minify/releases/assets/678679418"
 
 [[tools."github:tidwall/jj"]]
 version = "1.9.2"
@@ -689,71 +689,71 @@ url = "https://github.com/astral-sh/python-build-standalone/releases/download/20
 provenance = "github-attestations"
 
 [[tools.uv]]
-version = "0.13.5"
+version = "0.13.6"
 backend = "aqua:astral-sh/uv"
 
 [tools.uv."platforms.linux-arm64"]
-checksum = "sha256:4bb69cf95ed13f23713bb7bc09f241896ea0c75b7c557e615a20604b82f9c403"
-url = "https://github.com/astral-sh/uv/releases/download/0.13.5/uv-aarch64-unknown-linux-gnu.tar.gz"
-url_api = "https://api.github.com/repos/astral-sh/uv/releases/assets/664335837"
+checksum = "sha256:229e194255c7958d86d56e8790d969a6f74736592133f0dfd0076f754c642c1d"
+url = "https://github.com/astral-sh/uv/releases/download/0.13.6/uv-aarch64-unknown-linux-gnu.tar.gz"
+url_api = "https://api.github.com/repos/astral-sh/uv/releases/assets/679980412"
 provenance = "github-attestations"
 
 [tools.uv."platforms.linux-arm64-musl"]
-checksum = "sha256:7906c79adb21c81abd559841ba76bb1d9af9d791acac7a041b2972e03ae16538"
-url = "https://github.com/astral-sh/uv/releases/download/0.13.5/uv-aarch64-unknown-linux-musl.tar.gz"
-url_api = "https://api.github.com/repos/astral-sh/uv/releases/assets/664335857"
+checksum = "sha256:819692e404d23e5aae6bc44c0e260f1f5492fd1910ab4693b2c650f926dbe800"
+url = "https://github.com/astral-sh/uv/releases/download/0.13.6/uv-aarch64-unknown-linux-musl.tar.gz"
+url_api = "https://api.github.com/repos/astral-sh/uv/releases/assets/679980430"
 provenance = "github-attestations"
 
 [tools.uv."platforms.linux-x64"]
-checksum = "sha256:f68d291c75783122dad58ab77def0e13f3233f358731db5d6d7e8715603b928f"
-url = "https://github.com/astral-sh/uv/releases/download/0.13.5/uv-x86_64-unknown-linux-gnu.tar.gz"
-url_api = "https://api.github.com/repos/astral-sh/uv/releases/assets/664336023"
+checksum = "sha256:f29c3e94ffabd7e6f3ba521dba169a9b7ec12100bf3257087f0f24f6123f3645"
+url = "https://github.com/astral-sh/uv/releases/download/0.13.6/uv-x86_64-unknown-linux-gnu.tar.gz"
+url_api = "https://api.github.com/repos/astral-sh/uv/releases/assets/679980644"
 provenance = "github-attestations"
 
 [tools.uv."platforms.linux-x64-baseline"]
-checksum = "sha256:f68d291c75783122dad58ab77def0e13f3233f358731db5d6d7e8715603b928f"
-url = "https://github.com/astral-sh/uv/releases/download/0.13.5/uv-x86_64-unknown-linux-gnu.tar.gz"
-url_api = "https://api.github.com/repos/astral-sh/uv/releases/assets/664336023"
+checksum = "sha256:f29c3e94ffabd7e6f3ba521dba169a9b7ec12100bf3257087f0f24f6123f3645"
+url = "https://github.com/astral-sh/uv/releases/download/0.13.6/uv-x86_64-unknown-linux-gnu.tar.gz"
+url_api = "https://api.github.com/repos/astral-sh/uv/releases/assets/679980644"
 provenance = "github-attestations"
 
 [tools.uv."platforms.linux-x64-musl"]
-checksum = "sha256:57ef9d9ccb01fb1bd998df995b0dd221b52f7d7841fbea93f2d4463bf61fb7a9"
-url = "https://github.com/astral-sh/uv/releases/download/0.13.5/uv-x86_64-unknown-linux-musl.tar.gz"
-url_api = "https://api.github.com/repos/astral-sh/uv/releases/assets/664336027"
+checksum = "sha256:5d61f26b6c7213779eda90edc6971ea6b0b796bfb8d49a574c8ad69b59838548"
+url = "https://github.com/astral-sh/uv/releases/download/0.13.6/uv-x86_64-unknown-linux-musl.tar.gz"
+url_api = "https://api.github.com/repos/astral-sh/uv/releases/assets/679980664"
 provenance = "github-attestations"
 
 [tools.uv."platforms.linux-x64-musl-baseline"]
-checksum = "sha256:57ef9d9ccb01fb1bd998df995b0dd221b52f7d7841fbea93f2d4463bf61fb7a9"
-url = "https://github.com/astral-sh/uv/releases/download/0.13.5/uv-x86_64-unknown-linux-musl.tar.gz"
-url_api = "https://api.github.com/repos/astral-sh/uv/releases/assets/664336027"
+checksum = "sha256:5d61f26b6c7213779eda90edc6971ea6b0b796bfb8d49a574c8ad69b59838548"
+url = "https://github.com/astral-sh/uv/releases/download/0.13.6/uv-x86_64-unknown-linux-musl.tar.gz"
+url_api = "https://api.github.com/repos/astral-sh/uv/releases/assets/679980664"
 provenance = "github-attestations"
 
 [tools.uv."platforms.macos-arm64"]
-checksum = "sha256:743f85035a1996ecb350659e01cd9faea9709829be09b1b4b03c73eaf3c9cd73"
-url = "https://github.com/astral-sh/uv/releases/download/0.13.5/uv-aarch64-apple-darwin.tar.gz"
-url_api = "https://api.github.com/repos/astral-sh/uv/releases/assets/664335803"
+checksum = "sha256:60fbd5c8a1ed681845eea28d9d622fcde03c51e91a43465b64a1e17db1ed3472"
+url = "https://github.com/astral-sh/uv/releases/download/0.13.6/uv-aarch64-apple-darwin.tar.gz"
+url_api = "https://api.github.com/repos/astral-sh/uv/releases/assets/679980393"
 provenance = "github-attestations"
 
 [tools.uv."platforms.macos-x64"]
-checksum = "sha256:b0f52b0e3945b4107d89024ea38e625683011fbfc05a0d98f9fa2d6dcee28c66"
-url = "https://github.com/astral-sh/uv/releases/download/0.13.5/uv-x86_64-apple-darwin.tar.gz"
-url_api = "https://api.github.com/repos/astral-sh/uv/releases/assets/664335993"
+checksum = "sha256:63ba17fdda55ad1a230d4b37fc6017ffa10c23688c83818bd3bfdf914c652a02"
+url = "https://github.com/astral-sh/uv/releases/download/0.13.6/uv-x86_64-apple-darwin.tar.gz"
+url_api = "https://api.github.com/repos/astral-sh/uv/releases/assets/679980609"
 provenance = "github-attestations"
 
 [tools.uv."platforms.macos-x64-baseline"]
-checksum = "sha256:b0f52b0e3945b4107d89024ea38e625683011fbfc05a0d98f9fa2d6dcee28c66"
-url = "https://github.com/astral-sh/uv/releases/download/0.13.5/uv-x86_64-apple-darwin.tar.gz"
-url_api = "https://api.github.com/repos/astral-sh/uv/releases/assets/664335993"
+checksum = "sha256:63ba17fdda55ad1a230d4b37fc6017ffa10c23688c83818bd3bfdf914c652a02"
+url = "https://github.com/astral-sh/uv/releases/download/0.13.6/uv-x86_64-apple-darwin.tar.gz"
+url_api = "https://api.github.com/repos/astral-sh/uv/releases/assets/679980609"
 provenance = "github-attestations"
 
 [tools.uv."platforms.windows-x64"]
-checksum = "sha256:a38b8d1902b7cfbc76b423ba1bb456f623f42064cdc72628b6075b89afd1019a"
-url = "https://github.com/astral-sh/uv/releases/download/0.13.5/uv-x86_64-pc-windows-msvc.zip"
-url_api = "https://api.github.com/repos/astral-sh/uv/releases/assets/664336006"
+checksum = "sha256:a2a8820d5eea32f08ef467ef3b7f66883a9b076d5737a2fc2fbb5f458d1bb50f"
+url = "https://github.com/astral-sh/uv/releases/download/0.13.6/uv-x86_64-pc-windows-msvc.zip"
+url_api = "https://api.github.com/repos/astral-sh/uv/releases/assets/679980629"
 provenance = "github-attestations"
 
 [tools.uv."platforms.windows-x64-baseline"]
-checksum = "sha256:a38b8d1902b7cfbc76b423ba1bb456f623f42064cdc72628b6075b89afd1019a"
-url = "https://github.com/astral-sh/uv/releases/download/0.13.5/uv-x86_64-pc-windows-msvc.zip"
-url_api = "https://api.github.com/repos/astral-sh/uv/releases/assets/664336006"
+checksum = "sha256:a2a8820d5eea32f08ef467ef3b7f66883a9b076d5737a2fc2fbb5f458d1bb50f"
+url = "https://github.com/astral-sh/uv/releases/download/0.13.6/uv-x86_64-pc-windows-msvc.zip"
+url_api = "https://api.github.com/repos/astral-sh/uv/releases/assets/679980629"
 provenance = "github-attestations"
