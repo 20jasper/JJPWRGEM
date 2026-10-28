@@ -18,7 +18,7 @@ Options:
       --preferred-width <PREFERRED_WIDTH>
           Preferred maximum line width. Note this is not a hard maximum width [default: 80]
       --end-of-line <END_OF_LINE>
-          Line ending to use when formatting output [default: lf] [aliases: --eol] [possible values: lf, crlf]
+          Line ending to use when formatting output [default: lf] [alias: --eol] [possible values: lf, crlf]
       --parser <PARSER>
           Parser to use for input. jsonlines cannot be combined with --uglify [default: json] [possible values: json, jsonlines]
   -h, --help
