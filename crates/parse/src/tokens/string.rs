@@ -155,7 +155,63 @@ impl StringState {
     }
 }
 
+/// Index of the first `"`, `\` or control byte at or after `from`.
+fn find_special(bytes: &[u8], from: usize) -> Option<usize> {
+    use std::simd::{
+        cmp::{SimdPartialEq as _, SimdPartialOrd as _},
+        u8x32,
+    };
+
+    let quote = u8x32::splat(b'"');
+    let backslash = u8x32::splat(b'\\');
+    let space = u8x32::splat(b' ');
+
+    let mut i = from;
+    while i + 32 <= bytes.len() {
+        let chunk = u8x32::from_slice(&bytes[i..i + 32]);
+        let special = chunk.simd_eq(quote) | chunk.simd_eq(backslash) | chunk.simd_lt(space);
+        let mask = special.to_bitmask();
+        if mask != 0 {
+            return Some(i + mask.trailing_zeros() as usize);
+        }
+        i += 32;
+    }
+
+    bytes[i..]
+        .iter()
+        .position(|&b| matches!(b, b'"' | b'\\') || b < b' ')
+        .map(|offset| i + offset)
+}
+
+/// End of the string starting at `pos` if it is valid, `None` otherwise.
+///
+/// Errors are left to [`StringState`] so their messages come from one place.
+fn scan_valid_string(input: &str, pos: usize) -> Option<usize> {
+    let bytes = input.as_bytes();
+    let mut i = pos + 1;
+    loop {
+        i = find_special(bytes, i)?;
+        match bytes[i] {
+            b'"' => return Some(i + 1),
+            b'\\' => match *bytes.get(i + 1)? {
+                b'"' | b'\\' | b'/' | b'b' | b'f' | b'n' | b'r' | b't' => i += 2,
+                b'u' if bytes.get(i + 2..i + 6)?.iter().all(u8::is_ascii_hexdigit) => i += 6,
+                _ => return None,
+            },
+            _ => return None,
+        }
+    }
+}
+
 pub fn parse_string(input: &str, pos: usize) -> Result<TokenWithContext> {
+    if let Some(end) = scan_valid_string(input, pos) {
+        return Ok(TokenWithContext::new(Token::String, pos..end));
+    }
+
+    parse_string_slow(input, pos)
+}
+
+fn parse_string_slow(input: &str, pos: usize) -> Result<TokenWithContext> {
     let mut chars = input[pos..]
         .char_indices()
         .map(|(i, c)| (i + pos, c).into())
@@ -167,5 +223,31 @@ pub fn parse_string(input: &str, pos: usize) -> Result<TokenWithContext> {
         if let StringState::End(tok) = state {
             break Ok(tok);
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use rstest::rstest;
+
+    use super::*;
+
+    /// `len` puts the special byte on either side of the 32 byte simd chunk edges
+    #[rstest]
+    #[case::closed("\"")]
+    #[case::escape("\\n\"")]
+    #[case::unicode_escape("\\u00e9\"")]
+    #[case::bad_unicode_escape("\\u00g\"")]
+    #[case::bad_escape("\\x\"")]
+    #[case::control("\n\"")]
+    #[case::multibyte("é\"")]
+    #[case::unterminated_escape("\\")]
+    #[case::unterminated("")]
+    fn fast_scan_matches_state_machine(
+        #[case] tail: &str,
+        #[values(0, 30, 31, 32, 63)] len: usize,
+    ) {
+        let text = format!("\"{}{tail}", "a".repeat(len));
+        assert_eq!(parse_string(&text, 0), parse_string_slow(&text, 0));
     }
 }
