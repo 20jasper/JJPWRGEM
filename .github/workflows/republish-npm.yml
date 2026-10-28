@@ -1,0 +1,61 @@
+name: Republish npm
+
+# replay host + publish npm for an existing release; run from main
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Released version, e.g. 0.7.2
+        required: true
+        type: string
+      dry_run:
+        description: Skip the publish
+        required: true
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.plan.outputs.tag }}
+      plan: ${{ steps.plan.outputs.plan }}
+    steps:
+      - id: plan
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+            echo "version must look like 1.2.3, got: $VERSION" >&2
+            exit 1
+          fi
+          prerelease=false
+          if [[ "$VERSION" == *-* ]]; then
+            prerelease=true
+          fi
+          echo "tag=jjpwrgem-v$VERSION" >> "$GITHUB_OUTPUT"
+          echo "plan=$(jq -cn --argjson p "$prerelease" '{announcement_is_prerelease: $p}')" >> "$GITHUB_OUTPUT"
+
+  host:
+    needs: plan
+    uses: ./.github/workflows/host-npm.yml
+    with:
+      plan: ${{ needs.plan.outputs.plan }}
+      tag: ${{ needs.plan.outputs.tag }}
+    secrets: inherit
+
+  publish:
+    needs: [plan, host]
+    uses: ./.github/workflows/publish-npm.yml
+    with:
+      plan: ${{ needs.plan.outputs.plan }}
+      tag: ${{ needs.plan.outputs.tag }}
+      dry_run: ${{ inputs.dry_run }}
+    secrets: inherit
+    permissions:
+      id-token: write
