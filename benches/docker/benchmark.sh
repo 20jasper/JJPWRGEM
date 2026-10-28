@@ -28,66 +28,66 @@ bench() {
   rm -f "$pretty_md" "$pretty_json" "$ugly_md" "$ugly_json"
 
   # pretty print
-  hyperfine -S --warmup 3 \
+  hyperfine --input "$FILE_PATH" --warmup 3 \
     --export-markdown "$pretty_md" \
     --export-json "$pretty_json" \
     --command-name "jjp" \
-      "jjp format < $FILE_PATH" \
+      "jjp format" \
     --command-name "json-pp-rust" \
-      "json-pp-rust < $FILE_PATH" \
+      "json-pp-rust" \
     --command-name "jsonice" \
-      "jsonice < $FILE_PATH" \
+      "jsonice" \
     --command-name "prettier" \
-      "prettier --parser json < $FILE_PATH" \
+      "prettier --parser json" \
     --command-name "jq" \
-      "jq < $FILE_PATH" \
+      "jq" \
     --command-name "gojq" \
-      "gojq < $FILE_PATH" \
+      "gojq" \
     --command-name "jaq" \
-      "jaq < $FILE_PATH" \
+      "jaq" \
     --command-name "sjq" \
-      "sjq . --pretty < $FILE_PATH" \
+      "sjq . --pretty" \
     --command-name "dprint" \
-      "dprint fmt --stdin .json < $FILE_PATH" \
+      "dprint fmt --stdin .json" \
     --command-name "python" \
-      "python -m json.tool < $FILE_PATH" \
+      "python -m json.tool" \
     --command-name "node" \
-      "node -e '(async()=>{const t=await require(\"node:stream/consumers\").text(process.stdin);process.stdout.write(JSON.stringify(JSON.parse(t),null,2))})()' < $FILE_PATH" \
+      "node -e '(async()=>{const t=await require(\"node:stream/consumers\").text(process.stdin);process.stdout.write(JSON.stringify(JSON.parse(t),null,2))})()'" \
     --command-name "bun" \
-      "bun -e 'console.log(JSON.stringify(await new Response(Bun.stdin.stream()).json(), null, 2))' < $FILE_PATH" \
+      "bun -e 'console.log(JSON.stringify(await new Response(Bun.stdin.stream()).json(), null, 2))'" \
     --command-name "jsonxf" \
-      "jsonxf < $FILE_PATH" \
+      "jsonxf" \
     --command-name "jsonformat" \
-      "jsonformat < $FILE_PATH" \
+      "jsonformat" \
     --command-name "oxfmt" \
-      "oxfmt --stdin-filepath foo.json < $FILE_PATH"
+      "oxfmt --stdin-filepath foo.json"
 
   # uglify
-  hyperfine -S --warmup 3 \
+  hyperfine --input "$FILE_PATH" --warmup 3 \
     --export-markdown "$ugly_md" \
     --export-json "$ugly_json" \
     --command-name "jjp" \
-      "jjp format -u < $FILE_PATH" \
+      "jjp format -u" \
     --command-name "json-minify" \
-      "json-minify < $FILE_PATH" \
+      "json-minify" \
     --command-name "jsonxf" \
-      "jsonxf -m < $FILE_PATH" \
+      "jsonxf -m" \
     --command-name "jq" \
-      "jq -c < $FILE_PATH" \
+      "jq -c" \
     --command-name "jaq" \
-      "jaq -c < $FILE_PATH" \
+      "jaq -c" \
     --command-name "gojq" \
-      "gojq -c < $FILE_PATH" \
+      "gojq -c" \
     --command-name "sjq" \
-      "sjq . < $FILE_PATH" \
+      "sjq ." \
     --command-name "python" \
-      "python -m json.tool --compact < $FILE_PATH" \
+      "python -m json.tool --compact" \
     --command-name "minify" \
-      "minify --type json < $FILE_PATH" \
+      "minify --type json" \
     --command-name "node" \
-      "node -e '(async()=>{const t=await require(\"node:stream/consumers\").text(process.stdin);process.stdout.write(JSON.stringify(JSON.parse(t)))})()' < $FILE_PATH" \
+      "node -e '(async()=>{const t=await require(\"node:stream/consumers\").text(process.stdin);process.stdout.write(JSON.stringify(JSON.parse(t)))})()'" \
     --command-name "bun" \
-      "bun -e 'console.log(JSON.stringify(await new Response(Bun.stdin.stream()).json()))' < $FILE_PATH"
+      "bun -e 'console.log(JSON.stringify(await new Response(Bun.stdin.stream()).json()))'"
 }
 
 for file in "${FILES[@]}"
