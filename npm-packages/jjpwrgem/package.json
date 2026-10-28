@@ -35,7 +35,7 @@
   },
   "devDependencies": {},
   "engines": {
-    "node": ">=14",
+    "node": ">=14.18.0",
     "npm": ">=6"
   },
   "artifactDownloadUrl": "https://github.com/20jasper/jjpwrgem/releases/download/jjpwrgem-v0.7.2",

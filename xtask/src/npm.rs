@@ -258,7 +258,7 @@ mod tests {
           "scripts": { "postinstall": "node ./install.js" },
           "dependencies": { "detect-libc": "^2.1.2" },
           "devDependencies": {},
-          "engines": { "node": ">=14", "npm": ">=6" },
+          "engines": { "node": ">=14.18.0", "npm": ">=6" },
           "artifactDownloadUrl": "https://github.com/20jasper/jjpwrgem/releases/download/jjpwrgem-v0.5.1",
           "glibcMinimum": { "major": 2, "series": 35 },
           "preferUnplugged": true,
