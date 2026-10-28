@@ -29,12 +29,12 @@
     "compile": "pnpm run check-types && node esbuild.js",
     "watch": "npm-run-all -p watch:*",
     "watch:esbuild": "node esbuild.js --watch",
-    "watch:tsgo": "tsgo --watch --project tsconfig.json",
+    "watch:tsc": "tsc --watch --project tsconfig.json",
     "package": "pnpm run check-types && node esbuild.js --production",
-    "compile-tests": "tsgo -p . --outDir out",
-    "watch-tests": "tsgo -p . -w --outDir out",
+    "compile-tests": "tsc -p . --outDir out",
+    "watch-tests": "tsc -p . -w --outDir out",
     "pretest": "pnpm run compile-tests && pnpm run compile",
-    "check-types": "tsgo --noEmit",
+    "check-types": "tsc --noEmit",
     "test": "vscode-test",
     "vsce:ls": "vsce ls",
     "vsce:pack": "vsce package --no-dependencies",
@@ -54,7 +54,7 @@
     "esbuild": "0.28.2",
     "npm-run-all2": "9.0.4",
     "ovsx": "1.3.0",
-    "typescript": "npm:@typescript/native-preview@7.0.0-dev.20260707.2"
+    "typescript": "7.0.2"
   },
   "contributes": {
     "configuration": {
