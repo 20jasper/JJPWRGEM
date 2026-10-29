@@ -81,6 +81,15 @@ impl<'a> TokenStreamInner<'a> {
         self.pos = current_byte_pos(bytes, self.input);
     }
 
+    fn lex_with(
+        &mut self,
+        lex: impl FnOnce(&str, usize) -> Result<TokenWithContext>,
+    ) -> Result<TokenWithContext> {
+        let token = lex(self.input, self.pos)?;
+        self.pos = token.range.end;
+        Ok(token)
+    }
+
     fn unexpected_character(&self) -> Result<TokenWithContext> {
         let unexpected = self.input[self.pos..]
             .chars()
@@ -119,14 +128,8 @@ impl Iterator for TokenStreamInner<'_> {
             }
 
             let token = match ctx.as_byte() {
-                b'"' => {
-                    let result = parse_string(self.input, self.pos);
-                    if let Ok(token) = &result {
-                        self.pos = token.range.end;
-                    }
-                    result
-                }
-                b'0'..=b'9' | b'-' => self.parse_with_bytes(parse_mantissa),
+                b'"' => self.lex_with(parse_string),
+                b'0'..=b'9' | b'-' => self.lex_with(parse_mantissa),
                 b'e' | b'E' => {
                     match self.parse_with_bytes(|input, bytes| {
                         bytes.next();
