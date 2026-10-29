@@ -178,7 +178,7 @@ impl ObjectState {
                 colon_ctx,
                 open_ctx,
             } => {
-                validate_start_of_value(text, colon_ctx, tokens.peek_token()?.copied())?;
+                validate_start_of_value(text, || colon_ctx, tokens.peek_token()?.copied())?;
 
                 let value_range = parse_tokens_at_depth(tokens, text, false, visitor, depth + 1)?;
 
