@@ -20,7 +20,20 @@ pub struct JsonChar(pub char);
 #[derive(Debug, PartialEq, Eq, Clone, Copy, PartialOrd, Ord)]
 pub struct JsonByte(pub u8);
 
+/// Hex digits after `\u` in an escape
+pub(crate) const UNICODE_ESCAPE_DIGITS: usize = 4;
+
 impl JsonByte {
+    /// see [`JsonChar::is_control`]
+    pub(crate) fn is_control(self) -> bool {
+        JsonChar(self.0.into()).is_control()
+    }
+
+    /// see [`JsonChar::can_be_escaped_directly`]
+    pub(crate) fn can_be_escaped_directly(self) -> bool {
+        JsonChar(self.0.into()).can_be_escaped_directly()
+    }
+
     pub(crate) fn is_whitespace(self) -> bool {
         matches!(self.0, b' ' | b'\t' | b'\n' | b'\r')
     }
