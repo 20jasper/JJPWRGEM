@@ -182,10 +182,7 @@ fn find_special(bytes: &[u8], from: usize) -> Option<usize> {
         .map(|offset| i + offset)
 }
 
-/// End of the string whose opening quote is at `pos` if it is valid, `None` otherwise.
-///
-/// Errors are left to [`invalid_string_error`] so their messages come from one place.
-fn scan_valid_string(input: &str, pos: usize) -> Option<usize> {
+fn find_string_end(input: &str, pos: usize) -> Option<usize> {
     let bytes = input.as_bytes();
     let mut i = pos + 1;
     loop {
@@ -212,13 +209,13 @@ fn scan_valid_string(input: &str, pos: usize) -> Option<usize> {
 }
 
 pub fn parse_string(input: &str, pos: usize) -> Result<TokenWithContext> {
-    match scan_valid_string(input, pos) {
+    match find_string_end(input, pos) {
         Some(end) => Ok(TokenWithContext::new(Token::String, pos..end)),
         None => Err(invalid_string_error(input, pos)),
     }
 }
 
-/// Slower variant of [`scan_valid_string`] providing more precise error diagnostics
+/// Slower variant of [`find_string_end`] providing more precise error diagnostics
 fn invalid_string_error(input: &str, pos: usize) -> Error {
     let mut chars = input[pos..]
         .char_indices()
@@ -260,7 +257,7 @@ mod tests {
         #[values(0, LANES - 2, LANES - 1, LANES, 2 * LANES - 1)] len: usize,
     ) {
         let text = format!("\"{}{tail}", "a".repeat(len));
-        assert_eq!(scan_valid_string(&text, 0), valid.then_some(text.len()));
+        assert_eq!(find_string_end(&text, 0), valid.then_some(text.len()));
         // the state machine panics if it finds the string valid after all
         assert_eq!(parse_string(&text, 0).is_ok(), valid);
     }
