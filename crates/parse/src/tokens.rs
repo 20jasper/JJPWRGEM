@@ -76,6 +76,7 @@ pub struct ErrorToken {
 }
 
 impl ErrorToken {
+    #[inline]
     pub(crate) fn new(tag: Token, range: Range<usize>, source: &str) -> Self {
         Self {
             tag,
@@ -83,6 +84,7 @@ impl ErrorToken {
         }
     }
 
+    #[inline]
     pub fn content(&self) -> &str {
         &self.content
     }
@@ -111,6 +113,7 @@ impl Display for TokenOption {
 }
 
 impl From<Option<Token>> for TokenOption {
+    #[inline]
     fn from(value: Option<Token>) -> Self {
         Self(value.map(|t| ErrorToken {
             tag: t,
@@ -133,6 +136,7 @@ impl Display for JsonCharOption {
 }
 
 impl From<Option<JsonChar>> for JsonCharOption {
+    #[inline]
     fn from(value: Option<JsonChar>) -> Self {
         Self(value)
     }
@@ -145,10 +149,12 @@ pub struct TokenWithContext {
 }
 
 impl TokenWithContext {
+    #[inline]
     pub(crate) fn new(token: Token, range: Range<usize>) -> Self {
         Self { token, range }
     }
 
+    #[inline]
     pub(crate) fn content_range(&self) -> Range<usize> {
         match self.token {
             Token::String => self.range.start + 1..self.range.end - 1,
@@ -165,6 +171,7 @@ pub(crate) const TRUE: &str = "true";
 pub struct CharWithContext(pub Range<usize>, pub JsonChar);
 
 impl From<(usize, char)> for CharWithContext {
+    #[inline]
     fn from((i, c): (usize, char)) -> Self {
         Self(i..i + c.len_utf8(), c.into())
     }
@@ -174,25 +181,30 @@ impl From<(usize, char)> for CharWithContext {
 pub struct ByteWithContext(pub usize, pub JsonByte);
 
 impl From<(usize, u8)> for ByteWithContext {
+    #[inline]
     fn from((i, b): (usize, u8)) -> Self {
         Self(i, b.into())
     }
 }
 
 /// The range of the single byte at `at`
+#[inline]
 pub(crate) fn byte_range(at: usize) -> Range<usize> {
     at..at + 1
 }
 
 impl ByteWithContext {
+    #[inline]
     pub(crate) fn range(&self) -> Range<usize> {
         byte_range(self.0)
     }
 
+    #[inline]
     pub(crate) fn as_token_with_context(&self) -> Option<TokenWithContext> {
         Some(TokenWithContext::new(self.1.as_token()?, self.range()))
     }
 
+    #[inline]
     pub(crate) fn as_byte(&self) -> u8 {
         self.1.0
     }
@@ -205,6 +217,7 @@ pub(crate) struct BytesWithContext<'a> {
 }
 
 impl<'a> BytesWithContext<'a> {
+    #[inline]
     pub(crate) fn new(input: &'a str, pos: usize) -> Self {
         Self { input, pos }
     }
@@ -232,6 +245,7 @@ pub(crate) fn current_byte_pos(
 }
 
 impl From<bool> for Token {
+    #[inline]
     fn from(value: bool) -> Self {
         if value { Token::True } else { Token::False }
     }

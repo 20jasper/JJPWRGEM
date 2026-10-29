@@ -12,10 +12,12 @@ impl ObjectEntries {
         Self(Vec::new())
     }
 
+    #[inline]
     pub(crate) fn push(&mut self, key_range: Range<usize>, v: Value) {
         self.0.push((key_range, v));
     }
 
+    #[inline]
     pub(crate) fn is_empty(&self) -> bool {
         self.0.is_empty()
     }
@@ -85,10 +87,12 @@ impl<S: AsRef<str>> Document<S> {
         Ok(Self { source, root })
     }
 
+    #[inline]
     pub fn root(&self) -> &Value {
         &self.root
     }
 
+    #[inline]
     pub fn slice(&self, range: Range<usize>) -> &str {
         &self.source.as_ref()[range]
     }
@@ -97,6 +101,7 @@ impl<S: AsRef<str>> Document<S> {
         entries.find(self.source.as_ref(), key)
     }
 
+    #[inline]
     pub fn as_str<'a>(&'a self, value: &Value) -> Option<&'a str> {
         match value {
             Value::String(r) => Some(self.slice(*r)),
@@ -198,6 +203,7 @@ mod visitor {
     }
 
     impl<'a> Visitor<'a> for AstVisitor {
+        #[inline]
         fn on_object_open(&mut self, range: Range<usize>) {
             self.stack.push(AstFrame::Object {
                 open_range: range,
@@ -206,6 +212,7 @@ mod visitor {
             });
         }
 
+        #[inline]
         fn on_object_key(&mut self, range: Range<usize>, _key: &'a str) {
             if let Some(AstFrame::Object { current_key, .. }) = self.stack.last_mut() {
                 *current_key = Some(range);
@@ -214,6 +221,7 @@ mod visitor {
             }
         }
 
+        #[inline]
         fn on_object_close(&mut self, close_range: Range<usize>) {
             let frame = self
                 .stack
@@ -231,6 +239,7 @@ mod visitor {
             }
         }
 
+        #[inline]
         fn on_array_open(&mut self, range: Range<usize>) {
             self.stack.push(AstFrame::Array {
                 open_range: range,
@@ -238,6 +247,7 @@ mod visitor {
             });
         }
 
+        #[inline]
         fn on_array_close(&mut self, close_range: Range<usize>) {
             let frame = self
                 .stack
@@ -250,14 +260,17 @@ mod visitor {
             }
         }
 
+        #[inline]
         fn on_null(&mut self, range: Range<usize>) {
             self.emit_value(Value::Null(range));
         }
 
+        #[inline]
         fn on_string(&mut self, range: Range<usize>, _s: &'a str) {
             self.emit_value(Value::String(range));
         }
 
+        #[inline]
         fn on_mantissa(&mut self, range: Range<usize>, _mantissa: &'a str) {
             self.emit_value(Value::Number {
                 mantissa: range,
@@ -265,6 +278,7 @@ mod visitor {
             });
         }
 
+        #[inline]
         fn on_exponent(&mut self, range: Range<usize>, _exponent: &'a str) {
             let Value::Number { exponent, .. } = self.last_emitted_mut() else {
                 unreachable!("exponent must follow mantissa")
@@ -272,11 +286,14 @@ mod visitor {
             *exponent = Some(range);
         }
 
+        #[inline]
         fn on_boolean(&mut self, range: Range<usize>, b: bool) {
             self.emit_value(Value::Boolean(range, b));
         }
 
+        #[inline]
         fn on_object_key_val_delim(&mut self) {}
+        #[inline]
         fn on_item_delim(&mut self) {}
     }
 }

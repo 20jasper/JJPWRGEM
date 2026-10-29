@@ -53,6 +53,7 @@ impl<'a> TokenStreamInner<'a> {
         }
     }
 
+    #[inline]
     fn peek_byte_with_context(&self) -> Option<ByteWithContext> {
         self.input
             .as_bytes()
@@ -81,6 +82,7 @@ impl<'a> TokenStreamInner<'a> {
         self.pos = current_byte_pos(bytes, self.input);
     }
 
+    #[inline]
     fn lex_with(
         &mut self,
         lex: impl FnOnce(&str, usize) -> Result<TokenWithContext>,
@@ -181,6 +183,7 @@ impl<'a> TokenStream<'a> {
         Self::new_at_range(s, 0..s.len())
     }
 
+    #[inline]
     pub(crate) fn pos(&self) -> usize {
         self.inner.pos
     }

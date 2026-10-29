@@ -25,19 +25,23 @@ pub(crate) const UNICODE_ESCAPE_DIGITS: usize = 4;
 
 impl JsonByte {
     /// see [`JsonChar::is_control`]
+    #[inline]
     pub(crate) fn is_control(self) -> bool {
         JsonChar(self.0.into()).is_control()
     }
 
     /// see [`JsonChar::can_be_escaped_directly`]
+    #[inline]
     pub(crate) fn can_be_escaped_directly(self) -> bool {
         JsonChar(self.0.into()).can_be_escaped_directly()
     }
 
+    #[inline]
     pub(crate) fn is_whitespace(self) -> bool {
         matches!(self.0, b' ' | b'\t' | b'\n' | b'\r')
     }
 
+    #[inline]
     pub(crate) fn as_token(self) -> Option<Token> {
         let token = match self.0 {
             b'{' => Token::OpenCurlyBrace,
@@ -98,10 +102,12 @@ impl JsonChar {
         }
     }
 
+    #[inline]
     pub(crate) fn is_hexdigit(self) -> bool {
         self.0.is_ascii_hexdigit()
     }
 
+    #[inline]
     pub(crate) fn can_be_escaped_directly(self) -> bool {
         matches!(self.0, '"' | '\\' | '/' | 'b' | 'f' | 'n' | 'r' | 't')
     }
@@ -110,6 +116,7 @@ impl JsonChar {
     pub(crate) const CONTROL_RANGE: RangeInclusive<char> = '\u{0000}'..='\u{001F}';
 
     /// see [`Self::CONTROL_RANGE`]
+    #[inline]
     pub(crate) fn is_control(self) -> bool {
         Self::CONTROL_RANGE.contains(&self.0)
     }
@@ -123,6 +130,7 @@ impl JsonChar {
     ///         %x0A /              ; Line feed or New line
     ///         %x0D )              ; Carriage return
     /// ```
+    #[inline]
     pub(crate) fn is_whitespace(self) -> bool {
         matches!(self.0, ' ' | '\t' | '\n' | '\r')
     }
@@ -140,6 +148,7 @@ impl JsonChar {
     /// name-separator  = ws %x3A ws  ; : colon
     /// value-separator = ws %x2C ws  ; , comma
     /// ```
+    #[inline]
     pub(crate) fn is_structural(self) -> bool {
         matches!(self.0, '{' | '}' | '[' | ']' | ':' | ',')
     }
@@ -157,12 +166,14 @@ impl Display for JsonChar {
 }
 
 impl From<char> for JsonChar {
+    #[inline]
     fn from(value: char) -> Self {
         Self(value)
     }
 }
 
 impl From<u8> for JsonByte {
+    #[inline]
     fn from(value: u8) -> Self {
         Self(value)
     }
