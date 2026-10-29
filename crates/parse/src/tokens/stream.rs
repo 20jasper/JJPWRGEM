@@ -185,6 +185,7 @@ impl<'a> TokenStream<'a> {
         self.inner.pos
     }
 
+    #[inline]
     pub fn peek_token(&mut self) -> Result<Option<&TokenWithContext>> {
         if self.cached.is_none() {
             match self.inner.next() {
@@ -197,6 +198,7 @@ impl<'a> TokenStream<'a> {
         Ok(self.cached.as_ref())
     }
 
+    #[inline]
     pub fn next_token(&mut self) -> Result<Option<TokenWithContext>> {
         if let Some(token) = self.cached.take() {
             Ok(Some(token))
