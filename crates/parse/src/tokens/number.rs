@@ -33,40 +33,22 @@ enum MantissaState {
 }
 
 impl MantissaState {
-    /// The state after reading `bytes[at]`. The caller moves on to the next byte, unless the
-    /// state is [`MantissaState::End`].
-    fn step(self, bytes: &[u8], at: usize, input: &str, start: usize) -> Result<Self> {
-        let next = bytes.get(at).copied();
-        let res = match self {
-            MantissaState::MinusOrInteger => match next {
-                Some(b'-') => MantissaState::Minus,
-                Some(b'0') => MantissaState::Zero,
-                Some(b'1'..=b'9') => MantissaState::Integer,
-                _ => {
-                    return Err(Error::from_maybe_json_char_with_context(
-                        ErrorKind::ExpectedMinusOrDigit,
-                        char_at(input, at),
-                        input,
-                    ));
-                }
+    fn process(self, next: Option<u8>) -> Option<Self> {
+        let state = match self {
+            MantissaState::MinusOrInteger => match next? {
+                b'-' => MantissaState::Minus,
+                b'0' => MantissaState::Zero,
+                b'1'..=b'9' => MantissaState::Integer,
+                _ => return None,
             },
-            MantissaState::Minus => match next {
-                Some(b'0') => MantissaState::Zero,
-                Some(b'1'..=b'9') => MantissaState::Integer,
-                _ => {
-                    let minus = byte_range(start);
-                    return Err(Error::new(
-                        ErrorKind::ExpectedDigitFollowingMinus(
-                            minus,
-                            char_at(input, at).map(|CharWithContext(_, c)| c).into(),
-                        ),
-                        minus,
-                        input,
-                    ));
-                }
+            MantissaState::Minus => match next? {
+                b'0' => MantissaState::Zero,
+                b'1'..=b'9' => MantissaState::Integer,
+                _ => return None,
             },
             MantissaState::Zero => match next {
-                Some(b'0'..=b'9') => return Err(leading_zero_error(bytes, at, input, start)),
+                // a digit after a leading zero
+                Some(b'0'..=b'9') => return None,
                 Some(b'.') => MantissaState::Dot,
                 _ => MantissaState::End,
             },
@@ -75,19 +57,9 @@ impl MantissaState {
                 Some(b'.') => MantissaState::Dot,
                 _ => MantissaState::End,
             },
-            MantissaState::Dot => match next {
-                Some(b'0'..=b'9') => MantissaState::Fraction,
-                _ => {
-                    return Err(Error::from_maybe_json_char_with_context(
-                        |c| ErrorKind::ExpectedDigitAfterDot {
-                            number_range: start..at,
-                            dot_range: byte_range(at - 1),
-                            maybe_c: c,
-                        },
-                        char_at(input, at),
-                        input,
-                    ));
-                }
+            MantissaState::Dot => match next? {
+                b'0'..=b'9' => MantissaState::Fraction,
+                _ => return None,
             },
             MantissaState::Fraction => match next {
                 Some(b'0'..=b'9') => MantissaState::Fraction,
@@ -95,14 +67,47 @@ impl MantissaState {
             },
             MantissaState::End => self,
         };
+        Some(state)
+    }
+}
 
-        Ok(res)
+fn mantissa_error(state: MantissaState, input: &str, start: usize, at: usize) -> Error {
+    match state {
+        MantissaState::MinusOrInteger => Error::from_maybe_json_char_with_context(
+            ErrorKind::ExpectedMinusOrDigit,
+            char_at(input, at),
+            input,
+        ),
+        MantissaState::Minus => {
+            let minus = byte_range(start);
+            Error::new(
+                ErrorKind::ExpectedDigitFollowingMinus(
+                    minus,
+                    char_at(input, at).map(|CharWithContext(_, c)| c).into(),
+                ),
+                minus,
+                input,
+            )
+        }
+        MantissaState::Zero => leading_zero_error(input, start, at),
+        MantissaState::Dot => Error::from_maybe_json_char_with_context(
+            |c| ErrorKind::ExpectedDigitAfterDot {
+                number_range: start..at,
+                dot_range: byte_range(at - 1),
+                maybe_c: c,
+            },
+            char_at(input, at),
+            input,
+        ),
+        MantissaState::Integer | MantissaState::Fraction | MantissaState::End => {
+            unreachable!("{state:?} accepts any byte")
+        }
     }
 }
 
 /// `at` is the digit that follows the leading zero at `at - 1`.
-#[cold]
-fn leading_zero_error(bytes: &[u8], at: usize, input: &str, start: usize) -> Error {
+fn leading_zero_error(input: &str, start: usize, at: usize) -> Error {
+    let bytes = input.as_bytes();
     let initial = byte_range(at - 1);
     let mut end = at;
     while bytes.get(end) == Some(&b'0') {
@@ -259,9 +264,12 @@ pub fn parse_mantissa(input: &str, start: usize) -> Result<TokenWithContext> {
     let mut state = MantissaState::MinusOrInteger;
 
     loop {
-        state = state.step(bytes, at, input, start)?;
-        if state == MantissaState::End {
-            break Ok(TokenWithContext::new(Token::Mantissa, start..at));
+        match state.process(bytes.get(at).copied()) {
+            Some(MantissaState::End) => {
+                break Ok(TokenWithContext::new(Token::Mantissa, start..at));
+            }
+            Some(next) => state = next,
+            None => break Err(mantissa_error(state, input, start, at)),
         }
         at += 1;
     }
