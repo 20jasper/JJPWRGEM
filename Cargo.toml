@@ -85,6 +85,10 @@ lto = "fat"
 codegen-units = 1
 panic = "abort"
 
+# benches measure the binary we ship
+[profile.bench]
+inherits = "dist"
+
 [lints]
 workspace = true
 
