@@ -51,43 +51,28 @@ fn object_error(
     offsets: &ObjectOffsets,
     found: Option<TokenWithContext>,
 ) -> Error {
-    match state {
-        ObjectState::KeyOrEnd => Error::from_maybe_token_with_context(
-            |tok| {
-                ErrorKind::expected_entry_or_closed_delimiter(open_ctx(offsets.open_start), tok)
-                    .expect("object should open with a curly brace")
-            },
-            found,
-            text,
-        ),
-        ObjectState::CommaOrEnd => Error::from_maybe_token_with_context(
-            |tok| ErrorKind::ExpectedCommaOrClosedCurlyBrace {
+    let open = open_ctx(offsets.open_start);
+    Error::from_maybe_token_with_context(
+        |tok| match state {
+            ObjectState::KeyOrEnd => ErrorKind::expected_entry_or_closed_delimiter(open, tok)
+                .expect("object should open with a curly brace"),
+            ObjectState::CommaOrEnd => ErrorKind::ExpectedCommaOrClosedCurlyBrace {
                 range: offsets.last_pair,
-                open_ctx: open_ctx(offsets.open_start),
+                open_ctx: open,
                 found: tok,
             },
-            found,
-            text,
-        ),
-        ObjectState::Key => Error::from_maybe_token_with_context(
-            |tok| ErrorKind::ExpectedKey(punctuation_at(text, offsets.delim), tok),
-            found,
-            text,
-        ),
-        ObjectState::Colon => Error::from_maybe_token_with_context(
-            |tok| ErrorKind::ExpectedColon(TokenWithContext::new(Token::String, offsets.key), tok),
-            found,
-            text,
-        ),
-        ObjectState::Value => Error::from_maybe_token_with_context(
-            |tok| {
+            ObjectState::Key => ErrorKind::ExpectedKey(punctuation_at(text, offsets.delim), tok),
+            ObjectState::Colon => {
+                ErrorKind::ExpectedColon(TokenWithContext::new(Token::String, offsets.key), tok)
+            }
+            ObjectState::Value => {
                 ErrorKind::ExpectedValue(Some(punctuation_at(text, offsets.last_pair.start)), tok)
-            },
-            found,
-            text,
-        ),
-        ObjectState::End => unreachable!("an object is done once it ends"),
-    }
+            }
+            ObjectState::End => unreachable!("an object is done once it ends"),
+        },
+        found,
+        text,
+    )
 }
 
 pub fn parse_object<'a>(
@@ -96,28 +81,15 @@ pub fn parse_object<'a>(
     depth: usize,
     visitor: &mut impl Visitor<'a>,
 ) -> Result<Range<usize>> {
-    let open_start = match tokens.next_token()? {
-        Some(
-            ctx @ TokenWithContext {
-                token: Token::OpenCurlyBrace,
-                ..
-            },
-        ) => {
-            visitor.on_object_open(ctx.range);
-            ctx.range.start
-        }
-        maybe_token => {
-            return Err(Error::from_maybe_token_with_context(
-                |tok| ErrorKind::ExpectedOpenBrace {
-                    expected: '{'.into(),
-                    context: None,
-                    found: tok,
-                },
-                maybe_token,
-                text,
-            ));
-        }
+    let Some(TokenWithContext {
+        token: Token::OpenCurlyBrace,
+        range: open_range,
+    }) = tokens.next_token()?
+    else {
+        unreachable!("callers only parse an object after seeing its `{{`");
     };
+    visitor.on_object_open(open_range);
+    let open_start = open_range.start;
 
     let mut offsets = ObjectOffsets {
         open_start,
@@ -138,9 +110,7 @@ pub fn parse_object<'a>(
         };
         let ctx = found.expect("the end of input is never accepted");
         match next {
-            ObjectState::End => {
-                visitor.on_object_close(ctx.range);
-            }
+            ObjectState::End => visitor.on_object_close(ctx.range),
             ObjectState::Key => {
                 visitor.on_item_delim();
                 offsets.delim = ctx.range.start;
