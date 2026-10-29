@@ -5,7 +5,7 @@ use core::range::Range;
 
 use crate::{
     Error, ErrorKind, Result,
-    tokens::{ErrorToken, Token, TokenStream, TokenWithContext},
+    tokens::{ErrorToken, Token, TokenStream, TokenWithContext, byte_range, lexical::JsonByte},
     traverse::{array::parse_array, object::parse_object},
 };
 
@@ -113,6 +113,13 @@ fn parse_tokens_at_depth<'a>(
     }
 
     Ok(range)
+}
+
+pub(crate) fn punctuation_at(text: &str, at: usize) -> TokenWithContext {
+    let token = JsonByte(text.as_bytes()[at])
+        .as_token()
+        .expect("callers record where punctuation is");
+    TokenWithContext::new(token, byte_range(at))
 }
 
 pub(crate) fn validate_start_of_value(
