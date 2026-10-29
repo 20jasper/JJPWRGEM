@@ -294,7 +294,7 @@ version = "3.9.10"
 backend = "npm:prettier"
 
 [[tools."npm:renovate"]]
-version = "44.181.6"
+version = "44.181.7"
 backend = "npm:renovate"
 
 [tools."npm:renovate".options]
