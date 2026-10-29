@@ -24,20 +24,14 @@ pub struct JsonByte(pub u8);
 pub(crate) const UNICODE_ESCAPE_DIGITS: usize = 4;
 
 impl JsonByte {
-    /// see [`JsonChar::CONTROL_RANGE`]
-    pub(crate) const CONTROL_RANGE: RangeInclusive<u8> = 0x00..=0x1F;
-
-    /// see [`Self::CONTROL_RANGE`]
+    /// see [`JsonChar::is_control`]
     pub(crate) fn is_control(self) -> bool {
-        Self::CONTROL_RANGE.contains(&self.0)
+        JsonChar(self.0.into()).is_control()
     }
 
     /// see [`JsonChar::can_be_escaped_directly`]
     pub(crate) fn can_be_escaped_directly(self) -> bool {
-        matches!(
-            self.0,
-            b'"' | b'\\' | b'/' | b'b' | b'f' | b'n' | b'r' | b't'
-        )
+        JsonChar(self.0.into()).can_be_escaped_directly()
     }
 
     pub(crate) fn is_whitespace(self) -> bool {

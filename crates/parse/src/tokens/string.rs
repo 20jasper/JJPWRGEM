@@ -163,7 +163,7 @@ fn find_special(bytes: &[u8], from: usize) -> Option<usize> {
 
     let quote = Chunk::splat(b'"');
     let backslash = Chunk::splat(b'\\');
-    let last_control = Chunk::splat(JsonByte::CONTROL_RANGE.last);
+    let last_control = Chunk::splat(JsonChar::CONTROL_RANGE.last as u8);
 
     let mut i = from;
     while let Some(window) = bytes.get(i..i + Chunk::LEN) {
