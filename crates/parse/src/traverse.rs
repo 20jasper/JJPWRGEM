@@ -122,23 +122,6 @@ pub(crate) fn punctuation_at(text: &str, at: usize) -> TokenWithContext {
     TokenWithContext::new(token, byte_range(at))
 }
 
-pub(crate) fn validate_start_of_value(
-    text: &str,
-    expect_ctx: impl FnOnce() -> TokenWithContext,
-    maybe_token: Option<TokenWithContext>,
-) -> Result<()> {
-    if !maybe_token.is_some_and(|ctx| ctx.token.is_start_of_value()) {
-        let expect_ctx = expect_ctx();
-        Err(Error::from_maybe_token_with_context(
-            |tok| ErrorKind::ExpectedValue(Some(expect_ctx), tok),
-            maybe_token,
-            text,
-        ))
-    } else {
-        Ok(())
-    }
-}
-
 fn join<V, T>(
     visitor: &mut V,
     items: impl IntoIterator<Item = T>,

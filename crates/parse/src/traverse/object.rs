@@ -3,7 +3,7 @@ use core::range::Range;
 use crate::{
     Error, ErrorKind, Result,
     tokens::{Token, TokenStream, TokenWithContext, byte_range},
-    traverse::{Visitor, parse_tokens_at_depth, punctuation_at, validate_start_of_value},
+    traverse::{Visitor, parse_tokens_at_depth, punctuation_at},
 };
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
@@ -29,142 +29,64 @@ fn open_ctx(open_start: usize) -> TokenWithContext {
 }
 
 impl ObjectState {
-    fn process<'a>(
-        self,
-        tokens: &mut TokenStream<'a>,
-        text: &'a str,
-        visitor: &mut impl Visitor<'a>,
-        depth: usize,
-        offsets: &mut ObjectOffsets,
-    ) -> Result<Self> {
-        let res = match self {
-            ObjectState::KeyOrEnd => match tokens.next_token()? {
-                Some(
-                    ctx @ TokenWithContext {
-                        token: Token::ClosedCurlyBrace,
-                        ..
-                    },
-                ) => {
-                    visitor.on_object_close(ctx.range);
-                    ObjectState::End
-                }
-                Some(
-                    key_ctx @ TokenWithContext {
-                        token: Token::String,
-                        ..
-                    },
-                ) => {
-                    let body = key_ctx.content_range();
-                    visitor.on_object_key(body, &text[body]);
-                    offsets.key = key_ctx.range;
-                    ObjectState::Colon
-                }
-                maybe_token => {
-                    return Err(Error::from_maybe_token_with_context(
-                        |tok| {
-                            ErrorKind::expected_entry_or_closed_delimiter(
-                                open_ctx(offsets.open_start),
-                                tok,
-                            )
-                            .expect("object should open with a curly brace")
-                        },
-                        maybe_token,
-                        text,
-                    ));
-                }
-            },
-
-            ObjectState::CommaOrEnd => match tokens.next_token()? {
-                Some(
-                    ctx @ TokenWithContext {
-                        token: Token::ClosedCurlyBrace,
-                        ..
-                    },
-                ) => {
-                    visitor.on_object_close(ctx.range);
-                    ObjectState::End
-                }
-                Some(TokenWithContext {
-                    token: Token::Comma,
-                    range: comma_range,
-                }) => {
-                    visitor.on_item_delim();
-                    offsets.delim = comma_range.start;
-                    ObjectState::Key
-                }
-                maybe_token => {
-                    return Err(Error::from_maybe_token_with_context(
-                        |tok| ErrorKind::ExpectedCommaOrClosedCurlyBrace {
-                            range: offsets.last_pair,
-                            open_ctx: open_ctx(offsets.open_start),
-                            found: tok,
-                        },
-                        maybe_token,
-                        text,
-                    ));
-                }
-            },
-
-            ObjectState::Key => match tokens.next_token()? {
-                Some(
-                    key_ctx @ TokenWithContext {
-                        token: Token::String,
-                        ..
-                    },
-                ) => {
-                    let body = key_ctx.content_range();
-                    visitor.on_object_key(body, &text[body]);
-                    offsets.key = key_ctx.range;
-                    ObjectState::Colon
-                }
-                maybe_token => {
-                    let comma_ctx = punctuation_at(text, offsets.delim);
-                    return Err(Error::from_maybe_token_with_context(
-                        |tok| ErrorKind::ExpectedKey(comma_ctx, tok),
-                        maybe_token,
-                        text,
-                    ));
-                }
-            },
-
-            ObjectState::Colon => match tokens.next_token()? {
-                Some(
-                    colon_ctx @ TokenWithContext {
-                        token: Token::Colon,
-                        ..
-                    },
-                ) => {
-                    visitor.on_object_key_val_delim();
-                    offsets.last_pair = colon_ctx.range.start..colon_ctx.range.end;
-                    ObjectState::Value
-                }
-                maybe_token => {
-                    let key_ctx = TokenWithContext::new(Token::String, offsets.key);
-                    return Err(Error::from_maybe_token_with_context(
-                        |tok| ErrorKind::ExpectedColon(key_ctx, tok),
-                        maybe_token,
-                        text,
-                    ));
-                }
-            },
-
-            ObjectState::Value => {
-                let peeked = tokens.peek_token()?.copied();
-                validate_start_of_value(
-                    text,
-                    || punctuation_at(text, offsets.last_pair.start),
-                    peeked,
-                )?;
-
-                let value_range = parse_tokens_at_depth(tokens, text, false, visitor, depth + 1)?;
-                offsets.last_pair = offsets.last_pair.start..value_range.end;
-                ObjectState::CommaOrEnd
+    fn process(self, next: Option<Token>) -> Option<Self> {
+        let next = next?;
+        let state = match self {
+            ObjectState::KeyOrEnd | ObjectState::CommaOrEnd if next == Token::ClosedCurlyBrace => {
+                ObjectState::End
             }
-
-            ObjectState::End => self,
+            ObjectState::KeyOrEnd | ObjectState::Key if next == Token::String => ObjectState::Colon,
+            ObjectState::CommaOrEnd if next == Token::Comma => ObjectState::Key,
+            ObjectState::Colon if next == Token::Colon => ObjectState::Value,
+            ObjectState::Value if next.is_start_of_value() => ObjectState::CommaOrEnd,
+            _ => return None,
         };
+        Some(state)
+    }
+}
 
-        Ok(res)
+fn object_error(
+    state: ObjectState,
+    text: &str,
+    offsets: &ObjectOffsets,
+    found: Option<TokenWithContext>,
+) -> Error {
+    match state {
+        ObjectState::KeyOrEnd => Error::from_maybe_token_with_context(
+            |tok| {
+                ErrorKind::expected_entry_or_closed_delimiter(open_ctx(offsets.open_start), tok)
+                    .expect("object should open with a curly brace")
+            },
+            found,
+            text,
+        ),
+        ObjectState::CommaOrEnd => Error::from_maybe_token_with_context(
+            |tok| ErrorKind::ExpectedCommaOrClosedCurlyBrace {
+                range: offsets.last_pair,
+                open_ctx: open_ctx(offsets.open_start),
+                found: tok,
+            },
+            found,
+            text,
+        ),
+        ObjectState::Key => Error::from_maybe_token_with_context(
+            |tok| ErrorKind::ExpectedKey(punctuation_at(text, offsets.delim), tok),
+            found,
+            text,
+        ),
+        ObjectState::Colon => Error::from_maybe_token_with_context(
+            |tok| ErrorKind::ExpectedColon(TokenWithContext::new(Token::String, offsets.key), tok),
+            found,
+            text,
+        ),
+        ObjectState::Value => Error::from_maybe_token_with_context(
+            |tok| {
+                ErrorKind::ExpectedValue(Some(punctuation_at(text, offsets.last_pair.start)), tok)
+            },
+            found,
+            text,
+        ),
+        ObjectState::End => unreachable!("an object is done once it ends"),
     }
 }
 
@@ -205,7 +127,40 @@ pub fn parse_object<'a>(
     };
     let mut state = ObjectState::KeyOrEnd;
     while state != ObjectState::End {
-        state = state.process(tokens, text, visitor, depth, &mut offsets)?;
+        // a value is parsed from its first token, everything else is taken right away
+        let found = if state == ObjectState::Value {
+            tokens.peek_token()?.copied()
+        } else {
+            tokens.next_token()?
+        };
+        let Some(next) = state.process(found.map(|ctx| ctx.token)) else {
+            return Err(object_error(state, text, &offsets, found));
+        };
+        let ctx = found.expect("the end of input is never accepted");
+        match next {
+            ObjectState::End => {
+                visitor.on_object_close(ctx.range);
+            }
+            ObjectState::Key => {
+                visitor.on_item_delim();
+                offsets.delim = ctx.range.start;
+            }
+            ObjectState::Colon => {
+                let body = ctx.content_range();
+                visitor.on_object_key(body, &text[body]);
+                offsets.key = ctx.range;
+            }
+            ObjectState::Value => {
+                visitor.on_object_key_val_delim();
+                offsets.last_pair = ctx.range;
+            }
+            ObjectState::CommaOrEnd => {
+                let value_range = parse_tokens_at_depth(tokens, text, false, visitor, depth + 1)?;
+                offsets.last_pair = offsets.last_pair.start..value_range.end;
+            }
+            ObjectState::KeyOrEnd => unreachable!("only the starting state"),
+        }
+        state = next;
     }
 
     // the cursor sits right after the closing `}`
