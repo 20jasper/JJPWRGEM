@@ -39,7 +39,10 @@ impl ArrayState {
                     visitor.on_array_close(closed_range);
                     ArrayState::End
                 }
-                Some(token_ctx) if token_ctx.token.is_start_of_value() => ArrayState::Value,
+                Some(token_ctx) if token_ctx.token.is_start_of_value() => {
+                    parse_tokens_at_depth(tokens, text, false, visitor, depth + 1)?;
+                    ArrayState::CommaOrEnd
+                }
                 Some(_) => {
                     return Err(Error::from_maybe_token_with_context(
                         |tok| {

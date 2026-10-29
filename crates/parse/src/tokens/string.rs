@@ -208,6 +208,7 @@ fn find_string_end(input: &str, pos: usize) -> Option<usize> {
     }
 }
 
+#[inline]
 pub fn parse_string(input: &str, pos: usize) -> Result<TokenWithContext> {
     match find_string_end(input, pos) {
         Some(end) => Ok(TokenWithContext::new(Token::String, pos..end)),
