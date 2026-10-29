@@ -25,8 +25,8 @@ RUN --mount=type=bind,source=crates,target=crates \
     --mount=type=cache,target=/app/target/ \
     --mount=type=cache,target=/usr/local/cargo/git/db \
     --mount=type=cache,target=/usr/local/cargo/registry/ \
-    cargo build --locked --release && \
-    install -Dm755 ./target/release/$APP_NAME /usr/local/cargo/bin/$APP_NAME
+    cargo build --locked --profile dist && \
+    install -Dm755 ./target/dist/$APP_NAME /usr/local/cargo/bin/$APP_NAME
 
 FROM mise-tools AS final
 
