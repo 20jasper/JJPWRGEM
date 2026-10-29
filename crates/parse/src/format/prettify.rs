@@ -51,9 +51,11 @@ impl FormatBuf {
         }
     }
 
+    #[inline]
     fn push(&mut self, value: char) {
         self.buf.push(value);
     }
+    #[inline]
     fn push_str(&mut self, value: &str) {
         self.buf.push_str(value);
     }
@@ -77,19 +79,23 @@ impl FormatBuf {
         }
     }
 
+    #[inline]
     pub fn write_key_val_delimiter(&mut self) {
         self.write_spec(self.opts.key_val_delimiter);
     }
 
+    #[inline]
     fn delimiter_len(&self) -> usize {
         self.opts.key_val_delimiter.map_or(0, |(_, size)| size)
     }
 
+    #[inline]
     pub fn write_eol(&mut self) {
         self.push_str(self.opts.line_ending.as_str());
         self.line_start = self.buf.len();
     }
 
+    #[inline]
     pub fn write_indent(&mut self, level: usize) {
         self.write_spec(self.opts.indent.map(|(c, size)| (c, size * level)));
     }
@@ -98,10 +104,12 @@ impl FormatBuf {
         self.buf
     }
 
+    #[inline]
     pub fn column(&self) -> usize {
         self.buf.len() - self.line_start
     }
 
+    #[inline]
     fn available_bytes(&self) -> usize {
         self.preferred_width.saturating_sub(self.column())
     }
@@ -120,6 +128,7 @@ pub(crate) fn format_str(
 
 use super::join_into;
 
+#[inline]
 fn range_len(range: Range<usize>) -> usize {
     range.end - range.start
 }
@@ -361,10 +370,12 @@ mod len {
         try_get_value_len(doc, val, limit, delimiter_len).is_none()
     }
 
+    #[inline]
     fn quoted_len(value: &str) -> usize {
         value.chars().count() + QUOTE_PAIR_LEN
     }
 
+    #[inline]
     fn separated_item_prefix_len(delimiter_len: usize) -> usize {
         COMMA_LEN + delimiter_len
     }
@@ -375,6 +386,7 @@ mod len {
         limit: usize,
         delimiter_len: usize,
     ) -> Option<usize> {
+        #[inline]
         fn within_limit(len: usize, limit: usize) -> bool {
             len <= limit
         }

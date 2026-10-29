@@ -98,43 +98,55 @@ pub(crate) trait Emitter {
     fn push_str(&mut self, s: &str);
 
     // defaults
+    #[inline]
     fn push_quoted(&mut self, s: &str) {
         self.push('"');
         self.push_str(s);
         self.push('"');
     }
 
+    #[inline]
     fn emit_null(&mut self) {
         self.push_str(NULL);
     }
+    #[inline]
     fn emit_string(&mut self, s: &str) {
         self.push_quoted(s);
     }
+    #[inline]
     fn emit_mantissa(&mut self, n: &str) {
         self.push_str(n);
     }
+    #[inline]
     fn emit_exponent(&mut self, e: &str) {
         self.push('e');
         self.push_str(e);
     }
+    #[inline]
     fn emit_boolean(&mut self, b: bool) {
         self.push_str(if b { TRUE } else { FALSE });
     }
+    #[inline]
     fn emit_item_delim(&mut self) {
         self.push(',');
     }
+    #[inline]
     fn emit_array_open(&mut self) {
         self.push('[');
     }
+    #[inline]
     fn emit_array_close(&mut self) {
         self.push(']');
     }
+    #[inline]
     fn emit_object_open(&mut self) {
         self.push('{');
     }
+    #[inline]
     fn emit_object_close(&mut self) {
         self.push('}');
     }
+    #[inline]
     fn emit_key_val_delim(&mut self) {
         self.push(':');
     }

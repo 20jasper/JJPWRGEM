@@ -29,60 +29,74 @@ pub(crate) struct UglifyEmitVisitor {
 }
 
 impl Emitter for UglifyEmitVisitor {
+    #[inline]
     fn push(&mut self, c: char) {
         self.buf.push(c);
     }
 
+    #[inline]
     fn push_str(&mut self, s: &str) {
         self.buf.push_str(s);
     }
 }
 
 impl<'a> Visitor<'a> for UglifyEmitVisitor {
+    #[inline]
     fn on_object_open(&mut self, _range: Range<usize>) {
         self.emit_object_open();
     }
 
+    #[inline]
     fn on_object_key(&mut self, _range: Range<usize>, key: &'a str) {
         self.emit_string(key);
     }
 
+    #[inline]
     fn on_object_key_val_delim(&mut self) {
         self.emit_key_val_delim();
     }
 
+    #[inline]
     fn on_object_close(&mut self, _range: Range<usize>) {
         self.emit_object_close();
     }
 
+    #[inline]
     fn on_array_open(&mut self, _range: Range<usize>) {
         self.emit_array_open();
     }
 
+    #[inline]
     fn on_array_close(&mut self, _range: Range<usize>) {
         self.emit_array_close();
     }
 
+    #[inline]
     fn on_null(&mut self, _range: Range<usize>) {
         self.emit_null();
     }
 
+    #[inline]
     fn on_string(&mut self, _range: Range<usize>, s: &'a str) {
         self.emit_string(s);
     }
 
+    #[inline]
     fn on_mantissa(&mut self, _range: Range<usize>, mantissa: &'a str) {
         self.emit_mantissa(mantissa);
     }
 
+    #[inline]
     fn on_exponent(&mut self, _range: Range<usize>, exponent: &'a str) {
         self.emit_exponent(exponent);
     }
 
+    #[inline]
     fn on_boolean(&mut self, _range: Range<usize>, b: bool) {
         self.emit_boolean(b);
     }
 
+    #[inline]
     fn on_item_delim(&mut self) {
         self.emit_item_delim();
     }
