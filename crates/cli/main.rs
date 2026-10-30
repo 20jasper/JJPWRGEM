@@ -40,7 +40,10 @@ fn main() -> ExitCode {
         return ExitCode::SUCCESS;
     }
 
-    let Some(json) = read_stdin(style) else {
+    let Some(input) = read_stdin(style) else {
+        return ExitCode::FAILURE;
+    };
+    let Some(json) = decode_utf8(&input, style) else {
         return ExitCode::FAILURE;
     };
 
@@ -66,7 +69,7 @@ fn main() -> ExitCode {
                             .line_ending(end_of_line.into_parse())
                             .build(),
                     );
-                    format_input(&json, style, &request)
+                    format_input(json, style, &request)
                 }
             }
             ParserArg::Json => {
@@ -80,12 +83,12 @@ fn main() -> ExitCode {
                             .build(),
                     )
                 };
-                format_input(&json, style, &FormatRequest::Json(mode))
+                format_input(json, style, &FormatRequest::Json(mode))
             }
         },
         Commands::Check { parser } => match parser {
-            ParserArg::Jsonlines => check_jsonlines(&json, style),
-            ParserArg::Json => check(&json, style),
+            ParserArg::Jsonlines => check_jsonlines(json, style),
+            ParserArg::Json => check(json, style),
         },
         Commands::Lsp => unreachable!("LSP command handled above"),
     };
@@ -107,7 +110,7 @@ fn stdin_file_len() -> Option<usize> {
     usize::try_from(metadata.len()).ok()
 }
 
-fn read_stdin(style: Style) -> Option<String> {
+fn read_stdin(style: Style) -> Option<Vec<u8>> {
     let buf = {
         let mut stdin = std::io::stdin();
 
@@ -134,14 +137,18 @@ fn read_stdin(style: Style) -> Option<String> {
 
         buf
     };
-    match String::from_utf8(buf) {
-        Err(e) => {
-            let err = jjpwrgem_parse::Error::from_utf8_error_slice(e.utf8_error(), e.as_bytes());
-            anstream::eprintln!("{}", style.render_diagnostic(Diagnostic::from(&err)));
-            None
-        }
-        Ok(s) => Some(s),
+    Some(buf)
+}
+
+fn decode_utf8(bytes: &[u8], style: Style) -> Option<&str> {
+    // simd validation is faster, std finds where it went wrong
+    if let Ok(json) = simdutf8::basic::from_utf8(bytes) {
+        return Some(json);
     }
+    let e = std::str::from_utf8(bytes).expect_err("std accepted input simdutf8 rejected");
+    let err = jjpwrgem_parse::Error::from_utf8_error_slice(e, bytes);
+    anstream::eprintln!("{}", style.render_diagnostic(Diagnostic::from(&err)));
+    None
 }
 
 fn format_input(json: &str, style: Style, request: &FormatRequest) -> Output {

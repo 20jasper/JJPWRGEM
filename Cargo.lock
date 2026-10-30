@@ -1200,6 +1200,7 @@ dependencies = [
  "proptest",
  "rstest",
  "rstest_reuse",
+ "simdutf8",
 ]
 
 [[package]]
