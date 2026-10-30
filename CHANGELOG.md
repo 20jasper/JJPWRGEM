@@ -7,6 +7,65 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.3](https://github.com/20jasper/JJPWRGEM/compare/jjpwrgem-v0.7.2...jjpwrgem-v0.7.3) - 2026-10-30
+
+### Documentation
+
+- refresh benchmarks ([#500](https://github.com/20jasper/JJPWRGEM/pull/500))
+
+### Performance
+
+lowers memory usage and improves speed significantly across the board
+
+#### CLI time (median of 100 runs)
+
+| file         | command     |   v0.7.2 |     main |  change |
+| ------------ | ----------- | -------: | -------: | ------: |
+| canada       | `format -u` | 14.32 ms |  9.27 ms | −35.3% |
+| canada       | `format`    | 27.82 ms | 19.07 ms | −31.5% |
+| canada       | `check`     | 12.32 ms |  7.82 ms | −36.6% |
+| citm_catalog | `format -u` |  5.27 ms |  3.80 ms | −28.0% |
+| citm_catalog | `format`    |  9.15 ms |  6.54 ms | −28.5% |
+| citm_catalog | `check`     |  4.49 ms |  3.62 ms | −19.5% |
+| twitter      | `format -u` |  3.10 ms |  2.38 ms | −23.2% |
+| twitter      | `format`    |  4.32 ms |  3.33 ms | −22.9% |
+| twitter      | `check`     |  2.64 ms |  2.13 ms | −19.3% |
+
+#### CLI peak memory
+
+| file         | command     | v0.7.2 |   main |  change |
+| ------------ | ----------- | -----: | -----: | ------: |
+| canada       | `format -u` | 7.9 MB | 7.8 MB |  −1.2% |
+| canada       | `format`    | 22.9 MB | 17.0 MB | −25.7% |
+| canada       | `check`     | 5.9 MB | 5.7 MB |  −3.9% |
+| citm_catalog | `format -u` | 4.6 MB | 4.2 MB |  −9.0% |
+| citm_catalog | `format`    | 8.8 MB | 6.9 MB | −21.8% |
+| citm_catalog | `check`     | 4.1 MB | 3.8 MB |  −7.2% |
+| twitter      | `format -u` | 4.0 MB | 3.7 MB |  −7.2% |
+| twitter      | `format`    | 5.6 MB | 4.7 MB | −16.3% |
+| twitter      | `check`     | 3.6 MB | 3.2 MB | −10.0% |
+
+#### LSP server (open, 20 full-document edits, format)
+
+| file         | memory v0.7.2 | memory main |  change | edit → diagnostics v0.7.2 | edit → diagnostics main |  change |
+| ------------ | ------------: | ----------: | ------: | ------------------------: | ----------------------: | ------: |
+| canada       |       50.4 MB |     37.4 MB | −25.8% |                   28.7 ms |                 23.2 ms | −19.2% |
+| citm_catalog |       19.1 MB |     14.8 MB | −22.4% |                   11.2 ms |                  9.4 ms | −16.7% |
+| twitter      |       11.5 MB |     10.0 MB | −12.8% |                    6.4 ms |                  5.7 ms | −10.0% |
+
+
+- *(cli)* validate utf8 with simdutf8 ([#507](https://github.com/20jasper/JJPWRGEM/pull/507))
+- *(cli)* print the output in one newline terminated write ([#505](https://github.com/20jasper/JJPWRGEM/pull/505))
+- *(format)* indent with compile time slices ([#504](https://github.com/20jasper/JJPWRGEM/pull/504))
+- build releases with fat lto, one codegen unit and abort on panic ([#497](https://github.com/20jasper/JJPWRGEM/pull/497))
+- *(parse)* return the error instead of unreachable! for the array open bracket ([#508](https://github.com/20jasper/JJPWRGEM/pull/508))
+- *(parse)* collect container children on a shared scratch stack ([#502](https://github.com/20jasper/JJPWRGEM/pull/502))
+- *(parse)* inline the small helpers on the per token and per value paths ([#496](https://github.com/20jasper/JJPWRGEM/pull/496))
+- *(parse)* split object parsing happy and sad path ([#495](https://github.com/20jasper/JJPWRGEM/pull/495))
+- *(parse)* split sad and happy array paths ([#494](https://github.com/20jasper/JJPWRGEM/pull/494))
+- *(parse)* split mantissa success and error path ([#493](https://github.com/20jasper/JJPWRGEM/pull/493))
+- *(parse)* scan strings with simd ([#492](https://github.com/20jasper/JJPWRGEM/pull/492))
+
 ## [0.7.2](https://github.com/20jasper/JJPWRGEM/compare/jjpwrgem-v0.7.1...jjpwrgem-v0.7.2) - 2026-10-26
 
 ### Documentation
