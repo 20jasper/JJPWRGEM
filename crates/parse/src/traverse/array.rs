@@ -62,7 +62,7 @@ pub fn parse_array<'a>(
     depth: usize,
     visitor: &mut impl Visitor<'a>,
 ) -> Result<Range<usize>> {
-    // unreachable for callers, but unreachable!() here cost uglify 8-12% in the dist build
+    // unreachable, but using an unreachable macro is ~10% slower due to worse codegen. Why? That's a great question
     let maybe_token = tokens.next_token()?;
     let Some(TokenWithContext {
         token: Token::OpenSquareBracket,
