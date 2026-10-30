@@ -1,11 +1,11 @@
 [vars]
-codspeed_benches = "--bench bytes2chars --bench json_deser --bench json_prettify --bench json_uglify --bench json_tokens"
+codspeed_benches = "--bench bytes2chars --bench json_deser --bench json_prettify --bench json_uglify --bench json_serialize --bench json_tokens"
 
 [tasks.bench]
 dir = "{{config_root}}/benches"
 shell = "bash -c"
 usage = '''
-arg "<name>" help="Bench target name (e.g. bytes2chars, json_deser, json_prettify, json_uglify, json_tokens)"
+arg "<name>" help="Bench target name (e.g. bytes2chars, json_deser, json_prettify, json_uglify, json_serialize, json_tokens)"
 flag "--sample-size <n>" help="Pass through to criterion"
 '''
 run = '''
@@ -31,6 +31,7 @@ run = [
   'mise run bench json_deser "$@"',
   'mise run bench json_prettify "$@"',
   'mise run bench json_uglify "$@"',
+  'mise run bench json_serialize "$@"',
 ]
 
 [tasks.bench-json.tools]
