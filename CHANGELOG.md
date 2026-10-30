@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.3](https://github.com/20jasper/JJPWRGEM/compare/jjpwrgem-v0.7.2...jjpwrgem-v0.7.3) - 2026-10-30
+
+### Documentation
+
+- refresh benchmarks ([#500](https://github.com/20jasper/JJPWRGEM/pull/500))
+
+### Performance
+
+- *(cli)* validate utf8 with simdutf8 ([#507](https://github.com/20jasper/JJPWRGEM/pull/507))
+- *(cli)* print the output in one newline terminated write ([#505](https://github.com/20jasper/JJPWRGEM/pull/505))
+- *(format)* indent with compile time slices ([#504](https://github.com/20jasper/JJPWRGEM/pull/504))
+- build releases with fat lto, one codegen unit and abort on panic ([#497](https://github.com/20jasper/JJPWRGEM/pull/497))
+- *(parse)* return the error instead of unreachable! for the array open bracket ([#508](https://github.com/20jasper/JJPWRGEM/pull/508))
+- *(parse)* collect container children on a shared scratch stack ([#502](https://github.com/20jasper/JJPWRGEM/pull/502))
+- *(parse)* inline the small helpers on the per token and per value paths ([#496](https://github.com/20jasper/JJPWRGEM/pull/496))
+- *(parse)* split object parsing happy and sad path ([#495](https://github.com/20jasper/JJPWRGEM/pull/495))
+- *(parse)* split sad and happy array paths ([#494](https://github.com/20jasper/JJPWRGEM/pull/494))
+- *(parse)* split mantissa success and error path ([#493](https://github.com/20jasper/JJPWRGEM/pull/493))
+- *(parse)* scan strings with simd ([#492](https://github.com/20jasper/JJPWRGEM/pull/492))
+
 ## [0.7.2](https://github.com/20jasper/JJPWRGEM/compare/jjpwrgem-v0.7.1...jjpwrgem-v0.7.2) - 2026-10-26
 
 ### Documentation
