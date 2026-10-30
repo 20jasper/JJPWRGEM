@@ -1,5 +1,7 @@
 use core::{iter, range::Range};
 
+use const_format::str_repeat;
+
 use crate::{
     Result,
     ast::{Document, Value},
@@ -68,8 +70,18 @@ impl FormatBuf {
     }
 
     #[inline]
-    fn push_repeat(&mut self, c: char, count: usize) {
-        self.buf.extend(iter::repeat_n(c, count));
+    fn push_repeat(&mut self, c: char, mut count: usize) {
+        const RUN_LEN: usize = 64;
+        const SPACES: &str = str_repeat!(" ", RUN_LEN);
+        if c != ' ' {
+            self.buf.extend(iter::repeat_n(c, count));
+            return;
+        }
+        while count > 0 {
+            let chunk = count.min(RUN_LEN);
+            self.buf.push_str(&SPACES[..chunk]);
+            count -= chunk;
+        }
     }
 
     #[inline]
@@ -443,5 +455,25 @@ mod len {
         };
 
         within_limit(len, limit).then_some(len)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use rstest::rstest;
+
+    use super::*;
+
+    #[rstest]
+    #[case(' ', 0)]
+    #[case(' ', 3)]
+    #[case(' ', 130)]
+    #[case(' ', 260)]
+    #[case('\t', 3)]
+    #[case('x', 5)]
+    fn push_repeat_writes_the_char_count_times(#[case] c: char, #[case] count: usize) {
+        let mut buf = FormatBuf::new(String::new(), FormatOptions::prettify(LineEnding::Lf), 80);
+        buf.push_repeat(c, count);
+        assert_eq!(buf.into_inner(), c.to_string().repeat(count));
     }
 }

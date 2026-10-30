@@ -56,6 +56,7 @@ displaydoc = "0.2.6"
 rstest = "0.28"
 rstest_reuse = "0.7"
 bytes2chars = { version = "0.2", path = "crates/bytes2chars" }
+const_format = "0.2.37"
 lsp = { path = "crates/lsp", version = "0.1", package = "jjpwrgem-lsp" }
 
 [dependencies]
@@ -68,7 +69,7 @@ lsp = { workspace = true }
 
 [dev-dependencies]
 bytes2chars = { workspace = true }
-const_format = "=0.2.37"
+const_format = { workspace = true }
 
 insta = "=1.49.0"
 proptest = "=1.12.0"
