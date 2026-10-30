@@ -68,8 +68,21 @@ impl FormatBuf {
     }
 
     #[inline]
-    fn push_repeat(&mut self, c: char, count: usize) {
-        self.buf.extend(iter::repeat_n(c, count));
+    fn push_repeat(&mut self, c: char, mut count: usize) {
+        const SPACES: &str = match str::from_utf8(&[b' '; 64]) {
+            Ok(spaces) => spaces,
+            Err(_) => unreachable!(),
+        };
+        if c != ' ' {
+            self.buf.extend(iter::repeat_n(c, count));
+            return;
+        }
+        // whole slices instead of one char at a time
+        while count > 0 {
+            let chunk = count.min(SPACES.len());
+            self.buf.push_str(&SPACES[..chunk]);
+            count -= chunk;
+        }
     }
 
     #[inline]
