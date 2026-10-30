@@ -94,6 +94,19 @@ fn main() -> ExitCode {
     output.exit_code
 }
 
+fn stdin_file_len() -> Option<usize> {
+    #[cfg(unix)]
+    let handle = std::os::fd::AsFd::as_fd(&std::io::stdin()).try_clone_to_owned();
+    #[cfg(windows)]
+    let handle = std::os::windows::io::AsHandle::as_handle(&std::io::stdin()).try_clone_to_owned();
+
+    let metadata = std::fs::File::from(handle.ok()?).metadata().ok()?;
+    if !metadata.is_file() {
+        return None;
+    }
+    usize::try_from(metadata.len()).ok()
+}
+
 fn read_stdin(style: Style) -> Option<String> {
     let buf = {
         let mut stdin = std::io::stdin();
@@ -106,7 +119,7 @@ fn read_stdin(style: Style) -> Option<String> {
             return None;
         }
 
-        let mut buf = vec![];
+        let mut buf = Vec::with_capacity(stdin_file_len().unwrap_or(0));
         stdin
             .read_to_end(&mut buf)
             .expect("Failed to read from stdin");
