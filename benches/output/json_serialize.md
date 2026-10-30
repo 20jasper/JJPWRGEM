@@ -1,5 +1,5 @@
 
-## serialize
+## serialize_struct
 
 | | `jjpwrgem` | `simd_json` | `sonic_rs` | `serde_json` |
 |:--|:--:|:--:|:--:|:--:|

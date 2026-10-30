@@ -62,7 +62,7 @@ The following JSON fixtures are used across benchmarks:
 | time (twitter)            |  842.17 µs   |
 | throughput (twitter)      | 707.17 MiB/s |
 
-## serialize
+## serialize_struct
 
 |                           |  `jjpwrgem`  | `simd_json`  | `sonic_rs` | `serde_json` |
 | :------------------------ | :----------: | :----------: | :--------: | :----------: |

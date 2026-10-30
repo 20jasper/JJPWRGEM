@@ -47,7 +47,7 @@ fn bench_model<T: Serialize + DeserializeOwned>(
 
 fn bench_serialize(c: &mut Criterion) {
     let inputs = load_inputs();
-    let mut group = c.benchmark_group("serialize");
+    let mut group = c.benchmark_group("serialize_struct");
 
     for (name, json) in &inputs {
         match *name {
