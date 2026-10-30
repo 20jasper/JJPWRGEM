@@ -18,6 +18,8 @@ fn bench_model<T: Serialize + DeserializeOwned>(
     json: &str,
 ) {
     let model: T = serde_json::from_str(json).unwrap();
+    let expected = serde_json::to_string(&model).unwrap();
+    assert_eq!(uglify_serializable(&model).unwrap(), expected, "{name}");
     group.throughput(Throughput::Bytes(json.len() as u64));
 
     if include_impl("jjpwrgem") {
