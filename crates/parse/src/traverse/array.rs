@@ -62,12 +62,22 @@ pub fn parse_array<'a>(
     depth: usize,
     visitor: &mut impl Visitor<'a>,
 ) -> Result<Range<usize>> {
+    // unreachable, but using an unreachable macro is ~10% slower due to worse codegen. Why? That's a great question
+    let maybe_token = tokens.next_token()?;
     let Some(TokenWithContext {
         token: Token::OpenSquareBracket,
         range: open_range,
-    }) = tokens.next_token()?
+    }) = maybe_token
     else {
-        unreachable!("callers only parse an array after seeing its `[`");
+        return Err(Error::from_maybe_token_with_context(
+            |tok| ErrorKind::ExpectedOpenBrace {
+                expected: '['.into(),
+                context: None,
+                found: tok,
+            },
+            maybe_token,
+            text,
+        ));
     };
     visitor.on_array_open(open_range);
     let open_start = open_range.start;
