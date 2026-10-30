@@ -52,7 +52,7 @@ const INSTALL_QUICK: &str = include_str!(concat!(
     env!("CARGO_MANIFEST_DIR"),
     "/templates/install_quick.md"
 ));
-const LSP_PERF_CLAIM: &str = "[Diagnostics are calculated 2–3x faster and use 6–10x less RAM than VSCode's LSP](https://github.com/20jasper/JJPWRGEM/blob/main/benches/lsp/lsp.md)";
+const LSP_PERF_CLAIM: &str = "[Diagnostics are calculated 2–3x faster and use 5–19x less RAM than VSCode's LSP](https://github.com/20jasper/JJPWRGEM/blob/main/benches/lsp/lsp.md)";
 const LSP_DEMO_ALT: &str = "animation of JJPWRGEM's LSP in a 60,000 line file. file changes are made quickly and feedback is shown quickly. code actions fix common issues like missing colons";
 const LSP_DEMO_URL: &str = "https://raw.githubusercontent.com/20jasper/JJPWRGEM/main/npm-packages/jjpwrgem-vscode/vscode-jjp.gif";
 const LSP_FEATURES: &str = include_str!(concat!(
