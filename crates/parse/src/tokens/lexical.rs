@@ -24,12 +24,6 @@ pub struct JsonByte(pub u8);
 pub(crate) const UNICODE_ESCAPE_DIGITS: usize = 4;
 
 impl JsonByte {
-    /// see [`JsonChar::is_control`]
-    #[inline]
-    pub(crate) fn is_control(self) -> bool {
-        JsonChar(self.0.into()).is_control()
-    }
-
     /// see [`JsonChar::can_be_escaped_directly`]
     #[inline]
     pub(crate) fn can_be_escaped_directly(self) -> bool {
