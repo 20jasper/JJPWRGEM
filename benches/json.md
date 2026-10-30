@@ -2,7 +2,7 @@
 
 # jjpwrgem JSON benchmarks
 
-jjpwrgem is optimized for readonly operations on cached syntax trees. Notably pretty serialization from a syntax tree is 4 times faster than `sonic_rs` while also supporting width aware expansion. Deserialization is not yet fully optimized
+jjpwrgem is optimized for readonly operations on cached syntax trees. Notably pretty serialization from a syntax tree is 3 times faster than `sonic_rs` while also supporting width aware expansion. Deserialization is not yet fully optimized
 
 Throughput benchmarks for deserializing into a syntax tree, serializing the syntax tree, and streaming serialization and deserialization
 
