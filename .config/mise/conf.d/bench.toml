@@ -123,7 +123,7 @@ hide = true
 dir = "{{config_root}}/benches/lsp"
 usage = 'arg "<fixture>" help="fixture name (canada, twitter, small, citm_catalog)"'
 run = """
-cargo build --release -p jjpwrgem
+cargo build --profile dist -p jjpwrgem
 lsp-bench -c "benchmark-${usage_fixture}.yaml"
 mkdir -p results
 cargo xtask lsp-bench-report "${usage_fixture}"
