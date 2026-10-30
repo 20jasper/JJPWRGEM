@@ -8,15 +8,6 @@ use crate::{Result, tokens::TokenStream, traverse::parse_tokens};
 pub struct ObjectEntries(pub(crate) Vec<(Range<usize>, Value)>);
 
 impl ObjectEntries {
-    pub(crate) fn new() -> Self {
-        Self(Vec::new())
-    }
-
-    #[inline]
-    pub(crate) fn push(&mut self, key_range: Range<usize>, v: Value) {
-        self.0.push((key_range, v));
-    }
-
     #[inline]
     pub(crate) fn is_empty(&self) -> bool {
         self.0.is_empty()
@@ -142,36 +133,46 @@ mod visitor {
     #[derive(Debug, Default)]
     pub struct AstVisitor {
         stack: Vec<AstFrame>,
+        items: Vec<Value>,
+        entries: Vec<(Range<usize>, Value)>,
         result: Option<Value>,
     }
 
     #[derive(Debug)]
     enum AstFrame {
         Object {
-            open_range: Range<usize>,
-            entries: ObjectEntries,
+            open_start: usize,
+            first_child: usize,
             current_key: Option<Range<usize>>,
         },
         Array {
-            open_range: Range<usize>,
-            items: Vec<Value>,
+            open_start: usize,
+            first_child: usize,
         },
+    }
+
+    fn take_tail<T>(scratch: &mut Vec<T>, start: usize) -> Vec<T> {
+        // split_off(0) would hand over the whole scratch buffer, capacity and all
+        if start == 0 {
+            let mut all = Vec::with_capacity(scratch.len());
+            all.append(scratch);
+            all
+        } else {
+            scratch.split_off(start)
+        }
     }
 
     impl AstVisitor {
         pub fn new() -> Self {
-            Self {
-                stack: Vec::new(),
-                result: None,
-            }
+            Self::default()
         }
 
         fn last_emitted_mut(&mut self) -> &mut Value {
-            match self.stack.last_mut() {
+            match self.stack.last() {
                 None => self.result.as_mut().expect("must have emitted a value"),
-                Some(AstFrame::Array { items, .. }) => items.last_mut().expect("must have item"),
-                Some(AstFrame::Object { entries, .. }) => {
-                    &mut entries.0.last_mut().expect("must have entry").1
+                Some(AstFrame::Array { .. }) => self.items.last_mut().expect("must have item"),
+                Some(AstFrame::Object { .. }) => {
+                    &mut self.entries.last_mut().expect("must have entry").1
                 }
             }
         }
@@ -181,19 +182,13 @@ mod visitor {
                 None => {
                     self.result = Some(value);
                 }
-                Some(frame) => match frame {
-                    AstFrame::Array { items, .. } => items.push(value),
-                    AstFrame::Object {
-                        entries,
-                        current_key,
-                        ..
-                    } => {
-                        let k = current_key
-                            .take()
-                            .expect("the traverser should not emit a value before the key");
-                        entries.push(k, value);
-                    }
-                },
+                Some(AstFrame::Array { .. }) => self.items.push(value),
+                Some(AstFrame::Object { current_key, .. }) => {
+                    let k = current_key
+                        .take()
+                        .expect("the traverser should not emit a value before the key");
+                    self.entries.push((k, value));
+                }
             }
         }
 
@@ -206,8 +201,8 @@ mod visitor {
         #[inline]
         fn on_object_open(&mut self, range: Range<usize>) {
             self.stack.push(AstFrame::Object {
-                open_range: range,
-                entries: ObjectEntries::new(),
+                open_start: range.start,
+                first_child: self.entries.len(),
                 current_key: None,
             });
         }
@@ -228,12 +223,13 @@ mod visitor {
                 .pop()
                 .expect("traverser will not emit unbalanced brackets");
             if let AstFrame::Object {
-                open_range,
-                entries,
+                open_start,
+                first_child,
                 ..
             } = frame
             {
-                self.emit_value(Value::Object(open_range.start..close_range.end, entries));
+                let entries = ObjectEntries(take_tail(&mut self.entries, first_child));
+                self.emit_value(Value::Object(open_start..close_range.end, entries));
             } else {
                 unreachable!("must be an object to close object")
             }
@@ -242,8 +238,8 @@ mod visitor {
         #[inline]
         fn on_array_open(&mut self, range: Range<usize>) {
             self.stack.push(AstFrame::Array {
-                open_range: range,
-                items: Vec::new(),
+                open_start: range.start,
+                first_child: self.items.len(),
             });
         }
 
@@ -253,8 +249,13 @@ mod visitor {
                 .stack
                 .pop()
                 .expect("traverser will not emit unbalanced brackets");
-            if let AstFrame::Array { open_range, items } = frame {
-                self.emit_value(Value::Array(open_range.start..close_range.end, items));
+            if let AstFrame::Array {
+                open_start,
+                first_child,
+            } = frame
+            {
+                let items = take_tail(&mut self.items, first_child);
+                self.emit_value(Value::Array(open_start..close_range.end, items));
             } else {
                 unreachable!("must be an array to close array")
             }
@@ -318,7 +319,7 @@ mod tests {
     #[test]
     fn empty_object() {
         let doc = Document::parse("{}").unwrap();
-        assert_eq!(doc.root(), &Value::Object(0..2, ObjectEntries::new()));
+        assert_eq!(doc.root(), &Value::Object(0..2, ObjectEntries::default()));
     }
 
     #[test]
