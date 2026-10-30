@@ -12,7 +12,7 @@ mod error;
 mod output;
 
 use std::{
-    io::{IsTerminal, Read},
+    io::{IsTerminal, Read, Write},
     process::ExitCode,
 };
 
@@ -44,7 +44,7 @@ fn main() -> ExitCode {
         return ExitCode::FAILURE;
     };
 
-    let output = match &cli.command {
+    let mut output = match &cli.command {
         Commands::Format {
             uglify,
             preferred_width,
@@ -90,7 +90,7 @@ fn main() -> ExitCode {
         Commands::Lsp => unreachable!("LSP command handled above"),
     };
 
-    print_output(&output);
+    print_output(&mut output);
     output.exit_code
 }
 
@@ -152,9 +152,15 @@ fn check_jsonlines(json: &str, style: Style) -> Output {
     }
 }
 
-fn print_output(output: &Output) {
-    if let Some(stdout) = &output.stdout {
-        println!("{stdout}");
+fn print_output(output: &mut Output) {
+    if let Some(stdout) = &mut output.stdout {
+        // one write ending in a newline, so stdout's line buffering finds it at the last byte
+        // instead of scanning the whole output
+        stdout.push('\n');
+        std::io::stdout()
+            .lock()
+            .write_all(stdout.as_bytes())
+            .expect("failed printing to stdout");
     }
     if let Some(stderr) = &output.stderr {
         anstream::eprintln!("{stderr}");
