@@ -66,6 +66,7 @@ displaydoc = { workspace = true }
 jjpwrgem-parse = { workspace = true }
 jjpwrgem-ui = { workspace = true }
 lsp = { workspace = true }
+simdutf8 = "0.1.5"
 
 [dev-dependencies]
 bytes2chars = { workspace = true }
