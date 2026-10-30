@@ -62,15 +62,29 @@ pub fn parse_array<'a>(
     depth: usize,
     visitor: &mut impl Visitor<'a>,
 ) -> Result<Range<usize>> {
-    let Some(TokenWithContext {
-        token: Token::OpenSquareBracket,
-        range: open_range,
-    }) = tokens.next_token()?
-    else {
-        unreachable!("callers only parse an array after seeing its `[`");
+    // unreachable for callers, but an unreachable!() here cost uglify 6-9% in the dist build
+    let open_start = match tokens.next_token()? {
+        Some(
+            open_ctx @ TokenWithContext {
+                token: Token::OpenSquareBracket,
+                ..
+            },
+        ) => {
+            visitor.on_array_open(open_ctx.range);
+            open_ctx.range.start
+        }
+        maybe_token => {
+            return Err(Error::from_maybe_token_with_context(
+                |tok| ErrorKind::ExpectedOpenBrace {
+                    expected: '['.into(),
+                    context: None,
+                    found: tok,
+                },
+                maybe_token,
+                text,
+            ));
+        }
     };
-    visitor.on_array_open(open_range);
-    let open_start = open_range.start;
 
     let mut delim = open_start;
     let mut state = ArrayState::ValueOrEnd;
