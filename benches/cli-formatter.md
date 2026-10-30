@@ -23,21 +23,21 @@ The following JSON fixtures are used across benchmarks:
 
 | Command        | Mean Wall Time [ms] |   Change | Factor         |
 | :------------- | ------------------: | -------: | :------------- |
-| `jjp`          |          28.3 ± 0.5 |          |                |
-| `json-pp-rust` |          24.1 ± 0.3 |   -14.9% |                |
-| `jsonice`      |          22.6 ± 0.2 |   -20.1% |                |
-| `prettier`     |       1015.5 ± 44.4 | +3491.4% | (35.9x slower) |
-| `jq`           |          96.6 ± 2.1 |  +241.6% | (3.4x slower)  |
-| `gojq`         |          35.3 ± 0.7 |   +24.7% |                |
-| `jaq`          |          39.7 ± 1.4 |   +40.5% | (1.4x slower)  |
-| `sjq`          |         423.9 ± 4.2 | +1399.1% | (15.0x slower) |
-| `dprint`       |        416.5 ± 11.4 | +1373.1% | (14.7x slower) |
-| `python`       |         276.0 ± 7.7 |  +876.3% | (9.8x slower)  |
-| `node`         |          68.0 ± 2.2 |  +140.6% | (2.4x slower)  |
-| `bun`          |          24.0 ± 0.8 |   -15.0% |                |
-| `jsonxf`       |          12.4 ± 0.2 |   -56.2% | (2.3x faster)  |
-| `jsonformat`   |          15.9 ± 0.2 |   -43.9% | (1.8x faster)  |
-| `oxfmt`        |          96.0 ± 5.5 |  +239.5% | (3.4x slower)  |
+| `jjp`          |          21.5 ± 0.4 |          |                |
+| `json-pp-rust` |          24.9 ± 0.9 |   +15.8% |                |
+| `jsonice`      |          22.5 ± 1.0 |    +4.8% |                |
+| `prettier`     |       1000.4 ± 14.1 | +4554.0% | (46.5x slower) |
+| `jq`           |          95.4 ± 3.2 |  +343.6% | (4.4x slower)  |
+| `gojq`         |          35.6 ± 0.7 |   +65.5% | (1.7x slower)  |
+| `jaq`          |          39.2 ± 1.8 |   +82.3% | (1.8x slower)  |
+| `sjq`          |         415.5 ± 6.4 | +1832.8% | (19.3x slower) |
+| `dprint`       |         416.7 ± 4.0 | +1838.5% | (19.4x slower) |
+| `python`       |         271.9 ± 5.1 | +1165.0% | (12.6x slower) |
+| `node`         |          69.4 ± 1.9 |  +223.1% | (3.2x slower)  |
+| `bun`          |          24.0 ± 0.7 |   +11.9% |                |
+| `jsonxf`       |          12.2 ± 0.2 |   -43.1% | (1.8x faster)  |
+| `jsonformat`   |          15.7 ± 0.2 |   -26.8% |                |
+| `oxfmt`        |          93.3 ± 3.0 |  +333.9% | (4.3x slower)  |
 
 ### ugly canada
 
@@ -45,17 +45,17 @@ The following JSON fixtures are used across benchmarks:
 
 | Command       | Mean Wall Time [ms] |   Change | Factor         |
 | :------------ | ------------------: | -------: | :------------- |
-| `jjp`         |          16.1 ± 0.4 |          |                |
-| `json-minify` |          59.8 ± 1.3 |  +270.9% | (3.7x slower)  |
-| `jsonxf`      |          12.0 ± 0.2 |   -25.5% |                |
-| `jq`          |          70.3 ± 1.9 |  +336.0% | (4.4x slower)  |
-| `jaq`         |          32.0 ± 1.1 |   +98.6% | (2.0x slower)  |
-| `gojq`        |          33.5 ± 0.8 |  +108.2% | (2.1x slower)  |
-| `sjq`         |         338.9 ± 1.8 | +2003.5% | (21.0x slower) |
-| `python`      |        252.9 ± 14.3 | +1469.4% | (15.7x slower) |
-| `minify`      |          17.3 ± 0.5 |    +7.5% |                |
-| `node`        |          55.4 ± 1.9 |  +243.6% | (3.4x slower)  |
-| `bun`         |          17.2 ± 0.6 |    +6.7% |                |
+| `jjp`         |           8.9 ± 0.3 |          |                |
+| `json-minify` |          60.2 ± 1.5 |  +578.5% | (6.8x slower)  |
+| `jsonxf`      |          12.1 ± 0.7 |   +36.7% | (1.4x slower)  |
+| `jq`          |          72.6 ± 6.6 |  +718.9% | (8.2x slower)  |
+| `jaq`         |          32.2 ± 2.4 |  +262.7% | (3.6x slower)  |
+| `gojq`        |          33.6 ± 1.4 |  +278.8% | (3.8x slower)  |
+| `sjq`         |         333.9 ± 6.1 | +3663.9% | (37.6x slower) |
+| `python`      |         245.2 ± 2.9 | +2663.9% | (27.6x slower) |
+| `minify`      |          17.6 ± 0.7 |   +98.4% | (2.0x slower)  |
+| `node`        |          56.2 ± 1.9 |  +533.5% | (6.3x slower)  |
+| `bun`         |          16.7 ± 0.5 |   +88.2% | (1.9x slower)  |
 
 ## citm catalog
 
@@ -67,21 +67,21 @@ The following JSON fixtures are used across benchmarks:
 
 | Command        | Mean Wall Time [ms] |   Change | Factor         |
 | :------------- | ------------------: | -------: | :------------- |
-| `jjp`          |           8.7 ± 0.2 |          |                |
-| `json-pp-rust` |          12.1 ± 1.1 |   +39.8% | (1.4x slower)  |
-| `jsonice`      |           6.5 ± 0.2 |   -25.5% |                |
-| `prettier`     |         501.7 ± 9.8 | +5690.3% | (57.9x slower) |
-| `jq`           |          31.4 ± 0.6 |  +262.8% | (3.6x slower)  |
-| `gojq`         |          19.1 ± 0.3 |  +120.9% | (2.2x slower)  |
-| `jaq`          |          14.8 ± 0.5 |   +70.6% | (1.7x slower)  |
-| `sjq`          |         111.6 ± 4.2 | +1187.7% | (12.9x slower) |
-| `dprint`       |         212.5 ± 2.7 | +2353.1% | (24.5x slower) |
-| `python`       |         155.8 ± 1.7 | +1697.7% | (18.0x slower) |
-| `node`         |          40.3 ± 1.8 |  +364.8% | (4.6x slower)  |
-| `bun`          |          13.6 ± 0.4 |   +56.7% | (1.6x slower)  |
-| `jsonxf`       |           3.4 ± 0.1 |   -61.0% | (2.6x faster)  |
-| `jsonformat`   |           5.2 ± 0.2 |   -39.8% | (1.7x faster)  |
-| `oxfmt`        |          49.8 ± 2.1 |  +474.9% | (5.7x slower)  |
+| `jjp`          |           7.1 ± 0.4 |          |                |
+| `json-pp-rust` |          10.9 ± 0.6 |   +52.6% | (1.5x slower)  |
+| `jsonice`      |           6.2 ± 0.1 |   -12.6% |                |
+| `prettier`     |         510.2 ± 7.7 | +7040.1% | (71.4x slower) |
+| `jq`           |          30.9 ± 1.0 |  +332.5% | (4.3x slower)  |
+| `gojq`         |          19.4 ± 0.6 |  +171.5% | (2.7x slower)  |
+| `jaq`          |          14.6 ± 0.8 |  +105.0% | (2.1x slower)  |
+| `sjq`          |         106.3 ± 1.3 | +1387.7% | (14.9x slower) |
+| `dprint`       |         212.2 ± 2.9 | +2869.9% | (29.7x slower) |
+| `python`       |         151.9 ± 2.4 | +2025.4% | (21.3x slower) |
+| `node`         |          41.9 ± 3.1 |  +486.1% | (5.9x slower)  |
+| `bun`          |          13.6 ± 0.7 |   +90.1% | (1.9x slower)  |
+| `jsonxf`       |           3.3 ± 0.2 |   -54.5% | (2.2x faster)  |
+| `jsonformat`   |           5.0 ± 0.2 |   -29.5% |                |
+| `oxfmt`        |          48.9 ± 1.4 |  +584.5% | (6.8x slower)  |
 
 ### ugly citm catalog
 
@@ -89,17 +89,17 @@ The following JSON fixtures are used across benchmarks:
 
 | Command       | Mean Wall Time [ms] |   Change | Factor         |
 | :------------ | ------------------: | -------: | :------------- |
-| `jjp`         |           4.7 ± 0.2 |          |                |
-| `json-minify` |          37.4 ± 1.7 |  +691.0% | (7.9x slower)  |
-| `jsonxf`      |           3.3 ± 0.1 |   -30.9% | (1.4x faster)  |
-| `jq`          |          26.0 ± 0.4 |  +450.3% | (5.5x slower)  |
-| `jaq`         |          12.7 ± 0.4 |  +167.6% | (2.7x slower)  |
-| `gojq`        |          19.2 ± 0.8 |  +306.0% | (4.1x slower)  |
-| `sjq`         |          88.9 ± 4.5 | +1777.9% | (18.8x slower) |
-| `python`      |        156.7 ± 12.4 | +3210.9% | (33.1x slower) |
-| `minify`      |           7.4 ± 0.4 |   +56.1% | (1.6x slower)  |
-| `node`        |          34.9 ± 1.7 |  +637.9% | (7.4x slower)  |
-| `bun`         |          10.2 ± 0.3 |  +115.9% | (2.2x slower)  |
+| `jjp`         |           3.6 ± 0.1 |          |                |
+| `json-minify` |          36.8 ± 1.9 |  +920.3% | (10.2x slower) |
+| `jsonxf`      |           3.1 ± 0.1 |   -13.6% |                |
+| `jq`          |          25.9 ± 0.5 |  +619.2% | (7.2x slower)  |
+| `jaq`         |          12.5 ± 0.5 |  +247.2% | (3.5x slower)  |
+| `gojq`        |          18.7 ± 0.4 |  +419.3% | (5.2x slower)  |
+| `sjq`         |          88.4 ± 1.9 | +2349.3% | (24.5x slower) |
+| `python`      |         147.7 ± 4.1 | +3993.0% | (40.9x slower) |
+| `minify`      |           7.3 ± 0.4 |  +102.3% | (2.0x slower)  |
+| `node`        |          34.7 ± 2.0 |  +862.8% | (9.6x slower)  |
+| `bun`         |           9.8 ± 0.3 |  +171.4% | (2.7x slower)  |
 
 ## twitter
 
@@ -111,21 +111,21 @@ The following JSON fixtures are used across benchmarks:
 
 | Command        | Mean Wall Time [ms] |   Change | Factor         |
 | :------------- | ------------------: | -------: | :------------- |
-| `jjp`          |           4.2 ± 0.1 |          |                |
-| `json-pp-rust` |           5.1 ± 0.2 |   +21.4% |                |
-| `jsonice`      |           3.9 ± 0.1 |    -7.3% |                |
-| `prettier`     |         274.6 ± 3.7 | +6418.9% | (65.2x slower) |
-| `jq`           |          15.0 ± 0.3 |  +255.6% | (3.6x slower)  |
-| `gojq`         |          11.5 ± 0.4 |  +172.9% | (2.7x slower)  |
-| `jaq`          |           8.1 ± 0.3 |   +91.9% | (1.9x slower)  |
-| `sjq`          |          40.2 ± 0.5 |  +855.2% | (9.6x slower)  |
-| `dprint`       |          43.3 ± 0.9 |  +927.2% | (10.3x slower) |
-| `python`       |         127.7 ± 1.5 | +2930.8% | (30.3x slower) |
-| `node`         |          32.7 ± 1.5 |  +676.4% | (7.8x slower)  |
-| `bun`          |           8.3 ± 0.3 |   +96.5% | (2.0x slower)  |
-| `jsonxf`       |           1.8 ± 0.1 |   -58.4% | (2.4x faster)  |
-| `jsonformat`   |           3.2 ± 0.1 |   -24.2% |                |
-| `oxfmt`        |          44.1 ± 2.6 |  +946.4% | (10.5x slower) |
+| `jjp`          |           3.6 ± 0.1 |          |                |
+| `json-pp-rust` |           5.0 ± 0.2 |   +39.3% | (1.4x slower)  |
+| `jsonice`      |           3.7 ± 0.2 |    +4.8% |                |
+| `prettier`     |        280.6 ± 11.0 | +7796.1% | (79.0x slower) |
+| `jq`           |          14.7 ± 0.2 |  +314.1% | (4.1x slower)  |
+| `gojq`         |          11.9 ± 0.9 |  +235.9% | (3.4x slower)  |
+| `jaq`          |           8.1 ± 0.5 |  +126.7% | (2.3x slower)  |
+| `sjq`          |          40.7 ± 0.9 | +1044.5% | (11.4x slower) |
+| `dprint`       |          42.8 ± 1.2 | +1103.1% | (12.0x slower) |
+| `python`       |         123.6 ± 1.5 | +3376.9% | (34.8x slower) |
+| `node`         |          32.6 ± 1.6 |  +817.3% | (9.2x slower)  |
+| `bun`          |           7.9 ± 0.2 |  +123.5% | (2.2x slower)  |
+| `jsonxf`       |           1.6 ± 0.1 |   -54.0% | (2.2x faster)  |
+| `jsonformat`   |           3.0 ± 0.1 |   -14.3% |                |
+| `oxfmt`        |          43.5 ± 1.7 | +1124.8% | (12.2x slower) |
 
 ### ugly twitter
 
@@ -133,14 +133,14 @@ The following JSON fixtures are used across benchmarks:
 
 | Command       | Mean Wall Time [ms] |   Change | Factor         |
 | :------------ | ------------------: | -------: | :------------- |
-| `jjp`         |           3.0 ± 0.1 |          |                |
-| `json-minify` |          33.8 ± 2.3 | +1019.5% | (11.2x slower) |
-| `jsonxf`      |           1.8 ± 0.2 |   -39.7% | (1.7x faster)  |
-| `jq`          |          13.5 ± 0.2 |  +346.9% | (4.5x slower)  |
-| `jaq`         |           7.5 ± 0.2 |  +146.9% | (2.5x slower)  |
-| `gojq`        |          11.3 ± 0.4 |  +275.8% | (3.8x slower)  |
-| `sjq`         |          35.0 ± 0.4 | +1058.8% | (11.6x slower) |
-| `python`      |         126.2 ± 1.9 | +4081.9% | (41.8x slower) |
-| `minify`      |           5.3 ± 0.4 |   +74.9% | (1.7x slower)  |
-| `node`        |          30.4 ± 1.1 |  +906.1% | (10.1x slower) |
-| `bun`         |           7.4 ± 0.2 |  +145.7% | (2.5x slower)  |
+| `jjp`         |           2.4 ± 0.1 |          |                |
+| `json-minify` |          33.5 ± 2.0 | +1321.9% | (14.2x slower) |
+| `jsonxf`      |           1.6 ± 0.1 |   -31.8% | (1.5x faster)  |
+| `jq`          |          13.4 ± 0.4 |  +468.4% | (5.7x slower)  |
+| `jaq`         |           7.3 ± 0.3 |  +211.7% | (3.1x slower)  |
+| `gojq`        |          11.2 ± 0.4 |  +377.3% | (4.8x slower)  |
+| `sjq`         |          34.7 ± 0.9 | +1374.8% | (14.7x slower) |
+| `python`      |         123.4 ± 1.8 | +5142.4% | (52.4x slower) |
+| `minify`      |           5.2 ± 0.4 |  +120.2% | (2.2x slower)  |
+| `node`        |          30.5 ± 1.4 | +1196.8% | (13.0x slower) |
+| `bun`         |           7.1 ± 0.2 |  +200.0% | (3.0x slower)  |
