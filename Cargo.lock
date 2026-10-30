@@ -1223,6 +1223,7 @@ dependencies = [
  "bytes2chars",
  "const_format",
  "displaydoc",
+ "itoa",
  "rstest",
  "rstest_reuse",
  "serde",

@@ -45,8 +45,13 @@ fn emit_json_string(emitter: &mut impl Emitter, s: &str) {
 }
 
 impl UglifyEmitVisitor {
-    fn serialize_number<N: Display>(&mut self, number: N) -> Result<(), Error> {
-        write!(&mut self.buf, "{number}").expect("write to string");
+    fn serialize_integer(&mut self, integer: impl itoa::Integer) -> Result<(), Error> {
+        self.push_str(itoa::Buffer::new().format(integer));
+        Ok(())
+    }
+
+    fn serialize_float(&mut self, float: impl Display) -> Result<(), Error> {
+        write!(&mut self.buf, "{float}").expect("write to string");
         Ok(())
     }
 }
@@ -70,11 +75,11 @@ fn map_key_scalar_error() -> Error {
     ser::Error::custom("JSON object keys must be scalars")
 }
 
-macro_rules! serialize_number_methods {
-    ($($name:ident : $ty:ty),* $(,)?) => {
+macro_rules! forward_scalar_methods {
+    ($target:ident => $($name:ident : $ty:ty),* $(,)?) => {
         $(
             fn $name(self, v: $ty) -> Result<Self::Ok, Self::Error> {
-                self.serialize_number(v)
+                self.$target(v)
             }
         )*
     };
@@ -97,16 +102,6 @@ macro_rules! impl_seq_like {
                 self.end_array()
             }
         }
-    };
-}
-
-macro_rules! serialize_quoted_key_methods {
-    ($($name:ident : $ty:ty),* $(,)?) => {
-        $(
-            fn $name(self, v: $ty) -> Result<Self::Ok, Self::Error> {
-                self.serialize_quoted(v)
-            }
-        )*
     };
 }
 
@@ -136,7 +131,7 @@ impl<'a> ser::Serializer for &'a mut UglifyEmitVisitor {
         Ok(())
     }
 
-    serialize_number_methods!(
+    forward_scalar_methods!(serialize_integer =>
         serialize_i8: i8,
         serialize_i16: i16,
         serialize_i32: i32,
@@ -151,7 +146,7 @@ impl<'a> ser::Serializer for &'a mut UglifyEmitVisitor {
 
     fn serialize_f32(self, v: f32) -> Result<Self::Ok, Self::Error> {
         if v.is_finite() {
-            self.serialize_number(v)
+            self.serialize_float(v)
         } else {
             self.serialize_unit()
         }
@@ -159,7 +154,7 @@ impl<'a> ser::Serializer for &'a mut UglifyEmitVisitor {
 
     fn serialize_f64(self, v: f64) -> Result<Self::Ok, Self::Error> {
         if v.is_finite() {
-            self.serialize_number(v)
+            self.serialize_float(v)
         } else {
             self.serialize_unit()
         }
@@ -469,6 +464,13 @@ impl MapKeySerializer<'_> {
         write!(&mut self.serializer.buf, "\"{v}\"").expect("write to string");
         Ok(())
     }
+
+    fn serialize_quoted_integer(self, v: impl itoa::Integer) -> Result<(), Error> {
+        self.serializer.push('"');
+        self.serializer.serialize_integer(v)?;
+        self.serializer.push('"');
+        Ok(())
+    }
 }
 
 impl ser::Serializer for MapKeySerializer<'_> {
@@ -482,8 +484,13 @@ impl ser::Serializer for MapKeySerializer<'_> {
     type SerializeStruct = ser::Impossible<(), Error>;
     type SerializeStructVariant = ser::Impossible<(), Error>;
 
-    serialize_quoted_key_methods!(
+    forward_scalar_methods!(serialize_quoted =>
         serialize_bool: bool,
+        serialize_f32: f32,
+        serialize_f64: f64,
+    );
+
+    forward_scalar_methods!(serialize_quoted_integer =>
         serialize_i8: i8,
         serialize_i16: i16,
         serialize_i32: i32,
@@ -494,8 +501,6 @@ impl ser::Serializer for MapKeySerializer<'_> {
         serialize_u32: u32,
         serialize_u64: u64,
         serialize_u128: u128,
-        serialize_f32: f32,
-        serialize_f64: f64,
     );
 
     fn serialize_char(self, v: char) -> Result<Self::Ok, Self::Error> {
@@ -638,5 +643,14 @@ mod tests {
         #[case] expected: &str,
     ) {
         assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn uglify_serializable_writes_integer_extremes() {
+        let actual = uglify_serializable((i8::MIN, 0_u16, u64::MAX, i128::MIN)).unwrap();
+        assert_eq!(
+            actual,
+            "[-128,0,18446744073709551615,-170141183460469231731687303715884105728]"
+        );
     }
 }

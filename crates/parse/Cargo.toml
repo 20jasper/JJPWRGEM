@@ -16,6 +16,7 @@ bon = "3.9"
 bytes2chars = { workspace = true }
 const_format = { workspace = true }
 displaydoc = { workspace = true }
+itoa = { version = "1.0.18", optional = true }
 serde = { version = "1.0.228", optional = true, features = ["derive"] }
 
 [dev-dependencies]
@@ -23,7 +24,7 @@ rstest = { workspace = true }
 rstest_reuse = { workspace = true }
 
 [features]
-serde = ["dep:serde"]
+serde = ["dep:serde", "dep:itoa"]
 
 [lints]
 workspace = true
