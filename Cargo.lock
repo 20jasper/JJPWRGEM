@@ -1219,6 +1219,7 @@ version = "0.14.0"
 dependencies = [
  "bon",
  "bytes2chars",
+ "const_format",
  "displaydoc",
  "rstest",
  "rstest_reuse",

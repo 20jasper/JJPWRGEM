@@ -14,6 +14,7 @@ categories = ["parser-implementations", "text-processing"]
 [dependencies]
 bon = "3.9"
 bytes2chars = { workspace = true }
+const_format = "0.2.37"
 displaydoc = { workspace = true }
 serde = { version = "1.0.228", optional = true, features = ["derive"] }
 
