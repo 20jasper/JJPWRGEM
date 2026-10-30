@@ -23,3 +23,7 @@ host-jobs = ["./host-npm"]
 publish-jobs = ["./publish-npm"]
 # Whether to publish prereleases to package managers
 publish-prereleases = true
+
+[dist.github-custom-runners]
+# macos-14, the dist default for apple silicon, is retired on November 2 2026
+aarch64-apple-darwin = "macos-15"
