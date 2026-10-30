@@ -7,7 +7,7 @@ warmup: 2
 
 servers:
   - label: jjpwrgem
-    cmd: ../../target/release/jjp
+    cmd: ../../target/dist/jjp
     args: ["lsp"]
 
   - label: vscode-json
