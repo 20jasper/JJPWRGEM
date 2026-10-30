@@ -157,8 +157,20 @@ impl StringState {
 
 type Chunk = std::simd::u8x32;
 
+const IS_SPECIAL: [bool; 256] = {
+    let mut table = [false; 256];
+    let mut byte = 0;
+    while byte <= JsonChar::CONTROL_RANGE.last as usize {
+        table[byte] = true;
+        byte += 1;
+    }
+    table[b'"' as usize] = true;
+    table[b'\\' as usize] = true;
+    table
+};
+
 /// Index of the first `"`, `\` or control byte at or after `from`.
-fn find_special(bytes: &[u8], from: usize) -> Option<usize> {
+pub(crate) fn find_special(bytes: &[u8], from: usize) -> Option<usize> {
     use std::simd::cmp::{SimdPartialEq as _, SimdPartialOrd as _};
 
     let quote = Chunk::splat(b'"');
@@ -178,7 +190,7 @@ fn find_special(bytes: &[u8], from: usize) -> Option<usize> {
 
     bytes[i..]
         .iter()
-        .position(|&b| matches!(b, b'"' | b'\\') || JsonByte(b).is_control())
+        .position(|&b| IS_SPECIAL[usize::from(b)])
         .map(|offset| i + offset)
 }
 

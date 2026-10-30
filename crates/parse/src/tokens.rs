@@ -1,7 +1,7 @@
 pub(crate) mod lexical;
 mod number;
 mod stream;
-mod string;
+pub(crate) mod string;
 
 use core::{fmt::Display, iter::Peekable, range::Range};
 

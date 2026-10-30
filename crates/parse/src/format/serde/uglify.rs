@@ -13,31 +13,23 @@ use serde::ser::{
 use super::error::Error;
 use crate::{
     format::{Emitter, uglify::UglifyEmitVisitor},
-    tokens::{NULL, lexical::JsonChar},
+    tokens::{NULL, lexical::JsonChar, string::find_special},
 };
 
+// every escaped char is ascii, so slicing at an escape stays on a char boundary
 fn emit_json_string(emitter: &mut impl Emitter, s: &str) {
     emitter.push('"');
 
+    let bytes = s.as_bytes();
     let mut start = 0;
-    for (idx, ch) in s.char_indices() {
-        let json_char = JsonChar(ch);
-        let escaped = match json_char.minimal_escape() {
-            Some(escaped) => Some(escaped),
-            None if json_char.is_control() => {
-                emitter.push_str(&s[start..idx]);
-                emitter.push_str(&json_char.escape());
-                start = idx + ch.len_utf8();
-                continue;
-            }
-            None => None,
-        };
-
-        if let Some(escaped) = escaped {
-            emitter.push_str(&s[start..idx]);
-            emitter.push_str(escaped);
-            start = idx + ch.len_utf8();
+    while let Some(idx) = find_special(bytes, start) {
+        emitter.push_str(&s[start..idx]);
+        let json_char = JsonChar(char::from(bytes[idx]));
+        match json_char.minimal_escape() {
+            Some(escaped) => emitter.push_str(escaped),
+            None => emitter.push_str(&json_char.escape()),
         }
+        start = idx + 1;
     }
 
     emitter.push_str(&s[start..]);
@@ -667,5 +659,11 @@ mod tests {
         #[case] expected: &str,
     ) {
         assert_eq!(uglify_serializable(float).unwrap(), expected);
+    }
+
+    #[test]
+    fn uglify_serializable_escapes_around_multibyte_chars() {
+        let actual = uglify_serializable("é\"\u{1}😀\\").unwrap();
+        assert_eq!(actual, r#""é\"\u0001😀\\""#);
     }
 }
