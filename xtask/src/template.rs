@@ -213,7 +213,7 @@ const BYTES2CHARS_BENCH_TABLE_REPLACEMENTS: [(&str, &str); 1] = [(
     )),
 )];
 
-const JSON_BENCH_TABLE_REPLACEMENTS: [(&str, &str); 3] = [
+const JSON_BENCH_TABLE_REPLACEMENTS: [(&str, &str); 4] = [
     (
         "{{JSON_DESER_BENCH_TABLE}}",
         include_str!(concat!(
@@ -233,6 +233,13 @@ const JSON_BENCH_TABLE_REPLACEMENTS: [(&str, &str); 3] = [
         include_str!(concat!(
             env!("CARGO_MANIFEST_DIR"),
             "/../benches/output/json_uglify.md"
+        )),
+    ),
+    (
+        "{{JSON_SERIALIZE_BENCH_TABLE}}",
+        include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../benches/output/json_serialize.md"
         )),
     ),
 ];
