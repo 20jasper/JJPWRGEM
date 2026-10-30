@@ -100,11 +100,11 @@ macro_rules! impl_seq_like {
     };
 }
 
-macro_rules! map_key_scalar_to_string {
+macro_rules! serialize_quoted_key_methods {
     ($($name:ident : $ty:ty),* $(,)?) => {
         $(
             fn $name(self, v: $ty) -> Result<Self::Ok, Self::Error> {
-                Ok(v.to_string())
+                self.serialize_quoted(v)
             }
         )*
     };
@@ -396,8 +396,11 @@ impl SerializeMap for MapSerializer<'_> {
     where
         T: ?Sized + serde::Serialize,
     {
-        let key = key.serialize(MapKeySerializer)?;
-        self.serialize_key_str(&key);
+        emit_item_prefix(&mut self.first, self.serializer);
+        key.serialize(MapKeySerializer {
+            serializer: &mut *self.serializer,
+        })?;
+        self.serializer.emit_key_val_delim();
         Ok(())
     }
 
@@ -457,20 +460,29 @@ impl SerializeStructVariant for StructVariantSerializer<'_> {
     }
 }
 
-struct MapKeySerializer;
+struct MapKeySerializer<'a> {
+    serializer: &'a mut UglifyEmitVisitor,
+}
 
-impl ser::Serializer for MapKeySerializer {
-    type Ok = String;
+impl MapKeySerializer<'_> {
+    fn serialize_quoted(self, v: impl Display) -> Result<(), Error> {
+        write!(&mut self.serializer.buf, "\"{v}\"").expect("write to string");
+        Ok(())
+    }
+}
+
+impl ser::Serializer for MapKeySerializer<'_> {
+    type Ok = ();
     type Error = Error;
-    type SerializeSeq = ser::Impossible<String, Error>;
-    type SerializeTuple = ser::Impossible<String, Error>;
-    type SerializeTupleStruct = ser::Impossible<String, Error>;
-    type SerializeTupleVariant = ser::Impossible<String, Error>;
-    type SerializeMap = ser::Impossible<String, Error>;
-    type SerializeStruct = ser::Impossible<String, Error>;
-    type SerializeStructVariant = ser::Impossible<String, Error>;
+    type SerializeSeq = ser::Impossible<(), Error>;
+    type SerializeTuple = ser::Impossible<(), Error>;
+    type SerializeTupleStruct = ser::Impossible<(), Error>;
+    type SerializeTupleVariant = ser::Impossible<(), Error>;
+    type SerializeMap = ser::Impossible<(), Error>;
+    type SerializeStruct = ser::Impossible<(), Error>;
+    type SerializeStructVariant = ser::Impossible<(), Error>;
 
-    map_key_scalar_to_string!(
+    serialize_quoted_key_methods!(
         serialize_bool: bool,
         serialize_i8: i8,
         serialize_i16: i16,
@@ -484,15 +496,20 @@ impl ser::Serializer for MapKeySerializer {
         serialize_u128: u128,
         serialize_f32: f32,
         serialize_f64: f64,
-        serialize_char: char,
     );
 
+    fn serialize_char(self, v: char) -> Result<Self::Ok, Self::Error> {
+        let mut tmp = [0; 4];
+        self.serialize_str(v.encode_utf8(&mut tmp))
+    }
+
     fn serialize_str(self, v: &str) -> Result<Self::Ok, Self::Error> {
-        Ok(v.to_owned())
+        emit_json_string(self.serializer, v);
+        Ok(())
     }
 
     fn serialize_none(self) -> Result<Self::Ok, Self::Error> {
-        Ok(NULL.to_owned())
+        self.serialize_unit()
     }
 
     fn serialize_some<T>(self, value: &T) -> Result<Self::Ok, Self::Error>
@@ -503,7 +520,7 @@ impl ser::Serializer for MapKeySerializer {
     }
 
     fn serialize_unit(self) -> Result<Self::Ok, Self::Error> {
-        Ok(NULL.to_owned())
+        self.serialize_str(NULL)
     }
 
     fn serialize_unit_struct(self, _name: &'static str) -> Result<Self::Ok, Self::Error> {
@@ -516,7 +533,7 @@ impl ser::Serializer for MapKeySerializer {
         _variant_index: u32,
         variant: &'static str,
     ) -> Result<Self::Ok, Self::Error> {
-        Ok(variant.to_owned())
+        self.serialize_str(variant)
     }
 
     fn serialize_newtype_struct<T>(
@@ -558,7 +575,7 @@ impl ser::Serializer for MapKeySerializer {
     where
         T: ?Sized + Display,
     {
-        Ok(value.to_string())
+        self.serialize_str(&value.to_string())
     }
 }
 
@@ -566,6 +583,7 @@ impl ser::Serializer for MapKeySerializer {
 mod tests {
     use std::collections::BTreeMap;
 
+    use rstest::rstest;
     use serde::Serialize;
 
     use crate::format::serde::uglify_serializable;
@@ -608,5 +626,17 @@ mod tests {
     fn uglify_serializable_stringifies_scalar_map_keys() {
         let actual = uglify_serializable(BTreeMap::from([(12, false), (34, true)])).unwrap();
         assert_eq!(actual, r#"{"12":false,"34":true}"#);
+    }
+
+    #[rstest]
+    #[case::escaped_char(uglify_serializable(BTreeMap::from([('"', 1)])).unwrap(), r#"{"\"":1}"#)]
+    #[case::bool(uglify_serializable(BTreeMap::from([(true, 1)])).unwrap(), r#"{"true":1}"#)]
+    #[case::unit(uglify_serializable(BTreeMap::from([((), 1)])).unwrap(), r#"{"null":1}"#)]
+    #[case::none(uglify_serializable(BTreeMap::from([(None::<u8>, 1)])).unwrap(), r#"{"null":1}"#)]
+    fn uglify_serializable_writes_map_keys_in_place(
+        #[case] actual: String,
+        #[case] expected: &str,
+    ) {
+        assert_eq!(actual, expected);
     }
 }
