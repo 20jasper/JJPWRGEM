@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.3](https://github.com/20jasper/JJPWRGEM/compare/bytes2chars-v0.2.2...bytes2chars-v0.2.3) - 2026-10-31
+
+### Performance
+
+- cold hint on decode error paths
+
 ## [0.2.2](https://github.com/20jasper/JJPWRGEM/compare/bytes2chars-v0.2.1...bytes2chars-v0.2.2) - 2026-05-22
 
 ### Documentation
