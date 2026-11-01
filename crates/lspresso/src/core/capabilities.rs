@@ -87,9 +87,17 @@ pub(crate) fn supports_code_action(capabilities: &ServerCapabilities) -> bool {
     }
 }
 
+pub(crate) const fn supports_pull_diagnostics(capabilities: &ServerCapabilities) -> bool {
+    capabilities.diagnostic_provider.is_some()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn declared(capabilities: serde_json::Value) -> ServerCapabilities {
+        serde_json::from_value(capabilities).unwrap()
+    }
 
     #[test]
     fn initialize_params_carries_the_real_process_id_and_given_capabilities() {
@@ -101,16 +109,33 @@ mod tests {
         assert_eq!(params.capabilities, vscode());
     }
 
-    fn declared(capabilities: serde_json::Value) -> ServerCapabilities {
-        serde_json::from_value(capabilities).unwrap()
+    #[test]
+    fn an_explicit_false_provider_is_unsupported() {
+        let capabilities = declared(serde_json::json!({
+            "documentFormattingProvider": false,
+            "codeActionProvider": false,
+        }));
+        assert!(!supports_formatting(&capabilities));
+        assert!(!supports_code_action(&capabilities));
     }
 
     #[test]
-    fn nothing_declared_means_no_sync_kind() {
-        assert_eq!(
-            text_document_sync_kind(&declared(serde_json::json!({}))),
-            None
-        );
+    fn a_provider_declared_with_options_is_supported() {
+        let capabilities = declared(serde_json::json!({
+            "documentFormattingProvider": {},
+            "codeActionProvider": { "codeActionKinds": ["quickfix"] },
+        }));
+        assert!(supports_formatting(&capabilities));
+        assert!(supports_code_action(&capabilities));
+    }
+
+    #[test]
+    fn nothing_declared_supports_nothing() {
+        let capabilities = declared(serde_json::json!({}));
+        assert!(!supports_formatting(&capabilities));
+        assert!(!supports_code_action(&capabilities));
+        assert!(!supports_pull_diagnostics(&capabilities));
+        assert_eq!(text_document_sync_kind(&capabilities), None);
     }
 
     #[test]

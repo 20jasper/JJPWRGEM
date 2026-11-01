@@ -55,6 +55,20 @@ impl Inbox {
         None
     }
 
+    /// Removes and returns every buffered notification `pick` accepts.
+    pub(crate) fn drain<T>(&mut self, mut pick: impl FnMut(&Notification) -> Option<T>) -> Vec<T> {
+        let mut picked = Vec::new();
+        self.notifications
+            .retain(|notification| match pick(notification) {
+                Some(value) => {
+                    picked.push(value);
+                    false
+                }
+                None => true,
+            });
+        picked
+    }
+
     #[cfg(test)]
     fn methods(&self) -> Vec<&str> {
         self.notifications
@@ -116,6 +130,14 @@ mod tests {
         }
         assert_eq!(inbox.methods().len(), CAPACITY);
         assert_eq!(inbox.methods()[0], "1");
+    }
+
+    #[test]
+    fn drain_removes_only_what_it_picks() {
+        let mut inbox = inbox(&["log", "other", "log"]);
+        let logs = inbox.drain(|n| (n.method == "log").then_some(()));
+        assert_eq!(logs.len(), 2);
+        assert_eq!(inbox.methods(), ["other"]);
     }
 
     /// Each notification is a letter; the wait takes one letter, discards

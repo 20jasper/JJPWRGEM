@@ -253,7 +253,8 @@ client_methods! {
         completion_item_resolve: CompletionItemResolve => CompletionResolveRequest, params;
         declaration: TextDocumentDeclaration => DeclarationRequest, position, open;
         definition: TextDocumentDefinition => DefinitionRequest, position, open;
-        diagnostic: TextDocumentDiagnostic => DocumentDiagnosticRequest, params, open;
+        // `Client::pull_diagnostics` tracks result ids across pulls.
+        diagnostic: TextDocumentDiagnostic => DocumentDiagnosticRequest, manual, open;
         document_color: TextDocumentDocumentColor => DocumentColorRequest, document, open;
         document_highlight: TextDocumentDocumentHighlight => DocumentHighlightRequest, position, open;
         document_link: TextDocumentDocumentLink => DocumentLinkRequest, document, open;

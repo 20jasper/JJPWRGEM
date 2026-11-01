@@ -11,12 +11,14 @@ use gen_lsp_types::{
     ClientCapabilities, CodeActionContext, CodeActionParams, CodeActionResponse, Diagnostic,
     DidChangeTextDocumentNotification, DidChangeTextDocumentParams,
     DidCloseTextDocumentNotification, DidCloseTextDocumentParams, DidOpenTextDocumentNotification,
-    DidOpenTextDocumentParams, DocumentFormattingParams, ExitNotification, FormattingOptions,
-    InitializeRequest, InitializeResult, InitializedNotification, InitializedParams, LanguageKind,
-    MessageDirection, Notification as LspNotification, PublishDiagnosticsNotification, Range,
-    Request as LspRequest, ServerCapabilities, ShutdownRequest, TextDocumentContentChangeEvent,
-    TextDocumentContentChangeWholeDocument, TextDocumentIdentifier, TextDocumentItem,
-    TextDocumentSyncKind, TextEdit, Uri, VersionedTextDocumentIdentifier,
+    DidOpenTextDocumentParams, DocumentDiagnosticParams, DocumentFormattingParams,
+    ExitNotification, FormattingOptions, InitializeRequest, InitializeResult,
+    InitializedNotification, InitializedParams, LanguageKind, MessageDirection,
+    Notification as LspNotification, ProgressNotification, ProgressToken,
+    PublishDiagnosticsNotification, Range, Request as LspRequest, ServerCapabilities,
+    ShutdownRequest, TextDocumentContentChangeEvent, TextDocumentContentChangeWholeDocument,
+    TextDocumentIdentifier, TextDocumentItem, TextDocumentSyncKind, TextEdit, Uri,
+    VersionedTextDocumentIdentifier,
 };
 use lsp_server::{Message, Notification, RequestId};
 use sysinfo::{Pid, ProcessRefreshKind, RefreshKind, System};
@@ -26,8 +28,9 @@ use self::transport::{Incoming, Transport};
 use crate::{
     Error,
     core::{
-        self, ClientState, DocumentTracker, Effect,
+        diagnostics::PullCache,
         inbox::{Inbox, Verdict},
+        self, ClientState, DocumentTracker, Effect,
     },
     error::{ErrorKind, elapsed_ms},
 };
@@ -35,6 +38,18 @@ use crate::{
 const EXIT_POLL_INTERVAL: Duration = Duration::from_millis(1);
 const DEFAULT_REQUEST_TIMEOUT: Duration = Duration::from_secs(5);
 const PUBLISH_DIAGNOSTICS: &str = PublishDiagnosticsNotification::METHOD.as_str();
+
+/// Fails to compile for a method a server never sends.
+macro_rules! assert_server_to_client {
+    ($item:ty) => {
+        const {
+            assert!(matches!(
+                <$item>::MESSAGE_DIRECTION,
+                MessageDirection::ServerToClient | MessageDirection::Both
+            ));
+        }
+    };
+}
 
 /// Fails to compile for a method a client must not send.
 macro_rules! assert_client_to_server {
@@ -57,6 +72,7 @@ pub struct Client {
     request_timeout: Duration,
     server_capabilities: Option<ServerCapabilities>,
     inbox: Inbox,
+    pulled: PullCache,
 }
 
 impl Client {
@@ -69,6 +85,7 @@ impl Client {
             request_timeout: DEFAULT_REQUEST_TIMEOUT,
             server_capabilities: None,
             inbox: Inbox::default(),
+            pulled: PullCache::default(),
         })
     }
 
@@ -144,6 +161,7 @@ impl Client {
                 text: text.into(),
             },
         })?;
+        self.pulled.forget(&uri);
         self.docs.mark_open(uri);
         Ok(())
     }
@@ -170,6 +188,7 @@ impl Client {
         self.send_notification::<DidCloseTextDocumentNotification>(DidCloseTextDocumentParams {
             text_document: TextDocumentIdentifier { uri: uri.clone() },
         })?;
+        self.pulled.forget(uri);
         self.docs.mark_closed(uri);
         Ok(())
     }
@@ -217,6 +236,102 @@ impl Client {
         let mut judge = self.diagnostics_judge(uri)?;
         self.wait_for_verdict(&mut judge, start + timeout, PUBLISH_DIAGNOSTICS)?
             .ok_or_else(|| diagnostics_timeout(uri, start))
+    }
+
+    /// The latest diagnostics for `uri` once the server has published none
+    /// newer for `quiet` -- for servers that publish in stages, e.g. syntax
+    /// errors first and semantic ones later.
+    pub fn settled_diagnostics(
+        &mut self,
+        uri: &Uri,
+        quiet: Duration,
+        timeout: Duration,
+    ) -> crate::Result<Vec<Diagnostic>> {
+        let start = Instant::now();
+        let deadline = start + timeout;
+        let mut judge = self.diagnostics_judge(uri)?;
+        let mut latest = self
+            .wait_for_verdict(&mut judge, deadline, PUBLISH_DIAGNOSTICS)?
+            .ok_or_else(|| diagnostics_timeout(uri, start))?;
+        loop {
+            let window = (Instant::now() + quiet).min(deadline);
+            match self.wait_for_verdict(&mut judge, window, PUBLISH_DIAGNOSTICS)? {
+                Some(newer) => latest = newer,
+                None if window < deadline => return Ok(latest),
+                None => return Err(diagnostics_timeout(uri, start)),
+            }
+        }
+    }
+
+    /// Waits for the server to publish no diagnostics for `uri`.
+    pub fn wait_for_diagnostics_cleared(
+        &mut self,
+        uri: &Uri,
+        timeout: Duration,
+    ) -> crate::Result<()> {
+        let start = Instant::now();
+        let mut judge = self.diagnostics_judge(uri)?;
+        let mut cleared = |notification: &Notification| match judge(notification) {
+            Verdict::Take(diagnostics) if diagnostics.is_empty() => Verdict::Take(()),
+            Verdict::Take(_) | Verdict::Discard => Verdict::Discard,
+            Verdict::Keep => Verdict::Keep,
+        };
+        self.wait_for_verdict(&mut cleared, start + timeout, PUBLISH_DIAGNOSTICS)?
+            .ok_or_else(|| diagnostics_timeout(uri, start))
+    }
+
+    /// Asks for `uri`'s diagnostics with `textDocument/diagnostic`, letting
+    /// the server answer "unchanged" since the last pull.
+    pub fn pull_diagnostics(&mut self, uri: &Uri) -> crate::Result<Vec<Diagnostic>> {
+        let report = self.protocol_diagnostic(DocumentDiagnosticParams {
+            text_document: TextDocumentIdentifier { uri: uri.clone() },
+            identifier: None,
+            previous_result_id: self.pulled.previous_result_id(uri),
+            work_done_progress_params: gen_lsp_types::WorkDoneProgressParams::default(),
+            partial_result_params: gen_lsp_types::PartialResultParams::default(),
+        })?;
+        self.pulled.on_report(uri, report)
+    }
+
+    /// The next `N` from the server whose params `matches` accepts, taken
+    /// from those already received if one is waiting.
+    pub fn wait_for_notification<N: LspNotification>(
+        &mut self,
+        mut matches: impl FnMut(&N::Params) -> bool,
+        timeout: Duration,
+    ) -> crate::Result<N::Params> {
+        assert_server_to_client!(N);
+        let start = Instant::now();
+        let method = N::METHOD.as_str();
+        let mut judge = |notification: &Notification| match parse::<N>(notification) {
+            Some(params) if matches(&params) => Verdict::Take(params),
+            _ => Verdict::Keep,
+        };
+        self.wait_for_verdict(&mut judge, start + timeout, method)?
+            .ok_or_else(|| {
+                ErrorKind::NotificationTimeout {
+                    method,
+                    after_ms: elapsed_ms(start, Instant::now()),
+                }
+                .into()
+            })
+    }
+
+    /// Every `N` received so far that no wait has taken, oldest first.
+    pub fn take_notifications<N: LspNotification>(&mut self) -> Vec<N::Params> {
+        assert_server_to_client!(N);
+        self.stash_ready();
+        self.inbox.drain(parse::<N>)
+    }
+
+    /// Waits for the next `$/progress` that ends a piece of work, e.g. a
+    /// server's initial indexing, and returns its token.
+    pub fn wait_for_progress_end(&mut self, timeout: Duration) -> crate::Result<ProgressToken> {
+        self.wait_for_notification::<ProgressNotification>(
+            |progress| progress.value["kind"] == "end",
+            timeout,
+        )
+        .map(|progress| progress.token)
     }
 
     pub fn wait_for_exit(&mut self, timeout: Duration) -> crate::Result<ExitStatus> {
@@ -283,6 +398,11 @@ impl Client {
     pub fn supports_code_action(&self) -> bool {
         self.server_capabilities()
             .is_some_and(core::capabilities::supports_code_action)
+    }
+
+    pub fn supports_pull_diagnostics(&self) -> bool {
+        self.server_capabilities()
+            .is_some_and(core::capabilities::supports_pull_diagnostics)
     }
 
     pub fn background_errors(&self) -> &[Error] {
@@ -422,6 +542,17 @@ impl Client {
         }
     }
 
+    /// Moves everything already received into the inbox without waiting.
+    fn stash_ready(&mut self) {
+        loop {
+            match self.pump(Some(Instant::now()), None) {
+                Pumped::Notification(notification) => self.inbox.push(notification),
+                Pumped::Resolved(_) | Pumped::Other => {}
+                Pumped::Closed(_) | Pumped::Quiet => return,
+            }
+        }
+    }
+
     fn record_effects(
         &mut self,
         effects: Vec<Effect>,
@@ -466,6 +597,12 @@ fn diagnostics_timeout(uri: &Uri, start: Instant) -> Error {
         after_ms: elapsed_ms(start, Instant::now()),
     }
     .into()
+}
+
+fn parse<N: LspNotification>(notification: &Notification) -> Option<N::Params> {
+    (notification.method == N::METHOD.as_str())
+        .then(|| serde_json::from_value(notification.params.clone()).ok())
+        .flatten()
 }
 
 enum Pumped {

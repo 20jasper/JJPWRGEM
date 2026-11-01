@@ -96,6 +96,8 @@ pub enum ErrorKind {
     },
     /// timed out after {after_ms}ms waiting for diagnostics for {uri}
     DiagnosticsTimeout { uri: Uri, after_ms: u64 },
+    /// timed out after {after_ms}ms waiting for a matching {method} notification
+    NotificationTimeout { method: &'static str, after_ms: u64 },
 }
 
 pub(crate) fn elapsed_ms(start: Instant, now: Instant) -> u64 {
