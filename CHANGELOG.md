@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.4](https://github.com/20jasper/JJPWRGEM/compare/jjpwrgem-v0.7.3...jjpwrgem-v0.7.4) - 2026-10-31
+
+### Performance
+
+- *(serde)* write numbers with itoa and zmij ([#513](https://github.com/20jasper/JJPWRGEM/pull/513))
+- *(serde)* find escapes with the lexer's simd scan ([#514](https://github.com/20jasper/JJPWRGEM/pull/514))
+- *(serde)* write map keys straight into the output ([#511](https://github.com/20jasper/JJPWRGEM/pull/511))
+
 ## [0.7.3](https://github.com/20jasper/JJPWRGEM/compare/jjpwrgem-v0.7.2...jjpwrgem-v0.7.3) - 2026-10-30
 
 ### Documentation
