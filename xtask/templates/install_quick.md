@@ -2,5 +2,5 @@
 mise use -g github:20jasper/jjpwrgem
 ```
 
-See [releases](https://github.com/20jasper/JJPWRGEM/releases) for shell and PowerShell installation scripts, or
-`npm install -g jjpwrgem`
+Or `npm install -g jjpwrgem`, `cargo install jjpwrgem --locked`, or download a binary
+from [releases](https://github.com/20jasper/JJPWRGEM/releases)

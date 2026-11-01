@@ -3,10 +3,6 @@ name: Host npm
 on:
   workflow_call:
     inputs:
-      plan:
-        description: Dist release plan JSON payload
-        required: true
-        type: string
       tag:
         description: Release tag, defaults to the triggering tag
         required: false
@@ -21,7 +17,6 @@ jobs:
     name: host npm
     runs-on: ubuntu-latest
     env:
-      PLAN: ${{ inputs.plan }}
       TAG: ${{ inputs.tag || github.ref_name }}
     steps:
       # script from the triggering ref so replays of old tags use the current one

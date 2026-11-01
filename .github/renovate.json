@@ -148,12 +148,7 @@
         ".config/mise/config.toml",
         ".config/mise/conf.d/*.toml"
       ],
-      "matchPackageNames": [
-        "axodotdev/cargo-dist",
-        "aqua:axodotdev/cargo-dist",
-        "bruits/sampo",
-        "github:bruits/sampo"
-      ],
+      "matchPackageNames": ["bruits/sampo", "github:bruits/sampo"],
       "groupName": "mise release tools",
       "dependencyDashboardApproval": true
     },
@@ -171,10 +166,7 @@
       "groupName": "renovate tooling"
     }
   ],
-  "ignorePaths": [
-    ".github/workflows/jjpwrgem-v-release.yml",
-    "npm-packages/jjpwrgem/package.json"
-  ],
+  "ignorePaths": ["npm-packages/jjpwrgem/package.json"],
   "npm": { "managerFilePatterns": ["/(^|/)package\\.template\\.json$/"] },
   "customManagers": [
     {

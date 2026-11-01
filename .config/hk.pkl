@@ -41,9 +41,6 @@ local check_steps = new Mapping<String, Step> {
   ["cargo-deny"] {
     check = "mise run deny"
   }
-  ["dist-plan"] {
-    check = "mise run dist-plan"
-  }
   ["readmes-check"] {
     check = "mise run readmes-check"
   }

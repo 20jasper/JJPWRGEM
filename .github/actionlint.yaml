@@ -1,4 +1,0 @@
-paths:
-  .github/workflows/jjpwrgem-v-release.yml:
-    ignore:
-      - ".+"

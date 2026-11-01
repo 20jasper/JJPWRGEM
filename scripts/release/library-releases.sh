@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# GitHub releases for tagged library versions; cargo-dist makes jjpwrgem's
+# GitHub releases for tagged library versions; cli-release.sh makes jjpwrgem's
 set -euo pipefail
 
 # print the changelog section under the given version's heading
@@ -11,7 +11,7 @@ notes() {
 }
 
 while read -r name version manifest; do
-  # cargo-dist releases the cli
+  # cli-release.sh releases the cli
   [ "$name" = jjpwrgem ] && continue
   tag="$name-v$version"
   # not published yet

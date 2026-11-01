@@ -39,44 +39,38 @@ pub mod targets {
     use serde::Deserialize;
 
     #[derive(Debug, Deserialize)]
-    struct Workspace {
-        dist: Dist,
+    pub struct ReleaseTarget {
+        pub target: String,
+        pub archive: String,
     }
 
-    #[derive(Debug, Deserialize)]
-    struct Dist {
-        targets: Vec<String>,
-    }
-
-    pub fn parse_dist_target_from_env() -> Result<Vec<String>> {
-        parse_dist_targets(include_str!(concat!(
+    pub fn parse_release_targets_from_env() -> Result<Vec<ReleaseTarget>> {
+        Ok(serde_json::from_str(include_str!(concat!(
             env!("CARGO_MANIFEST_DIR"),
-            "/../dist-workspace.toml"
-        )))
-    }
-    fn parse_dist_targets(s: &str) -> Result<Vec<String>> {
-        Ok(toml::from_str::<Workspace>(s)?.dist.targets)
+            "/../.github/release-targets.json"
+        )))?)
     }
 }
 
 pub fn build_platforms_from_targets(
-    meta: &PackageMetadata,
-    targets: Vec<String>,
+    targets: Vec<targets::ReleaseTarget>,
 ) -> Result<Vec<PlatformConfig>> {
     let mut platforms = Vec::new();
 
-    for target in targets {
+    for targets::ReleaseTarget { target, archive } in targets {
         let (zip_ext, exe_suffix) = if target.contains("windows") {
             (".zip", ".exe")
         } else {
             (".tar.xz", "")
         };
-
-        let artifact_name = format!("{}-{}{}", meta.package.name, target, zip_ext);
+        anyhow::ensure!(
+            archive.ends_with(zip_ext),
+            "{target} should be archived as {zip_ext}, not {archive}"
+        );
 
         let base = PlatformConfig {
             rust_target: target.clone(),
-            artifact_name: artifact_name.clone(),
+            artifact_name: archive,
             exe_suffix: exe_suffix.to_string(),
             zip_ext: zip_ext.to_string(),
         };
