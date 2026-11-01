@@ -21,14 +21,40 @@
     "params": {}
   },
   {
-    "id": 2,
-    "method": "workspace/symbol",
+    "method": "textDocument/didOpen",
     "params": {
-      "query": "main"
+      "textDocument": {
+        "languageId": "rust",
+        "text": "fn main() {}",
+        "uri": "file:///a.rs",
+        "version": 1
+      }
     }
   },
   {
-    "id": 3,
+    "method": "textDocument/didChange",
+    "params": {
+      "contentChanges": [
+        {
+          "text": "fn main() { }"
+        }
+      ],
+      "textDocument": {
+        "uri": "file:///a.rs",
+        "version": 2
+      }
+    }
+  },
+  {
+    "method": "textDocument/didClose",
+    "params": {
+      "textDocument": {
+        "uri": "file:///a.rs"
+      }
+    }
+  },
+  {
+    "id": 2,
     "method": "shutdown"
   },
   {

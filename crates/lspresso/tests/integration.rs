@@ -224,6 +224,41 @@ fn the_escape_hatch_rejects_calls_before_initialize() {
 }
 
 #[test]
+fn a_document_opens_once_until_closed() {
+    let mut client = spawn_scripted(1);
+    let uri = lspresso::parse_uri("file:///a.json");
+    client
+        .did_open(uri.clone(), "{}", lspresso::LanguageKind::JSON)
+        .unwrap();
+
+    let err = client
+        .did_open(uri.clone(), "{}", lspresso::LanguageKind::JSON)
+        .unwrap_err();
+    assert!(
+        matches!(err.kind(), ErrorKind::AlreadyOpen { .. }),
+        "{err:?}"
+    );
+
+    client.did_close(&uri).unwrap();
+    let err = client.did_change_full(&uri, "[]").unwrap_err();
+    assert!(matches!(err.kind(), ErrorKind::NotOpen { .. }), "{err:?}");
+    client
+        .did_open(uri, "{}", lspresso::LanguageKind::JSON)
+        .unwrap();
+}
+
+#[test]
+fn document_sync_before_initialize_is_rejected() {
+    let mut client = scripted(&json!([]));
+    let uri = lspresso::parse_uri("file:///a.json");
+
+    let err = client
+        .did_open(uri, "{}", lspresso::LanguageKind::JSON)
+        .unwrap_err();
+    assert!(matches!(err.kind(), ErrorKind::NotInitialized));
+}
+
+#[test]
 #[ignore = "requires a separately built target/dist/jjp or JJP_BIN"]
 fn initialize_against_the_real_server() {
     let mut client = spawn_real_server();

@@ -1,0 +1,19 @@
+{
+  "capabilities": {
+    "codeActionProvider": true,
+    "colorProvider": {},
+    "diagnosticProvider": {
+      "documentSelector": null,
+      "interFileDependencies": false,
+      "workspaceDiagnostics": false
+    },
+    "documentFormattingProvider": false,
+    "documentLinkProvider": {},
+    "documentRangeFormattingProvider": false,
+    "documentSymbolProvider": true,
+    "foldingRangeProvider": true,
+    "hoverProvider": true,
+    "selectionRangeProvider": true,
+    "textDocumentSync": 2
+  }
+}

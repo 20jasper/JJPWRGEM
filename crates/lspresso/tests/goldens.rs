@@ -1,6 +1,7 @@
 //! What the client puts on the wire, checked against `tests/goldens/`
-//! (rerun with `LSPRESSO_BLESS=1` to update them), and the presets against
-//! capabilities captured from real editors in `tests/fixtures/`.
+//! (rerun with `LSPRESSO_BLESS=1` to update them), the presets against
+//! capabilities captured from real editors, and how it reads `initialize`
+//! results captured from real servers, both in `tests/fixtures/`.
 
 use std::{
     path::{Path, PathBuf},
@@ -8,8 +9,8 @@ use std::{
     time::Duration,
 };
 
-use gen_lsp_types::ClientCapabilities;
-use lspresso::{Client, capabilities};
+use gen_lsp_types::{ClientCapabilities, TextDocumentSyncKind};
+use lspresso::{Client, LanguageKind, capabilities};
 use serde_json::{Value, json};
 
 const TIMEOUT: Duration = Duration::from_secs(5);
@@ -81,15 +82,15 @@ fn transcript(record: &Path) -> Value {
 
 #[test]
 fn a_session_puts_exactly_these_messages_on_the_wire() {
-    let (command, record) = recorded("session", 3, None);
+    let (command, record) = recorded("session", 2, None);
     let mut client = Client::spawn_initialized(command, capabilities::vscode()).unwrap();
+    let uri = lspresso::parse_uri("file:///a.rs");
 
     client
-        .request::<gen_lsp_types::WorkspaceSymbolRequest>(gen_lsp_types::WorkspaceSymbolParams {
-            query: "main".to_owned(),
-            ..Default::default()
-        })
+        .did_open(uri.clone(), "fn main() {}", LanguageKind::Rust)
         .unwrap();
+    client.did_change_full(&uri, "fn main() { }").unwrap();
+    client.did_close(&uri).unwrap();
     client.shutdown().unwrap();
     client.wait_for_exit(TIMEOUT).unwrap();
 
@@ -142,22 +143,50 @@ fn presets_declare_only_what_their_real_editor_does() {
     }
 }
 
+fn initialized_with(fixture: &str) -> Client {
+    let path = manifest_path(&format!("tests/fixtures/initialize-results/{fixture}.json"));
+    let result = std::fs::read_to_string(path).unwrap();
+    let (command, _) = recorded(fixture, 1, Some(&result));
+    Client::spawn_initialized(command, capabilities::vscode()).unwrap()
+}
+
+#[test]
+fn jjpwrgem_declares_full_sync() {
+    let client = initialized_with("jjpwrgem-lsp-0.1.3");
+
+    assert_eq!(
+        client.text_document_sync_kind(),
+        Some(TextDocumentSyncKind::Full)
+    );
+    assert!(!client.supports_incremental_sync());
+}
+
+#[test]
+fn vscode_json_declares_incremental_sync() {
+    let client = initialized_with("vscode-json-language-server-4.10.0");
+
+    assert_eq!(
+        client.text_document_sync_kind(),
+        Some(TextDocumentSyncKind::Incremental)
+    );
+    assert!(client.supports_incremental_sync());
+}
+
 #[test]
 fn nothing_is_supported_before_initialize() {
     let (command, _) = recorded("uninitialized", 0, None);
     let client = Client::spawn(command).unwrap();
 
     assert!(client.server_capabilities().is_none());
+    assert_eq!(client.text_document_sync_kind(), None);
 }
 
 #[test]
 fn the_capabilities_a_real_server_declared_are_kept() {
-    let path = manifest_path("tests/fixtures/initialize-results/jjpwrgem-lsp-0.1.3.json");
-    let result = std::fs::read_to_string(path).unwrap();
-    let (command, _) = recorded("jjpwrgem-lsp-0.1.3", 1, Some(&result));
-    let client = Client::spawn_initialized(command, capabilities::vscode()).unwrap();
+    let client = initialized_with("jjpwrgem-lsp-0.1.3");
 
-    let declared: Value = serde_json::from_str(&result).unwrap();
+    let path = manifest_path("tests/fixtures/initialize-results/jjpwrgem-lsp-0.1.3.json");
+    let declared: Value = serde_json::from_str(&std::fs::read_to_string(path).unwrap()).unwrap();
     assert_eq!(
         serde_json::to_value(client.server_capabilities()).unwrap(),
         declared["capabilities"],
