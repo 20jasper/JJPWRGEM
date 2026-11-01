@@ -99,6 +99,67 @@ fn a_session_puts_exactly_these_messages_on_the_wire() {
     assert_golden("session", &transcript(&record));
 }
 
+/// Edits a document, then saves it, against a server declaring `sync`;
+/// returns the document-sync messages it received.
+fn edit_session(name: &str, sync: &Value) -> Value {
+    let result =
+        json!({ "capabilities": { "positionEncoding": "utf-8", "textDocumentSync": sync } });
+    let (command, record) = recorded(name, 2, Some(&result.to_string()));
+    let mut client = Client::spawn_initialized(command, capabilities::helix()).unwrap();
+    let uri = lspresso::parse_uri("file:///a.json");
+    let edit = |start: (u32, u32), end: (u32, u32), new_text: &str| lspresso::TextEdit {
+        range: lspresso::Range::new(
+            lspresso::Position::new(start.0, start.1),
+            lspresso::Position::new(end.0, end.1),
+        ),
+        new_text: new_text.to_owned(),
+    };
+
+    client
+        .did_open(uri.clone(), "{\"😀\": 1,\n \"b\": 2}", LanguageKind::JSON)
+        .unwrap();
+    client
+        .did_change(
+            &uri,
+            &[edit((0, 9), (0, 10), "10"), edit((1, 7), (1, 7), " ")],
+        )
+        .unwrap();
+    assert_eq!(
+        client.document_text(&uri),
+        Some("{\"😀\": 10,\n \"b\": 2 }"),
+        "the tracked text has both edits"
+    );
+    client.did_save(&uri).unwrap();
+    client.shutdown().unwrap();
+    client.wait_for_exit(TIMEOUT).unwrap();
+
+    transcript(&record)
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter(|message| {
+            message["method"]
+                .as_str()
+                .is_some_and(|method| method.starts_with("textDocument/"))
+        })
+        .cloned()
+        .collect()
+}
+
+#[test]
+fn edits_go_out_as_the_server_syncs_and_saves() {
+    assert_golden(
+        "edits",
+        &json!({
+            "incremental, saving text": edit_session(
+                "edits-incremental",
+                &json!({ "openClose": true, "change": 2, "save": { "includeText": true } }),
+            ),
+            "full": edit_session("edits-full", &json!(1)),
+        }),
+    );
+}
+
 #[test]
 fn each_preset_declares_exactly_these_capabilities() {
     let presets: [(&str, Preset); 4] = [

@@ -1,0 +1,96 @@
+{
+  "full": [
+    {
+      "method": "textDocument/didOpen",
+      "params": {
+        "textDocument": {
+          "languageId": "json",
+          "text": "{\"😀\": 1,\n \"b\": 2}",
+          "uri": "file:///a.json",
+          "version": 1
+        }
+      }
+    },
+    {
+      "method": "textDocument/didChange",
+      "params": {
+        "contentChanges": [
+          {
+            "text": "{\"😀\": 10,\n \"b\": 2 }"
+          }
+        ],
+        "textDocument": {
+          "uri": "file:///a.json",
+          "version": 2
+        }
+      }
+    },
+    {
+      "method": "textDocument/didSave",
+      "params": {
+        "textDocument": {
+          "uri": "file:///a.json"
+        }
+      }
+    }
+  ],
+  "incremental, saving text": [
+    {
+      "method": "textDocument/didOpen",
+      "params": {
+        "textDocument": {
+          "languageId": "json",
+          "text": "{\"😀\": 1,\n \"b\": 2}",
+          "uri": "file:///a.json",
+          "version": 1
+        }
+      }
+    },
+    {
+      "method": "textDocument/didChange",
+      "params": {
+        "contentChanges": [
+          {
+            "range": {
+              "end": {
+                "character": 7,
+                "line": 1
+              },
+              "start": {
+                "character": 7,
+                "line": 1
+              }
+            },
+            "text": " "
+          },
+          {
+            "range": {
+              "end": {
+                "character": 10,
+                "line": 0
+              },
+              "start": {
+                "character": 9,
+                "line": 0
+              }
+            },
+            "text": "10"
+          }
+        ],
+        "textDocument": {
+          "uri": "file:///a.json",
+          "version": 2
+        }
+      }
+    },
+    {
+      "method": "textDocument/didSave",
+      "params": {
+        "text": "{\"😀\": 10,\n \"b\": 2 }",
+        "textDocument": {
+          "uri": "file:///a.json"
+        }
+      }
+    }
+  ]
+}
