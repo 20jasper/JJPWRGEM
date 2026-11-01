@@ -132,10 +132,6 @@ backend = "cargo:cargo-shear"
 version = "0.20.0"
 backend = "cargo:gungraun-runner"
 
-[[tools."cargo:lsp-bench"]]
-version = "0.3.3"
-backend = "cargo:lsp-bench"
-
 [[tools."cargo:rustfilt"]]
 version = "0.2.2"
 backend = "cargo:rustfilt"

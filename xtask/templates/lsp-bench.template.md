@@ -1,10 +1,10 @@
 # LSP benchmarks
 
-Wall-clock timing and memory usage against VSCode's JSON LSP via `lsp-bench`. Run locally with `mise run bench-lsp-all`
+Wall-clock timing and memory usage against VSCode's JSON LSP, driven by [lspresso](/crates/lspresso) with VSCode's client capabilities. Run locally with `mise run bench-lsp`
 
 {{BENCH_HARDWARE}}
 
-VSCode's diagnostics calculation has a 500ms delay for push only diagnostics. The LSP client can pull as of LSP 3.17 (2022), so most modern editors request diagnostics earlier than 500ms
+Diagnostic timing is edit to `publishDiagnostics`. VSCode's JSON LSP waits 500ms after each change before validating. It advertises pull diagnostics but answers `textDocument/diagnostic` with "Unhandled method", so push is the only path
 
 JJPWRGEM does not delay anything
 

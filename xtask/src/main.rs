@@ -27,8 +27,8 @@ enum Commands {
     GenerateNpmPackage,
     /// Read criterion JSON from stdin and write a markdown table with time and throughput
     BenchTable,
-    /// Read lsp-bench results.json and write a markdown table for the named fixture
-    LspBenchReport { name: String },
+    /// Read the lsp bench's criterion JSON from stdin plus its RSS sidecar and write per-fixture tables
+    LspBenchReport,
     /// Print shields.io spec coverage badges for all tracked specs
     SpecCoverageBadges,
 }
@@ -45,7 +45,7 @@ fn main() -> anyhow::Result<()> {
         Commands::PlotBenchmarks => plot::plot_all_benchmarks(),
         Commands::GenerateNpmPackage => npm::write_package_json(),
         Commands::BenchTable => bench_table::write_bench_table(),
-        Commands::LspBenchReport { name } => lsp_bench_report::write_lsp_bench_report(&name),
+        Commands::LspBenchReport => lsp_bench_report::write_lsp_bench_report(),
         Commands::SpecCoverageBadges => spec_badges::write_spec_badges(),
     }
 }

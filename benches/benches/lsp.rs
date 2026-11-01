@@ -1,7 +1,9 @@
 use std::{
+    collections::HashMap,
     hint::black_box,
     path::{Path, PathBuf},
     process::Command,
+    sync::{Mutex, OnceLock},
     time::{Duration, Instant},
 };
 
@@ -10,9 +12,39 @@ use criterion::{
     criterion_main, measurement::WallTime,
 };
 use lspresso::Client;
+use serde::Serialize;
 
 const TIMEOUT: Duration = Duration::from_secs(5);
 const FIXTURES: &[&str] = &["small", "twitter", "citm_catalog", "canada"];
+
+/// Everything criterion doesn't measure itself: peak RSS in bytes per
+/// profile (and fixture), and how many edits each server's formatting
+/// response contained. `cargo xtask lsp-bench-report` joins this with
+/// criterion's timing output.
+#[derive(Default, Serialize)]
+struct Sidecar {
+    initialize: HashMap<String, u64>,
+    diagnostics: HashMap<String, HashMap<String, u64>>,
+    formatting: HashMap<String, HashMap<String, u64>>,
+    formatting_edits: HashMap<String, HashMap<String, usize>>,
+    code_action: HashMap<String, u64>,
+}
+
+static SIDECAR: OnceLock<Mutex<Sidecar>> = OnceLock::new();
+
+fn get_sidecar() -> &'static Mutex<Sidecar> {
+    SIDECAR.get_or_init(|| Mutex::new(Sidecar::default()))
+}
+
+fn flush_sidecar() {
+    let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("../target/bench/lsp-memory.json");
+    if let Some(parent) = path.parent() {
+        std::fs::create_dir_all(parent).expect("create target/bench");
+    }
+    let json =
+        serde_json::to_string_pretty(&*get_sidecar().lock().unwrap()).expect("serialize sidecar");
+    std::fs::write(&path, json).expect("write sidecar");
+}
 
 /// A server this bench can spawn and drive the same way: `command` builds a
 /// fresh, unstarted process each time (criterion needs a new one per
@@ -127,8 +159,20 @@ fn bench_initialize(c: &mut Criterion) {
                 BatchSize::PerIteration,
             );
         });
+
+        // Spawn one post-criterion client to capture peak RSS after init.
+        let mut client = Client::spawn((profile.command)()).unwrap();
+        client.initialize(lspresso::capabilities::vscode()).unwrap();
+        if let Some(rss) = client.rss_bytes() {
+            get_sidecar()
+                .lock()
+                .unwrap()
+                .initialize
+                .insert(profile.label.to_owned(), rss);
+        }
     }
     group.finish();
+    flush_sidecar();
 }
 
 fn data_path(name: &str) -> PathBuf {
@@ -168,9 +212,21 @@ fn bench_diagnostics(c: &mut Criterion) {
                     client.next_diagnostics(black_box(uri), TIMEOUT).unwrap();
                 });
             });
+
+            // Peak RSS across all criterion iterations for this profile+fixture.
+            if let Some(rss) = client.rss_bytes() {
+                get_sidecar()
+                    .lock()
+                    .unwrap()
+                    .diagnostics
+                    .entry(profile.label.to_owned())
+                    .or_default()
+                    .insert((*name).to_owned(), rss);
+            }
         }
     }
     group.finish();
+    flush_sidecar();
 }
 
 fn bench_formatting(c: &mut Criterion) {
@@ -181,13 +237,35 @@ fn bench_formatting(c: &mut Criterion) {
             let uri = fixture_uri(name);
             let mut client = warm_client(&profile, &uri, text);
             client.next_diagnostics(&uri, TIMEOUT).unwrap();
+            let edits = client
+                .formatting(&uri)
+                .unwrap()
+                .map_or(0, |edits| edits.len());
+            get_sidecar()
+                .lock()
+                .unwrap()
+                .formatting_edits
+                .entry(profile.label.to_owned())
+                .or_default()
+                .insert((*name).to_owned(), edits);
 
             group.bench_with_input(BenchmarkId::new(profile.label, name), &uri, |b, uri| {
                 b.iter(|| client.formatting(black_box(uri)).unwrap());
             });
+
+            if let Some(rss) = client.rss_bytes() {
+                get_sidecar()
+                    .lock()
+                    .unwrap()
+                    .formatting
+                    .entry(profile.label.to_owned())
+                    .or_default()
+                    .insert((*name).to_owned(), rss);
+            }
         }
     }
     group.finish();
+    flush_sidecar();
 }
 
 /// `jjp`-only: open -> first diagnostics for a document the server hasn't
@@ -256,6 +334,15 @@ fn bench_code_action(c: &mut Criterion) {
                 .unwrap()
         });
     });
+
+    if let Some(rss) = client.rss_bytes() {
+        get_sidecar()
+            .lock()
+            .unwrap()
+            .code_action
+            .insert(profile.label.to_owned(), rss);
+    }
+    flush_sidecar();
 }
 
 criterion_group! {
