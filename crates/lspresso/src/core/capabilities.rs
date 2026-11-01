@@ -1,10 +1,12 @@
-//! Client capability presets, and the server's declared sync kind. Presets declare only what lspresso
+//! Client capability presets, and answers to "does the server support X"
+//! from the capabilities it declared. Presets declare only what lspresso
 //! honors -- position encodings, in each editor's order of preference --
 //! and no pull diagnostics, since lspresso waits for pushed ones.
 
 use gen_lsp_types::{
-    ClientCapabilities, GeneralClientCapabilities, InitializeParams, PositionEncodingKind,
-    ServerCapabilities, TextDocumentSync, TextDocumentSyncKind,
+    ClientCapabilities, CodeActionProvider, DocumentFormattingProvider, GeneralClientCapabilities,
+    InitializeParams, PositionEncodingKind, ServerCapabilities, TextDocumentSync,
+    TextDocumentSyncKind,
 };
 
 fn with_position_encodings(position_encodings: Vec<PositionEncodingKind>) -> ClientCapabilities {
@@ -65,6 +67,23 @@ pub(crate) fn text_document_sync_kind(
     match capabilities.text_document_sync.as_ref()? {
         TextDocumentSync::Kind(kind) => Some(*kind),
         TextDocumentSync::Options(options) => options.change,
+    }
+}
+
+/// An explicit `false` means unsupported, not just an absent field.
+pub(crate) fn supports_formatting(capabilities: &ServerCapabilities) -> bool {
+    match capabilities.document_formatting_provider {
+        Some(DocumentFormattingProvider::Bool(supported)) => supported,
+        Some(DocumentFormattingProvider::DocumentFormattingOptions(_)) => true,
+        None => false,
+    }
+}
+
+pub(crate) fn supports_code_action(capabilities: &ServerCapabilities) -> bool {
+    match capabilities.code_action_provider {
+        Some(CodeActionProvider::Bool(supported)) => supported,
+        Some(CodeActionProvider::CodeActionOptions(_)) => true,
+        None => false,
     }
 }
 

@@ -1,3 +1,4 @@
+mod methods;
 mod transport;
 
 use std::{
@@ -7,18 +8,20 @@ use std::{
 
 use crossbeam_channel::RecvTimeoutError;
 use gen_lsp_types::{
-    ClientCapabilities, Diagnostic, DidChangeTextDocumentNotification, DidChangeTextDocumentParams,
+    ClientCapabilities, CodeActionContext, CodeActionParams, CodeActionResponse, Diagnostic,
+    DidChangeTextDocumentNotification, DidChangeTextDocumentParams,
     DidCloseTextDocumentNotification, DidCloseTextDocumentParams, DidOpenTextDocumentNotification,
-    DidOpenTextDocumentParams, ExitNotification, InitializeRequest, InitializeResult,
-    InitializedNotification, InitializedParams, LanguageKind, MessageDirection,
-    Notification as LspNotification, PublishDiagnosticsNotification, Request as LspRequest,
-    ServerCapabilities, ShutdownRequest, TextDocumentContentChangeEvent,
+    DidOpenTextDocumentParams, DocumentFormattingParams, ExitNotification, FormattingOptions,
+    InitializeRequest, InitializeResult, InitializedNotification, InitializedParams, LanguageKind,
+    MessageDirection, Notification as LspNotification, PublishDiagnosticsNotification, Range,
+    Request as LspRequest, ServerCapabilities, ShutdownRequest, TextDocumentContentChangeEvent,
     TextDocumentContentChangeWholeDocument, TextDocumentIdentifier, TextDocumentItem,
-    TextDocumentSyncKind, Uri, VersionedTextDocumentIdentifier,
+    TextDocumentSyncKind, TextEdit, Uri, VersionedTextDocumentIdentifier,
 };
 use lsp_server::{Message, Notification, RequestId};
 use sysinfo::{Pid, ProcessRefreshKind, RefreshKind, System};
 
+pub use self::methods::Protocol;
 use self::transport::{Incoming, Transport};
 use crate::{
     Error,
@@ -171,6 +174,36 @@ impl Client {
         Ok(())
     }
 
+    pub fn formatting(&mut self, uri: &Uri) -> crate::Result<Option<Vec<TextEdit>>> {
+        self.protocol_formatting(DocumentFormattingParams {
+            text_document: TextDocumentIdentifier { uri: uri.clone() },
+            options: FormattingOptions::default(),
+            work_done_progress_params: gen_lsp_types::WorkDoneProgressParams::default(),
+        })
+    }
+
+    /// `diagnostics` should be whatever the caller already has for `uri`
+    /// in `range` (e.g. from `next_diagnostics`) -- real editors populate
+    /// `CodeActionContext.diagnostics` the same way, and a server is free
+    /// to rely on it rather than recomputing diagnostics itself.
+    pub fn code_action(
+        &mut self,
+        uri: &Uri,
+        range: Range,
+        diagnostics: Vec<gen_lsp_types::Diagnostic>,
+    ) -> crate::Result<Option<Vec<CodeActionResponse>>> {
+        self.protocol_code_action(CodeActionParams {
+            text_document: TextDocumentIdentifier { uri: uri.clone() },
+            range,
+            context: CodeActionContext {
+                diagnostics,
+                ..Default::default()
+            },
+            work_done_progress_params: gen_lsp_types::WorkDoneProgressParams::default(),
+            partial_result_params: gen_lsp_types::PartialResultParams::default(),
+        })
+    }
+
     /// The next pushed diagnostics for `uri`, skipping any the server marks
     /// as for an older version than the one it was last sent. Unversioned
     /// publications always match, so after closing and reopening a URI,
@@ -240,6 +273,16 @@ impl Client {
 
     pub fn supports_incremental_sync(&self) -> bool {
         self.text_document_sync_kind() == Some(TextDocumentSyncKind::Incremental)
+    }
+
+    pub fn supports_formatting(&self) -> bool {
+        self.server_capabilities()
+            .is_some_and(core::capabilities::supports_formatting)
+    }
+
+    pub fn supports_code_action(&self) -> bool {
+        self.server_capabilities()
+            .is_some_and(core::capabilities::supports_code_action)
     }
 
     pub fn background_errors(&self) -> &[Error] {

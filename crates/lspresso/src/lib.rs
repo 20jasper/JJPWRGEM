@@ -4,9 +4,11 @@ mod error;
 
 pub use core::capabilities;
 
-pub use client::Client;
+pub use client::{Client, Protocol};
 pub use error::{Error, ErrorKind, Result};
-pub use gen_lsp_types::{self, Diagnostic, LanguageKind, Uri};
+pub use gen_lsp_types::{
+    self, CodeActionResponse, Diagnostic, LanguageKind, Position, Range, TextEdit, Uri,
+};
 
 /// # Panics
 ///
