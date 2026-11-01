@@ -1,6 +1,7 @@
 #![cfg_attr(not(test), expect(dead_code, reason = "WIP and much is unused"))]
 
 mod lifecycle;
+mod server_requests;
 
 use crate::error::Error;
 

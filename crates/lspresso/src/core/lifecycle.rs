@@ -4,7 +4,7 @@ use std::{
 };
 
 use gen_lsp_types::{InitializeRequest, Request as LspRequest, ShutdownRequest};
-use lsp_server::{ErrorCode, Message, Request, RequestId, Response};
+use lsp_server::{Message, Request, RequestId};
 
 use super::Effect;
 use crate::error::{ErrorKind, elapsed_ms};
@@ -174,13 +174,10 @@ impl ClientState {
     fn on_message(&mut self, message: &Message) -> Vec<Effect> {
         let response = match message {
             Message::Response(response) => response,
-            // unanswered
             Message::Request(request) => {
-                return vec![Effect::Reply(Message::Response(Response::new_err(
-                    request.id.clone(),
-                    ErrorCode::MethodNotFound as i32,
-                    format!("lspresso doesn't handle {}", request.method),
-                )))];
+                return vec![Effect::Reply(Message::Response(
+                    super::server_requests::answer(request),
+                ))];
             }
             Message::Notification(_) => return Vec::new(),
         };
@@ -470,10 +467,7 @@ mod tests {
             panic!("expected a Reply with a Response");
         };
         assert_eq!(reply.id, request.id);
-        assert_eq!(
-            reply.response_result.unwrap_err().code,
-            ErrorCode::MethodNotFound as i32
-        );
+        assert_eq!(reply.response_result.unwrap(), serde_json::json!([null]));
         assert_eq!(*state.lifecycle(), Lifecycle::Initializing);
         assert_eq!(state.active_pending_kinds(), vec![RequestKind::Initialize]);
     }

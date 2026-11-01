@@ -17,5 +17,8 @@ lsp-server = "0.10.0"
 serde_json = { workspace = true }
 thiserror = "2.0.21"
 
+[dev-dependencies]
+proptest = { workspace = true }
+
 [lints]
 workspace = true
