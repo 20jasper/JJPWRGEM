@@ -6,7 +6,7 @@
   },
   {
     "target": "aarch64-unknown-linux-gnu",
-    "runner": "ubuntu-22.04-arm",
+    "runner": "ubuntu-24.04-arm",
     "archive": "jjpwrgem-aarch64-unknown-linux-gnu.tar.xz"
   },
   {
@@ -16,7 +16,7 @@
   },
   {
     "target": "x86_64-unknown-linux-gnu",
-    "runner": "ubuntu-22.04",
+    "runner": "ubuntu-24.04",
     "archive": "jjpwrgem-x86_64-unknown-linux-gnu.tar.xz"
   },
   {
