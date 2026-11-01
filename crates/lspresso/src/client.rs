@@ -17,7 +17,7 @@ use sysinfo::{Pid, ProcessRefreshKind, RefreshKind, System};
 use self::transport::{Incoming, Transport};
 use crate::{
     Error,
-    core::{self, Effect, State},
+    core::{self, ClientState, Effect},
     error::{ErrorKind, elapsed_ms},
 };
 
@@ -39,7 +39,7 @@ macro_rules! assert_client_to_server {
 #[derive(Debug)]
 pub struct Client {
     transport: Transport,
-    state: State,
+    state: ClientState,
     background_errors: Vec<Error>,
     request_timeout: Duration,
     server_capabilities: Option<ServerCapabilities>,
@@ -49,7 +49,7 @@ impl Client {
     pub fn spawn(command: Command) -> crate::Result<Self> {
         Ok(Self {
             transport: Transport::spawn(command)?,
-            state: State::default(),
+            state: ClientState::default(),
             background_errors: Vec::new(),
             request_timeout: DEFAULT_REQUEST_TIMEOUT,
             server_capabilities: None,

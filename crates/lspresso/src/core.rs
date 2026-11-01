@@ -3,7 +3,7 @@ pub(crate) mod capabilities;
 mod lifecycle;
 mod server_requests;
 
-pub(crate) use lifecycle::ClientState as State;
+pub(crate) use lifecycle::ClientState;
 
 use crate::error::Error;
 
