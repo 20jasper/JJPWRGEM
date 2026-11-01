@@ -17,7 +17,7 @@ plotters = { version = "0.3", default-features = false, features = [
   "ab_glyph",
 ] }
 cargo_metadata = "0.23.1"
-serde_json = { version = "1.0.145", features = ["preserve_order"] }
+serde_json = { workspace = true, features = ["preserve_order"] }
 serde = { version = "1.0.228", features = ["derive"] }
 itertools = "0.15"
 
