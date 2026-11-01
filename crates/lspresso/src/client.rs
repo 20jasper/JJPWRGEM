@@ -7,9 +7,13 @@ use std::{
 
 use crossbeam_channel::RecvTimeoutError;
 use gen_lsp_types::{
-    ClientCapabilities, ExitNotification, InitializeRequest, InitializeResult,
-    InitializedNotification, InitializedParams, MessageDirection, Notification as LspNotification,
-    Request as LspRequest, ServerCapabilities, ShutdownRequest,
+    ClientCapabilities, DidChangeTextDocumentNotification, DidChangeTextDocumentParams,
+    DidCloseTextDocumentNotification, DidCloseTextDocumentParams, DidOpenTextDocumentNotification,
+    DidOpenTextDocumentParams, ExitNotification, InitializeRequest, InitializeResult,
+    InitializedNotification, InitializedParams, LanguageKind, MessageDirection,
+    Notification as LspNotification, Request as LspRequest, ServerCapabilities, ShutdownRequest,
+    TextDocumentContentChangeEvent, TextDocumentContentChangeWholeDocument, TextDocumentIdentifier,
+    TextDocumentItem, TextDocumentSyncKind, Uri, VersionedTextDocumentIdentifier,
 };
 use lsp_server::{Message, Notification, RequestId};
 use sysinfo::{Pid, ProcessRefreshKind, RefreshKind, System};
@@ -17,7 +21,7 @@ use sysinfo::{Pid, ProcessRefreshKind, RefreshKind, System};
 use self::transport::{Incoming, Transport};
 use crate::{
     Error,
-    core::{self, ClientState, Effect},
+    core::{self, ClientState, DocumentTracker, Effect},
     error::{ErrorKind, elapsed_ms},
 };
 
@@ -40,6 +44,7 @@ macro_rules! assert_client_to_server {
 pub struct Client {
     transport: Transport,
     state: ClientState,
+    docs: DocumentTracker,
     background_errors: Vec<Error>,
     request_timeout: Duration,
     server_capabilities: Option<ServerCapabilities>,
@@ -50,6 +55,7 @@ impl Client {
         Ok(Self {
             transport: Transport::spawn(command)?,
             state: ClientState::default(),
+            docs: DocumentTracker::default(),
             background_errors: Vec::new(),
             request_timeout: DEFAULT_REQUEST_TIMEOUT,
             server_capabilities: None,
@@ -112,6 +118,52 @@ impl Client {
         Ok(())
     }
 
+    pub fn did_open(
+        &mut self,
+        uri: Uri,
+        text: impl Into<String>,
+        language: LanguageKind,
+    ) -> crate::Result<()> {
+        self.state.require_initialized()?;
+        self.docs.require_not_open(&uri)?;
+        self.send_notification::<DidOpenTextDocumentNotification>(DidOpenTextDocumentParams {
+            text_document: TextDocumentItem {
+                uri: uri.clone(),
+                language_id: language,
+                version: 1,
+                text: text.into(),
+            },
+        })?;
+        self.docs.mark_open(uri);
+        Ok(())
+    }
+
+    pub fn did_change_full(&mut self, uri: &Uri, text: impl Into<String>) -> crate::Result<()> {
+        self.state.require_initialized()?;
+        let version = self.docs.next_version(uri)?;
+        self.send_notification::<DidChangeTextDocumentNotification>(DidChangeTextDocumentParams {
+            text_document: VersionedTextDocumentIdentifier {
+                version,
+                text_document_identifier: TextDocumentIdentifier { uri: uri.clone() },
+            },
+            content_changes: vec![TextDocumentContentChangeEvent::from(
+                TextDocumentContentChangeWholeDocument { text: text.into() },
+            )],
+        })?;
+        self.docs.commit_change(uri, version);
+        Ok(())
+    }
+
+    pub fn did_close(&mut self, uri: &Uri) -> crate::Result<()> {
+        self.state.require_initialized()?;
+        self.docs.require_open(uri)?;
+        self.send_notification::<DidCloseTextDocumentNotification>(DidCloseTextDocumentParams {
+            text_document: TextDocumentIdentifier { uri: uri.clone() },
+        })?;
+        self.docs.mark_closed(uri);
+        Ok(())
+    }
+
     pub fn wait_for_exit(&mut self, timeout: Duration) -> crate::Result<ExitStatus> {
         let start = Instant::now();
         let deadline = start + timeout;
@@ -158,11 +210,21 @@ impl Client {
         self.server_capabilities.as_ref()
     }
 
+    pub fn text_document_sync_kind(&self) -> Option<TextDocumentSyncKind> {
+        self.server_capabilities()
+            .and_then(core::capabilities::text_document_sync_kind)
+    }
+
+    pub fn supports_incremental_sync(&self) -> bool {
+        self.text_document_sync_kind() == Some(TextDocumentSyncKind::Incremental)
+    }
+
     pub fn background_errors(&self) -> &[Error] {
         &self.background_errors
     }
 
-    /// Sends any request and waits for its response.
+    /// Sends any request and waits for its response. Document-scoped
+    /// requests aren't checked against the documents lspresso tracks.
     pub fn request<R: LspRequest>(&mut self, params: R::Params) -> crate::Result<R::Result> {
         assert_client_to_server!(R);
         let now = Instant::now();
@@ -185,7 +247,8 @@ impl Client {
         })
     }
 
-    /// Sends any notification.
+    /// Sends any notification. Document sync sent this way bypasses the
+    /// document tracking `did_open` and friends do.
     pub fn notify<N: LspNotification>(&mut self, params: N::Params) -> crate::Result<()> {
         assert_client_to_server!(N);
         self.state.require_initialized()?;

@@ -1,9 +1,11 @@
 #![cfg_attr(not(test), expect(dead_code, reason = "WIP and much is unused"))]
 pub mod capabilities;
+mod docs;
 mod lifecycle;
 mod server_requests;
 
 pub(crate) use lifecycle::ClientState;
+pub(crate) use docs::DocumentTracker;
 
 use crate::error::Error;
 

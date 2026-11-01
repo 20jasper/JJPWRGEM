@@ -1,6 +1,7 @@
 use std::{io, time::Instant};
 
 use displaydoc::Display;
+use gen_lsp_types::Uri;
 use lsp_server::RequestId;
 
 /// {0}
@@ -82,6 +83,12 @@ pub enum ErrorKind {
     AlreadyInitialized,
     /// response id {id} doesn't match any request lspresso sent
     UnmatchedResponseId { id: RequestId },
+    /// {uri} is already open: call did_close before opening it again
+    AlreadyOpen { uri: Uri },
+    /// {uri} is not open: call did_open before sending document notifications for it
+    NotOpen { uri: Uri },
+    /// exhausted available document versions for {uri}
+    DocumentVersionExhausted { uri: Uri },
     /// {method} response was malformed: {message}
     MalformedResponse {
         method: &'static str,
