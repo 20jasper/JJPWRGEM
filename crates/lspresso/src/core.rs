@@ -1,7 +1,9 @@
 #![cfg_attr(not(test), expect(dead_code, reason = "WIP and much is unused"))]
-
+pub(crate) mod capabilities;
 mod lifecycle;
 mod server_requests;
+
+pub(crate) use lifecycle::ClientState as State;
 
 use crate::error::Error;
 

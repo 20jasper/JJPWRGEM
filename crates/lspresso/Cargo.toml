@@ -12,12 +12,14 @@ include = ["src/**/*"]
 doctest = false
 
 [dependencies]
+crossbeam-channel = "0.5.17"
 displaydoc = { workspace = true }
 gen-lsp-types = { git = "https://github.com/ribru17/gen-lsp-types", branch = "main", features = [
   "fluent-uri",
 ] }
 lsp-server = "0.10.0"
 serde_json = { workspace = true }
+sysinfo = "0.38"
 thiserror = "2.0.21"
 
 [lints]

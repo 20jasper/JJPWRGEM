@@ -66,7 +66,7 @@ impl Pending {
 
 /// tracks pending requests, lifecycle, and id counts
 #[derive(Debug, Clone)]
-struct ClientState {
+pub(crate) struct ClientState {
     lifecycle: Lifecycle,
     pending: BTreeMap<RequestId, Pending>,
     next_id: i32,
@@ -87,7 +87,7 @@ impl ClientState {
         &self.lifecycle
     }
 
-    fn require_initialized(&self) -> crate::Result<()> {
+    pub(crate) fn require_initialized(&self) -> crate::Result<()> {
         if self.lifecycle == Lifecycle::Initialized {
             Ok(())
         } else {
@@ -118,7 +118,7 @@ impl ClientState {
         (request_id, message)
     }
 
-    fn start_initialize(
+    pub(crate) fn start_initialize(
         &mut self,
         params: serde_json::Value,
         now: Instant,
@@ -132,7 +132,7 @@ impl ClientState {
         Ok((id, message))
     }
 
-    fn start_generic(
+    pub(crate) fn start_generic(
         &mut self,
         method: &'static str,
         params: serde_json::Value,
@@ -143,7 +143,7 @@ impl ClientState {
         Ok(self.request_raw(RequestKind::Generic { method }, params, now, timeout))
     }
 
-    fn start_shutdown(
+    pub(crate) fn start_shutdown(
         &mut self,
         now: Instant,
         timeout: Duration,
@@ -162,7 +162,7 @@ impl ClientState {
         }
     }
 
-    fn cancel_pending_request(&mut self, id: &RequestId) {
+    pub(crate) fn cancel_pending_request(&mut self, id: &RequestId) {
         if let Some(pending) = self.pending.remove(id)
             && !pending.timed_out
             && let Some(lifecycle) = pending.kind.rollback_to()
@@ -171,7 +171,7 @@ impl ClientState {
         }
     }
 
-    fn on_message(&mut self, message: &Message) -> Vec<Effect> {
+    pub(crate) fn on_message(&mut self, message: &Message) -> Vec<Effect> {
         let response = match message {
             Message::Response(response) => response,
             Message::Request(request) => {
@@ -216,7 +216,7 @@ impl ClientState {
         vec![Effect::Resolved(response.id.clone(), result)]
     }
 
-    fn next_deadline(&self) -> Option<Instant> {
+    pub(crate) fn next_deadline(&self) -> Option<Instant> {
         self.pending
             .values()
             .filter(|pending| !pending.timed_out)
@@ -225,7 +225,7 @@ impl ClientState {
     }
 
     /// check for any past deadline requests and return them as failures
-    fn process_past_deadline_requests(&mut self, now: Instant) -> Vec<Effect> {
+    pub(crate) fn process_past_deadline_requests(&mut self, now: Instant) -> Vec<Effect> {
         let (lifecycle_ref, pending_requests) = (&mut self.lifecycle, &mut self.pending);
         pending_requests
             .iter_mut()
