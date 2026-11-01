@@ -110,9 +110,19 @@ fn a_constant_stream_of_notifications_does_not_stop_timeouts_firing() {
     let mut client =
         scripted_initialized(&json!([{ "action": "respond:0" }, { "action": "drip" }]));
     client.set_request_timeout(Duration::from_millis(200));
+    let uri = lspresso::parse_uri("file:///a.json");
+    client
+        .did_open(uri.clone(), "{}", lspresso::LanguageKind::JSON)
+        .unwrap();
+    client.next_diagnostics(&uri, TIMEOUT).unwrap();
 
     let err = workspace_symbol(&mut client).unwrap_err();
     assert!(matches!(err.kind(), ErrorKind::ResponseTimeout { .. }));
+
+    let err = client
+        .next_diagnostics(&uri, Duration::from_millis(200))
+        .unwrap_err();
+    assert!(matches!(err.kind(), ErrorKind::DiagnosticsTimeout { .. }));
 }
 
 #[test]
@@ -138,6 +148,26 @@ fn spawning_a_missing_program_names_it_in_the_error() {
         matches!(err.kind(), ErrorKind::Spawn { program, .. } if program == "lspresso-no-such-server")
     );
     assert!(err.to_string().contains("lspresso-no-such-server"));
+}
+
+#[test]
+fn diagnostics_published_for_an_older_version_are_skipped() {
+    let mut client = scripted_initialized(&json!([{ "action": "respond:0" }]));
+    let uri = lspresso::parse_uri("file:///a.json");
+
+    // The scripted server publishes a stale diagnostic before each real one.
+    let message = |client: &mut Client| {
+        let diagnostics = client.next_diagnostics(&uri, TIMEOUT).unwrap();
+        serde_json::to_value(&diagnostics).unwrap()[0]["message"].clone()
+    };
+
+    client
+        .did_open(uri.clone(), "{}", lspresso::LanguageKind::JSON)
+        .unwrap();
+    assert_eq!(message(&mut client), "v1");
+
+    client.did_change_full(&uri, "{ }").unwrap();
+    assert_eq!(message(&mut client), "v2");
 }
 
 #[test]
@@ -190,6 +220,23 @@ fn spawn_scripted(responses: usize) -> Client {
 }
 
 #[test]
+fn a_closed_document_can_be_reopened_but_not_waited_on() {
+    let mut client = spawn_scripted(1);
+    let uri = lspresso::parse_uri("file:///a.json");
+    client
+        .did_open(uri.clone(), "{}", lspresso::LanguageKind::JSON)
+        .unwrap();
+
+    client.did_close(&uri).unwrap();
+
+    let err = client.next_diagnostics(&uri, TIMEOUT).unwrap_err();
+    assert!(matches!(err.kind(), ErrorKind::NotOpen { .. }), "{err:?}");
+    client
+        .did_open(uri, "{}", lspresso::LanguageKind::JSON)
+        .unwrap();
+}
+
+#[test]
 fn rss_is_reported_only_while_the_server_runs() {
     let mut client = spawn_scripted(2);
     let rss = client.rss_bytes().expect("the server is running");
@@ -221,6 +268,32 @@ fn the_escape_hatch_rejects_calls_before_initialize() {
         )
         .unwrap_err();
     assert!(matches!(err.kind(), ErrorKind::NotInitialized), "{err:?}");
+}
+
+fn first_message(diagnostics: &[lspresso::Diagnostic]) -> serde_json::Value {
+    serde_json::to_value(diagnostics).unwrap()[0]["message"].clone()
+}
+
+#[test]
+fn waiting_on_one_document_keeps_another_document_s_diagnostics() {
+    let mut client = spawn_scripted(1);
+    let a = lspresso::parse_uri("file:///a.json");
+    let b = lspresso::parse_uri("file:///b.json");
+    client
+        .did_open(a.clone(), "{}", lspresso::LanguageKind::JSON)
+        .unwrap();
+    client
+        .did_open(b.clone(), "{}", lspresso::LanguageKind::JSON)
+        .unwrap();
+
+    assert_eq!(
+        first_message(&client.next_diagnostics(&b, TIMEOUT).unwrap()),
+        "v1"
+    );
+    assert_eq!(
+        first_message(&client.next_diagnostics(&a, TIMEOUT).unwrap()),
+        "v1"
+    );
 }
 
 #[test]
@@ -256,6 +329,37 @@ fn document_sync_before_initialize_is_rejected() {
         .did_open(uri, "{}", lspresso::LanguageKind::JSON)
         .unwrap_err();
     assert!(matches!(err.kind(), ErrorKind::NotInitialized));
+}
+
+#[test]
+#[ignore = "requires a separately built target/dist/jjp or JJP_BIN"]
+fn document_sync_and_diagnostics_round_trip_against_the_real_server() {
+    let mut client = spawn_real_server();
+    let uri = lspresso::parse_uri("file:///lspresso-doc-sync.json");
+
+    client.initialize(lspresso::capabilities::vscode()).unwrap();
+
+    client
+        .did_open(uri.clone(), "{}", lspresso::LanguageKind::JSON)
+        .unwrap();
+    let diagnostics = client.next_diagnostics(&uri, TIMEOUT).unwrap();
+    assert!(
+        diagnostics.is_empty(),
+        "valid JSON should have no diagnostics"
+    );
+
+    client.did_change_full(&uri, "not json").unwrap();
+    let diagnostics = client.next_diagnostics(&uri, TIMEOUT).unwrap();
+    assert!(
+        !diagnostics.is_empty(),
+        "invalid JSON should report diagnostics"
+    );
+
+    client.did_close(&uri).unwrap();
+
+    client.shutdown().unwrap();
+    let status = client.wait_for_exit(TIMEOUT).unwrap();
+    assert!(status.success());
 }
 
 #[test]

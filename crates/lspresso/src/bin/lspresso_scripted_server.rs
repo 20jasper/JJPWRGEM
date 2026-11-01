@@ -1,7 +1,9 @@
 //! Answers each incoming request according to the next step of a script
 //! passed as JSON in `LSPRESSO_SCRIPT`, for tests of the client shell.
 //! Requests past the end of the script are ignored. Exits on `exit`, at
-//! end of input, or when a step says to. `LSPRESSO_INITIALIZE_RESULT`
+//! end of input, or when a step says to. Every document sync is answered
+//! with a stale publication, then one for the version just sent; emptying
+//! a document with one empty publication. `LSPRESSO_INITIALIZE_RESULT`
 //! overrides the `initialize` result; `LSPRESSO_RECORD` names a file to
 //! append each received message to, as a line of JSON.
 
@@ -92,13 +94,57 @@ fn result_for(request: &Request) -> serde_json::Value {
     }
 }
 
+fn diagnostic(message: &str) -> serde_json::Value {
+    serde_json::json!({
+        "range": { "start": { "line": 0, "character": 0 }, "end": { "line": 0, "character": 0 } },
+        "message": message,
+    })
+}
+
+fn publish(out: &Mutex<Stdout>, params: &serde_json::Value) {
+    let document = &params["textDocument"];
+    let text = document["text"]
+        .as_str()
+        .or_else(|| params["contentChanges"][0]["text"].as_str());
+    let version = document["version"].as_i64().unwrap();
+    let publications = if text == Some("") {
+        vec![(version, vec![])]
+    } else {
+        vec![
+            (version - 1, vec![diagnostic("stale")]),
+            (version, vec![diagnostic(&format!("v{version}"))]),
+        ]
+    };
+    for (version, diagnostics) in publications {
+        write(
+            out,
+            &Message::Notification(Notification::new(
+                "textDocument/publishDiagnostics".to_owned(),
+                serde_json::json!({
+                    "uri": document["uri"],
+                    "version": version,
+                    "diagnostics": diagnostics,
+                }),
+            )),
+        );
+    }
+}
+
 struct Exit;
 
 /// Handles a non-request message, returning the request if it is one.
-fn dispatch(message: Message) -> Result<Option<Request>, Exit> {
+fn dispatch(out: &Mutex<Stdout>, message: Message) -> Result<Option<Request>, Exit> {
     match message {
         Message::Request(request) => return Ok(Some(request)),
         Message::Notification(n) if n.method == "exit" => return Err(Exit),
+        Message::Notification(n)
+            if matches!(
+                n.method.as_str(),
+                "textDocument/didOpen" | "textDocument/didChange"
+            ) =>
+        {
+            publish(out, &n.params);
+        }
         _ => {}
     }
     Ok(None)
@@ -120,13 +166,14 @@ fn read(reader: &mut impl BufRead) -> Result<Message, Exit> {
 /// Keeps serving until the client answers `id`, queueing requests meanwhile.
 fn await_reply(
     reader: &mut impl BufRead,
+    out: &Mutex<Stdout>,
     id: &RequestId,
     queued: &mut VecDeque<Request>,
 ) -> Result<(), Exit> {
     loop {
         match read(reader)? {
             Message::Response(response) if response.id == *id => return Ok(()),
-            message => queued.extend(dispatch(message)?),
+            message => queued.extend(dispatch(out, message)?),
         }
     }
 }
@@ -142,7 +189,7 @@ fn main() {
     loop {
         let request = match queued.pop_front() {
             Some(request) => request,
-            None => match read(&mut reader).and_then(dispatch) {
+            None => match read(&mut reader).and_then(|message| dispatch(&out, message)) {
                 Ok(Some(request)) => request,
                 Ok(None) => continue,
                 Err(Exit) => return,
@@ -179,7 +226,7 @@ fn main() {
                     serde_json::json!({ "items": [{ "section": "lspresso" }] }),
                 )),
             );
-            if let Err(Exit) = await_reply(&mut reader, &id, &mut queued) {
+            if let Err(Exit) = await_reply(&mut reader, &out, &id, &mut queued) {
                 return;
             }
         }

@@ -83,6 +83,7 @@ enum Outcome {
     Ok,
     ResponseError,
     Timeout,
+    DiagnosticsTimeout,
     Malformed,
     /// The stream is gone: a disconnect, or the write failing outright.
     Dead,
@@ -95,6 +96,7 @@ fn classify<T>(result: &lspresso::Result<T>) -> Outcome {
         Err(err) => match err.kind() {
             ErrorKind::Response { .. } => Outcome::ResponseError,
             ErrorKind::ResponseTimeout { .. } => Outcome::Timeout,
+            ErrorKind::DiagnosticsTimeout { .. } => Outcome::DiagnosticsTimeout,
             ErrorKind::MalformedMessage { .. } => Outcome::Malformed,
             ErrorKind::Disconnected { .. } | ErrorKind::Io(_) => Outcome::Dead,
             ErrorKind::NotInitialized => Outcome::NotInitialized,
@@ -114,6 +116,17 @@ struct Model {
 }
 
 impl Model {
+    /// Doc syncs don't consume steps; the server just publishes for them.
+    fn diagnostics(&self) -> Outcome {
+        if self.exited || self.garbled {
+            Outcome::Dead
+        } else if self.stalled {
+            Outcome::DiagnosticsTimeout
+        } else {
+            Outcome::Ok
+        }
+    }
+
     fn request(&mut self, step: Option<Step>) -> Outcome {
         if self.exited {
             return Outcome::Dead;
@@ -167,6 +180,28 @@ impl Model {
     }
 }
 
+/// The server publishes a stale diagnostic before the current one, so
+/// getting the current one back shows the stale one was skipped.
+fn check_diagnostics(client: &mut Client, uri: &lspresso::Uri, version: i32, model: &Model) {
+    let result = timed("next_diagnostics", REQUEST_TIMEOUT, || {
+        client.next_diagnostics(uri, REQUEST_TIMEOUT)
+    });
+    assert_eq!(
+        classify(&result),
+        model.diagnostics(),
+        "next_diagnostics v{version}: {result:?}"
+    );
+    if let Ok(diagnostics) = result {
+        let messages =
+            serde_json::to_value(diagnostics.iter().map(|d| &d.message).collect::<Vec<_>>());
+        assert_eq!(
+            messages.unwrap(),
+            serde_json::json!([format!("v{version}")]),
+            "stale diagnostics weren't skipped"
+        );
+    }
+}
+
 fn timed<T>(label: &str, budget: Duration, call: impl FnOnce() -> T) -> T {
     let start = Instant::now();
     let out = call();
@@ -195,21 +230,27 @@ fn session(script: &[Step], requests: usize) {
     assert_eq!(classify(&init), expected, "initialize: {init:?}");
     let initialized = expected == Outcome::Ok;
 
-    let big_settings = serde_json::json!("1,".repeat(100_000));
+    let uri = lspresso::parse_uri("file:///scripted.json");
+    if initialized {
+        client
+            .did_open(uri.clone(), "{}", lspresso::LanguageKind::JSON)
+            .unwrap();
+        check_diagnostics(&mut client, &uri, 1, &model);
+    }
+
+    let big_document = format!("[{}]", "1,".repeat(100_000) + "1");
     for i in 0..requests {
         if initialized {
             // Large enough to fill a pipe a stalled server isn't draining.
-            let sent = timed("notify", Duration::ZERO, || {
-                client.notify::<gen_lsp_types::DidChangeConfigurationNotification>(
-                    gen_lsp_types::DidChangeConfigurationParams {
-                        settings: big_settings.clone(),
-                    },
-                )
+            let sent = timed("did_change_full", Duration::ZERO, || {
+                client.did_change_full(&uri, big_document.clone())
             });
             // Once the server is gone, the failed write may surface here.
             if !model.exited {
                 sent.unwrap();
             }
+            let version = i32::try_from(i).unwrap() + 2;
+            check_diagnostics(&mut client, &uri, version, &model);
         }
         let result = timed("request", REQUEST_TIMEOUT, || {
             client.request::<gen_lsp_types::WorkspaceSymbolRequest>(

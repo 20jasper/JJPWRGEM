@@ -89,7 +89,9 @@ fn a_session_puts_exactly_these_messages_on_the_wire() {
     client
         .did_open(uri.clone(), "fn main() {}", LanguageKind::Rust)
         .unwrap();
+    client.next_diagnostics(&uri, TIMEOUT).unwrap();
     client.did_change_full(&uri, "fn main() { }").unwrap();
+    client.next_diagnostics(&uri, TIMEOUT).unwrap();
     client.did_close(&uri).unwrap();
     client.shutdown().unwrap();
     client.wait_for_exit(TIMEOUT).unwrap();
