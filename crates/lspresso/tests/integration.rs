@@ -371,6 +371,29 @@ fn first_message(diagnostics: &[lspresso::Diagnostic]) -> serde_json::Value {
 }
 
 #[test]
+fn notifications_received_during_a_request_are_kept_for_later() {
+    let mut client = scripted_initialized(&json!([
+        { "action": "respond:0" },
+        { "flood": 3, "action": "respond:0" },
+    ]));
+    let uri = lspresso::parse_uri("file:///a.json");
+    client
+        .did_open(uri.clone(), "{}", lspresso::LanguageKind::JSON)
+        .unwrap();
+
+    client.formatting(&uri).unwrap();
+
+    let logs = client.take_notifications::<gen_lsp_types::LogMessageNotification>();
+    assert_eq!(logs.len(), 3);
+    assert!(
+        client
+            .take_notifications::<gen_lsp_types::LogMessageNotification>()
+            .is_empty(),
+        "taking them empties the inbox"
+    );
+}
+
+#[test]
 fn waiting_on_one_document_keeps_another_document_s_diagnostics() {
     let mut client = spawn_scripted(1);
     let a = lspresso::parse_uri("file:///a.json");
@@ -389,6 +412,180 @@ fn waiting_on_one_document_keeps_another_document_s_diagnostics() {
     assert_eq!(
         first_message(&client.next_diagnostics(&a, TIMEOUT).unwrap()),
         "v1"
+    );
+}
+
+#[test]
+fn settled_diagnostics_are_the_latest_of_several_publications() {
+    let mut client = spawn_scripted(1);
+    let uri = lspresso::parse_uri("file:///a.json");
+    client
+        .did_open(uri.clone(), "{}", lspresso::LanguageKind::JSON)
+        .unwrap();
+    client.did_save(&uri).unwrap();
+
+    let settled = client
+        .settled_diagnostics(&uri, Duration::from_millis(200), TIMEOUT)
+        .unwrap();
+    assert_eq!(first_message(&settled), "saved");
+}
+
+#[test]
+fn settling_times_out_without_any_publication_to_settle_on() {
+    let mut client = spawn_scripted(1);
+    let uri = lspresso::parse_uri("file:///a.json");
+    client
+        .did_open(uri.clone(), "{}", lspresso::LanguageKind::JSON)
+        .unwrap();
+    client.next_diagnostics(&uri, TIMEOUT).unwrap();
+
+    let err = client
+        .settled_diagnostics(&uri, Duration::from_millis(50), Duration::from_millis(200))
+        .unwrap_err();
+    assert!(
+        matches!(err.kind(), ErrorKind::DiagnosticsTimeout { .. }),
+        "{err:?}"
+    );
+}
+
+#[test]
+fn waiting_for_cleared_diagnostics_skips_non_empty_ones() {
+    let mut client = spawn_scripted(1);
+    let uri = lspresso::parse_uri("file:///a.json");
+    client
+        .did_open(uri.clone(), "{}", lspresso::LanguageKind::JSON)
+        .unwrap();
+    let err = client
+        .wait_for_diagnostics_cleared(&uri, Duration::from_millis(200))
+        .unwrap_err();
+    assert!(
+        matches!(err.kind(), ErrorKind::DiagnosticsTimeout { .. }),
+        "{err:?}"
+    );
+
+    client.did_change_full(&uri, "").unwrap();
+    client.wait_for_diagnostics_cleared(&uri, TIMEOUT).unwrap();
+}
+
+#[test]
+fn settling_fails_when_the_deadline_cuts_the_quiet_window_short() {
+    let mut client = spawn_scripted(1);
+    let uri = lspresso::parse_uri("file:///a.json");
+    client
+        .did_open(uri.clone(), "{}", lspresso::LanguageKind::JSON)
+        .unwrap();
+
+    let err = client
+        .settled_diagnostics(&uri, Duration::from_secs(2), Duration::from_millis(200))
+        .unwrap_err();
+    assert!(
+        matches!(err.kind(), ErrorKind::DiagnosticsTimeout { .. }),
+        "{err:?}"
+    );
+}
+
+#[test]
+fn pulled_diagnostics_are_reused_when_the_server_reports_them_unchanged() {
+    let mut client = spawn_scripted(3);
+    let uri = lspresso::parse_uri("file:///a.json");
+    client
+        .did_open(uri.clone(), "{}", lspresso::LanguageKind::JSON)
+        .unwrap();
+
+    assert_eq!(
+        first_message(&client.pull_diagnostics(&uri).unwrap()),
+        "pulled"
+    );
+    // The scripted server only says "unchanged" if sent the last result id.
+    assert_eq!(
+        first_message(&client.pull_diagnostics(&uri).unwrap()),
+        "pulled"
+    );
+}
+
+#[test]
+fn waits_for_the_end_of_reported_progress() {
+    let mut client = scripted_initialized(&json!([
+        { "action": "respond:0" },
+        { "progress": true, "action": "respond:0" },
+    ]));
+    client
+        .workspace_symbol(gen_lsp_types::WorkspaceSymbolParams {
+            query: String::new(),
+            ..Default::default()
+        })
+        .unwrap();
+
+    let token = client.wait_for_progress_end(TIMEOUT).unwrap();
+    assert_eq!(
+        token,
+        gen_lsp_types::ProgressToken::String("indexing".to_owned())
+    );
+    let rest = client.take_notifications::<gen_lsp_types::ProgressNotification>();
+    let kinds: Vec<_> = rest
+        .iter()
+        .map(|progress| progress.value["kind"].clone())
+        .collect();
+    assert_eq!(kinds, ["begin"], "only the end was taken");
+}
+
+#[test]
+fn waiting_for_a_notification_reads_new_arrivals() {
+    let mut client = scripted_initialized(&json!([
+        { "action": "respond:0" },
+        { "action": "drip" },
+    ]));
+    client.set_request_timeout(Duration::from_millis(50));
+    client
+        .workspace_symbol(gen_lsp_types::WorkspaceSymbolParams {
+            query: String::new(),
+            ..Default::default()
+        })
+        .unwrap_err();
+    client.take_notifications::<gen_lsp_types::LogMessageNotification>();
+
+    client
+        .wait_for_notification::<gen_lsp_types::LogMessageNotification>(|_| true, TIMEOUT)
+        .unwrap();
+}
+
+#[test]
+fn taking_notifications_includes_ones_no_wait_has_read_yet() {
+    let mut client = spawn_scripted(1);
+    let uri = lspresso::parse_uri("file:///a.json");
+    client
+        .did_open(uri, "{}", lspresso::LanguageKind::JSON)
+        .unwrap();
+
+    let start = std::time::Instant::now();
+    let mut published = Vec::new();
+    while published.is_empty() && start.elapsed() < TIMEOUT {
+        published = client.take_notifications::<gen_lsp_types::PublishDiagnosticsNotification>();
+    }
+    assert!(
+        !published.is_empty(),
+        "the server's publications never showed up"
+    );
+}
+
+#[test]
+fn waiting_for_a_notification_that_never_comes_times_out() {
+    let mut client = spawn_scripted(1);
+    let err = client
+        .wait_for_notification::<gen_lsp_types::ShowMessageNotification>(
+            |_| true,
+            Duration::from_millis(100),
+        )
+        .unwrap_err();
+    assert!(
+        matches!(
+            err.kind(),
+            ErrorKind::NotificationTimeout {
+                method: "window/showMessage",
+                ..
+            }
+        ),
+        "{err:?}"
     );
 }
 

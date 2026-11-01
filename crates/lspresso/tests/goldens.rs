@@ -163,10 +163,11 @@ fn jjpwrgem_declares_full_sync_formatting_and_code_actions() {
     assert!(!client.supports_incremental_sync());
     assert!(client.supports_formatting());
     assert!(client.supports_code_action());
+    assert!(!client.supports_pull_diagnostics());
 }
 
 #[test]
-fn vscode_json_declares_incremental_sync_and_code_actions_but_not_formatting() {
+fn vscode_json_declares_incremental_sync_and_pull_diagnostics_but_not_formatting() {
     let client = initialized_with("vscode-json-language-server-4.10.0");
 
     assert_eq!(
@@ -177,6 +178,7 @@ fn vscode_json_declares_incremental_sync_and_code_actions_but_not_formatting() {
     // Declared as an explicit `false`, not left out.
     assert!(!client.supports_formatting());
     assert!(client.supports_code_action());
+    assert!(client.supports_pull_diagnostics());
 }
 
 #[test]

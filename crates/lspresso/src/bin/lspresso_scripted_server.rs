@@ -4,7 +4,8 @@
 //! end of input, or when a step says to. Every document sync is answered
 //! with a stale publication, then one for the version just sent; a save
 //! with one unversioned publication, "saved"; emptying a document with
-//! one empty publication. `LSPRESSO_INITIALIZE_RESULT`
+//! one empty publication. `textDocument/diagnostic` reports "pulled", then
+//! "unchanged" for as long as the client sends that report's result id. `LSPRESSO_INITIALIZE_RESULT`
 //! overrides the `initialize` result; `LSPRESSO_RECORD` names a file to
 //! append each received message to, as a line of JSON.
 
@@ -22,6 +23,7 @@ struct Step {
     flood: u64,
     server_request: bool,
     stray_response: bool,
+    progress: bool,
     action: Action,
 }
 
@@ -45,7 +47,8 @@ enum Action {
 }
 
 /// Each step is `{"action": a}` plus optional `"flood": n`, `"server_request":
-/// bool`, and `"stray_response": bool`, where `a` is `"respond:<ms>"`,
+/// bool`, `"stray_response": bool`, and `"progress": bool` (a `$/progress`
+/// begin and end for token "indexing"), where `a` is `"respond:<ms>"`,
 /// `"late:<ms>"`, `"drip"`, `"error"`, `"ignore"`, `"stall"`, `"garbage"`,
 /// or `"exit"`. A server request holds the step's action until it's answered.
 fn parse(step: &serde_json::Value) -> Step {
@@ -54,6 +57,7 @@ fn parse(step: &serde_json::Value) -> Step {
         flood: step["flood"].as_u64().unwrap_or(0),
         server_request: step["server_request"].as_bool().unwrap_or(false),
         stray_response: step["stray_response"].as_bool().unwrap_or(false),
+        progress: step["progress"].as_bool().unwrap_or(false),
         action: match action {
             "error" => Action::Error,
             "ignore" => Action::Ignore,
@@ -98,6 +102,15 @@ fn result_for(request: &Request) -> serde_json::Value {
             .iter()
             .map(|d| serde_json::json!({ "title": d["message"], "diagnostics": [d] }))
             .collect(),
+        // "unchanged" whenever the client still has the one report there is.
+        "textDocument/diagnostic" if request.params["previousResultId"] == "1" => {
+            serde_json::json!({ "kind": "unchanged", "resultId": "1" })
+        }
+        "textDocument/diagnostic" => serde_json::json!({
+            "kind": "full",
+            "resultId": "1",
+            "items": [diagnostic("pulled")],
+        }),
         _ => serde_json::Value::Null,
     }
 }
@@ -212,6 +225,17 @@ fn main() {
                     serde_json::json!({ "type": 4, "message": "flood" }),
                 )),
             );
+        }
+        if step.progress {
+            for kind in ["begin", "end"] {
+                write(
+                    &out,
+                    &Message::Notification(Notification::new(
+                        "$/progress".to_owned(),
+                        serde_json::json!({ "token": "indexing", "value": { "kind": kind, "title": "indexing" } }),
+                    )),
+                );
+            }
         }
         if step.stray_response {
             write(
