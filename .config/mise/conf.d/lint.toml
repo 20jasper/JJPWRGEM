@@ -39,6 +39,8 @@ run = [
 
 [tasks.lint.tools]
 actionlint = "1.7.12"
+# actionlint checks workflow run blocks with it when on PATH
+shellcheck = "0.11.0"
 "npm:knip" = "6.43.0"
 "npm:oxlint" = "1.89.0"
 
