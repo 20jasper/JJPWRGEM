@@ -36,7 +36,7 @@ fn main() -> ExitCode {
     let style = Style::Pretty(Color::Plain);
 
     if matches!(cli.command, Commands::Lsp) {
-        jjpwrgem_lsp::run_blocking();
+        lsp::run_blocking();
         return ExitCode::SUCCESS;
     }
 

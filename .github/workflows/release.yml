@@ -1,21 +1,8 @@
 name: release
 
-# Every push to main either updates the release PR from pending changesets or,
-# once that PR merges, publishes crates, tags them and gives the libraries
-# GitHub releases. The jjpwrgem tag starts cargo-dist's workflow, which builds
-# the binaries and publishes npm. Each step skips what is already done, so
-# rerunning a failed run finishes a release instead of repeating it.
-
 on:
   push:
     branches: [main]
-  workflow_dispatch:
-    inputs:
-      dry_run:
-        description: Check crates.io trusts this workflow, without publishing
-        required: true
-        type: boolean
-        default: true
 
 permissions: {}
 
@@ -23,84 +10,49 @@ concurrency:
   group: ${{ github.workflow }}
   cancel-in-progress: false
 
-env:
-  CARGO_TERM_COLOR: always
-
 jobs:
-  plan:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    outputs:
-      release: ${{ steps.plan.outputs.release }}
-      publish: ${{ github.event_name == 'push' || !inputs.dry_run }}
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-      - id: plan
-        run: ./scripts/release/plan.sh
-        env:
-          GH_TOKEN: ${{ github.token }}
-
-  pr:
-    needs: plan
-    if: github.event_name == 'push' && needs.plan.outputs.release == 'false'
-    runs-on: ubuntu-latest
-    permissions: {}
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-      - uses: ./.github/actions/setup-rust
-      - uses: ./.github/actions/setup-node
-      - uses: ./.github/actions/setup-mise
-      - run: mise run release-pr
-        env:
-          # not GITHUB_TOKEN, since PRs it opens don't run CI
-          GH_TOKEN: ${{ secrets.RELEASE_PLZ_TOKEN }}
-          HK: "0"
-
-  # dry runs come here too, to check crates.io trusts this workflow
-  publish:
-    needs: plan
-    if: needs.plan.outputs.release == 'true' || github.event_name == 'workflow_dispatch'
+  release:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      pull-requests: write
       id-token: write
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      # a PAT, so the release PR runs CI and the jjpwrgem tag starts cargo-dist's workflow
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1 # zizmor: ignore[artipacked]
         with:
           fetch-depth: 0
-          persist-credentials: false
+          token: ${{ secrets.RELEASE_PLZ_TOKEN }}
       - uses: ./.github/actions/setup-rust
+      - uses: ./.github/actions/setup-node
       - uses: ./.github/actions/setup-mise
-      # fails here, before anything is published, if crates.io doesn't trust this workflow
       - id: crates-io
         uses: rust-lang/crates-io-auth-action@3268eb413133e2960fa4ae0e963ca76380c54cd9 # v1.0.6
-      - run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-      # skips versions already on crates.io and tags any that lack one
-      - run: |
-          if [ "$PUBLISH" = true ]; then
-            mise run release-publish
-          else
-            mise run release-publish --dry-run
-          fi
+      - id: sampo
+        uses: bruits/sampo/crates/sampo-github-action@01b484549021f6f458c5aa93820d4a63a39d9485 # v0.22.0
+        with:
+          command: auto
+          cargo-token: ${{ steps.crates-io.outputs.token }}
+          github-token: ${{ secrets.RELEASE_PLZ_TOKEN }}
+          pr-title: Release
+          # handle releases via script since sampo doesn't handle binary assets or turning off releases granularity
+          create-github-release: false
         env:
-          PUBLISH: ${{ needs.plan.outputs.publish }}
-          CARGO_REGISTRY_TOKEN: ${{ steps.crates-io.outputs.token }}
           HK: "0"
-      # pushed with a PAT so the jjpwrgem tag starts cargo-dist's workflow,
-      # and whatever got tagged is pushed even if a later crate failed
-      - if: always() && needs.plan.outputs.publish == 'true'
-        run: git push "https://x-access-token:$GH_TOKEN@github.com/$GITHUB_REPOSITORY.git" --tags
+      - if: steps.sampo.outputs.released == 'true'
+        run: |
+          git fetch origin release/main
+          git switch release/main
+          mise run package-json
+          git add npm-packages/jjpwrgem
+          git diff --cached --quiet && exit 0
+          git -c user.name="github-actions[bot]" \
+            -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+            commit -m "Sync npm package version"
+          git push origin release/main
         env:
-          GH_TOKEN: ${{ secrets.RELEASE_PLZ_TOKEN }}
-      - if: needs.plan.outputs.publish == 'true'
+          HK: "0"
+      - if: steps.sampo.outputs.published == 'true'
         run: ./scripts/release/github-release.sh
         env:
           GH_TOKEN: ${{ github.token }}

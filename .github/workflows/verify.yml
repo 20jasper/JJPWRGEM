@@ -70,7 +70,6 @@ jobs:
           persist-credentials: false
       - run: ./scripts/pack-npm.sh
 
-  # versions are bumped on the release PR, so check each bump covers its API changes
   semver-checks:
     if: github.head_ref == 'release/main'
     runs-on: ubuntu-latest

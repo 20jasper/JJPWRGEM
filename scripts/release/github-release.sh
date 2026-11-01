@@ -1,9 +1,7 @@
 #!/usr/bin/env bash
-# Give every tagged library version a GitHub release with its changelog
-# section. jjpwrgem is left to cargo-dist, which attaches the binaries.
+# GitHub releases for tagged library versions; cargo-dist makes jjpwrgem's
 set -euo pipefail
 
-# the changelog section under the version's heading, in sampo or release-plz style
 notes() {
   heading="^## \\[?${2//./\\.}([] ]|$)" awk '
     /^## / { if (found) exit; found = $0 ~ ENVIRON["heading"]; next }

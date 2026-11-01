@@ -39,7 +39,6 @@ repository = "https://github.com/20jasper/jjpwrgem"
 
 [workspace]
 members = [
-  # listed so sampo versions the root crate
   ".",
   "crates/ui",
   "crates/parse",
@@ -59,7 +58,7 @@ rstest = "0.28"
 rstest_reuse = "0.7"
 bytes2chars = { version = "0.2", path = "crates/bytes2chars" }
 const_format = "0.2.37"
-jjpwrgem-lsp = { path = "crates/lsp", version = "0.1" }
+lsp = { path = "crates/lsp", version = "0.1", package = "jjpwrgem-lsp" }
 
 [dependencies]
 anstream = "1"
@@ -67,7 +66,7 @@ clap = { version = "4.6.7", features = ["derive"] }
 displaydoc = { workspace = true }
 jjpwrgem-parse = { workspace = true }
 jjpwrgem-ui = { workspace = true }
-jjpwrgem-lsp = { workspace = true }
+lsp = { workspace = true }
 simdutf8 = "0.1.5"
 
 [dev-dependencies]
