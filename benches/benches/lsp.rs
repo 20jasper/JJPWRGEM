@@ -100,9 +100,10 @@ fn warm_client(profile: &Profile, uri: &lspresso::Uri, text: impl Into<String>) 
     client
 }
 
-/// vscode-json takes ~0.5s per diagnostics round trip; criterion's default
-/// linear sampling would run thousands of iterations of that. Flat sampling
-/// keeps the iteration count at the sample size.
+/// vscode-json takes ~0.5s per diagnostics round trip and over a second to
+/// format canada; criterion's default linear sampling would run thousands
+/// of iterations of that. Flat sampling keeps the iteration count at the
+/// sample size.
 fn slow_group<'a>(c: &'a mut Criterion, name: &str) -> BenchmarkGroup<'a, WallTime> {
     let mut group = c.benchmark_group(name);
     group.sampling_mode(SamplingMode::Flat);
@@ -172,6 +173,23 @@ fn bench_diagnostics(c: &mut Criterion) {
     group.finish();
 }
 
+fn bench_formatting(c: &mut Criterion) {
+    let mut group = slow_group(c, "formatting");
+    for profile in profiles() {
+        for name in FIXTURES {
+            let text = std::fs::read_to_string(data_path(name)).expect("read fixture");
+            let uri = fixture_uri(name);
+            let mut client = warm_client(&profile, &uri, text);
+            client.next_diagnostics(&uri, TIMEOUT).unwrap();
+
+            group.bench_with_input(BenchmarkId::new(profile.label, name), &uri, |b, uri| {
+                b.iter(|| client.formatting(black_box(uri)).unwrap());
+            });
+        }
+    }
+    group.finish();
+}
+
 /// `jjp`-only: open -> first diagnostics for a document the server hasn't
 /// seen, then close it untimed. Each iteration opens a fresh URI because
 /// jjp publishes without a version: the clear it sends on close would
@@ -211,12 +229,42 @@ fn bench_open(c: &mut Criterion) {
     group.finish();
 }
 
+/// A document with a missing colon, used to exercise code actions.
+const INVALID_JSON: &str = "{\n  \"key\" 1\n}\n";
+
+/// `jjp`-only: `vscode-json-language-server` has no diagnostic-driven code
+/// action for JSON syntax errors at all -- its only code action is an
+/// unconditional "Sort JSON" command, not a fix for anything, so there's
+/// no equivalent operation on its side to compare against.
+fn bench_code_action(c: &mut Criterion) {
+    let Some(profile) = jjp_profile() else {
+        return;
+    };
+    let uri = lspresso::parse_uri("file:///lspresso-bench-code-action.json");
+    let range = lspresso::Range::new(lspresso::Position::new(0, 0), lspresso::Position::new(2, 1));
+
+    let mut client = warm_client(&profile, &uri, INVALID_JSON);
+    let diagnostics = client.next_diagnostics(&uri, TIMEOUT).unwrap();
+    client
+        .code_action(&uri, range, diagnostics.clone())
+        .unwrap();
+
+    c.bench_function("code_action", |b| {
+        b.iter(|| {
+            client
+                .code_action(black_box(&uri), range, diagnostics.clone())
+                .unwrap()
+        });
+    });
+}
+
 criterion_group! {
     name = benches;
     config = Criterion::default()
         .sample_size(10)
         .warm_up_time(Duration::from_secs(1))
         .measurement_time(Duration::from_secs(3));
-    targets = bench_initialize, bench_diagnostics, bench_open
+    targets = bench_initialize, bench_diagnostics, bench_formatting, bench_open,
+        bench_code_action
 }
 criterion_main!(benches);
