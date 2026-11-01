@@ -1,0 +1,58 @@
+name: release
+
+on:
+  push:
+    branches: [main]
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      id-token: write
+    steps:
+      # a PAT, so the release PR runs CI and the jjpwrgem tag starts cargo-dist's workflow
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1 # zizmor: ignore[artipacked]
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.RELEASE_PLZ_TOKEN }}
+      - uses: ./.github/actions/setup-rust
+      - uses: ./.github/actions/setup-node
+      - uses: ./.github/actions/setup-mise
+      - id: crates-io
+        uses: rust-lang/crates-io-auth-action@3268eb413133e2960fa4ae0e963ca76380c54cd9 # v1.0.6
+      - id: sampo
+        uses: bruits/sampo/crates/sampo-github-action@01b484549021f6f458c5aa93820d4a63a39d9485 # v0.22.0
+        with:
+          command: auto
+          cargo-token: ${{ steps.crates-io.outputs.token }}
+          github-token: ${{ secrets.RELEASE_PLZ_TOKEN }}
+          pr-title: Release
+          # handle releases via script since sampo doesn't handle binary assets or turning off releases granularity
+          create-github-release: false
+        env:
+          HK: "0"
+      - if: steps.sampo.outputs.released == 'true'
+        run: |
+          git fetch origin release/main
+          git switch release/main
+          mise run package-json
+          git add npm-packages/jjpwrgem
+          git diff --cached --quiet && exit 0
+          git -c user.name="github-actions[bot]" \
+            -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+            commit -m "Sync npm package version"
+          git push origin release/main
+        env:
+          HK: "0"
+      - if: steps.sampo.outputs.published == 'true'
+        run: ./scripts/release/github-release.sh
+        env:
+          GH_TOKEN: ${{ github.token }}

@@ -39,6 +39,7 @@ repository = "https://github.com/20jasper/jjpwrgem"
 
 [workspace]
 members = [
+  ".",
   "crates/ui",
   "crates/parse",
   "xtask",

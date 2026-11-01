@@ -1,0 +1,21 @@
+version = 1
+
+[changesets]
+tags = [
+  "Added",
+  "Changed",
+  "Deprecated",
+  "Removed",
+  "Fixed",
+  "Performance",
+  "Documentation",
+]
+
+[changelog]
+automatic_entries = "collapse"
+exclude_acknowledgments = ["20jasper", "Jacob Asper"]
+
+[packages]
+bump_dependents = "out-of-range"
+ignore_unpublished = true
+ignore = ["npm/jjpwrgem-vscode"]

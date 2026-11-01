@@ -10,3 +10,18 @@ run = "dist plan"
 
 [tasks.dist-plan.tools]
 "aqua:axodotdev/cargo-dist" = "0.33.1"
+
+[tasks.changeset]
+description = "Describe a change for the next release"
+run = "sampo add"
+
+[tasks.changeset.tools]
+"github:bruits/sampo" = { version = "0.24.0", version_prefix = "cargo-sampo-v" }
+
+[tasks.release-plan]
+description = "Print the versions pending changesets would release"
+env = { SAMPO_RELEASE_BRANCH = "main" }
+run = "sampo release --dry-run"
+
+[tasks.release-plan.tools]
+"github:bruits/sampo" = { version = "0.24.0", version_prefix = "cargo-sampo-v" }

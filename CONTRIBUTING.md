@@ -42,6 +42,15 @@ Install `jjp` on your PATH for easier testing
 mise run install
 ```
 
-## Commits
+## Changesets
 
-Uses [Conventional Commits](https://www.conventionalcommits.org/). See [committed.toml](./committed.toml) for allowed types
+Uses [sampo](https://github.com/bruits/sampo) changesets. Run `mise run changeset` (`sampo add`) and mark the affected packages like so
+
+```md
+---
+jjpwrgem-parse: patch (Performance)
+jjpwrgem: patch (Performance)
+---
+
+Scan strings with SIMD
+```
