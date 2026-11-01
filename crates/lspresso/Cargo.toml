@@ -11,6 +11,13 @@ include = ["src/**/*"]
 [lib]
 doctest = false
 
+[features]
+test-binaries = []
+
+[[bin]]
+name = "lspresso_scripted_server"
+required-features = ["test-binaries"]
+
 [dependencies]
 crossbeam-channel = "0.5.17"
 displaydoc = { workspace = true }
@@ -22,6 +29,9 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 sysinfo = "0.38"
 thiserror = "2.0.21"
+
+[dev-dependencies]
+proptest = { workspace = true }
 
 [lints]
 workspace = true

@@ -16,7 +16,10 @@ use sysinfo::{Pid, ProcessRefreshKind, RefreshKind, System};
 
 use self::transport::{Incoming, Transport};
 use crate::{
-    Error, Result, core::{self, Effect, State}, error::{ErrorKind, elapsed_ms},
+    Error,
+    Result,
+    core::{self, ClientState, Effect},
+    error::{ErrorKind, elapsed_ms},
 };
 
 const EXIT_POLL_INTERVAL: Duration = Duration::from_millis(1);
