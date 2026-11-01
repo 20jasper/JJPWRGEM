@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.14.1](https://github.com/20jasper/JJPWRGEM/compare/jjpwrgem-parse-v0.14.0...jjpwrgem-parse-v0.14.1) - 2026-10-31
+
+### Performance
+
+- *(serde)* find escapes with the lexer's simd scan ([#514](https://github.com/20jasper/JJPWRGEM/pull/514))
+- *(serde)* write numbers with itoa and zmij ([#513](https://github.com/20jasper/JJPWRGEM/pull/513))
+- *(serde)* write map keys straight into the output ([#511](https://github.com/20jasper/JJPWRGEM/pull/511))
+- *(parse)* return the error instead of unreachable! for the array open bracket ([#508](https://github.com/20jasper/JJPWRGEM/pull/508))
+- *(format)* indent with compile time slices ([#504](https://github.com/20jasper/JJPWRGEM/pull/504))
+- *(parse)* collect container children on a shared scratch stack ([#502](https://github.com/20jasper/JJPWRGEM/pull/502))
+- *(parse)* inline the small helpers on the per token and per value paths ([#496](https://github.com/20jasper/JJPWRGEM/pull/496))
+- *(parse)* split object parsing happy and sad path ([#495](https://github.com/20jasper/JJPWRGEM/pull/495))
+- *(parse)* split sad and happy array paths ([#494](https://github.com/20jasper/JJPWRGEM/pull/494))
+- *(parse)* split mantissa success and error path ([#493](https://github.com/20jasper/JJPWRGEM/pull/493))
+- *(parse)* scan strings with simd ([#492](https://github.com/20jasper/JJPWRGEM/pull/492))
+
 ## [0.14.0](https://github.com/20jasper/JJPWRGEM/compare/jjpwrgem-parse-v0.13.2...jjpwrgem-parse-v0.14.0) - 2026-06-01
 
 ### Added
