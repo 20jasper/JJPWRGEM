@@ -26,13 +26,11 @@ Also there's a really cool axolotl riding a skateboard as the logo
 
 ### Precompiled
 
-Precompiled x86-64 binaries require a CPU with AVX2 support (Intel Haswell 2013+, AMD Ryzen 2017+). ARM binaries have no special requirements
-
 ```bash
 mise use -g github:20jasper/jjpwrgem
 ```
 
-See [releases](https://github.com/20jasper/JJPWRGEM/releases) for shell and PowerShell installation scripts, or `npm install -g jjpwrgem`
+Or `npm install -g jjpwrgem`, `cargo install jjpwrgem --locked`, or download a binary from [releases](https://github.com/20jasper/JJPWRGEM/releases)
 
 ### From source
 

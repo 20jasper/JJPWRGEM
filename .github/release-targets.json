@@ -1,0 +1,27 @@
+[
+  {
+    "target": "aarch64-apple-darwin",
+    "runner": "macos-15",
+    "archive": "jjpwrgem-aarch64-apple-darwin.tar.xz"
+  },
+  {
+    "target": "aarch64-unknown-linux-gnu",
+    "runner": "ubuntu-24.04-arm",
+    "archive": "jjpwrgem-aarch64-unknown-linux-gnu.tar.xz"
+  },
+  {
+    "target": "x86_64-apple-darwin",
+    "runner": "macos-15-intel",
+    "archive": "jjpwrgem-x86_64-apple-darwin.tar.xz"
+  },
+  {
+    "target": "x86_64-unknown-linux-gnu",
+    "runner": "ubuntu-24.04",
+    "archive": "jjpwrgem-x86_64-unknown-linux-gnu.tar.xz"
+  },
+  {
+    "target": "x86_64-pc-windows-msvc",
+    "runner": "windows-2022",
+    "archive": "jjpwrgem-x86_64-pc-windows-msvc.zip"
+  }
+]

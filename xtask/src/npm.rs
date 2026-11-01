@@ -9,7 +9,7 @@ use serde_json::Value;
 
 use crate::npm::metadata::{
     PackageMetadata, PlatformConfig, build_platforms_from_targets,
-    targets::parse_dist_target_from_env,
+    targets::parse_release_targets_from_env,
 };
 
 const BIN_NAME: &str = "jjp";
@@ -42,8 +42,8 @@ pub fn write_package_json() -> Result<()> {
 
 fn patch_package_json() -> Result<Value> {
     let cargo_meta = PackageMetadata::from_cargo_env()?;
-    let targets = parse_dist_target_from_env()?;
-    let platforms = build_platforms_from_targets(&cargo_meta, targets)?;
+    let targets = parse_release_targets_from_env()?;
+    let platforms = build_platforms_from_targets(targets)?;
     apply_patches(serde_json::from_str(TEMPLATE)?, &cargo_meta, platforms)
 }
 

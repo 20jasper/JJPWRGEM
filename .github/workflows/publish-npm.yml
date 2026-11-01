@@ -3,10 +3,6 @@ name: Publish npm
 on:
   workflow_call:
     inputs:
-      plan:
-        description: Dist release plan JSON payload
-        required: true
-        type: string
       tag:
         description: Release tag, defaults to the triggering tag
         required: false
@@ -17,6 +13,9 @@ on:
         required: false
         type: boolean
         default: false
+    secrets:
+      NPM_TOKEN:
+        required: true
 
 permissions:
   contents: none
@@ -27,7 +26,6 @@ jobs:
     name: Publish npm package
     runs-on: ubuntu-latest
     env:
-      PLAN: ${{ inputs.plan }}
       DRY_RUN: ${{ inputs.dry_run }}
     steps:
       - name: Setup Node
@@ -54,14 +52,15 @@ jobs:
           name=$(tar -xzOf "${tarball}" package/package.json | jq -r .name)
           version=$(tar -xzOf "${tarball}" package/package.json | jq -r .version)
           if [ -n "$(npm view "${name}@${version}" version 2>/dev/null)" ]; then
-            echo "${name}@${version} is already on npm, nothing to publish" >&2
-            exit 1
+            echo "${name}@${version} is already on npm, nothing to publish"
+            exit 0
           fi
           echo "Publishing ${tarball}"
-          IS_PRERELEASE=$(echo "$PLAN" | jq -r '.announcement_is_prerelease')
           args=(--access public --provenance)
-          if [ "$IS_PRERELEASE" = "true" ]; then
-            args+=(--tag alpha)
+          # a prerelease like 1.2.0-alpha.1 goes to the alpha dist-tag, not latest
+          if [[ "$version" == *-* ]]; then
+            prerelease=${version#*-}
+            args+=(--tag "${prerelease%%.*}")
           fi
           if [ "$DRY_RUN" = "true" ]; then
             args+=(--dry-run)

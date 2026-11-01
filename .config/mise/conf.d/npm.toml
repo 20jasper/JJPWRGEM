@@ -1,6 +1,6 @@
 [tasks.package-json]
 description = "Regenerate package.json and shrinkwrap"
-sources = ["xtask/src/**/*.rs", "Cargo.toml", "dist-workspace.toml"]
+sources = ["xtask/src/**/*.rs", "Cargo.toml", ".github/release-targets.json"]
 outputs = [
   "npm-packages/jjpwrgem/package.json",
   "npm-packages/jjpwrgem/npm-shrinkwrap.json",

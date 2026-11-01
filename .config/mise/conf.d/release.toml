@@ -1,16 +1,3 @@
-[tasks.release-notes]
-description = "Print GitHub release notes from dist host JSON"
-run = "dist host --steps=create --output-format=json | jq -r .announcement_github_body"
-
-[tasks.release-notes.tools]
-"aqua:axodotdev/cargo-dist" = "0.33.1"
-
-[tasks.dist-plan]
-run = "dist plan"
-
-[tasks.dist-plan.tools]
-"aqua:axodotdev/cargo-dist" = "0.33.1"
-
 [tasks.changeset]
 description = "Describe a change for the next release"
 run = "sampo add"
