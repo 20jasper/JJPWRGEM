@@ -1,7 +1,7 @@
 use std::{io, time::Instant};
 
 use displaydoc::Display;
-use gen_lsp_types::Uri;
+use gen_lsp_types::{Range, Uri};
 use lsp_server::RequestId;
 
 /// {0}
@@ -87,6 +87,10 @@ pub enum ErrorKind {
     AlreadyOpen { uri: Uri },
     /// {uri} is not open: call did_open before sending document notifications for it
     NotOpen { uri: Uri },
+    /// edit {index} has a range that isn't valid in the document: {range:?}
+    InvalidEdit { index: usize, range: Range },
+    /// edits {a} and {b} overlap
+    OverlappingEdits { a: usize, b: usize },
     /// exhausted available document versions for {uri}
     DocumentVersionExhausted { uri: Uri },
     /// {method} response was malformed: {message}

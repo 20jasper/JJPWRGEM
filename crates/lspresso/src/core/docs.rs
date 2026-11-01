@@ -4,9 +4,7 @@ use gen_lsp_types::Uri;
 
 use crate::error::ErrorKind;
 
-/// Open-document bookkeeping (version numbers only -- lspresso doesn't need
-/// to track the tracked text itself, since every caller passes the full
-/// text back in on each `did_change_full`).
+/// Each open document's version and text, as the server was last told.
 ///
 /// `next_version`/`mark_open`/`commit_change` are split into a peek step
 /// (no mutation) and a commit step (mutation), so a failed send between the
@@ -14,7 +12,13 @@ use crate::error::ErrorKind;
 /// server actually received.
 #[derive(Debug, Default)]
 pub(crate) struct DocumentTracker {
-    open_docs: HashMap<Uri, i32>,
+    open_docs: HashMap<Uri, Document>,
+}
+
+#[derive(Debug)]
+struct Document {
+    version: i32,
+    text: String,
 }
 
 impl DocumentTracker {
@@ -36,9 +40,16 @@ impl DocumentTracker {
 
     /// The version the server was last told `uri` is at.
     pub(crate) fn current_version(&self, uri: &Uri) -> crate::Result<i32> {
+        self.document(uri).map(|document| document.version)
+    }
+
+    pub(crate) fn text(&self, uri: &Uri) -> crate::Result<&str> {
+        self.document(uri).map(|document| document.text.as_str())
+    }
+
+    fn document(&self, uri: &Uri) -> crate::Result<&Document> {
         self.open_docs
             .get(uri)
-            .copied()
             .ok_or_else(|| ErrorKind::NotOpen { uri: uri.clone() }.into())
     }
 
@@ -50,13 +61,13 @@ impl DocumentTracker {
             .ok_or_else(|| ErrorKind::DocumentVersionExhausted { uri: uri.clone() }.into())
     }
 
-    pub(crate) fn mark_open(&mut self, uri: Uri) {
-        self.open_docs.insert(uri, 1);
+    pub(crate) fn mark_open(&mut self, uri: Uri, text: String) {
+        self.open_docs.insert(uri, Document { version: 1, text });
     }
 
-    pub(crate) fn commit_change(&mut self, uri: &Uri, version: i32) {
+    pub(crate) fn commit_change(&mut self, uri: &Uri, version: i32, text: String) {
         if let Some(current) = self.open_docs.get_mut(uri) {
-            *current = version;
+            *current = Document { version, text };
         }
     }
 
@@ -78,7 +89,7 @@ mod tests {
     #[test]
     fn opening_twice_without_closing_is_rejected() {
         let mut tracker = DocumentTracker::default();
-        tracker.mark_open(uri("file:///a.json"));
+        tracker.mark_open(uri("file:///a.json"), String::new());
 
         assert!(matches!(
             tracker
@@ -108,7 +119,7 @@ mod tests {
     fn next_version_does_not_commit_until_commit_change_runs() {
         let mut tracker = DocumentTracker::default();
         let uri = uri("file:///a.json");
-        tracker.mark_open(uri.clone());
+        tracker.mark_open(uri.clone(), String::new());
 
         let peeked = tracker.next_version(&uri).unwrap();
         assert_eq!(peeked, 2);
@@ -117,7 +128,7 @@ mod tests {
         // advanced anything.
         assert_eq!(tracker.next_version(&uri).unwrap(), 2);
 
-        tracker.commit_change(&uri, peeked);
+        tracker.commit_change(&uri, peeked, String::new());
         assert_eq!(tracker.next_version(&uri).unwrap(), 3);
     }
 
@@ -125,13 +136,13 @@ mod tests {
     fn closing_then_reopening_resets_the_version() {
         let mut tracker = DocumentTracker::default();
         let uri = uri("file:///a.json");
-        tracker.mark_open(uri.clone());
-        tracker.commit_change(&uri, 5);
+        tracker.mark_open(uri.clone(), String::new());
+        tracker.commit_change(&uri, 5, String::new());
 
         tracker.mark_closed(&uri);
         assert!(tracker.require_open(&uri).is_err());
 
-        tracker.mark_open(uri.clone());
+        tracker.mark_open(uri.clone(), String::new());
         assert_eq!(tracker.next_version(&uri).unwrap(), 2);
     }
 
@@ -167,21 +178,21 @@ mod tests {
         ) {
             let uris: Vec<Uri> = (0..DOCS).map(|i| uri(&format!("file:///{i}.json"))).collect();
             let mut tracker = DocumentTracker::default();
-            let mut model: std::collections::HashMap<usize, i32> = std::collections::HashMap::new();
+            let mut model: std::collections::HashMap<usize, (i32, String)> = std::collections::HashMap::new();
 
             for op in ops {
                 match op {
                     Op::Open(i) => {
                         prop_assert_eq!(tracker.require_not_open(&uris[i]).is_ok(), !model.contains_key(&i));
                         if tracker.require_not_open(&uris[i]).is_ok() {
-                            tracker.mark_open(uris[i].clone());
-                            model.insert(i, 1);
+                            tracker.mark_open(uris[i].clone(), format!("{i}"));
+                            model.insert(i, (1, format!("{i}")));
                         }
                     }
                     Op::Change(i) => {
                         if let Ok(version) = tracker.next_version(&uris[i]) {
-                            tracker.commit_change(&uris[i], version);
-                            *model.get_mut(&i).unwrap() += 1;
+                            tracker.commit_change(&uris[i], version, format!("{i}@{version}"));
+                            model.insert(i, (version, format!("{i}@{version}")));
                         }
                     }
                     Op::ChangeSendFails(i) => {
@@ -199,9 +210,10 @@ mod tests {
                     prop_assert_eq!(tracker.require_open(uri).is_ok(), model.contains_key(&i));
                     prop_assert_eq!(
                         tracker.next_version(uri).ok(),
-                        model.get(&i).map(|version| version + 1),
+                        model.get(&i).map(|(version, _)| version + 1),
                         "doc {} disagrees with the model", i
                     );
+                    prop_assert_eq!(tracker.text(uri).ok(), model.get(&i).map(|(_, text)| text.as_str()));
                 }
             }
         }

@@ -5,8 +5,8 @@
 
 use gen_lsp_types::{
     ClientCapabilities, CodeActionProvider, DocumentFormattingProvider, GeneralClientCapabilities,
-    InitializeParams, PositionEncodingKind, ServerCapabilities, TextDocumentSync,
-    TextDocumentSyncKind,
+    InitializeParams, PositionEncodingKind, Save, SaveOptions, ServerCapabilities,
+    TextDocumentSync, TextDocumentSyncKind, TextDocumentSyncOptions,
 };
 
 fn with_position_encodings(position_encodings: Vec<PositionEncodingKind>) -> ClientCapabilities {
@@ -68,6 +68,18 @@ pub(crate) fn text_document_sync_kind(
         TextDocumentSync::Kind(kind) => Some(*kind),
         TextDocumentSync::Options(options) => options.change,
     }
+}
+
+pub(crate) fn save_includes_text(capabilities: &ServerCapabilities) -> bool {
+    matches!(
+        &capabilities.text_document_sync,
+        Some(TextDocumentSync::Options(TextDocumentSyncOptions {
+            save: Some(Save::SaveOptions(SaveOptions {
+                include_text: Some(true)
+            })),
+            ..
+        }))
+    )
 }
 
 /// An explicit `false` means unsupported, not just an absent field.

@@ -11,9 +11,9 @@ use gen_lsp_types::{
     ClientCapabilities, CodeActionContext, CodeActionParams, CodeActionResponse, Diagnostic,
     DidChangeTextDocumentNotification, DidChangeTextDocumentParams,
     DidCloseTextDocumentNotification, DidCloseTextDocumentParams, DidOpenTextDocumentNotification,
-    DidOpenTextDocumentParams, DocumentDiagnosticParams, DocumentFormattingParams,
-    ExitNotification, FormattingOptions, InitializeRequest, InitializeResult,
-    InitializedNotification, InitializedParams, LanguageKind, MessageDirection,
+    DidOpenTextDocumentParams, DidSaveTextDocumentParams, DocumentDiagnosticParams,
+    DocumentFormattingParams, ExitNotification, FormattingOptions, InitializeRequest,
+    InitializeResult, InitializedNotification, InitializedParams, LanguageKind, MessageDirection,
     Notification as LspNotification, ProgressNotification, ProgressToken,
     PublishDiagnosticsNotification, Range, Request as LspRequest, ServerCapabilities,
     ShutdownRequest, TextDocumentContentChangeEvent, TextDocumentContentChangeWholeDocument,
@@ -30,6 +30,7 @@ use crate::{
     core::{
         diagnostics::PullCache,
         inbox::{Inbox, Verdict},
+        text::{self, Encoding},
         self, ClientState, DocumentTracker, Effect,
     },
     error::{ErrorKind, elapsed_ms},
@@ -153,33 +154,79 @@ impl Client {
     ) -> crate::Result<()> {
         self.state.require_initialized()?;
         self.docs.require_not_open(&uri)?;
+        let text = text.into();
         self.send_notification::<DidOpenTextDocumentNotification>(DidOpenTextDocumentParams {
             text_document: TextDocumentItem {
                 uri: uri.clone(),
                 language_id: language,
                 version: 1,
-                text: text.into(),
+                text: text.clone(),
             },
         })?;
         self.pulled.forget(&uri);
-        self.docs.mark_open(uri);
+        self.docs.mark_open(uri, text);
         Ok(())
     }
 
     pub fn did_change_full(&mut self, uri: &Uri, text: impl Into<String>) -> crate::Result<()> {
         self.state.require_initialized()?;
         let version = self.docs.next_version(uri)?;
+        let text = text.into();
+        self.send_change(uri, version, vec![whole_document(text.clone())])?;
+        self.docs.commit_change(uri, version, text);
+        Ok(())
+    }
+
+    /// Applies `edits` to the document's text, each against it as it is,
+    /// and sends the change: as those edits if the server syncs
+    /// incrementally, otherwise as the whole new text.
+    pub fn did_change(&mut self, uri: &Uri, edits: &[TextEdit]) -> crate::Result<()> {
+        self.state.require_initialized()?;
+        let version = self.docs.next_version(uri)?;
+        let applied = text::apply(self.docs.text(uri)?, edits, self.position_encoding())?;
+        let changes = if self.supports_incremental_sync() {
+            applied.changes
+        } else {
+            vec![whole_document(applied.text.clone())]
+        };
+        self.send_change(uri, version, changes)?;
+        self.docs.commit_change(uri, version, applied.text);
+        Ok(())
+    }
+
+    fn send_change(
+        &mut self,
+        uri: &Uri,
+        version: i32,
+        content_changes: Vec<TextDocumentContentChangeEvent>,
+    ) -> crate::Result<()> {
         self.send_notification::<DidChangeTextDocumentNotification>(DidChangeTextDocumentParams {
             text_document: VersionedTextDocumentIdentifier {
                 version,
                 text_document_identifier: TextDocumentIdentifier { uri: uri.clone() },
             },
-            content_changes: vec![TextDocumentContentChangeEvent::from(
-                TextDocumentContentChangeWholeDocument { text: text.into() },
-            )],
-        })?;
-        self.docs.commit_change(uri, version);
-        Ok(())
+            content_changes,
+        })
+    }
+
+    /// Sends a `didSave`, with the document's text if the server asked for
+    /// it.
+    pub fn did_save(&mut self, uri: &Uri) -> crate::Result<()> {
+        self.state.require_initialized()?;
+        let text = self.docs.text(uri)?;
+        let text = self
+            .server_capabilities()
+            .is_some_and(core::capabilities::save_includes_text)
+            .then(|| text.to_owned());
+        self.protocol_did_save(DidSaveTextDocumentParams {
+            text_document: TextDocumentIdentifier { uri: uri.clone() },
+            text,
+        })
+    }
+
+    /// The document's text as the server was last told it.
+    pub fn document_text(&self, uri: &Uri) -> Option<&str> {
+        self.docs.text(uri).ok()
     }
 
     pub fn did_close(&mut self, uri: &Uri) -> crate::Result<()> {
@@ -379,6 +426,13 @@ impl Client {
     /// What the server declared in its `initialize` response.
     pub const fn server_capabilities(&self) -> Option<&ServerCapabilities> {
         self.server_capabilities.as_ref()
+    }
+
+    fn position_encoding(&self) -> Encoding {
+        Encoding::negotiated(
+            self.server_capabilities()
+                .and_then(|capabilities| capabilities.position_encoding.as_ref()),
+        )
     }
 
     pub fn text_document_sync_kind(&self) -> Option<TextDocumentSyncKind> {
@@ -589,6 +643,10 @@ impl Client {
             }
         }
     }
+}
+
+fn whole_document(text: String) -> TextDocumentContentChangeEvent {
+    TextDocumentContentChangeWholeDocument { text }.into()
 }
 
 fn diagnostics_timeout(uri: &Uri, start: Instant) -> Error {

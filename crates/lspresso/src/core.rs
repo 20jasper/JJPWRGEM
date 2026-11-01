@@ -5,6 +5,7 @@ mod docs;
 pub(crate) mod inbox;
 mod lifecycle;
 mod server_requests;
+pub(crate) mod text;
 
 pub(crate) use lifecycle::ClientState;
 pub(crate) use docs::DocumentTracker;
