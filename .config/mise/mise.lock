@@ -174,10 +174,6 @@ backend = "cargo:cargo-rdme"
 version = "1.14.0"
 backend = "cargo:cargo-shear"
 
-[[tools."cargo:committed"]]
-version = "1.1.11"
-backend = "cargo:committed"
-
 [[tools."cargo:gungraun-runner"]]
 version = "0.20.0"
 backend = "cargo:gungraun-runner"

@@ -42,6 +42,14 @@ Install `jjp` on your PATH for easier testing
 mise run install
 ```
 
-## Commits
+## Releases
 
-Uses [Conventional Commits](https://www.conventionalcommits.org/). See [committed.toml](./committed.toml) for allowed types
+Releases are driven by [sampo](https://github.com/bruits/sampo) changesets. Add one to any PR that changes a published crate
+
+```bash
+mise run changeset
+```
+
+Pick each crate the change touches and a bump, tagged with its changelog section, e.g. `cargo/jjpwrgem-parse: patch (Performance)`. Name `cargo/jjpwrgem` too when CLI users should see the change. The description becomes the changelog entry
+
+Merged changesets collect in a release PR, and merging that PR publishes to crates.io, GitHub releases and npm. `mise run release-plan` shows what the next release would bump

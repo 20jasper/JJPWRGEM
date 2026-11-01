@@ -1,6 +1,7 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": ["config:best-practices"],
+  "semanticCommits": "disabled",
   "schedule": ["on tuesday and wednesday"],
   "packageRules": [
     {
@@ -148,9 +149,10 @@
         ".config/mise/conf.d/*.toml"
       ],
       "matchPackageNames": [
+        "axodotdev/cargo-dist",
         "aqua:axodotdev/cargo-dist",
-        "cargo:release-plz",
-        "cargo:cargo-release"
+        "bruits/sampo",
+        "github:bruits/sampo"
       ],
       "groupName": "mise release tools",
       "dependencyDashboardApproval": true

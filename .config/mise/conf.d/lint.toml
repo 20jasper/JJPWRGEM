@@ -76,13 +76,6 @@ run = "shellcheck --shell=bash $(git ls-files '*.sh' '*.bash')"
 [tasks.shellcheck.tools]
 shellcheck = "0.11.0"
 
-[tasks.committed]
-usage = 'arg "<commit-file>"'
-run = 'committed --commit-file "$usage_commit_file" --no-merge-commit --no-fixup --no-wip'
-
-[tasks.committed.tools]
-"cargo:committed" = "1.1.11"
-
 [tasks.package-check]
 description = "check rust crates are ready to publish"
 run = "cargo package -p bytes2chars -p jjpwrgem-parse -p jjpwrgem-ui -p jjpwrgem-lsp -p jjpwrgem-schema -p jjpwrgem --allow-dirty --no-verify"

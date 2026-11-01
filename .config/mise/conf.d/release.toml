@@ -10,3 +10,32 @@ run = "dist plan"
 
 [tasks.dist-plan.tools]
 "aqua:axodotdev/cargo-dist" = "0.33.1"
+
+[tasks.changeset]
+description = "Describe a change for the next release"
+run = "sampo add"
+
+[tasks.changeset.tools]
+"github:bruits/sampo" = { version = "0.23.0", version_prefix = "cargo-sampo-v" }
+
+[tasks.release-plan]
+description = "Print the versions pending changesets would release"
+env = { SAMPO_RELEASE_BRANCH = "main" }
+run = "sampo release --dry-run"
+
+[tasks.release-plan.tools]
+"github:bruits/sampo" = { version = "0.23.0", version_prefix = "cargo-sampo-v" }
+
+[tasks.release-pr]
+description = "Open or update the release PR from pending changesets"
+run = "./scripts/release/release-pr.sh"
+
+[tasks.release-pr.tools]
+"github:bruits/sampo" = { version = "0.23.0", version_prefix = "cargo-sampo-v" }
+
+[tasks.release-publish]
+description = "Publish untagged crate versions to crates.io and tag them"
+run = "sampo publish"
+
+[tasks.release-publish.tools]
+"github:bruits/sampo" = { version = "0.23.0", version_prefix = "cargo-sampo-v" }

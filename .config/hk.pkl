@@ -87,13 +87,6 @@ local sync_mise = new Mapping<String, Step> {
   }
 }
 
-// Validate the commit message format against conventional-commits.
-local commit_msg_steps = new Mapping<String, Step> {
-  ["committed"] {
-    check = "mise run committed {{commit_msg_file}}"
-  }
-}
-
 hooks {
   ["pre-commit"] {
     fix = true
@@ -115,8 +108,5 @@ hooks {
   }
   ["post-checkout"] {
     steps = sync_mise
-  }
-  ["commit-msg"] {
-    steps = commit_msg_steps
   }
 }

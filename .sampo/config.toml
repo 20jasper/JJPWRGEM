@@ -1,0 +1,23 @@
+version = 1
+
+[changesets]
+tags = [
+  "Added",
+  "Changed",
+  "Deprecated",
+  "Removed",
+  "Fixed",
+  "Performance",
+  "Documentation",
+]
+
+[changelog]
+# no "Updated dependencies" entry in every crate each time parse moves
+automatic_entries = "collapse"
+exclude_acknowledgments = ["20jasper", "Jacob Asper"]
+
+[packages]
+# xtask, benches and the private root package.json
+ignore_unpublished = true
+# published to the marketplaces by publish-vscode.yml on vscode-v tags, not npm
+ignore = ["npm/jjpwrgem-vscode"]
