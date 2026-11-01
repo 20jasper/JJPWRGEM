@@ -1,0 +1,8 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc b2724538fa42e84c78611feb3f753d0602390e1aa782d9bf5f79857c24f1eec8 # shrinks to script = [Step { flood: 0, server_request: false, action: Respond { delay_ms: 0 } }, Step { flood: 0, server_request: false, action: Garbage }, Step { flood: 1, server_request: false, action: Respond { delay_ms: 0 } }], formattings = 1
+cc 74607e03fc6c6ee26b472364fa531ee8a549721b063446254582599f5153d7ae # shrinks to script = [Step { flood: 0, server_request: false, action: Respond { delay_ms: 0 } }, Step { flood: 0, server_request: false, action: Exit }], formattings = 3

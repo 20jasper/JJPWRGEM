@@ -107,6 +107,31 @@ fn wait_for_exit_times_out_instead_of_blocking_forever_on_a_hung_process() {
 }
 
 #[test]
+fn a_constant_stream_of_notifications_does_not_stop_timeouts_firing() {
+    let mut client =
+        scripted_initialized(&json!([{ "action": "respond:0" }, { "action": "drip" }]));
+    client.set_request_timeout(Duration::from_millis(200));
+
+    let err = workspace_symbol(&mut client).unwrap_err();
+    assert!(matches!(err.kind(), ErrorKind::ResponseTimeout { .. }));
+}
+
+#[test]
+fn a_malformed_frame_is_reported_as_such_not_as_a_disconnect() {
+    let mut client =
+        scripted_initialized(&json!([{ "action": "respond:0" }, { "action": "garbage" }]));
+
+    let err = client.shutdown().unwrap_err();
+    assert!(matches!(
+        err.kind(),
+        ErrorKind::MalformedMessage {
+            method: "shutdown",
+            ..
+        }
+    ));
+}
+
+#[test]
 fn spawning_a_missing_program_names_it_in_the_error() {
     let err = Client::spawn(Command::new("lspresso-no-such-server")).unwrap_err();
 
@@ -114,6 +139,17 @@ fn spawning_a_missing_program_names_it_in_the_error() {
         matches!(err.kind(), ErrorKind::Spawn { program, .. } if program == "lspresso-no-such-server")
     );
     assert!(err.to_string().contains("lspresso-no-such-server"));
+}
+
+#[test]
+fn server_requests_are_answered_so_a_server_waiting_on_one_does_not_stall() {
+    let mut client = scripted_initialized(&json!([
+        { "server_request": true, "action": "respond:0" },
+        { "action": "respond:0" },
+    ]));
+
+    client.shutdown().unwrap();
+    assert!(client.wait_for_exit(TIMEOUT).unwrap().success());
 }
 
 #[test]
@@ -127,6 +163,27 @@ fn wait_for_exit_times_out_when_stdout_closes_but_the_process_keeps_running() {
         .wait_for_exit(Duration::from_millis(200))
         .unwrap_err();
     assert!(matches!(err.kind(), ErrorKind::ExitTimeout { .. }));
+}
+
+#[test]
+fn a_server_that_stops_reading_stdin_times_out_instead_of_blocking_the_caller() {
+    let mut client =
+        scripted_initialized(&json!([{ "action": "respond:0" }, { "action": "stall" }]));
+    client.set_request_timeout(Duration::from_millis(100));
+    let err = workspace_symbol(&mut client).unwrap_err();
+    assert!(matches!(err.kind(), ErrorKind::ResponseTimeout { .. }));
+
+    // Many pipe buffers' worth: a write on the caller's thread would block forever.
+    client
+        .notify::<gen_lsp_types::DidChangeConfigurationNotification>(
+            gen_lsp_types::DidChangeConfigurationParams {
+                settings: json!("x".repeat(4 * 1024 * 1024)),
+            },
+        )
+        .unwrap();
+
+    let err = workspace_symbol(&mut client).unwrap_err();
+    assert!(matches!(err.kind(), ErrorKind::ResponseTimeout { .. }));
 }
 
 fn spawn_scripted(responses: usize) -> Client {

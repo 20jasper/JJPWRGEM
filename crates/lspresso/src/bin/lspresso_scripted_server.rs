@@ -4,34 +4,63 @@
 //! end of input, or when a step says to.
 
 use std::{
-    io::{BufRead, BufReader, Stdout, stdin, stdout},
+    collections::VecDeque,
+    io::{BufRead, BufReader, Stdout, Write, stdin, stdout},
     sync::{Arc, Mutex},
     thread::sleep,
     time::Duration,
 };
 
-use lsp_server::{Message, Request, Response};
+use lsp_server::{ErrorCode, Message, Notification, Request, RequestId, Response};
 
 struct Step {
+    flood: u64,
+    server_request: bool,
+    stray_response: bool,
     action: Action,
 }
 
 enum Action {
-    Respond { delay_ms: u64 },
+    Respond {
+        delay_ms: u64,
+    },
+    /// Responds from a background thread after `delay_ms`, while the main
+    /// loop keeps handling requests -- for responses that arrive late.
+    Late {
+        delay_ms: u64,
+    },
+    /// Never responds, but writes a notification every 2ms for 1.5s.
+    Drip,
+    Error,
     Ignore,
+    /// Never reads stdin again, so the client's writes back up.
+    Stall,
+    Garbage,
     Exit,
 }
 
-/// Each step is `{"action": a}`, where `a` is `"respond:<ms>"`, `"ignore"`,
-/// or `"exit"`.
+/// Each step is `{"action": a}` plus optional `"flood": n`, `"server_request":
+/// bool`, and `"stray_response": bool`, where `a` is `"respond:<ms>"`,
+/// `"late:<ms>"`, `"drip"`, `"error"`, `"ignore"`, `"stall"`, `"garbage"`,
+/// or `"exit"`. A server request holds the step's action until it's answered.
 fn parse(step: &serde_json::Value) -> Step {
     let action = step["action"].as_str().unwrap();
     Step {
+        flood: step["flood"].as_u64().unwrap_or(0),
+        server_request: step["server_request"].as_bool().unwrap_or(false),
+        stray_response: step["stray_response"].as_bool().unwrap_or(false),
         action: match action {
+            "error" => Action::Error,
             "ignore" => Action::Ignore,
+            "garbage" => Action::Garbage,
             "exit" => Action::Exit,
+            "drip" => Action::Drip,
+            "stall" => Action::Stall,
             _ => match action.split_once(':').unwrap() {
                 ("respond", ms) => Action::Respond {
+                    delay_ms: ms.parse().unwrap(),
+                },
+                ("late", ms) => Action::Late {
                     delay_ms: ms.parse().unwrap(),
                 },
                 _ => panic!("unknown action {action}"),
@@ -43,6 +72,12 @@ fn parse(step: &serde_json::Value) -> Step {
 fn write(out: &Mutex<Stdout>, message: &Message) {
     let mut out = out.lock().unwrap();
     message.write(&mut *out).unwrap();
+}
+
+fn stall() -> ! {
+    loop {
+        sleep(Duration::from_secs(3600));
+    }
 }
 
 fn result_for(request: &Request) -> serde_json::Value {
@@ -68,23 +103,75 @@ fn read(reader: &mut impl BufRead) -> Result<Message, Exit> {
     Message::read(reader).ok().flatten().ok_or(Exit)
 }
 
+/// Keeps serving until the client answers `id`, queueing requests meanwhile.
+fn await_reply(
+    reader: &mut impl BufRead,
+    id: &RequestId,
+    queued: &mut VecDeque<Request>,
+) -> Result<(), Exit> {
+    loop {
+        match read(reader)? {
+            Message::Response(response) if response.id == *id => return Ok(()),
+            message => queued.extend(dispatch(message)?),
+        }
+    }
+}
+
 fn main() {
     let script: Vec<serde_json::Value> =
         serde_json::from_str(&std::env::var("LSPRESSO_SCRIPT").unwrap()).unwrap();
     let mut steps = script.iter().map(parse);
     let out = Arc::new(Mutex::new(stdout()));
     let mut reader = BufReader::new(stdin());
+    let mut queued = VecDeque::new();
 
     loop {
-        let request = match read(&mut reader).and_then(dispatch) {
-            Ok(Some(request)) => request,
-            Ok(None) => continue,
-            Err(Exit) => return,
+        let request = match queued.pop_front() {
+            Some(request) => request,
+            None => match read(&mut reader).and_then(dispatch) {
+                Ok(Some(request)) => request,
+                Ok(None) => continue,
+                Err(Exit) => return,
+            },
         };
         let Some(step) = steps.next() else { continue };
 
+        for _ in 0..step.flood {
+            write(
+                &out,
+                &Message::Notification(Notification::new(
+                    "window/logMessage".to_owned(),
+                    serde_json::json!({ "type": 4, "message": "flood" }),
+                )),
+            );
+        }
+        if step.stray_response {
+            write(
+                &out,
+                &Message::Response(Response::new_ok(
+                    RequestId::from(format!("stray-{}", request.id)),
+                    serde_json::Value::Null,
+                )),
+            );
+        }
+
+        if step.server_request {
+            let id = RequestId::from(format!("server-{}", request.id));
+            write(
+                &out,
+                &Message::Request(Request::new(
+                    id.clone(),
+                    "workspace/configuration".to_owned(),
+                    serde_json::json!({ "items": [{ "section": "lspresso" }] }),
+                )),
+            );
+            if let Err(Exit) = await_reply(&mut reader, &id, &mut queued) {
+                return;
+            }
+        }
+
         match step.action {
-            Action::Respond { delay_ms } => {
+            Action::Respond { delay_ms } | Action::Late { delay_ms } => {
                 let out = Arc::clone(&out);
                 let response = Response::new_ok(request.id.clone(), result_for(&request));
                 std::thread::spawn(move || {
@@ -92,7 +179,36 @@ fn main() {
                     write(&out, &Message::Response(response));
                 });
             }
+            Action::Error => write(
+                &out,
+                &Message::Response(Response::new_err(
+                    request.id,
+                    ErrorCode::InternalError as i32,
+                    "scripted error".to_owned(),
+                )),
+            ),
+            Action::Drip => {
+                let out = Arc::clone(&out);
+                std::thread::spawn(move || {
+                    for _ in 0..750 {
+                        write(
+                            &out,
+                            &Message::Notification(Notification::new(
+                                "window/logMessage".to_owned(),
+                                serde_json::json!({ "type": 4, "message": "drip" }),
+                            )),
+                        );
+                        sleep(Duration::from_millis(2));
+                    }
+                });
+            }
             Action::Ignore => {}
+            Action::Stall => stall(),
+            Action::Garbage => {
+                let mut out = out.lock().unwrap();
+                out.write_all(b"Content-Length: 8\r\n\r\nnot json").unwrap();
+                out.flush().unwrap();
+            }
             Action::Exit => std::process::exit(0),
         }
     }
