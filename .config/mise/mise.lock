@@ -194,6 +194,55 @@ backend = "cargo:tracey"
 version = "1.51.1"
 backend = "cargo:typos-cli"
 
+[[tools."github:bruits/sampo"]]
+version = "0.23.0"
+backend = "github:bruits/sampo"
+
+[tools."github:bruits/sampo".options]
+version_prefix = "cargo-sampo-v"
+
+[tools."github:bruits/sampo"."platforms.linux-arm64"]
+checksum = "sha256:b7acca5cf6f9591e50ca6bc71c63bf3d63e5c84cd849152c625c350c20cfef7c"
+checksum_source = "mise-versions"
+url = "https://github.com/bruits/sampo/releases/download/cargo-sampo-v0.23.0/sampo-0.23.0-aarch64-unknown-linux-gnu.tar.gz"
+url_api = "https://api.github.com/repos/bruits/sampo/releases/assets/672598605"
+
+[tools."github:bruits/sampo"."platforms.linux-arm64-musl"]
+checksum = "sha256:b7acca5cf6f9591e50ca6bc71c63bf3d63e5c84cd849152c625c350c20cfef7c"
+checksum_source = "mise-versions"
+url = "https://github.com/bruits/sampo/releases/download/cargo-sampo-v0.23.0/sampo-0.23.0-aarch64-unknown-linux-gnu.tar.gz"
+url_api = "https://api.github.com/repos/bruits/sampo/releases/assets/672598605"
+
+[tools."github:bruits/sampo"."platforms.linux-x64"]
+checksum = "sha256:d526913cd5283ec18ac280b515916f44cd0c51a3a22dd780ddce791235354ed6"
+checksum_source = "mise-versions"
+url = "https://github.com/bruits/sampo/releases/download/cargo-sampo-v0.23.0/sampo-0.23.0-x86_64-unknown-linux-gnu.tar.gz"
+url_api = "https://api.github.com/repos/bruits/sampo/releases/assets/672598556"
+
+[tools."github:bruits/sampo"."platforms.linux-x64-musl"]
+checksum = "sha256:d526913cd5283ec18ac280b515916f44cd0c51a3a22dd780ddce791235354ed6"
+checksum_source = "mise-versions"
+url = "https://github.com/bruits/sampo/releases/download/cargo-sampo-v0.23.0/sampo-0.23.0-x86_64-unknown-linux-gnu.tar.gz"
+url_api = "https://api.github.com/repos/bruits/sampo/releases/assets/672598556"
+
+[tools."github:bruits/sampo"."platforms.macos-arm64"]
+checksum = "sha256:76ec47ca8244b3a54d10d673c9e280b182ac124e8c74945d561e70b6db362c4b"
+checksum_source = "mise-versions"
+url = "https://github.com/bruits/sampo/releases/download/cargo-sampo-v0.23.0/sampo-0.23.0-aarch64-apple-darwin.tar.gz"
+url_api = "https://api.github.com/repos/bruits/sampo/releases/assets/672598717"
+
+[tools."github:bruits/sampo"."platforms.macos-x64"]
+checksum = "sha256:2d50bc64fd2511642e5540d33288e1b084aa66a63a2032a347cdcb7e6cec870e"
+checksum_source = "mise-versions"
+url = "https://github.com/bruits/sampo/releases/download/cargo-sampo-v0.23.0/sampo-0.23.0-x86_64-apple-darwin.tar.gz"
+url_api = "https://api.github.com/repos/bruits/sampo/releases/assets/672598656"
+
+[tools."github:bruits/sampo"."platforms.windows-x64"]
+checksum = "sha256:9b235040e780fb834ca629512c1041b186fbb4d53bff813a4bbbce2d31b34e5e"
+checksum_source = "mise-versions"
+url = "https://github.com/bruits/sampo/releases/download/cargo-sampo-v0.23.0/sampo-0.23.0-x86_64-pc-windows-msvc.tar.gz"
+url_api = "https://api.github.com/repos/bruits/sampo/releases/assets/672598753"
+
 [[tools.hk]]
 version = "2.8.1"
 backend = "aqua:jdx/hk"
