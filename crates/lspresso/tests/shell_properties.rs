@@ -189,7 +189,7 @@ fn session(script: &[Step], requests: usize) {
     let mut model = Model::default();
 
     let init = timed("initialize", REQUEST_TIMEOUT, || {
-        client.initialize(gen_lsp_types::ClientCapabilities::default())
+        client.initialize(lspresso::capabilities::vscode())
     });
     let expected = model.request(steps.next());
     assert_eq!(classify(&init), expected, "initialize: {init:?}");

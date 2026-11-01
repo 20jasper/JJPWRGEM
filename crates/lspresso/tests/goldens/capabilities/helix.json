@@ -1,0 +1,5 @@
+{
+  "general": {
+    "positionEncodings": ["utf-8", "utf-32", "utf-16"]
+  }
+}

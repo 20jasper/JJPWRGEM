@@ -1,0 +1,37 @@
+[
+  {
+    "id": 1,
+    "method": "initialize",
+    "params": {
+      "capabilities": {
+        "general": {
+          "positionEncodings": ["utf-16"]
+        }
+      },
+      "processId": null,
+      "rootUri": null
+    }
+  },
+  {
+    "id": "server-1",
+    "result": [null]
+  },
+  {
+    "method": "initialized",
+    "params": {}
+  },
+  {
+    "id": 2,
+    "method": "workspace/symbol",
+    "params": {
+      "query": "main"
+    }
+  },
+  {
+    "id": 3,
+    "method": "shutdown"
+  },
+  {
+    "method": "exit"
+  }
+]

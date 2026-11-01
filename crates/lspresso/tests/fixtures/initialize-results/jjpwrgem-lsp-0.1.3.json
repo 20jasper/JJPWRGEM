@@ -1,0 +1,14 @@
+{
+  "capabilities": {
+    "codeActionProvider": true,
+    "documentFormattingProvider": true,
+    "textDocumentSync": {
+      "change": 1,
+      "openClose": true
+    }
+  },
+  "serverInfo": {
+    "name": "jjpwrgem",
+    "version": "0.1.3"
+  }
+}

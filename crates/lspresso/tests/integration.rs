@@ -4,7 +4,6 @@ use std::{
     time::Duration,
 };
 
-use gen_lsp_types::ClientCapabilities;
 use lspresso::{Client, ErrorKind};
 use serde_json::json;
 
@@ -19,7 +18,7 @@ fn scripted(steps: &serde_json::Value) -> Client {
 
 fn scripted_initialized(steps: &serde_json::Value) -> Client {
     let mut client = scripted(steps);
-    client.initialize(ClientCapabilities::default()).unwrap();
+    client.initialize(lspresso::capabilities::vscode()).unwrap();
     client
 }
 
@@ -58,7 +57,7 @@ fn workspace_symbol(client: &mut Client) -> lspresso::Result<()> {
 fn initialize_and_shutdown_round_trip() {
     let mut client = scripted(&json!([{ "action": "respond:0" }, { "action": "respond:0" }]));
 
-    let result = client.initialize(ClientCapabilities::default()).unwrap();
+    let result = client.initialize(lspresso::capabilities::vscode()).unwrap();
     assert_eq!(
         result.capabilities,
         gen_lsp_types::ServerCapabilities::default()
@@ -75,12 +74,12 @@ fn exits_immediately_is_reported_as_disconnected() {
     let mut client = scripted(&json!([{ "action": "exit" }]));
 
     let err = client
-        .initialize(ClientCapabilities::default())
+        .initialize(lspresso::capabilities::vscode())
         .unwrap_err();
     assert!(matches!(err.kind(), ErrorKind::Disconnected { .. }));
 
     let retry_err = client
-        .initialize(ClientCapabilities::default())
+        .initialize(lspresso::capabilities::vscode())
         .unwrap_err();
     assert!(!matches!(retry_err.kind(), ErrorKind::AlreadyInitialized));
 }
@@ -91,7 +90,7 @@ fn never_responds_times_out() {
     client.set_request_timeout(Duration::from_millis(100));
 
     let err = client
-        .initialize(ClientCapabilities::default())
+        .initialize(lspresso::capabilities::vscode())
         .unwrap_err();
     assert!(matches!(err.kind(), ErrorKind::ResponseTimeout { .. }));
 }
@@ -229,7 +228,7 @@ fn the_escape_hatch_rejects_calls_before_initialize() {
 fn initialize_against_the_real_server() {
     let mut client = spawn_real_server();
 
-    let result = client.initialize(ClientCapabilities::default()).unwrap();
+    let result = client.initialize(lspresso::capabilities::vscode()).unwrap();
     assert_eq!(result.server_info.unwrap().name, "jjpwrgem");
 
     client.shutdown().unwrap();
