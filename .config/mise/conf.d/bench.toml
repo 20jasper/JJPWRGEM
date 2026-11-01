@@ -1,5 +1,5 @@
 [vars]
-codspeed_benches = "--bench bytes2chars --bench json_deser --bench json_prettify --bench json_uglify --bench json_serialize --bench json_tokens"
+codspeed_benches = "--bench bytes2chars --bench json_deser --bench json_prettify --bench json_uglify --bench json_serialize --bench json_tokens --bench lsp"
 
 [tasks.bench]
 dir = "{{config_root}}/benches"
@@ -44,6 +44,7 @@ run = [
 description = "Build and run all criterion benches via codspeed"
 dir = "{{config_root}}/benches"
 run = [
+  "cargo build --profile dist -p jjpwrgem",
   "cargo codspeed build {{vars.codspeed_benches}}",
   "cargo codspeed run {{vars.codspeed_benches}}",
 ]
