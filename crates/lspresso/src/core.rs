@@ -1,8 +1,9 @@
-pub(crate) mod capabilities;
+pub mod capabilities;
 mod lifecycle;
 mod server_requests;
 
 pub(crate) use lifecycle::ClientState;
+
 use crate::error::Error;
 
 // Effects are kinda annoying but real real nice to squash concurrency bugs
