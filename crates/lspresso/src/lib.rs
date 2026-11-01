@@ -6,7 +6,7 @@ pub use core::capabilities;
 
 pub use client::Client;
 pub use error::{Error, ErrorKind, Result};
-pub use gen_lsp_types::{self, LanguageKind, Uri};
+pub use gen_lsp_types::{self, Diagnostic, LanguageKind, Uri};
 
 /// # Panics
 ///

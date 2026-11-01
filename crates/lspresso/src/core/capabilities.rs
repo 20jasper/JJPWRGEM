@@ -1,5 +1,6 @@
 //! Client capability presets, and the server's declared sync kind. Presets declare only what lspresso
-//! honors: position encodings, in each editor's order of preference.
+//! honors -- position encodings, in each editor's order of preference --
+//! and no pull diagnostics, since lspresso waits for pushed ones.
 
 use gen_lsp_types::{
     ClientCapabilities, GeneralClientCapabilities, InitializeParams, PositionEncodingKind,

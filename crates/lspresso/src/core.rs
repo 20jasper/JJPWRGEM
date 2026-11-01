@@ -1,6 +1,8 @@
 #![cfg_attr(not(test), expect(dead_code, reason = "WIP and much is unused"))]
 pub mod capabilities;
+pub(crate) mod diagnostics;
 mod docs;
+pub(crate) mod inbox;
 mod lifecycle;
 mod server_requests;
 

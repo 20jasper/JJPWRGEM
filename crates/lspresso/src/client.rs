@@ -7,13 +7,14 @@ use std::{
 
 use crossbeam_channel::RecvTimeoutError;
 use gen_lsp_types::{
-    ClientCapabilities, DidChangeTextDocumentNotification, DidChangeTextDocumentParams,
+    ClientCapabilities, Diagnostic, DidChangeTextDocumentNotification, DidChangeTextDocumentParams,
     DidCloseTextDocumentNotification, DidCloseTextDocumentParams, DidOpenTextDocumentNotification,
     DidOpenTextDocumentParams, ExitNotification, InitializeRequest, InitializeResult,
     InitializedNotification, InitializedParams, LanguageKind, MessageDirection,
-    Notification as LspNotification, Request as LspRequest, ServerCapabilities, ShutdownRequest,
-    TextDocumentContentChangeEvent, TextDocumentContentChangeWholeDocument, TextDocumentIdentifier,
-    TextDocumentItem, TextDocumentSyncKind, Uri, VersionedTextDocumentIdentifier,
+    Notification as LspNotification, PublishDiagnosticsNotification, Request as LspRequest,
+    ServerCapabilities, ShutdownRequest, TextDocumentContentChangeEvent,
+    TextDocumentContentChangeWholeDocument, TextDocumentIdentifier, TextDocumentItem,
+    TextDocumentSyncKind, Uri, VersionedTextDocumentIdentifier,
 };
 use lsp_server::{Message, Notification, RequestId};
 use sysinfo::{Pid, ProcessRefreshKind, RefreshKind, System};
@@ -21,12 +22,16 @@ use sysinfo::{Pid, ProcessRefreshKind, RefreshKind, System};
 use self::transport::{Incoming, Transport};
 use crate::{
     Error,
-    core::{self, ClientState, DocumentTracker, Effect},
+    core::{
+        self, ClientState, DocumentTracker, Effect,
+        inbox::{Inbox, Verdict},
+    },
     error::{ErrorKind, elapsed_ms},
 };
 
 const EXIT_POLL_INTERVAL: Duration = Duration::from_millis(1);
 const DEFAULT_REQUEST_TIMEOUT: Duration = Duration::from_secs(5);
+const PUBLISH_DIAGNOSTICS: &str = PublishDiagnosticsNotification::METHOD.as_str();
 
 /// Fails to compile for a method a client must not send.
 macro_rules! assert_client_to_server {
@@ -48,6 +53,7 @@ pub struct Client {
     background_errors: Vec<Error>,
     request_timeout: Duration,
     server_capabilities: Option<ServerCapabilities>,
+    inbox: Inbox,
 }
 
 impl Client {
@@ -59,6 +65,7 @@ impl Client {
             background_errors: Vec::new(),
             request_timeout: DEFAULT_REQUEST_TIMEOUT,
             server_capabilities: None,
+            inbox: Inbox::default(),
         })
     }
 
@@ -164,6 +171,21 @@ impl Client {
         Ok(())
     }
 
+    /// The next pushed diagnostics for `uri`, skipping any the server marks
+    /// as for an older version than the one it was last sent. Unversioned
+    /// publications always match, so after closing and reopening a URI,
+    /// this may return the clear the server sent for the close.
+    pub fn next_diagnostics(
+        &mut self,
+        uri: &Uri,
+        timeout: Duration,
+    ) -> crate::Result<Vec<Diagnostic>> {
+        let start = Instant::now();
+        let mut judge = self.diagnostics_judge(uri)?;
+        self.wait_for_verdict(&mut judge, start + timeout, PUBLISH_DIAGNOSTICS)?
+            .ok_or_else(|| diagnostics_timeout(uri, start))
+    }
+
     pub fn wait_for_exit(&mut self, timeout: Duration) -> crate::Result<ExitStatus> {
         let start = Instant::now();
         let deadline = start + timeout;
@@ -185,6 +207,7 @@ impl Client {
                 std::thread::sleep((deadline - now).min(EXIT_POLL_INTERVAL));
             } else {
                 match self.pump(Some(deadline), None) {
+                    Pumped::Notification(notification) => self.inbox.push(notification),
                     Pumped::Closed(_) => stdout_closed = true,
                     Pumped::Resolved(_) | Pumped::Other | Pumped::Quiet => {}
                 }
@@ -277,6 +300,7 @@ impl Client {
                     self.state.cancel_pending_request(id);
                     return Err(closed.into_error(method));
                 }
+                Pumped::Notification(notification) => self.inbox.push(notification),
                 Pumped::Other | Pumped::Quiet => {}
             }
         }
@@ -294,7 +318,10 @@ impl Client {
                 if let Some(result) = self.record_effects(effects, waiting_for) {
                     return Pumped::Resolved(result);
                 }
-                Pumped::Other
+                match message {
+                    Message::Notification(notification) => Pumped::Notification(notification),
+                    Message::Request(_) | Message::Response(_) => Pumped::Other,
+                }
             }
             // A closed stream outranks a timeout landing on the same pass.
             Ok(Incoming::Malformed(source)) => return Pumped::Closed(Closed::Malformed(source)),
@@ -308,6 +335,48 @@ impl Client {
             .process_past_deadline_requests(Instant::now());
         self.record_effects(effects, waiting_for)
             .map_or(pumped, Pumped::Resolved)
+    }
+
+    /// A judge for pushed diagnostics for `uri` at its current version.
+    fn diagnostics_judge(
+        &self,
+        uri: &Uri,
+    ) -> crate::Result<impl FnMut(&Notification) -> Verdict<Vec<Diagnostic>> + use<>> {
+        self.state.require_initialized()?;
+        let version = self.docs.current_version(uri)?;
+        let uri = uri.clone();
+        Ok(move |notification: &Notification| {
+            core::diagnostics::publication(&uri, version, notification)
+        })
+    }
+
+    /// Judges notifications received earlier, then new ones as they arrive,
+    /// until `judge` takes one or `deadline` passes (`None`). Notifications
+    /// it keeps stay for later waits.
+    fn wait_for_verdict<T>(
+        &mut self,
+        judge: &mut impl FnMut(&Notification) -> Verdict<T>,
+        deadline: Instant,
+        method: &'static str,
+    ) -> crate::Result<Option<T>> {
+        if let Some(taken) = self.inbox.take_first(&mut *judge) {
+            return Ok(Some(taken));
+        }
+        loop {
+            let now = Instant::now();
+            if now >= deadline {
+                return Ok(None);
+            }
+            match self.pump(Some(deadline), None) {
+                Pumped::Notification(notification) => match judge(&notification) {
+                    Verdict::Take(taken) => return Ok(Some(taken)),
+                    Verdict::Keep => self.inbox.push(notification),
+                    Verdict::Discard => {}
+                },
+                Pumped::Closed(closed) => return Err(closed.into_error(method)),
+                Pumped::Resolved(_) | Pumped::Other | Pumped::Quiet => {}
+            }
+        }
     }
 
     fn record_effects(
@@ -348,11 +417,19 @@ impl Client {
     }
 }
 
+fn diagnostics_timeout(uri: &Uri, start: Instant) -> Error {
+    ErrorKind::DiagnosticsTimeout {
+        uri: uri.clone(),
+        after_ms: elapsed_ms(start, Instant::now()),
+    }
+    .into()
+}
+
 enum Pumped {
+    Notification(Notification),
     Resolved(crate::Result<serde_json::Value>),
     Closed(Closed),
-    /// A notification, a server request (already answered), or a response
-    /// for no one.
+    /// A server request (already answered) or a response for no one.
     Other,
     Quiet,
 }
