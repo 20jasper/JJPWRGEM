@@ -2,8 +2,9 @@
 //! passed as JSON in `LSPRESSO_SCRIPT`, for tests of the client shell.
 //! Requests past the end of the script are ignored. Exits on `exit`, at
 //! end of input, or when a step says to. Every document sync is answered
-//! with a stale publication, then one for the version just sent; emptying
-//! a document with one empty publication. `LSPRESSO_INITIALIZE_RESULT`
+//! with a stale publication, then one for the version just sent; a save
+//! with one unversioned publication, "saved"; emptying a document with
+//! one empty publication. `LSPRESSO_INITIALIZE_RESULT`
 //! overrides the `initialize` result; `LSPRESSO_RECORD` names a file to
 //! append each received message to, as a line of JSON.
 
@@ -90,6 +91,13 @@ fn result_for(request: &Request) -> serde_json::Value {
             |_| serde_json::json!({ "capabilities": {} }),
             |result| serde_json::from_str(&result).unwrap(),
         ),
+        // One action per diagnostic the client passed in, titled after it.
+        "textDocument/codeAction" => request.params["context"]["diagnostics"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|d| serde_json::json!({ "title": d["message"], "diagnostics": [d] }))
+            .collect(),
         _ => serde_json::Value::Null,
     }
 }
@@ -106,14 +114,13 @@ fn publish(out: &Mutex<Stdout>, params: &serde_json::Value) {
     let text = document["text"]
         .as_str()
         .or_else(|| params["contentChanges"][0]["text"].as_str());
-    let version = document["version"].as_i64().unwrap();
-    let publications = if text == Some("") {
-        vec![(version, vec![])]
-    } else {
-        vec![
-            (version - 1, vec![diagnostic("stale")]),
-            (version, vec![diagnostic(&format!("v{version}"))]),
-        ]
+    let publications = match (document["version"].as_i64(), text) {
+        (Some(version), Some("")) => vec![(Some(version), vec![])],
+        (Some(version), _) => vec![
+            (Some(version - 1), vec![diagnostic("stale")]),
+            (Some(version), vec![diagnostic(&format!("v{version}"))]),
+        ],
+        (None, _) => vec![(None, vec![diagnostic("saved")])],
     };
     for (version, diagnostics) in publications {
         write(
@@ -140,7 +147,7 @@ fn dispatch(out: &Mutex<Stdout>, message: Message) -> Result<Option<Request>, Ex
         Message::Notification(n)
             if matches!(
                 n.method.as_str(),
-                "textDocument/didOpen" | "textDocument/didChange"
+                "textDocument/didOpen" | "textDocument/didChange" | "textDocument/didSave"
             ) =>
         {
             publish(out, &n.params);

@@ -214,7 +214,7 @@ fn timed<T>(label: &str, budget: Duration, call: impl FnOnce() -> T) -> T {
 }
 
 /// Runs one scripted session, asserting each call matches the model.
-fn session(script: &[Step], requests: usize) {
+fn session(script: &[Step], formattings: usize) {
     let json = serde_json::Value::Array(script.iter().map(|step| step.to_json()).collect());
     let mut command = Command::new(env!("CARGO_BIN_EXE_lspresso_scripted_server"));
     command.env("LSPRESSO_SCRIPT", json.to_string());
@@ -239,7 +239,7 @@ fn session(script: &[Step], requests: usize) {
     }
 
     let big_document = format!("[{}]", "1,".repeat(100_000) + "1");
-    for i in 0..requests {
+    for i in 0..formattings {
         if initialized {
             // Large enough to fill a pipe a stalled server isn't draining.
             let sent = timed("did_change_full", Duration::ZERO, || {
@@ -252,20 +252,13 @@ fn session(script: &[Step], requests: usize) {
             let version = i32::try_from(i).unwrap() + 2;
             check_diagnostics(&mut client, &uri, version, &model);
         }
-        let result = timed("request", REQUEST_TIMEOUT, || {
-            client.request::<gen_lsp_types::WorkspaceSymbolRequest>(
-                gen_lsp_types::WorkspaceSymbolParams {
-                    query: String::new(),
-                    ..Default::default()
-                },
-            )
-        });
+        let result = timed("formatting", REQUEST_TIMEOUT, || client.formatting(&uri));
         let expected = if initialized {
             model.request(steps.next())
         } else {
             Outcome::NotInitialized
         };
-        assert_eq!(classify(&result), expected, "request #{i}: {result:?}");
+        assert_eq!(classify(&result), expected, "formatting #{i}: {result:?}");
     }
 
     let shutdown = timed("shutdown", REQUEST_TIMEOUT, || client.shutdown());
@@ -319,11 +312,11 @@ proptest! {
     #[test]
     fn every_call_matches_the_model_and_returns_within_its_timeout(
         script in proptest::collection::vec(step_strategy(), 0..7),
-        requests in 0usize..4,
+        formattings in 0usize..4,
     ) {
         let (done_tx, done_rx) = mpsc::channel();
         let worker = std::thread::spawn(move || {
-            session(&script, requests);
+            session(&script, formattings);
             done_tx.send(()).unwrap();
         });
         match done_rx.recv_timeout(Duration::from_secs(10)) {

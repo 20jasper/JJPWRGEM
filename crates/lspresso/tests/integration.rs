@@ -42,17 +42,6 @@ fn spawn_real_server() -> Client {
     Client::spawn(command).expect("jjp lsp should spawn")
 }
 
-fn workspace_symbol(client: &mut Client) -> lspresso::Result<()> {
-    let symbols = client.request::<gen_lsp_types::WorkspaceSymbolRequest>(
-        gen_lsp_types::WorkspaceSymbolParams {
-            query: String::new(),
-            ..Default::default()
-        },
-    )?;
-    assert_eq!(symbols, None, "the scripted server answers null");
-    Ok(())
-}
-
 #[test]
 fn initialize_and_shutdown_round_trip() {
     let mut client = scripted(&json!([{ "action": "respond:0" }, { "action": "respond:0" }]));
@@ -116,7 +105,7 @@ fn a_constant_stream_of_notifications_does_not_stop_timeouts_firing() {
         .unwrap();
     client.next_diagnostics(&uri, TIMEOUT).unwrap();
 
-    let err = workspace_symbol(&mut client).unwrap_err();
+    let err = client.formatting(&uri).unwrap_err();
     assert!(matches!(err.kind(), ErrorKind::ResponseTimeout { .. }));
 
     let err = client
@@ -199,19 +188,19 @@ fn a_server_that_stops_reading_stdin_times_out_instead_of_blocking_the_caller() 
     let mut client =
         scripted_initialized(&json!([{ "action": "respond:0" }, { "action": "stall" }]));
     client.set_request_timeout(Duration::from_millis(100));
-    let err = workspace_symbol(&mut client).unwrap_err();
+    let uri = lspresso::parse_uri("file:///big.json");
+    client
+        .did_open(uri.clone(), "{}", lspresso::LanguageKind::JSON)
+        .unwrap();
+    let err = client.formatting(&uri).unwrap_err();
     assert!(matches!(err.kind(), ErrorKind::ResponseTimeout { .. }));
 
     // Many pipe buffers' worth: a write on the caller's thread would block forever.
     client
-        .notify::<gen_lsp_types::DidChangeConfigurationNotification>(
-            gen_lsp_types::DidChangeConfigurationParams {
-                settings: json!("x".repeat(4 * 1024 * 1024)),
-            },
-        )
+        .did_change_full(&uri, "x".repeat(4 * 1024 * 1024))
         .unwrap();
 
-    let err = workspace_symbol(&mut client).unwrap_err();
+    let err = client.formatting(&uri).unwrap_err();
     assert!(matches!(err.kind(), ErrorKind::ResponseTimeout { .. }));
 }
 
@@ -220,7 +209,29 @@ fn spawn_scripted(responses: usize) -> Client {
 }
 
 #[test]
-fn a_closed_document_can_be_reopened_but_not_waited_on() {
+fn code_action_sends_the_given_diagnostics() {
+    let mut client = spawn_scripted(2);
+    let uri = lspresso::parse_uri("file:///a.json");
+    client
+        .did_open(uri.clone(), "{}", lspresso::LanguageKind::JSON)
+        .unwrap();
+    let diagnostics = client.next_diagnostics(&uri, TIMEOUT).unwrap();
+    let range = lspresso::Range::new(lspresso::Position::new(0, 0), lspresso::Position::new(0, 0));
+
+    let actions = client
+        .code_action(&uri, range, diagnostics)
+        .unwrap()
+        .unwrap();
+
+    assert_eq!(
+        serde_json::to_value(actions).unwrap()[0]["title"],
+        "v1",
+        "the scripted server titles each action after a diagnostic it was sent"
+    );
+}
+
+#[test]
+fn a_closed_document_can_be_reopened_but_not_formatted() {
     let mut client = spawn_scripted(1);
     let uri = lspresso::parse_uri("file:///a.json");
     client
@@ -229,7 +240,7 @@ fn a_closed_document_can_be_reopened_but_not_waited_on() {
 
     client.did_close(&uri).unwrap();
 
-    let err = client.next_diagnostics(&uri, TIMEOUT).unwrap_err();
+    let err = client.formatting(&uri).unwrap_err();
     assert!(matches!(err.kind(), ErrorKind::NotOpen { .. }), "{err:?}");
     client
         .did_open(uri, "{}", lspresso::LanguageKind::JSON)
@@ -250,15 +261,100 @@ fn rss_is_reported_only_while_the_server_runs() {
 #[test]
 fn any_request_can_be_sent_through_the_typed_escape_hatch() {
     let mut client = spawn_scripted(2);
+    let uri = lspresso::parse_uri("file:///a.json");
 
-    workspace_symbol(&mut client).unwrap();
+    let hover = client
+        .request::<gen_lsp_types::HoverRequest>(gen_lsp_types::HoverParams {
+            text_document_position_params: gen_lsp_types::TextDocumentPositionParams {
+                text_document: gen_lsp_types::TextDocumentIdentifier { uri },
+                position: lspresso::Position::new(0, 0),
+            },
+            work_done_progress_params: gen_lsp_types::WorkDoneProgressParams::default(),
+        })
+        .unwrap();
+    assert_eq!(hover, None);
+}
+
+#[test]
+fn generated_document_requests_require_the_document_to_be_open() {
+    let mut client = spawn_scripted(3);
+    let uri = lspresso::parse_uri("file:///a.json");
+    let start = lspresso::Position::new(0, 0);
+
+    let err = client.hover(&uri, start).unwrap_err();
+    assert!(matches!(err.kind(), ErrorKind::NotOpen { .. }), "{err:?}");
+
+    client
+        .did_open(uri.clone(), "{}", lspresso::LanguageKind::JSON)
+        .unwrap();
+    assert_eq!(client.hover(&uri, start).unwrap(), None);
+}
+
+#[test]
+fn the_protocol_layer_takes_raw_params_once_imported() {
+    use lspresso::Protocol;
+
+    let mut client = spawn_scripted(2);
+    let uri = lspresso::parse_uri("file:///a.json");
+    client
+        .did_open(uri.clone(), "{}", lspresso::LanguageKind::JSON)
+        .unwrap();
+
+    let hover = client
+        .protocol_hover(gen_lsp_types::HoverParams {
+            text_document_position_params: gen_lsp_types::TextDocumentPositionParams {
+                text_document: gen_lsp_types::TextDocumentIdentifier { uri },
+                position: lspresso::Position::new(0, 0),
+            },
+            work_done_progress_params: gen_lsp_types::WorkDoneProgressParams::default(),
+        })
+        .unwrap();
+    assert_eq!(hover, None);
+}
+
+#[test]
+fn generated_workspace_requests_need_no_open_document() {
+    let mut client = spawn_scripted(2);
+
+    let symbols = client
+        .workspace_symbol(gen_lsp_types::WorkspaceSymbolParams {
+            query: String::new(),
+            ..Default::default()
+        })
+        .unwrap();
+    assert_eq!(symbols, None);
+}
+
+#[test]
+fn generated_document_notifications_require_the_document_to_be_open() {
+    let mut client = spawn_scripted(1);
+    let uri = lspresso::parse_uri("file:///a.json");
+    let err = client.did_save(&uri).unwrap_err();
+    assert!(matches!(err.kind(), ErrorKind::NotOpen { .. }), "{err:?}");
+
+    client
+        .did_open(uri.clone(), "{}", lspresso::LanguageKind::JSON)
+        .unwrap();
+    client.next_diagnostics(&uri, TIMEOUT).unwrap();
+    client.did_save(&uri).unwrap();
+    let diagnostics = client.next_diagnostics(&uri, TIMEOUT).unwrap();
+    assert_eq!(
+        serde_json::to_value(&diagnostics).unwrap()[0]["message"],
+        "saved",
+        "the scripted server publishes \"saved\" for each save it receives"
+    );
 }
 
 #[test]
 fn the_escape_hatch_rejects_calls_before_initialize() {
     let mut client = scripted(&json!([]));
 
-    let err = workspace_symbol(&mut client).unwrap_err();
+    let err = client
+        .request::<gen_lsp_types::WorkspaceSymbolRequest>(gen_lsp_types::WorkspaceSymbolParams {
+            query: String::new(),
+            ..Default::default()
+        })
+        .unwrap_err();
     assert!(matches!(err.kind(), ErrorKind::NotInitialized), "{err:?}");
     let err = client
         .notify::<gen_lsp_types::DidChangeConfigurationNotification>(
@@ -357,6 +453,35 @@ fn document_sync_and_diagnostics_round_trip_against_the_real_server() {
 
     client.did_close(&uri).unwrap();
 
+    client.shutdown().unwrap();
+    let status = client.wait_for_exit(TIMEOUT).unwrap();
+    assert!(status.success());
+}
+
+#[test]
+#[ignore = "requires a separately built target/dist/jjp or JJP_BIN"]
+fn formatting_and_code_action_against_the_real_server() {
+    let mut client = spawn_real_server();
+    let uri = lspresso::parse_uri("file:///lspresso-formatting.json");
+
+    client.initialize(lspresso::capabilities::vscode()).unwrap();
+
+    client
+        .did_open(uri.clone(), "{\"a\":1}", lspresso::LanguageKind::JSON)
+        .unwrap();
+    client.next_diagnostics(&uri, TIMEOUT).unwrap();
+
+    let edits = client.formatting(&uri).unwrap();
+    assert!(edits.is_some_and(|edits| !edits.is_empty()));
+
+    client.did_change_full(&uri, "{\"a\": 1,}").unwrap();
+    let diagnostics = client.next_diagnostics(&uri, TIMEOUT).unwrap();
+
+    let range = lspresso::Range::new(lspresso::Position::new(0, 0), lspresso::Position::new(0, 9));
+    let actions = client.code_action(&uri, range, diagnostics).unwrap();
+    assert!(actions.is_some_and(|actions| !actions.is_empty()));
+
+    client.did_close(&uri).unwrap();
     client.shutdown().unwrap();
     let status = client.wait_for_exit(TIMEOUT).unwrap();
     assert!(status.success());

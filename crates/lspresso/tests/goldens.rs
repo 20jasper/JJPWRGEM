@@ -153,7 +153,7 @@ fn initialized_with(fixture: &str) -> Client {
 }
 
 #[test]
-fn jjpwrgem_declares_full_sync() {
+fn jjpwrgem_declares_full_sync_formatting_and_code_actions() {
     let client = initialized_with("jjpwrgem-lsp-0.1.3");
 
     assert_eq!(
@@ -161,10 +161,12 @@ fn jjpwrgem_declares_full_sync() {
         Some(TextDocumentSyncKind::Full)
     );
     assert!(!client.supports_incremental_sync());
+    assert!(client.supports_formatting());
+    assert!(client.supports_code_action());
 }
 
 #[test]
-fn vscode_json_declares_incremental_sync() {
+fn vscode_json_declares_incremental_sync_and_code_actions_but_not_formatting() {
     let client = initialized_with("vscode-json-language-server-4.10.0");
 
     assert_eq!(
@@ -172,6 +174,9 @@ fn vscode_json_declares_incremental_sync() {
         Some(TextDocumentSyncKind::Incremental)
     );
     assert!(client.supports_incremental_sync());
+    // Declared as an explicit `false`, not left out.
+    assert!(!client.supports_formatting());
+    assert!(client.supports_code_action());
 }
 
 #[test]
@@ -180,6 +185,7 @@ fn nothing_is_supported_before_initialize() {
     let client = Client::spawn(command).unwrap();
 
     assert!(client.server_capabilities().is_none());
+    assert!(!client.supports_formatting());
     assert_eq!(client.text_document_sync_kind(), None);
 }
 
