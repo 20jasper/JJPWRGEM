@@ -8,6 +8,9 @@ license.workspace = true
 repository.workspace = true
 include = ["src/**/*"]
 
+[lib]
+doctest = false
+
 [dependencies]
 displaydoc = { workspace = true }
 gen-lsp-types = { git = "https://github.com/ribru17/gen-lsp-types", branch = "main", features = [
