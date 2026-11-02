@@ -1358,7 +1358,6 @@ dependencies = [
  "displaydoc",
  "gen-lsp-types",
  "lsp-server",
- "proptest",
  "serde_json",
  "thiserror",
 ]
