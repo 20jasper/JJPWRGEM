@@ -157,43 +157,36 @@ version_prefix = "cargo-sampo-v"
 
 [tools."github:bruits/sampo"."platforms.linux-arm64"]
 checksum = "sha256:74bbceede18eb018e5fd99d101001d27ba6af02e512b361b0b9a325be8be8a2a"
-checksum_source = "mise-versions"
 url = "https://github.com/bruits/sampo/releases/download/cargo-sampo-v0.24.0/sampo-0.24.0-aarch64-unknown-linux-gnu.tar.gz"
 url_api = "https://api.github.com/repos/bruits/sampo/releases/assets/698768809"
 
 [tools."github:bruits/sampo"."platforms.linux-arm64-musl"]
 checksum = "sha256:74bbceede18eb018e5fd99d101001d27ba6af02e512b361b0b9a325be8be8a2a"
-checksum_source = "mise-versions"
 url = "https://github.com/bruits/sampo/releases/download/cargo-sampo-v0.24.0/sampo-0.24.0-aarch64-unknown-linux-gnu.tar.gz"
 url_api = "https://api.github.com/repos/bruits/sampo/releases/assets/698768809"
 
 [tools."github:bruits/sampo"."platforms.linux-x64"]
 checksum = "sha256:f88a41f5f9a4a482ee2bf3731caf0a7c72f8a2018dae33aa00b48dae190bd7a2"
-checksum_source = "mise-versions"
 url = "https://github.com/bruits/sampo/releases/download/cargo-sampo-v0.24.0/sampo-0.24.0-x86_64-unknown-linux-gnu.tar.gz"
 url_api = "https://api.github.com/repos/bruits/sampo/releases/assets/698768806"
 
 [tools."github:bruits/sampo"."platforms.linux-x64-musl"]
 checksum = "sha256:f88a41f5f9a4a482ee2bf3731caf0a7c72f8a2018dae33aa00b48dae190bd7a2"
-checksum_source = "mise-versions"
 url = "https://github.com/bruits/sampo/releases/download/cargo-sampo-v0.24.0/sampo-0.24.0-x86_64-unknown-linux-gnu.tar.gz"
 url_api = "https://api.github.com/repos/bruits/sampo/releases/assets/698768806"
 
 [tools."github:bruits/sampo"."platforms.macos-arm64"]
 checksum = "sha256:fd147bb97d1e11d3a04b078b405e15d2d8629d0dba370093c200be056d136245"
-checksum_source = "mise-versions"
 url = "https://github.com/bruits/sampo/releases/download/cargo-sampo-v0.24.0/sampo-0.24.0-aarch64-apple-darwin.tar.gz"
 url_api = "https://api.github.com/repos/bruits/sampo/releases/assets/698768807"
 
 [tools."github:bruits/sampo"."platforms.macos-x64"]
 checksum = "sha256:94430028247924e79714806a7979b80afca3bb49e7a8cd9a638df29662c53844"
-checksum_source = "mise-versions"
 url = "https://github.com/bruits/sampo/releases/download/cargo-sampo-v0.24.0/sampo-0.24.0-x86_64-apple-darwin.tar.gz"
 url_api = "https://api.github.com/repos/bruits/sampo/releases/assets/698768808"
 
 [tools."github:bruits/sampo"."platforms.windows-x64"]
 checksum = "sha256:ee8ebe083fefcf639996067490ad469a29800f8dce2cd9cb71c168428a794928"
-checksum_source = "mise-versions"
 url = "https://github.com/bruits/sampo/releases/download/cargo-sampo-v0.24.0/sampo-0.24.0-x86_64-pc-windows-msvc.tar.gz"
 url_api = "https://api.github.com/repos/bruits/sampo/releases/assets/698768810"
 
@@ -203,37 +196,31 @@ backend = "aqua:jdx/hk"
 
 [tools.hk."platforms.linux-arm64"]
 checksum = "sha256:50d7b26988ce8aff77697188a2e1e9d01162de203e7b9ace7ec0d42365c4ea61"
-checksum_source = "mise-versions"
 url = "https://github.com/jdx/hk/releases/download/v2.8.1/hk-aarch64-unknown-linux-gnu.tar.gz"
 url_api = "https://api.github.com/repos/jdx/hk/releases/assets/668781789"
 
 [tools.hk."platforms.linux-arm64-musl"]
 checksum = "sha256:50d7b26988ce8aff77697188a2e1e9d01162de203e7b9ace7ec0d42365c4ea61"
-checksum_source = "mise-versions"
 url = "https://github.com/jdx/hk/releases/download/v2.8.1/hk-aarch64-unknown-linux-gnu.tar.gz"
 url_api = "https://api.github.com/repos/jdx/hk/releases/assets/668781789"
 
 [tools.hk."platforms.linux-x64"]
 checksum = "sha256:8033ca42aaf88412e789c281f7e2766526e60e12f95a16c03574aeb0a2c7a657"
-checksum_source = "mise-versions"
 url = "https://github.com/jdx/hk/releases/download/v2.8.1/hk-x86_64-unknown-linux-gnu.tar.gz"
 url_api = "https://api.github.com/repos/jdx/hk/releases/assets/668781856"
 
 [tools.hk."platforms.linux-x64-musl"]
 checksum = "sha256:8033ca42aaf88412e789c281f7e2766526e60e12f95a16c03574aeb0a2c7a657"
-checksum_source = "mise-versions"
 url = "https://github.com/jdx/hk/releases/download/v2.8.1/hk-x86_64-unknown-linux-gnu.tar.gz"
 url_api = "https://api.github.com/repos/jdx/hk/releases/assets/668781856"
 
 [tools.hk."platforms.macos-arm64"]
 checksum = "sha256:87d5288c1d19acd45885e35722f655a1e1498a1cb92f42c1490e7f1623aedddd"
-checksum_source = "mise-versions"
 url = "https://github.com/jdx/hk/releases/download/v2.8.1/hk-aarch64-apple-darwin.tar.gz"
 url_api = "https://api.github.com/repos/jdx/hk/releases/assets/668781793"
 
 [tools.hk."platforms.windows-x64"]
 checksum = "sha256:411cbe34d53764162dd36d69fe5bf7ec39ccd2a8166890c92c3531284355487d"
-checksum_source = "mise-versions"
 url = "https://github.com/jdx/hk/releases/download/v2.8.1/hk-x86_64-pc-windows-msvc.zip"
 url_api = "https://api.github.com/repos/jdx/hk/releases/assets/668781792"
 
@@ -309,42 +296,35 @@ backend = "aqua:koalaman/shellcheck"
 
 [tools.shellcheck."platforms.linux-arm64"]
 checksum = "sha256:12b331c1d2db6b9eb13cfca64306b1b157a86eb69db83023e261eaa7e7c14588"
-checksum_source = "mise-versions"
 url = "https://github.com/koalaman/shellcheck/releases/download/v0.11.0/shellcheck-v0.11.0.linux.aarch64.tar.xz"
 url_api = "https://api.github.com/repos/koalaman/shellcheck/releases/assets/279056934"
 
 [tools.shellcheck."platforms.linux-arm64-musl"]
 checksum = "sha256:12b331c1d2db6b9eb13cfca64306b1b157a86eb69db83023e261eaa7e7c14588"
-checksum_source = "mise-versions"
 url = "https://github.com/koalaman/shellcheck/releases/download/v0.11.0/shellcheck-v0.11.0.linux.aarch64.tar.xz"
 url_api = "https://api.github.com/repos/koalaman/shellcheck/releases/assets/279056934"
 
 [tools.shellcheck."platforms.linux-x64"]
 checksum = "sha256:8c3be12b05d5c177a04c29e3c78ce89ac86f1595681cab149b65b97c4e227198"
-checksum_source = "mise-versions"
 url = "https://github.com/koalaman/shellcheck/releases/download/v0.11.0/shellcheck-v0.11.0.linux.x86_64.tar.xz"
 url_api = "https://api.github.com/repos/koalaman/shellcheck/releases/assets/279056942"
 
 [tools.shellcheck."platforms.linux-x64-musl"]
 checksum = "sha256:8c3be12b05d5c177a04c29e3c78ce89ac86f1595681cab149b65b97c4e227198"
-checksum_source = "mise-versions"
 url = "https://github.com/koalaman/shellcheck/releases/download/v0.11.0/shellcheck-v0.11.0.linux.x86_64.tar.xz"
 url_api = "https://api.github.com/repos/koalaman/shellcheck/releases/assets/279056942"
 
 [tools.shellcheck."platforms.macos-arm64"]
 checksum = "sha256:56affdd8de5527894dca6dc3d7e0a99a873b0f004d7aabc30ae407d3f48b0a79"
-checksum_source = "mise-versions"
 url = "https://github.com/koalaman/shellcheck/releases/download/v0.11.0/shellcheck-v0.11.0.darwin.aarch64.tar.xz"
 url_api = "https://api.github.com/repos/koalaman/shellcheck/releases/assets/279056932"
 
 [tools.shellcheck."platforms.macos-x64"]
 checksum = "sha256:3c89db4edcab7cf1c27bff178882e0f6f27f7afdf54e859fa041fca10febe4c6"
-checksum_source = "mise-versions"
 url = "https://github.com/koalaman/shellcheck/releases/download/v0.11.0/shellcheck-v0.11.0.darwin.x86_64.tar.xz"
 url_api = "https://api.github.com/repos/koalaman/shellcheck/releases/assets/279056930"
 
 [tools.shellcheck."platforms.windows-x64"]
 checksum = "sha256:8a4e35ab0b331c85d73567b12f2a444df187f483e5079ceffa6bda1faa2e740e"
-checksum_source = "mise-versions"
 url = "https://github.com/koalaman/shellcheck/releases/download/v0.11.0/shellcheck-v0.11.0.zip"
 url_api = "https://api.github.com/repos/koalaman/shellcheck/releases/assets/279056944"
