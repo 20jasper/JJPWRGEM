@@ -1,8 +1,4 @@
 //! Neovim presets, one per captured release.
-//!
-//! Each release declares `dynamicRegistration` for several features that
-//! lspresso doesn't honor yet: it answers `client/registerCapability` with a
-//! bare `null` and doesn't record the registration.
 
 use gen_lsp_types::ClientCapabilities;
 

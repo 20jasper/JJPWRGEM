@@ -10,10 +10,6 @@ pub fn latest() -> ClientCapabilities {
 }
 
 /// Helix 25.07.1, as captured from a real instance.
-///
-/// Declares `dynamicRegistration` for `workspace.didChangeWatchedFiles`,
-/// which lspresso doesn't honor yet: it answers `client/registerCapability`
-/// with a bare `null` and doesn't record the registration.
 pub fn v25_07_1() -> ClientCapabilities {
     from_capture(include_str!("helix/25.07.1.json"))
 }

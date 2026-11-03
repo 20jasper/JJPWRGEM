@@ -13,10 +13,6 @@ pub fn latest() -> ClientCapabilities {
 
 /// vscode-languageclient 11.0.0, as captured by running the client library
 /// outside VS Code.
-///
-/// Declares `dynamicRegistration` for 36 features, which lspresso doesn't
-/// honor yet: it answers `client/registerCapability` with a bare `null` and
-/// doesn't record the registration.
 pub fn v11_0_0() -> ClientCapabilities {
     from_capture(include_str!("vscode/11.0.0.json"))
 }
