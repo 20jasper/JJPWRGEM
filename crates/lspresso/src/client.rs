@@ -1,3 +1,4 @@
+mod methods;
 mod transport;
 
 use std::{
@@ -18,6 +19,8 @@ use gen_lsp_types::{
 use lsp_server::{Message, Notification, RequestId};
 
 use self::transport::{Incoming, Transport};
+
+pub use self::methods::Protocol;
 use crate::{
     Error, Result,
     core::{self, ClientState, DocumentTracker, Effect},
