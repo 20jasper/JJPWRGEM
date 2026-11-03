@@ -2,7 +2,7 @@ use gen_lsp_types::ClientCapabilities;
 
 use super::from_capture;
 
-/// The newest captured release.
+// latest as of 2026-11-03
 pub fn latest() -> ClientCapabilities {
     v25_07_1()
 }
