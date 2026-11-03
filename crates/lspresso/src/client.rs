@@ -10,11 +10,12 @@ use crossbeam_channel::RecvTimeoutError;
 use gen_lsp_types::{
     ClientCapabilities, DidChangeTextDocumentNotification, DidChangeTextDocumentParams,
     DidCloseTextDocumentNotification, DidCloseTextDocumentParams, DidOpenTextDocumentNotification,
-    DidOpenTextDocumentParams, ExitNotification, InitializeRequest, InitializeResult,
-    InitializedNotification, InitializedParams, LanguageKind, MessageDirection,
-    Notification as LspNotification, Request as LspRequest, ServerCapabilities, ShutdownRequest,
-    TextDocumentContentChangeEvent, TextDocumentContentChangeWholeDocument, TextDocumentIdentifier,
-    TextDocumentItem, Uri, VersionedTextDocumentIdentifier,
+    DidOpenTextDocumentParams, DidSaveTextDocumentNotification, DidSaveTextDocumentParams,
+    ExitNotification, InitializeRequest, InitializeResult, InitializedNotification,
+    InitializedParams, LanguageKind, MessageDirection, Notification as LspNotification,
+    Request as LspRequest, ServerCapabilities, ShutdownRequest, TextDocumentContentChangeEvent,
+    TextDocumentContentChangeWholeDocument, TextDocumentIdentifier, TextDocumentItem, TextDocumentSyncKind, TextEdit, Uri,
+    VersionedTextDocumentIdentifier,
 };
 use lsp_server::{Message, Notification, RequestId};
 
@@ -26,6 +27,7 @@ use crate::{
     core::{self, ClientState, DocumentTracker, Effect},
     error::{ErrorKind, elapsed_ms},
 };
+use crate::core::text::{self, Encoding};
 
 const EXIT_POLL_INTERVAL: Duration = Duration::from_millis(1);
 const DEFAULT_REQUEST_TIMEOUT: Duration = Duration::from_secs(5);
@@ -146,10 +148,10 @@ impl Client {
                 uri: uri.clone(),
                 language_id: language,
                 version: 1,
-                text,
+                text: text.clone(),
             },
         })?;
-        self.docs.mark_open(uri);
+        self.docs.mark_open(uri, text);
         Ok(())
     }
 
@@ -163,10 +165,10 @@ impl Client {
                 text_document_identifier: TextDocumentIdentifier { uri: uri.clone() },
             },
             content_changes: vec![TextDocumentContentChangeEvent::from(
-                TextDocumentContentChangeWholeDocument { text },
+                TextDocumentContentChangeWholeDocument { text: text.clone() },
             )],
         })?;
-        self.docs.commit_change(uri, version);
+        self.docs.commit_change(uri, version, text);
         Ok(())
     }
 
@@ -178,6 +180,83 @@ impl Client {
         })?;
         self.docs.mark_closed(uri);
         Ok(())
+    }
+
+    pub fn did_change(&mut self, uri: &Uri, edits: &[TextEdit]) -> crate::Result<()> {
+        self.state.require_initialized()?;
+        let version = self.docs.next_version(uri)?;
+        let applied = text::apply(self.docs.text(uri)?, edits, self.position_encoding())?;
+        let changes = if self.supports_incremental_sync() {
+            applied.changes
+        } else {
+            vec![whole_document(applied.text.clone())]
+        };
+        self.send_change(uri, version, changes)?;
+        self.docs.commit_change(uri, version, applied.text);
+        Ok(())
+    }
+
+    fn send_change(
+        &mut self,
+        uri: &Uri,
+        version: i32,
+        content_changes: Vec<TextDocumentContentChangeEvent>,
+    ) -> crate::Result<()> {
+        self.send_notification::<DidChangeTextDocumentNotification>(DidChangeTextDocumentParams {
+            text_document: VersionedTextDocumentIdentifier {
+                version,
+                text_document_identifier: TextDocumentIdentifier { uri: uri.clone() },
+            },
+            content_changes,
+        })
+    }
+
+    pub fn did_save(&mut self, uri: &Uri) -> crate::Result<()> {
+        self.state.require_initialized()?;
+        let text = self.docs.text(uri)?;
+        let text = self
+            .server_capabilities()
+            .is_some_and(core::capabilities::save_includes_text)
+            .then(|| text.to_owned());
+        self.protocol_did_save(DidSaveTextDocumentParams {
+            text_document: TextDocumentIdentifier { uri: uri.clone() },
+            text,
+        })
+    }
+
+    pub fn document_text(&self, uri: &Uri) -> Option<&str> {
+        self.docs.text(uri).ok()
+    }
+
+    fn position_encoding(&self) -> Encoding {
+        Encoding::negotiated(
+            self.server_capabilities()
+                .and_then(|capabilities| capabilities.position_encoding.as_ref()),
+        )
+    }
+
+    pub fn text_document_sync_kind(&self) -> Option<TextDocumentSyncKind> {
+        self.server_capabilities()
+            .and_then(core::capabilities::text_document_sync_kind)
+    }
+
+    pub fn supports_incremental_sync(&self) -> bool {
+        self.text_document_sync_kind() == Some(TextDocumentSyncKind::Incremental)
+    }
+
+    pub fn supports_formatting(&self) -> bool {
+        self.server_capabilities()
+            .is_some_and(core::capabilities::supports_formatting)
+    }
+
+    pub fn supports_code_action(&self) -> bool {
+        self.server_capabilities()
+            .is_some_and(core::capabilities::supports_code_action)
+    }
+
+    pub fn supports_pull_diagnostics(&self) -> bool {
+        self.server_capabilities()
+            .is_some_and(core::capabilities::supports_pull_diagnostics)
     }
 
     pub fn rss_bytes(&mut self) -> Option<u64> {
@@ -328,6 +407,10 @@ impl Client {
             }
         }
     }
+}
+
+fn whole_document(text: String) -> TextDocumentContentChangeEvent {
+    TextDocumentContentChangeWholeDocument { text }.into()
 }
 
 enum RecvOutcome {

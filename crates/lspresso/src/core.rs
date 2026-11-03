@@ -1,6 +1,7 @@
 pub mod capabilities;
 mod docs;
 mod lifecycle;
+pub(crate) mod text;
 mod server_requests;
 
 pub(crate) use docs::DocumentTracker;
