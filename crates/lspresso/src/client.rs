@@ -1,3 +1,4 @@
+mod methods;
 mod transport;
 
 use std::{
@@ -7,13 +8,16 @@ use std::{
 
 use crossbeam_channel::RecvTimeoutError;
 use gen_lsp_types::{
-    ClientCapabilities, ExitNotification, InitializeRequest, InitializeResult,
-    InitializedNotification, InitializedParams, MessageDirection, Notification as LspNotification,
-    Request as LspRequest, ServerCapabilities, ShutdownRequest,
+    ClientCapabilities, CodeActionContext, CodeActionParams, CodeActionResponse, DocumentFormattingParams,
+    ExitNotification, FormattingOptions, InitializeRequest, InitializeResult, InitializedNotification,
+    InitializedParams, MessageDirection, Notification as LspNotification, Range, Request as LspRequest,
+    ServerCapabilities, ShutdownRequest, TextDocumentIdentifier, TextEdit, Uri,
 };
 use lsp_server::{Message, Notification, RequestId};
 
 use self::transport::{Incoming, Transport};
+
+pub use self::methods::Protocol;
 use crate::{
     Error, Result,
     core::{self, ClientState, Effect},
@@ -121,6 +125,32 @@ impl Client {
                 }
             }
         }
+    }
+
+    pub fn formatting(&mut self, uri: &Uri) -> crate::Result<Option<Vec<TextEdit>>> {
+        self.protocol_formatting(DocumentFormattingParams {
+            text_document: TextDocumentIdentifier { uri: uri.clone() },
+            options: FormattingOptions::default(),
+            work_done_progress_params: gen_lsp_types::WorkDoneProgressParams::default(),
+        })
+    }
+
+    pub fn code_action(
+        &mut self,
+        uri: &Uri,
+        range: Range,
+        diagnostics: Vec<gen_lsp_types::Diagnostic>,
+    ) -> crate::Result<Option<Vec<CodeActionResponse>>> {
+        self.protocol_code_action(CodeActionParams {
+            text_document: TextDocumentIdentifier { uri: uri.clone() },
+            range,
+            context: CodeActionContext {
+                diagnostics,
+                ..Default::default()
+            },
+            work_done_progress_params: gen_lsp_types::WorkDoneProgressParams::default(),
+            partial_result_params: gen_lsp_types::PartialResultParams::default(),
+        })
     }
 
     pub fn rss_bytes(&mut self) -> Option<u64> {
