@@ -15,8 +15,7 @@ use lsp_server::{Message, Notification, RequestId};
 
 use self::transport::{Incoming, Transport};
 use crate::{
-    Error,
-    Result,
+    Error, Result,
     core::{self, ClientState, Effect},
     error::{ErrorKind, elapsed_ms},
 };
