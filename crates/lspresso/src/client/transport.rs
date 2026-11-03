@@ -30,8 +30,10 @@ impl Drop for KillOnDrop {
 /// can't block the caller: a large `didOpen` would otherwise wedge in
 /// `write_all` once the pipe buffer fills, with no timeout able to fire.
 ///
-/// Killing the process on drop ends both threads: the writer's pipe breaks
-/// and the reader hits EOF, so neither is joined.
+/// Dropping the transport kills the server, which breaks the writer's pipe
+/// and closes the reader's stdout, so both threads exit on their own. They
+/// are not joined: a grandchild still holding those pipes would keep them
+/// open and block the drop. Nothing depends on the order fields drop in.
 #[derive(Debug)]
 pub(super) struct Transport {
     process: KillOnDrop,
