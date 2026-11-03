@@ -622,7 +622,7 @@ version = "1.0.0"
 backend = "npm:json-minify"
 
 [[tools."npm:oxfmt"]]
-version = "0.74.0"
+version = "0.75.0"
 backend = "npm:oxfmt"
 
 [[tools."npm:prettier"]]
