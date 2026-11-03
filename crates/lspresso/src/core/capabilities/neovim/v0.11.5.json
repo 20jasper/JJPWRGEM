@@ -1,10 +1,6 @@
 {
   "general": {
-    "positionEncodings": [
-      "utf-8",
-      "utf-16",
-      "utf-32"
-    ]
+    "positionEncodings": ["utf-8", "utf-16", "utf-32"]
   },
   "workspace": {
     "configuration": true,
@@ -16,32 +12,8 @@
     "symbol": {
       "symbolKind": {
         "valueSet": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6,
-          7,
-          8,
-          9,
-          10,
-          11,
-          12,
-          13,
-          14,
-          15,
-          16,
-          17,
-          18,
-          19,
-          20,
-          21,
-          22,
-          23,
-          24,
-          25,
-          26
+          1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+          21, 22, 23, 24, 25, 26
         ]
       },
       "dynamicRegistration": false
@@ -57,11 +29,7 @@
       "refreshSupport": true
     },
     "workspaceEdit": {
-      "resourceOperations": [
-        "rename",
-        "create",
-        "delete"
-      ]
+      "resourceOperations": ["rename", "create", "delete"]
     }
   },
   "textDocument": {
@@ -74,21 +42,13 @@
     },
     "inlayHint": {
       "resolveSupport": {
-        "properties": [
-          "textEdits",
-          "tooltip",
-          "location",
-          "command"
-        ]
+        "properties": ["textEdits", "tooltip", "location", "command"]
       },
       "dynamicRegistration": true
     },
     "diagnostic": {
       "tagSupport": {
-        "valueSet": [
-          1,
-          2
-        ]
+        "valueSet": [1, 2]
       },
       "dynamicRegistration": false
     },
@@ -97,9 +57,7 @@
       "dynamicRegistration": true
     },
     "semanticTokens": {
-      "formats": [
-        "relative"
-      ],
+      "formats": ["relative"],
       "overlappingTokenSupport": true,
       "tokenTypes": [
         "namespace",
@@ -179,10 +137,7 @@
       "isPreferredSupport": true,
       "dataSupport": true,
       "resolveSupport": {
-        "properties": [
-          "edit",
-          "command"
-        ]
+        "properties": ["edit", "command"]
       },
       "dynamicRegistration": true
     },
@@ -191,10 +146,7 @@
     },
     "signatureHelp": {
       "signatureInformation": {
-        "documentationFormat": [
-          "markdown",
-          "plaintext"
-        ],
+        "documentationFormat": ["markdown", "plaintext"],
         "activeParameterSupport": true,
         "parameterInformation": {
           "labelOffsetSupport": true
@@ -204,19 +156,13 @@
     },
     "codeLens": {
       "resolveSupport": {
-        "properties": [
-          "command"
-        ]
+        "properties": ["command"]
       },
       "dynamicRegistration": false
     },
     "foldingRange": {
       "foldingRangeKind": {
-        "valueSet": [
-          "comment",
-          "imports",
-          "region"
-        ]
+        "valueSet": ["comment", "imports", "region"]
       },
       "dynamicRegistration": false,
       "foldingRange": {
@@ -228,31 +174,8 @@
       "contextSupport": true,
       "completionItemKind": {
         "valueSet": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6,
-          7,
-          8,
-          9,
-          10,
-          11,
-          12,
-          13,
-          14,
-          15,
-          16,
-          17,
-          18,
-          19,
-          20,
-          21,
-          22,
-          23,
-          24,
-          25
+          1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+          21, 22, 23, 24, 25
         ]
       },
       "completionList": {
@@ -264,20 +187,12 @@
         ]
       },
       "completionItem": {
-        "documentationFormat": [
-          "markdown",
-          "plaintext"
-        ],
+        "documentationFormat": ["markdown", "plaintext"],
         "tagSupport": {
-          "valueSet": [
-            1
-          ]
+          "valueSet": [1]
         },
         "resolveSupport": {
-          "properties": [
-            "additionalTextEdits",
-            "command"
-          ]
+          "properties": ["additionalTextEdits", "command"]
         },
         "snippetSupport": true,
         "commitCharactersSupport": false,
@@ -287,10 +202,7 @@
       "dynamicRegistration": false
     },
     "hover": {
-      "contentFormat": [
-        "markdown",
-        "plaintext"
-      ],
+      "contentFormat": ["markdown", "plaintext"],
       "dynamicRegistration": true
     },
     "declaration": {
@@ -308,41 +220,14 @@
       "dynamicRegistration": false,
       "symbolKind": {
         "valueSet": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6,
-          7,
-          8,
-          9,
-          10,
-          11,
-          12,
-          13,
-          14,
-          15,
-          16,
-          17,
-          18,
-          19,
-          20,
-          21,
-          22,
-          23,
-          24,
-          25,
-          26
+          1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+          21, 22, 23, 24, 25, 26
         ]
       }
     },
     "publishDiagnostics": {
       "tagSupport": {
-        "valueSet": [
-          1,
-          2
-        ]
+        "valueSet": [1, 2]
       },
       "dataSupport": true,
       "relatedInformation": true

@@ -29,25 +29,17 @@
         "snippetSupport": false,
         "deprecatedSupport": true,
         "resolveSupport": {
-          "properties": [
-            "documentation",
-            "details",
-            "additionalTextEdits"
-          ]
+          "properties": ["documentation", "details", "additionalTextEdits"]
         },
         "tagSupport": {
-          "valueSet": [
-            1
-          ]
+          "valueSet": [1]
         }
       },
       "contextSupport": true
     },
     "hover": {
       "dynamicRegistration": false,
-      "contentFormat": [
-        "plaintext"
-      ]
+      "contentFormat": ["plaintext"]
     },
     "signatureHelp": {
       "dynamicRegistration": false,
@@ -82,32 +74,8 @@
       "hierarchicalDocumentSymbolSupport": true,
       "symbolKind": {
         "valueSet": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6,
-          7,
-          8,
-          9,
-          10,
-          11,
-          12,
-          13,
-          14,
-          15,
-          16,
-          17,
-          18,
-          19,
-          20,
-          21,
-          22,
-          23,
-          24,
-          25,
-          26
+          1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+          21, 22, 23, 24, 25, 26
         ]
       }
     },
@@ -147,10 +115,7 @@
       "relatedInformation": false,
       "codeDescriptionSupport": false,
       "tagSupport": {
-        "valueSet": [
-          1,
-          2
-        ]
+        "valueSet": [1, 2]
       }
     }
   },
@@ -158,11 +123,7 @@
     "workDoneProgress": true
   },
   "general": {
-    "positionEncodings": [
-      "utf-32",
-      "utf-8",
-      "utf-16"
-    ]
+    "positionEncodings": ["utf-32", "utf-8", "utf-16"]
   },
   "experimental": {}
 }
