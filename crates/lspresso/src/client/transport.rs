@@ -1,4 +1,5 @@
 use std::{
+    fmt,
     io::{self, BufReader, Write},
     process::{Child, Command, ExitStatus, Stdio},
     thread::JoinHandle,
@@ -7,6 +8,7 @@ use std::{
 
 use crossbeam_channel::{Receiver, RecvTimeoutError, Sender};
 use lsp_server::Message;
+use sysinfo::{Pid, ProcessRefreshKind, ProcessesToUpdate, System};
 
 #[derive(Debug)]
 pub(super) enum Incoming {
@@ -17,18 +19,56 @@ pub(super) enum Incoming {
     Disconnected,
 }
 
+/// Kills and reaps the server on drop.
+struct KillOnDrop(Child);
+
+impl Drop for KillOnDrop {
+    fn drop(&mut self) {
+        drop(self.0.kill());
+        drop(self.0.wait());
+    }
+}
+
+impl fmt::Debug for KillOnDrop {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_tuple("KillOnDrop").field(&self.0.id()).finish()
+    }
+}
+
+struct JoinOnDrop(Option<JoinHandle<()>>);
+
+impl Drop for JoinOnDrop {
+    fn drop(&mut self) {
+        if let Some(handle) = self.0.take() {
+            drop(handle.join());
+        }
+    }
+}
+
+impl fmt::Debug for JoinOnDrop {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_tuple("JoinOnDrop")
+            .field(&self.0.as_ref().map(|_| ".."))
+            .finish()
+    }
+}
+
 /// Writes happen on their own thread so a server that stops reading stdin
 /// can't block the caller: a large `didOpen` would otherwise wedge in
 /// `write_all` once the pipe buffer fills, with no timeout able to fire.
+///
+/// Field order matters for drop: the process is killed first, then the
+/// sender is dropped so the writer can exit, and only then are the threads
+/// joined.
 #[derive(Debug)]
 pub(super) struct Transport {
-    child: Child,
+    process: KillOnDrop,
     outgoing: Sender<Vec<u8>>,
     write_errors: Receiver<io::Error>,
     incoming: Receiver<Incoming>,
-    _writer: JoinHandle<()>,
-    _reader: JoinHandle<()>,
-    _stderr: JoinHandle<()>,
+    rss_monitor: System,
+    _writer: JoinOnDrop,
+    _reader: JoinOnDrop,
 }
 
 impl Transport {
@@ -36,7 +76,7 @@ impl Transport {
         command
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
-            .stderr(Stdio::piped());
+            .stderr(Stdio::null());
         let mut child = command
             .spawn()
             .map_err(|source| crate::error::ErrorKind::Spawn {
@@ -45,21 +85,20 @@ impl Transport {
             })?;
         let mut stdin = child.stdin.take().expect("stdin is piped");
         let stdout = child.stdout.take().expect("stdout is piped");
-        let mut stderr = child.stderr.take().expect("stderr is piped");
 
         let (outgoing, outgoing_rx) = crossbeam_channel::unbounded::<Vec<u8>>();
         let (write_error_tx, write_errors) = crossbeam_channel::bounded(1);
-        let writer = std::thread::spawn(move || {
+        let writer = JoinOnDrop(Some(std::thread::spawn(move || {
             for bytes in outgoing_rx {
                 if let Err(err) = stdin.write_all(&bytes).and_then(|()| stdin.flush()) {
                     drop(write_error_tx.send(err));
                     break;
                 }
             }
-        });
+        })));
 
         let (incoming_tx, incoming) = crossbeam_channel::unbounded();
-        let reader = std::thread::spawn(move || {
+        let reader = JoinOnDrop(Some(std::thread::spawn(move || {
             let mut reader = BufReader::new(stdout);
             loop {
                 match Message::read(&mut reader) {
@@ -83,20 +122,16 @@ impl Transport {
             // its next write, just for having sent one bad frame.
             drop(incoming_tx);
             drop(io::copy(&mut reader, &mut io::sink()));
-        });
-
-        let stderr_thread = std::thread::spawn(move || {
-            drop(io::copy(&mut stderr, &mut io::sink()));
-        });
+        })));
 
         Ok(Self {
-            child,
+            process: KillOnDrop(child),
             outgoing,
             write_errors,
             incoming,
+            rss_monitor: System::new(),
             _writer: writer,
             _reader: reader,
-            _stderr: stderr_thread,
         })
     }
 
@@ -134,19 +169,17 @@ impl Transport {
         }
     }
 
-    pub(super) fn pid(&self) -> u32 {
-        self.child.id()
-    }
-
     pub(super) fn try_wait(&mut self) -> crate::Result<Option<ExitStatus>> {
-        Ok(self.child.try_wait()?)
+        Ok(self.process.0.try_wait()?)
     }
-}
 
-impl Drop for Transport {
-    fn drop(&mut self) {
-        // Killing first also unblocks a writer stuck on a full pipe.
-        drop(self.child.kill());
-        drop(self.child.wait());
+    pub(super) fn rss_bytes(&mut self) -> Option<u64> {
+        let pid = Pid::from_u32(self.process.0.id());
+        self.rss_monitor.refresh_processes_specifics(
+            ProcessesToUpdate::Some(&[pid]),
+            true,
+            ProcessRefreshKind::nothing().with_memory(),
+        );
+        self.rss_monitor.process(pid).map(sysinfo::Process::memory)
     }
 }

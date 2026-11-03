@@ -12,7 +12,6 @@ use gen_lsp_types::{
     Request as LspRequest, ServerCapabilities, ShutdownRequest,
 };
 use lsp_server::{Message, Notification, RequestId};
-use sysinfo::{Pid, ProcessRefreshKind, RefreshKind, System};
 
 use self::transport::{Incoming, Transport};
 use crate::{
@@ -125,17 +124,8 @@ impl Client {
         }
     }
 
-    pub fn rss_bytes(&self) -> Option<u64> {
-        let pid = Pid::from_u32(self.transport.pid());
-        let mut system = System::new_with_specifics(
-            RefreshKind::nothing().with_processes(ProcessRefreshKind::nothing().with_memory()),
-        );
-        system.refresh_processes_specifics(
-            sysinfo::ProcessesToUpdate::Some(&[pid]),
-            true,
-            ProcessRefreshKind::nothing().with_memory(),
-        );
-        system.process(pid).map(sysinfo::Process::memory)
+    pub fn rss_bytes(&mut self) -> Option<u64> {
+        self.transport.rss_bytes()
     }
 
     /// What the server declared in its `initialize` response.
