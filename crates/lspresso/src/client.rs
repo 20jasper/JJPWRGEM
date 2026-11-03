@@ -115,9 +115,9 @@ impl Client {
             if stdout_closed {
                 std::thread::sleep((deadline - now).min(EXIT_POLL_INTERVAL));
             } else {
-                match self.pump_once(Some(deadline), None) {
-                    PumpResult::Closed(_) => stdout_closed = true,
-                    PumpResult::Resolved(_) | PumpResult::Handled | PumpResult::TimedOut => {}
+                match self.recv_and_dispatch(Some(deadline), None) {
+                    RecvOutcome::Closed(_) => stdout_closed = true,
+                    RecvOutcome::Resolved(_) | RecvOutcome::Handled | RecvOutcome::TimedOut => {}
                 }
             }
         }
@@ -192,13 +192,13 @@ impl Client {
         method: &'static str,
     ) -> Result<serde_json::Value> {
         loop {
-            match self.pump_once(None, Some(id)) {
-                PumpResult::Resolved(result) => return result,
-                PumpResult::Closed(closed) => {
+            match self.recv_and_dispatch(None, Some(id)) {
+                RecvOutcome::Resolved(result) => return result,
+                RecvOutcome::Closed(closed) => {
                     self.state.cancel_pending_request(id);
                     return Err(closed.into_error(method));
                 }
-                PumpResult::Handled | PumpResult::TimedOut => {}
+                RecvOutcome::Handled | RecvOutcome::TimedOut => {}
             }
         }
     }
@@ -207,45 +207,49 @@ impl Client {
     /// is sooner, dispatches what arrived through the core, then ticks it --
     /// after every receive, not just timeouts, since a server streaming
     /// notifications never lets a receive time out.
-    fn pump_once(&mut self, until: Option<Instant>, waiting_for: Option<&RequestId>) -> PumpResult {
+    fn recv_and_dispatch(
+        &mut self,
+        until: Option<Instant>,
+        waiting_for: Option<&RequestId>,
+    ) -> RecvOutcome {
         let deadline = until.into_iter().chain(self.state.next_deadline()).min();
-        let pumped = match self.transport.recv_until(deadline) {
+        let outcome = match self.transport.recv_until(deadline) {
             Ok(Incoming::Message(message)) => {
                 let effects = self.state.on_message(&message);
-                if let Some(result) = self.record_effects(effects, waiting_for) {
-                    return PumpResult::Resolved(result);
+                if let Some(result) = self.apply_effects(effects, waiting_for) {
+                    return RecvOutcome::Resolved(result);
                 }
-                PumpResult::Handled
+                RecvOutcome::Handled
             }
             // A closed stream outranks a timeout landing on the same pass.
             Ok(Incoming::Malformed(source)) => {
-                return PumpResult::Closed(CloseReason::Malformed(source));
+                return RecvOutcome::Closed(CloseReason::Malformed(source));
             }
             Err(RecvTimeoutError::Disconnected) => {
-                return PumpResult::Closed(CloseReason::Disconnected);
+                return RecvOutcome::Closed(CloseReason::Disconnected);
             }
-            Err(RecvTimeoutError::Timeout) => PumpResult::TimedOut,
+            Err(RecvTimeoutError::Timeout) => RecvOutcome::TimedOut,
         };
         let effects = self.state.process_past_deadline_requests(Instant::now());
-        self.record_effects(effects, waiting_for)
-            .map_or(pumped, PumpResult::Resolved)
+        self.apply_effects(effects, waiting_for)
+            .map_or(outcome, RecvOutcome::Resolved)
     }
 
-    fn record_effects(
+    fn apply_effects(
         &mut self,
         effects: Vec<Effect>,
         waiting_for: Option<&RequestId>,
     ) -> Option<Result<serde_json::Value>> {
         let mut resolved = None;
         for effect in effects {
-            if let Some(result) = self.record_effect(effect, waiting_for) {
+            if let Some(result) = self.apply_effect(effect, waiting_for) {
                 resolved = Some(result);
             }
         }
         resolved
     }
 
-    fn record_effect(
+    fn apply_effect(
         &mut self,
         effect: Effect,
         waiting_for: Option<&RequestId>,
@@ -269,7 +273,7 @@ impl Client {
     }
 }
 
-enum PumpResult {
+enum RecvOutcome {
     Resolved(Result<serde_json::Value>),
     Closed(CloseReason),
     /// A notification, a server request (already answered), or a response
