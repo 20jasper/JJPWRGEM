@@ -311,7 +311,7 @@ client_methods! {
             WindowShowMessage,
         ]
         cancel_request: CancelRequest => CancelNotification, params;
-        did_save: TextDocumentDidSave => DidSaveTextDocumentNotification, document, open;
+        did_save: TextDocumentDidSave => DidSaveTextDocumentNotification, manual, open;
         notebook_document_did_change: NotebookDocumentDidChange => DidChangeNotebookDocumentNotification, params;
         notebook_document_did_close: NotebookDocumentDidClose => DidCloseNotebookDocumentNotification, params;
         notebook_document_did_open: NotebookDocumentDidOpen => DidOpenNotebookDocumentNotification, params;

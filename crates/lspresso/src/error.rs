@@ -93,6 +93,10 @@ pub enum ErrorKind {
     NotOpen { uri: gen_lsp_types::Uri },
     /// document {uri} version counter exhausted
     DocumentVersionExhausted { uri: gen_lsp_types::Uri },
+    /// edit {index} is invalid: {range:?}
+    InvalidEdit { index: usize, range: gen_lsp_types::Range },
+    /// edits {a} and {b} overlap
+    OverlappingEdits { a: usize, b: usize },
 }
 
 pub(crate) fn elapsed_ms(start: Instant, now: Instant) -> u64 {
