@@ -1,5 +1,4 @@
 use std::{
-    fmt,
     io::{self, BufReader, Write},
     process::{Child, Command, ExitStatus, Stdio},
     thread::JoinHandle,
@@ -19,7 +18,7 @@ pub(super) enum Incoming {
     Disconnected,
 }
 
-/// Kills and reaps the server on drop.
+#[derive(Debug)]
 struct KillOnDrop(Child);
 
 impl Drop for KillOnDrop {
@@ -29,12 +28,7 @@ impl Drop for KillOnDrop {
     }
 }
 
-impl fmt::Debug for KillOnDrop {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_tuple("KillOnDrop").field(&self.0.id()).finish()
-    }
-}
-
+#[derive(Debug)]
 struct JoinOnDrop(Option<JoinHandle<()>>);
 
 impl Drop for JoinOnDrop {
@@ -42,14 +36,6 @@ impl Drop for JoinOnDrop {
         if let Some(handle) = self.0.take() {
             drop(handle.join());
         }
-    }
-}
-
-impl fmt::Debug for JoinOnDrop {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_tuple("JoinOnDrop")
-            .field(&self.0.as_ref().map(|_| ".."))
-            .finish()
     }
 }
 
