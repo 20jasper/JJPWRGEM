@@ -11,8 +11,6 @@ use sysinfo::{Pid, ProcessRefreshKind, ProcessesToUpdate, System};
 #[derive(Debug)]
 pub(super) enum Incoming {
     Message(Message),
-    /// The server wrote something that isn't a valid LSP frame. Nothing
-    /// after it can be trusted to line up, so reading stops here.
     Malformed(io::Error),
 }
 
@@ -26,14 +24,8 @@ impl Drop for KillOnDrop {
     }
 }
 
-/// Writes happen on their own thread so a server that stops reading stdin
-/// can't block the caller: a large `didOpen` would otherwise wedge in
-/// `write_all` once the pipe buffer fills, with no timeout able to fire.
-///
-/// Dropping the transport kills the server, which breaks the writer's pipe
-/// and closes the reader's stdout, so both threads exit on their own. They
-/// are not joined: a grandchild still holding those pipes would keep them
-/// open and block the drop. Nothing depends on the order fields drop in.
+/// writes are on another thread to avoid
+/// blocikg the main thread
 #[derive(Debug)]
 pub(super) struct Transport {
     process: KillOnDrop,
@@ -102,9 +94,7 @@ impl Transport {
         })
     }
 
-    /// Queues `message` for the writer thread. A write that failed earlier
-    /// is reported here, on the next send, since the failing one already
-    /// returned.
+    /// Queues `message` or returns existing errors
     pub(super) fn send(&mut self, message: &Message) -> crate::Result<()> {
         if let Ok(err) = self.write_errors.try_recv() {
             return Err(err.into());
@@ -121,8 +111,6 @@ impl Transport {
         })
     }
 
-    /// The next incoming message, or a timeout once `deadline` passes; with
-    /// no deadline, waits for a message or the stream closing.
     pub(super) fn recv_until(
         &self,
         deadline: Option<Instant>,
