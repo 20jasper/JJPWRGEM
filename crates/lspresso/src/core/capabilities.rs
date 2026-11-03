@@ -15,10 +15,14 @@ fn with_position_encodings(position_encodings: Vec<PositionEncodingKind>) -> Cli
     }
 }
 
-/// vscode-languageclient 10.1.0
-/// <https://github.com/microsoft/vscode-languageserver-node/blob/0da5527ddf79ec7b10c953a1b1e6e007c9678326/client/src/common/client.ts#L2102-L2154>
+/// VS Code 11.0.0 (vscode-languageclient 11.0.0), as captured by running the
+/// client library outside VS Code.
+///
+/// Declares `dynamicRegistration` for 36 features, which lspresso doesn't
+/// honor yet: it answers `client/registerCapability` with a bare `null` and
+/// doesn't record the registration.
 pub fn vscode() -> ClientCapabilities {
-    with_position_encodings(vec![PositionEncodingKind::UTF16])
+    from_capture(include_str!("capabilities/vscode-11.0.0.json"))
 }
 
 fn from_capture(capabilities: &str) -> ClientCapabilities {
@@ -71,8 +75,11 @@ mod tests {
             serde_json::from_str(include_str!("capabilities/neovim-0.12.6.json")).unwrap();
         let helix_json: Value =
             serde_json::from_str(include_str!("capabilities/helix-25.07.1.json")).unwrap();
+        let vscode_json: Value =
+            serde_json::from_str(include_str!("capabilities/vscode-11.0.0.json")).unwrap();
 
         assert_eq!(serde_json::to_value(neovim()).unwrap(), neovim_json);
         assert_eq!(serde_json::to_value(helix()).unwrap(), helix_json);
+        assert_eq!(serde_json::to_value(vscode()).unwrap(), vscode_json);
     }
 }
