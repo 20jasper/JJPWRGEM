@@ -21,24 +21,28 @@ pub fn vscode() -> ClientCapabilities {
     with_position_encodings(vec![PositionEncodingKind::UTF16])
 }
 
-/// Helix 25.07.1
-/// <https://github.com/helix-editor/helix/blob/a05c151bb6e8e9c65ec390b0ae2afe7a5efd619b/helix-lsp/src/client.rs#L553-L722>
-pub fn helix() -> ClientCapabilities {
-    with_position_encodings(vec![
-        PositionEncodingKind::UTF8,
-        PositionEncodingKind::UTF32,
-        PositionEncodingKind::UTF16,
-    ])
+fn from_capture(capabilities: &str) -> ClientCapabilities {
+    serde_json::from_str(capabilities).expect("captured capabilities are valid")
 }
 
-/// Neovim master
-/// <https://github.com/neovim/neovim/blob/12ea9735f77b81f0fecc7abe712639f88889f7f3/runtime/lua/vim/lsp/protocol.lua#L343-L646>
+/// Helix 25.07.1, as captured from a real instance.
+///
+/// Declares `dynamicRegistration` for `workspace.didChangeWatchedFiles`,
+/// which lspresso doesn't honor yet: it answers `client/registerCapability`
+/// with a bare `null` and doesn't record the registration.
+pub fn helix() -> ClientCapabilities {
+    from_capture(include_str!("capabilities/helix-25.07.1.json"))
+}
+
+/// Neovim 0.12.6, as captured from a real instance.
+///
+/// Declares `dynamicRegistration` for diagnostic, formatting, range
+/// formatting, inlay hint, definition, color provider, rename, code action,
+/// and hover, which lspresso doesn't honor yet: it answers
+/// `client/registerCapability` with a bare `null` and doesn't record the
+/// registration.
 pub fn neovim() -> ClientCapabilities {
-    with_position_encodings(vec![
-        PositionEncodingKind::UTF8,
-        PositionEncodingKind::UTF16,
-        PositionEncodingKind::UTF32,
-    ])
+    from_capture(include_str!("capabilities/neovim-0.12.6.json"))
 }
 
 /// Zed 1.10.0
@@ -52,5 +56,23 @@ pub fn initialize_params(capabilities: ClientCapabilities) -> InitializeParams {
         process_id: i32::try_from(std::process::id()).ok(),
         capabilities,
         ..Default::default()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use serde_json::Value;
+
+    use super::*;
+
+    #[test]
+    fn captured_presets_keep_every_field_the_editor_sent() {
+        let neovim_json: Value =
+            serde_json::from_str(include_str!("capabilities/neovim-0.12.6.json")).unwrap();
+        let helix_json: Value =
+            serde_json::from_str(include_str!("capabilities/helix-25.07.1.json")).unwrap();
+
+        assert_eq!(serde_json::to_value(neovim()).unwrap(), neovim_json);
+        assert_eq!(serde_json::to_value(helix()).unwrap(), helix_json);
     }
 }

@@ -1,0 +1,130 @@
+{
+  "general": {
+    "positionEncodings": [
+      "utf-8",
+      "utf-32",
+      "utf-16"
+    ]
+  },
+  "textDocument": {
+    "codeAction": {
+      "codeActionLiteralSupport": {
+        "codeActionKind": {
+          "valueSet": [
+            "",
+            "quickfix",
+            "refactor",
+            "refactor.extract",
+            "refactor.inline",
+            "refactor.rewrite",
+            "source",
+            "source.organizeImports"
+          ]
+        }
+      },
+      "dataSupport": true,
+      "disabledSupport": true,
+      "isPreferredSupport": true,
+      "resolveSupport": {
+        "properties": [
+          "edit",
+          "command"
+        ]
+      }
+    },
+    "completion": {
+      "completionItem": {
+        "deprecatedSupport": true,
+        "insertReplaceSupport": true,
+        "resolveSupport": {
+          "properties": [
+            "documentation",
+            "detail",
+            "additionalTextEdits"
+          ]
+        },
+        "snippetSupport": true,
+        "tagSupport": {
+          "valueSet": [
+            1
+          ]
+        }
+      },
+      "completionItemKind": {}
+    },
+    "formatting": {
+      "dynamicRegistration": false
+    },
+    "hover": {
+      "contentFormat": [
+        "markdown"
+      ]
+    },
+    "inlayHint": {
+      "dynamicRegistration": false
+    },
+    "publishDiagnostics": {
+      "tagSupport": {
+        "valueSet": [
+          1,
+          2
+        ]
+      },
+      "versionSupport": true
+    },
+    "rename": {
+      "dynamicRegistration": false,
+      "honorsChangeAnnotations": false,
+      "prepareSupport": true
+    },
+    "signatureHelp": {
+      "signatureInformation": {
+        "activeParameterSupport": true,
+        "documentationFormat": [
+          "markdown"
+        ],
+        "parameterInformation": {
+          "labelOffsetSupport": true
+        }
+      }
+    }
+  },
+  "window": {
+    "workDoneProgress": true
+  },
+  "workspace": {
+    "applyEdit": true,
+    "configuration": true,
+    "didChangeConfiguration": {
+      "dynamicRegistration": false
+    },
+    "didChangeWatchedFiles": {
+      "dynamicRegistration": true,
+      "relativePatternSupport": false
+    },
+    "executeCommand": {
+      "dynamicRegistration": false
+    },
+    "fileOperations": {
+      "didRename": true,
+      "willRename": true
+    },
+    "inlayHint": {
+      "refreshSupport": false
+    },
+    "symbol": {
+      "dynamicRegistration": false
+    },
+    "workspaceEdit": {
+      "documentChanges": true,
+      "failureHandling": "abort",
+      "normalizesLineEndings": false,
+      "resourceOperations": [
+        "create",
+        "rename",
+        "delete"
+      ]
+    },
+    "workspaceFolders": true
+  }
+}
