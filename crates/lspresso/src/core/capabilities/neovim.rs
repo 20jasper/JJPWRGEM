@@ -1,5 +1,3 @@
-//! Neovim presets, one per captured release.
-
 use gen_lsp_types::ClientCapabilities;
 
 use super::from_capture;

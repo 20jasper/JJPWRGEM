@@ -1,7 +1,3 @@
-//! VS Code presets. These are captured from `vscode-languageclient` run outside
-//! VS Code, so the version numbers are client library versions, not VS Code
-//! app versions.
-
 use gen_lsp_types::ClientCapabilities;
 
 use super::from_capture;

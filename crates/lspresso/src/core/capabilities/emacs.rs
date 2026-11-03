@@ -1,6 +1,3 @@
-//! Emacs presets, one per captured release. Each is Eglot, the LSP client
-//! bundled with that Emacs version.
-
 use gen_lsp_types::ClientCapabilities;
 
 use super::from_capture;
