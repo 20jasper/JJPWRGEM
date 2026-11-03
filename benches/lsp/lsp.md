@@ -18,12 +18,12 @@ Baseline performance for minimal parsing work
 
 Note: memory values are RSS (resident set size), shown in megabytes.
 
-| method           | jjpwrgem       | vscode-json       |
-| ---------------- | -------------- | ----------------- |
-| initialize       | 6.6ms (3.6 MB) | 137.6ms (72.7 MB) |
-| diagnostic       | 0.2ms (3.8 MB) | 510.2ms (72.8 MB) |
-| formatting       | 0.1ms (3.7 MB) | 0.5ms (72.5 MB)   |
-| formatting edits | 1 edit         | 21 edits          |
+| method           | jjpwrgem        | vscode-json       |
+| ---------------- | --------------- | ----------------- |
+| initialize       | 18.5ms (4.0 MB) | 114.1ms (73.7 MB) |
+| diagnostic       | 0.1ms (3.9 MB)  | 504.4ms (73.9 MB) |
+| formatting       | 0.0ms (3.9 MB)  | 0.2ms (73.4 MB)   |
+| formatting edits | 1 edit          | 21 edits          |
 
 ## twitter
 
@@ -33,9 +33,9 @@ Note: memory values are RSS (resident set size), shown in megabytes.
 
 | method           | jjpwrgem        | vscode-json       |
 | ---------------- | --------------- | ----------------- |
-| initialize       | 10.7ms (3.7 MB) | 146.9ms (73.3 MB) |
-| diagnostic       | 6.5ms (6.1 MB)  | 542.3ms (82.6 MB) |
-| formatting       | 2.2ms (5.9 MB)  | 49.5ms (82.2 MB)  |
+| initialize       | 20.0ms (4.1 MB) | 113.2ms (74.1 MB) |
+| diagnostic       | 4.6ms (6.4 MB)  | 521.6ms (84.5 MB) |
+| formatting       | 1.6ms (6.2 MB)  | 24.4ms (84.0 MB)  |
 | formatting edits | 1 edit          | 15481 edits       |
 
 ## citm catalog
@@ -46,9 +46,9 @@ Note: memory values are RSS (resident set size), shown in megabytes.
 
 | method           | jjpwrgem        | vscode-json       |
 | ---------------- | --------------- | ----------------- |
-| initialize       | 7.9ms (3.7 MB)  | 138.5ms (73.1 MB) |
-| diagnostic       | 11.2ms (8.7 MB) | 556.4ms (97.8 MB) |
-| formatting       | 3.1ms (8.4 MB)  | 200.7ms (95.8 MB) |
+| initialize       | 20.1ms (4.1 MB) | 115.1ms (73.9 MB) |
+| diagnostic       | 7.9ms (8.8 MB)  | 541.5ms (99.2 MB) |
+| formatting       | 2.3ms (8.7 MB)  | 88.5ms (98.9 MB)  |
 | formatting edits | 1 edit          | 50468 edits       |
 
 ## canada
@@ -59,7 +59,7 @@ Note: memory values are RSS (resident set size), shown in megabytes.
 
 | method           | jjpwrgem         | vscode-json        |
 | ---------------- | ---------------- | ------------------ |
-| initialize       | 6.7ms (3.6 MB)   | 136.8ms (72.7 MB)  |
-| diagnostic       | 29.0ms (19.0 MB) | 603.6ms (125.0 MB) |
-| formatting       | 7.5ms (18.8 MB)  | 823.5ms (122.3 MB) |
+| initialize       | 19.5ms (3.9 MB)  | 116.1ms (73.9 MB)  |
+| diagnostic       | 17.9ms (19.2 MB) | 576.2ms (128.0 MB) |
+| formatting       | 6.2ms (19.0 MB)  | 316.7ms (123.4 MB) |
 | formatting edits | 1 edit           | 223227 edits       |
