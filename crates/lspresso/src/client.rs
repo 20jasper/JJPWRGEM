@@ -7,16 +7,20 @@ use std::{
 
 use crossbeam_channel::RecvTimeoutError;
 use gen_lsp_types::{
-    ClientCapabilities, ExitNotification, InitializeRequest, InitializeResult,
-    InitializedNotification, InitializedParams, MessageDirection, Notification as LspNotification,
-    Request as LspRequest, ServerCapabilities, ShutdownRequest,
+    ClientCapabilities, DidChangeTextDocumentNotification, DidChangeTextDocumentParams,
+    DidCloseTextDocumentNotification, DidCloseTextDocumentParams, DidOpenTextDocumentNotification,
+    DidOpenTextDocumentParams, ExitNotification, InitializeRequest, InitializeResult,
+    InitializedNotification, InitializedParams, LanguageKind, MessageDirection,
+    Notification as LspNotification, Request as LspRequest, ServerCapabilities, ShutdownRequest,
+    TextDocumentContentChangeEvent, TextDocumentContentChangeWholeDocument, TextDocumentIdentifier,
+    TextDocumentItem, Uri, VersionedTextDocumentIdentifier,
 };
 use lsp_server::{Message, Notification, RequestId};
 
 use self::transport::{Incoming, Transport};
 use crate::{
     Error, Result,
-    core::{self, ClientState, Effect},
+    core::{self, ClientState, DocumentTracker, Effect},
     error::{ErrorKind, elapsed_ms},
 };
 
@@ -39,6 +43,7 @@ macro_rules! assert_client_to_server {
 pub struct Client {
     transport: Transport,
     state: ClientState,
+    docs: DocumentTracker,
     background_errors: Vec<Error>,
     request_timeout: Duration,
     server_capabilities: Option<ServerCapabilities>,
@@ -49,6 +54,7 @@ impl Client {
         Ok(Self {
             transport: Transport::spawn(command)?,
             state: ClientState::default(),
+            docs: DocumentTracker::default(),
             background_errors: Vec::new(),
             request_timeout: DEFAULT_REQUEST_TIMEOUT,
             server_capabilities: None,
@@ -121,6 +127,54 @@ impl Client {
                 }
             }
         }
+    }
+
+    pub fn did_open(
+        &mut self,
+        uri: Uri,
+        text: impl Into<String>,
+        language: LanguageKind,
+    ) -> crate::Result<()> {
+        self.state.require_initialized()?;
+        self.docs.require_not_open(&uri)?;
+        let text = text.into();
+        self.send_notification::<DidOpenTextDocumentNotification>(DidOpenTextDocumentParams {
+            text_document: TextDocumentItem {
+                uri: uri.clone(),
+                language_id: language,
+                version: 1,
+                text,
+            },
+        })?;
+        self.docs.mark_open(uri);
+        Ok(())
+    }
+
+    pub fn did_change_full(&mut self, uri: &Uri, text: impl Into<String>) -> crate::Result<()> {
+        self.state.require_initialized()?;
+        let version = self.docs.next_version(uri)?;
+        let text = text.into();
+        self.send_notification::<DidChangeTextDocumentNotification>(DidChangeTextDocumentParams {
+            text_document: VersionedTextDocumentIdentifier {
+                version,
+                text_document_identifier: TextDocumentIdentifier { uri: uri.clone() },
+            },
+            content_changes: vec![TextDocumentContentChangeEvent::from(
+                TextDocumentContentChangeWholeDocument { text },
+            )],
+        })?;
+        self.docs.commit_change(uri, version);
+        Ok(())
+    }
+
+    pub fn did_close(&mut self, uri: &Uri) -> crate::Result<()> {
+        self.state.require_initialized()?;
+        self.docs.require_open(uri)?;
+        self.send_notification::<DidCloseTextDocumentNotification>(DidCloseTextDocumentParams {
+            text_document: TextDocumentIdentifier { uri: uri.clone() },
+        })?;
+        self.docs.mark_closed(uri);
+        Ok(())
     }
 
     pub fn rss_bytes(&mut self) -> Option<u64> {

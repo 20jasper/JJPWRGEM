@@ -32,3 +32,6 @@ thiserror = "2.0.21"
 
 [lints]
 workspace = true
+
+[dev-dependencies]
+proptest = { workspace = true }

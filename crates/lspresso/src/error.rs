@@ -87,6 +87,12 @@ pub enum ErrorKind {
         method: &'static str,
         message: String,
     },
+    /// document {uri} is already open
+    AlreadyOpen { uri: gen_lsp_types::Uri },
+    /// document {uri} is not open
+    NotOpen { uri: gen_lsp_types::Uri },
+    /// document {uri} version counter exhausted
+    DocumentVersionExhausted { uri: gen_lsp_types::Uri },
 }
 
 pub(crate) fn elapsed_ms(start: Instant, now: Instant) -> u64 {
