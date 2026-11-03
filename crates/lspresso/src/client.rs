@@ -230,7 +230,7 @@ impl Client {
             }
             Err(RecvTimeoutError::Timeout) => RecvOutcome::TimedOut,
         };
-        let effects = self.state.process_past_deadline_requests(Instant::now());
+        let effects = self.state.expire_timed_out_requests(Instant::now());
         self.apply_effects(effects, waiting_for)
             .map_or(outcome, RecvOutcome::Resolved)
     }

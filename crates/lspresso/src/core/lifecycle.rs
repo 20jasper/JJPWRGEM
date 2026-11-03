@@ -226,7 +226,7 @@ impl ClientState {
     }
 
     /// check for any past deadline requests and return them as failures
-    pub fn process_past_deadline_requests(&mut self, now: Instant) -> Vec<Effect> {
+    pub fn expire_timed_out_requests(&mut self, now: Instant) -> Vec<Effect> {
         let (lifecycle_ref, pending_requests) = (&mut self.lifecycle, &mut self.pending);
         pending_requests
             .iter_mut()
@@ -495,15 +495,11 @@ mod tests {
         let id = start_initialize_ok(&mut state, start, Duration::from_millis(10));
 
         let one_tick_before = start + Duration::from_millis(9);
-        assert!(
-            state
-                .process_past_deadline_requests(one_tick_before)
-                .is_empty()
-        );
+        assert!(state.expire_timed_out_requests(one_tick_before).is_empty());
         assert_eq!(*state.lifecycle(), Lifecycle::Initializing);
 
         let exactly_at_deadline = start + Duration::from_millis(10);
-        let effects = state.process_past_deadline_requests(exactly_at_deadline);
+        let effects = state.expire_timed_out_requests(exactly_at_deadline);
         assert_eq!(*state.lifecycle(), Lifecycle::NotStarted);
         let err = resolved_result(effects, &id).unwrap_err();
         assert!(matches!(err.kind(), ErrorKind::ResponseTimeout { .. }));
@@ -512,7 +508,7 @@ mod tests {
     #[test]
     fn timeouts_name_the_method_that_timed_out() {
         fn timed_out_method(state: &mut ClientState, id: &RequestId, now: Instant) -> &'static str {
-            let err = resolved_result(state.process_past_deadline_requests(now), id).unwrap_err();
+            let err = resolved_result(state.expire_timed_out_requests(now), id).unwrap_err();
             let ErrorKind::ResponseTimeout { method, .. } = err.kind() else {
                 panic!("expected a timeout: {err:?}");
             };
@@ -571,7 +567,7 @@ mod tests {
             Some(start + Duration::from_millis(10))
         );
 
-        state.process_past_deadline_requests(start + Duration::from_millis(10));
+        state.expire_timed_out_requests(start + Duration::from_millis(10));
         assert_eq!(
             state.next_deadline(),
             Some(start + Duration::from_millis(30))
@@ -588,7 +584,7 @@ mod tests {
         let id = start_initialize_ok(&mut state, start, Duration::from_millis(10));
 
         let past_deadline = start + Duration::from_millis(11);
-        let effects = state.process_past_deadline_requests(past_deadline);
+        let effects = state.expire_timed_out_requests(past_deadline);
 
         assert_eq!(*state.lifecycle(), Lifecycle::NotStarted);
         let err = resolved_result(effects, &id).unwrap_err();
@@ -604,7 +600,7 @@ mod tests {
         let id = start_initialize_ok(&mut state, start, Duration::from_millis(10));
 
         let past_deadline = start + Duration::from_millis(11);
-        let timeout_effects = state.process_past_deadline_requests(past_deadline);
+        let timeout_effects = state.expire_timed_out_requests(past_deadline);
         assert_eq!(timeout_effects.len(), 1);
 
         let effects = state.on_message(&ok_response(id, serde_json::json!("too late")));
@@ -621,7 +617,7 @@ mod tests {
 
         start_shutdown_ok(&mut state, start, Duration::from_millis(10));
         let past_deadline = start + Duration::from_millis(11);
-        state.process_past_deadline_requests(past_deadline);
+        state.expire_timed_out_requests(past_deadline);
 
         assert_eq!(*state.lifecycle(), Lifecycle::Initialized);
 
@@ -646,7 +642,7 @@ mod tests {
         let mut state = ClientState::default();
         let now = Instant::now();
         let stale_id = start_initialize_ok(&mut state, now, Duration::ZERO);
-        state.process_past_deadline_requests(now);
+        state.expire_timed_out_requests(now);
         assert_eq!(*state.lifecycle(), Lifecycle::NotStarted);
 
         let current_id = start_initialize_ok(&mut state, now, DEFAULT_TIMEOUT);
