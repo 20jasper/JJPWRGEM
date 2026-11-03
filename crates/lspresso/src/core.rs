@@ -1,10 +1,13 @@
 pub mod capabilities;
+pub(crate) mod diagnostics;
 mod docs;
+pub(crate) mod inbox;
 mod lifecycle;
 pub(crate) mod text;
 mod server_requests;
 
 pub(crate) use docs::DocumentTracker;
+pub(crate) use inbox::{Inbox, Verdict};
 pub(crate) use lifecycle::ClientState;
 
 use crate::error::Error;

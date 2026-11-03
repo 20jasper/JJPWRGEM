@@ -24,7 +24,7 @@ use self::transport::{Incoming, Transport};
 pub use self::methods::Protocol;
 use crate::{
     Error, Result,
-    core::{self, ClientState, DocumentTracker, Effect},
+    core::{self, ClientState, DocumentTracker, Effect, Inbox},
     error::{ErrorKind, elapsed_ms},
 };
 use crate::core::text::{self, Encoding};
@@ -49,6 +49,7 @@ pub struct Client {
     transport: Transport,
     state: ClientState,
     docs: DocumentTracker,
+    inbox: Inbox,
     background_errors: Vec<Error>,
     request_timeout: Duration,
     server_capabilities: Option<ServerCapabilities>,
@@ -60,6 +61,7 @@ impl Client {
             transport: Transport::spawn(command)?,
             state: ClientState::default(),
             docs: DocumentTracker::default(),
+            inbox: Inbox::default(),
             background_errors: Vec::new(),
             request_timeout: DEFAULT_REQUEST_TIMEOUT,
             server_capabilities: None,
@@ -259,6 +261,46 @@ impl Client {
             .is_some_and(core::capabilities::supports_pull_diagnostics)
     }
 
+    pub fn next_diagnostics(
+        &mut self,
+        uri: &Uri,
+        timeout: Duration,
+    ) -> crate::Result<Vec<gen_lsp_types::Diagnostic>> {
+        let start = Instant::now();
+        let deadline = start + timeout;
+        let mut judge = self.diagnostics_judge(uri)?;
+        loop {
+            if let Some(taken) = self.inbox.take_first(&mut *judge) {
+                return Ok(taken);
+            }
+            let now = Instant::now();
+            if now >= deadline {
+                return Err(ErrorKind::DiagnosticsTimeout {
+                    uri: uri.clone(),
+                    after_ms: elapsed_ms(start, now),
+                }
+                .into());
+            }
+            match self.recv_and_dispatch(Some(deadline), None) {
+                RecvOutcome::Closed(closed) => {
+                    return Err(closed.into_error("textDocument/publishDiagnostics"));
+                }
+                RecvOutcome::Resolved(_) | RecvOutcome::Handled | RecvOutcome::TimedOut => {}
+            }
+        }
+    }
+
+    fn diagnostics_judge(
+        &mut self,
+        uri: &Uri,
+    ) -> crate::Result<Box<dyn FnMut(&lsp_server::Notification) -> core::inbox::Verdict<Vec<gen_lsp_types::Diagnostic>>>> {
+        let version = self.docs.current_version(uri).unwrap_or(1);
+        let uri = uri.clone();
+        Ok(Box::new(move |notification| {
+            core::diagnostics::publication(&uri, version, notification)
+        }))
+    }
+
     pub fn rss_bytes(&mut self) -> Option<u64> {
         self.transport.rss_bytes()
     }
@@ -351,6 +393,9 @@ impl Client {
         let deadline = until.into_iter().chain(self.state.next_deadline()).min();
         let outcome = match self.transport.recv_until(deadline) {
             Ok(Incoming::Message(message)) => {
+                if let Message::Notification(notification) = &message {
+                    self.inbox.push(notification.clone());
+                }
                 let effects = self.state.on_message(&message);
                 if let Some(result) = self.apply_effects(effects, waiting_for) {
                     return RecvOutcome::Resolved(result);

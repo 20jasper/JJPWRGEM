@@ -93,6 +93,8 @@ pub enum ErrorKind {
     NotOpen { uri: gen_lsp_types::Uri },
     /// document {uri} version counter exhausted
     DocumentVersionExhausted { uri: gen_lsp_types::Uri },
+    /// timed out after {after_ms}ms waiting for diagnostics for {uri}
+    DiagnosticsTimeout { uri: gen_lsp_types::Uri, after_ms: u64 },
     /// edit {index} is invalid: {range:?}
     InvalidEdit { index: usize, range: gen_lsp_types::Range },
     /// edits {a} and {b} overlap
