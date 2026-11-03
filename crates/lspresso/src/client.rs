@@ -221,7 +221,7 @@ impl Client {
             Ok(Incoming::Malformed(source)) => {
                 return PumpResult::Closed(CloseReason::Malformed(source));
             }
-            Ok(Incoming::Disconnected) | Err(RecvTimeoutError::Disconnected) => {
+            Err(RecvTimeoutError::Disconnected) => {
                 return PumpResult::Closed(CloseReason::Disconnected);
             }
             Err(RecvTimeoutError::Timeout) => PumpResult::TimedOut,

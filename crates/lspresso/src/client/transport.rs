@@ -1,7 +1,6 @@
 use std::{
     io::{self, BufReader, Write},
     process::{Child, Command, ExitStatus, Stdio},
-    thread::JoinHandle,
     time::Instant,
 };
 
@@ -15,7 +14,6 @@ pub(super) enum Incoming {
     /// The server wrote something that isn't a valid LSP frame. Nothing
     /// after it can be trusted to line up, so reading stops here.
     Malformed(io::Error),
-    Disconnected,
 }
 
 #[derive(Debug)]
@@ -28,24 +26,12 @@ impl Drop for KillOnDrop {
     }
 }
 
-#[derive(Debug)]
-struct JoinOnDrop(Option<JoinHandle<()>>);
-
-impl Drop for JoinOnDrop {
-    fn drop(&mut self) {
-        if let Some(handle) = self.0.take() {
-            drop(handle.join());
-        }
-    }
-}
-
 /// Writes happen on their own thread so a server that stops reading stdin
 /// can't block the caller: a large `didOpen` would otherwise wedge in
 /// `write_all` once the pipe buffer fills, with no timeout able to fire.
 ///
-/// Field order matters for drop: the process is killed first, then the
-/// sender is dropped so the writer can exit, and only then are the threads
-/// joined.
+/// Killing the process on drop ends both threads: the writer's pipe breaks
+/// and the reader hits EOF, so neither is joined.
 #[derive(Debug)]
 pub(super) struct Transport {
     process: KillOnDrop,
@@ -53,8 +39,6 @@ pub(super) struct Transport {
     write_errors: Receiver<io::Error>,
     incoming: Receiver<Incoming>,
     rss_monitor: System,
-    _writer: JoinOnDrop,
-    _reader: JoinOnDrop,
 }
 
 impl Transport {
@@ -74,17 +58,17 @@ impl Transport {
 
         let (outgoing, outgoing_rx) = crossbeam_channel::unbounded::<Vec<u8>>();
         let (write_error_tx, write_errors) = crossbeam_channel::bounded(1);
-        let writer = JoinOnDrop(Some(std::thread::spawn(move || {
+        std::thread::spawn(move || {
             for bytes in outgoing_rx {
                 if let Err(err) = stdin.write_all(&bytes).and_then(|()| stdin.flush()) {
                     drop(write_error_tx.send(err));
                     break;
                 }
             }
-        })));
+        });
 
         let (incoming_tx, incoming) = crossbeam_channel::unbounded();
-        let reader = JoinOnDrop(Some(std::thread::spawn(move || {
+        std::thread::spawn(move || {
             let mut reader = BufReader::new(stdout);
             loop {
                 match Message::read(&mut reader) {
@@ -93,10 +77,7 @@ impl Transport {
                             return;
                         }
                     }
-                    Ok(None) => {
-                        drop(incoming_tx.send(Incoming::Disconnected));
-                        return;
-                    }
+                    Ok(None) => return,
                     Err(err) => {
                         drop(incoming_tx.send(Incoming::Malformed(err)));
                         break;
@@ -108,7 +89,7 @@ impl Transport {
             // its next write, just for having sent one bad frame.
             drop(incoming_tx);
             drop(io::copy(&mut reader, &mut io::sink()));
-        })));
+        });
 
         Ok(Self {
             process: KillOnDrop(child),
@@ -116,8 +97,6 @@ impl Transport {
             write_errors,
             incoming,
             rss_monitor: System::new(),
-            _writer: writer,
-            _reader: reader,
         })
     }
 
