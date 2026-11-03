@@ -14,20 +14,21 @@ use gen_lsp_types::{
     ExitNotification, InitializeRequest, InitializeResult, InitializedNotification,
     InitializedParams, LanguageKind, MessageDirection, Notification as LspNotification,
     Request as LspRequest, ServerCapabilities, ShutdownRequest, TextDocumentContentChangeEvent,
-    TextDocumentContentChangeWholeDocument, TextDocumentIdentifier, TextDocumentItem, TextDocumentSyncKind, TextEdit, Uri,
-    VersionedTextDocumentIdentifier,
+    TextDocumentContentChangeWholeDocument, TextDocumentIdentifier, TextDocumentItem,
+    TextDocumentSyncKind, TextEdit, Uri, VersionedTextDocumentIdentifier,
 };
 use lsp_server::{Message, Notification, RequestId};
 
-use self::transport::{Incoming, Transport};
-
 pub use self::methods::Protocol;
+use self::transport::{Incoming, Transport};
 use crate::{
     Error, Result,
-    core::{self, ClientState, DocumentTracker, Effect, Inbox},
+    core::{
+        self, ClientState, DocumentTracker, Effect, Inbox,
+        text::{self, Encoding},
+    },
     error::{ErrorKind, elapsed_ms},
 };
-use crate::core::text::{self, Encoding};
 
 const EXIT_POLL_INTERVAL: Duration = Duration::from_millis(1);
 const DEFAULT_REQUEST_TIMEOUT: Duration = Duration::from_secs(5);
@@ -293,7 +294,13 @@ impl Client {
     fn diagnostics_judge(
         &mut self,
         uri: &Uri,
-    ) -> crate::Result<Box<dyn FnMut(&lsp_server::Notification) -> core::inbox::Verdict<Vec<gen_lsp_types::Diagnostic>>>> {
+    ) -> crate::Result<
+        Box<
+            dyn FnMut(
+                &lsp_server::Notification,
+            ) -> core::inbox::Verdict<Vec<gen_lsp_types::Diagnostic>>,
+        >,
+    > {
         let version = self.docs.current_version(uri).unwrap_or(1);
         let uri = uri.clone();
         Ok(Box::new(move |notification| {

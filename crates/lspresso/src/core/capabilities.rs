@@ -1,8 +1,8 @@
 //! editor capabilities captured from real editors
 
 use gen_lsp_types::{
-    ClientCapabilities, CodeActionProvider, DocumentFormattingProvider, InitializeParams,
-    Save, SaveOptions, ServerCapabilities, TextDocumentSync, TextDocumentSyncKind,
+    ClientCapabilities, CodeActionProvider, DocumentFormattingProvider, InitializeParams, Save,
+    SaveOptions, ServerCapabilities, TextDocumentSync, TextDocumentSyncKind,
     TextDocumentSyncOptions,
 };
 
