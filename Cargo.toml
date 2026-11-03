@@ -61,6 +61,7 @@ rstest_reuse = "0.7"
 bytes2chars = { version = "0.2", path = "crates/bytes2chars" }
 const_format = "0.2.37"
 lsp = { path = "crates/lsp", version = "0.1", package = "jjpwrgem-lsp" }
+serde = "1.0.228"
 serde_json = "1.0.154"
 
 [dependencies]

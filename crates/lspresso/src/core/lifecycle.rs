@@ -66,7 +66,7 @@ impl Pending {
 
 /// tracks pending requests, lifecycle, and id counts
 #[derive(Debug, Clone)]
-struct ClientState {
+pub struct ClientState {
     lifecycle: Lifecycle,
     pending: BTreeMap<RequestId, Pending>,
     next_id: i32,
@@ -83,11 +83,12 @@ impl Default for ClientState {
 }
 
 impl ClientState {
+    #[cfg_attr(not(test), expect(dead_code, reason = "only used by tests for now"))]
     fn lifecycle(&self) -> &Lifecycle {
         &self.lifecycle
     }
 
-    fn require_initialized(&self) -> crate::Result<()> {
+    pub fn require_initialized(&self) -> crate::Result<()> {
         if self.lifecycle == Lifecycle::Initialized {
             Ok(())
         } else {
@@ -118,7 +119,7 @@ impl ClientState {
         (request_id, message)
     }
 
-    fn start_initialize(
+    pub fn start_initialize(
         &mut self,
         params: serde_json::Value,
         now: Instant,
@@ -132,7 +133,7 @@ impl ClientState {
         Ok((id, message))
     }
 
-    fn start_generic(
+    pub fn start_generic(
         &mut self,
         method: &'static str,
         params: serde_json::Value,
@@ -143,7 +144,7 @@ impl ClientState {
         Ok(self.request_raw(RequestKind::Generic { method }, params, now, timeout))
     }
 
-    fn start_shutdown(
+    pub fn start_shutdown(
         &mut self,
         now: Instant,
         timeout: Duration,
@@ -162,7 +163,7 @@ impl ClientState {
         }
     }
 
-    fn cancel_pending_request(&mut self, id: &RequestId) {
+    pub fn cancel_pending_request(&mut self, id: &RequestId) {
         if let Some(pending) = self.pending.remove(id)
             && !pending.timed_out
             && let Some(lifecycle) = pending.kind.rollback_to()
@@ -171,7 +172,7 @@ impl ClientState {
         }
     }
 
-    fn on_message(&mut self, message: &Message) -> Vec<Effect> {
+    pub fn on_message(&mut self, message: &Message) -> Vec<Effect> {
         let response = match message {
             Message::Response(response) => response,
             Message::Request(request) => {
@@ -216,7 +217,7 @@ impl ClientState {
         vec![Effect::Resolved(response.id.clone(), result)]
     }
 
-    fn next_deadline(&self) -> Option<Instant> {
+    pub fn next_deadline(&self) -> Option<Instant> {
         self.pending
             .values()
             .filter(|pending| !pending.timed_out)
@@ -225,7 +226,7 @@ impl ClientState {
     }
 
     /// check for any past deadline requests and return them as failures
-    fn process_past_deadline_requests(&mut self, now: Instant) -> Vec<Effect> {
+    pub fn expire_timed_out_requests(&mut self, now: Instant) -> Vec<Effect> {
         let (lifecycle_ref, pending_requests) = (&mut self.lifecycle, &mut self.pending);
         pending_requests
             .iter_mut()
@@ -494,15 +495,11 @@ mod tests {
         let id = start_initialize_ok(&mut state, start, Duration::from_millis(10));
 
         let one_tick_before = start + Duration::from_millis(9);
-        assert!(
-            state
-                .process_past_deadline_requests(one_tick_before)
-                .is_empty()
-        );
+        assert!(state.expire_timed_out_requests(one_tick_before).is_empty());
         assert_eq!(*state.lifecycle(), Lifecycle::Initializing);
 
         let exactly_at_deadline = start + Duration::from_millis(10);
-        let effects = state.process_past_deadline_requests(exactly_at_deadline);
+        let effects = state.expire_timed_out_requests(exactly_at_deadline);
         assert_eq!(*state.lifecycle(), Lifecycle::NotStarted);
         let err = resolved_result(effects, &id).unwrap_err();
         assert!(matches!(err.kind(), ErrorKind::ResponseTimeout { .. }));
@@ -511,7 +508,7 @@ mod tests {
     #[test]
     fn timeouts_name_the_method_that_timed_out() {
         fn timed_out_method(state: &mut ClientState, id: &RequestId, now: Instant) -> &'static str {
-            let err = resolved_result(state.process_past_deadline_requests(now), id).unwrap_err();
+            let err = resolved_result(state.expire_timed_out_requests(now), id).unwrap_err();
             let ErrorKind::ResponseTimeout { method, .. } = err.kind() else {
                 panic!("expected a timeout: {err:?}");
             };
@@ -570,7 +567,7 @@ mod tests {
             Some(start + Duration::from_millis(10))
         );
 
-        state.process_past_deadline_requests(start + Duration::from_millis(10));
+        state.expire_timed_out_requests(start + Duration::from_millis(10));
         assert_eq!(
             state.next_deadline(),
             Some(start + Duration::from_millis(30))
@@ -587,7 +584,7 @@ mod tests {
         let id = start_initialize_ok(&mut state, start, Duration::from_millis(10));
 
         let past_deadline = start + Duration::from_millis(11);
-        let effects = state.process_past_deadline_requests(past_deadline);
+        let effects = state.expire_timed_out_requests(past_deadline);
 
         assert_eq!(*state.lifecycle(), Lifecycle::NotStarted);
         let err = resolved_result(effects, &id).unwrap_err();
@@ -603,7 +600,7 @@ mod tests {
         let id = start_initialize_ok(&mut state, start, Duration::from_millis(10));
 
         let past_deadline = start + Duration::from_millis(11);
-        let timeout_effects = state.process_past_deadline_requests(past_deadline);
+        let timeout_effects = state.expire_timed_out_requests(past_deadline);
         assert_eq!(timeout_effects.len(), 1);
 
         let effects = state.on_message(&ok_response(id, serde_json::json!("too late")));
@@ -620,7 +617,7 @@ mod tests {
 
         start_shutdown_ok(&mut state, start, Duration::from_millis(10));
         let past_deadline = start + Duration::from_millis(11);
-        state.process_past_deadline_requests(past_deadline);
+        state.expire_timed_out_requests(past_deadline);
 
         assert_eq!(*state.lifecycle(), Lifecycle::Initialized);
 
@@ -645,7 +642,7 @@ mod tests {
         let mut state = ClientState::default();
         let now = Instant::now();
         let stale_id = start_initialize_ok(&mut state, now, Duration::ZERO);
-        state.process_past_deadline_requests(now);
+        state.expire_timed_out_requests(now);
         assert_eq!(*state.lifecycle(), Lifecycle::NotStarted);
 
         let current_id = start_initialize_ok(&mut state, now, DEFAULT_TIMEOUT);
