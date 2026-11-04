@@ -3,8 +3,8 @@ use std::{
     time::{Duration, Instant},
 };
 
-use gen_lsp_types::{InitializeRequest, Request as LspRequest, ShutdownRequest};
-use lsp_server::{Message, Request, RequestId};
+use gen_lsp_types::*;
+use lsp_server::{Message, RequestId};
 
 use super::Effect;
 use crate::error::{ErrorKind, elapsed_ms};
@@ -111,7 +111,7 @@ impl ClientState {
         let request_id = RequestId::from(self.next_id);
         self.pending
             .insert(request_id.clone(), Pending::new(kind, now, timeout));
-        let message = Message::Request(Request::new(
+        let message = Message::Request(lsp_server::Request::new(
             request_id.clone(),
             kind.method_name().to_owned(),
             params,
@@ -456,7 +456,7 @@ mod tests {
         let mut state = ClientState::default();
         start_initialize_ok(&mut state, Instant::now(), DEFAULT_TIMEOUT);
 
-        let request = Request::new(
+        let request = lsp_server::Request::new(
             RequestId::from(1234),
             "workspace/configuration".to_owned(),
             serde_json::json!({ "items": [{}] }),
