@@ -8,16 +8,16 @@ use std::{
 
 use crossbeam_channel::RecvTimeoutError;
 use gen_lsp_types::{
-    ClientCapabilities, CodeActionContext, CodeActionParams, CodeActionResponse, DocumentFormattingParams,
-    ExitNotification, FormattingOptions, InitializeRequest, InitializeResult, InitializedNotification,
-    InitializedParams, MessageDirection, Notification as LspNotification, Range, Request as LspRequest,
-    ServerCapabilities, ShutdownRequest, TextDocumentIdentifier, TextEdit, Uri,
+    ClientCapabilities, CodeActionContext, CodeActionParams, CodeActionResponse,
+    DocumentFormattingParams, ExitNotification, FormattingOptions, InitializeRequest,
+    InitializeResult, InitializedNotification, InitializedParams, MessageDirection,
+    Notification as LspNotification, Range, Request as LspRequest, ServerCapabilities,
+    ShutdownRequest, TextDocumentIdentifier, TextEdit, Uri,
 };
 use lsp_server::{Message, Notification, RequestId};
 
-use self::transport::{Incoming, Transport};
-
 pub use self::methods::Protocol;
+use self::transport::{Incoming, Transport};
 use crate::{
     Error, Result,
     core::{self, ClientState, Effect},
