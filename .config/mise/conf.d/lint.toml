@@ -64,7 +64,7 @@ description = "Trim publishable crate dirs before release"
 run = "cargo diet -q --workspace --ignore-private"
 
 [tasks.diet.tools]
-"cargo:cargo-diet" = "1.4.1"
+"cargo:cargo-diet" = "1.4.2"
 
 [tasks.cargo-shear]
 run = "cargo shear --check-test-targets"
