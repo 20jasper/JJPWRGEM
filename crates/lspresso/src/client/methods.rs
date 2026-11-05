@@ -280,7 +280,7 @@ client_methods! {
         completion_item_resolve: CompletionItemResolve => CompletionResolveRequest, params;
         declaration: TextDocumentDeclaration => DeclarationRequest, position, open;
         definition: TextDocumentDefinition => DefinitionRequest, position, open;
-        diagnostic: TextDocumentDiagnostic => DocumentDiagnosticRequest, params, open;
+        diagnostic: TextDocumentDiagnostic => DocumentDiagnosticRequest, document, open;
         document_color: TextDocumentDocumentColor => DocumentColorRequest, document, open;
         document_highlight: TextDocumentDocumentHighlight => DocumentHighlightRequest, position, open;
         document_link: TextDocumentDocumentLink => DocumentLinkRequest, document, open;
