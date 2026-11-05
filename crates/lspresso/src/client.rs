@@ -1,4 +1,3 @@
-mod methods;
 mod transport;
 
 use std::{
@@ -10,7 +9,6 @@ use crossbeam_channel::RecvTimeoutError;
 use gen_lsp_types::*;
 use lsp_server::{Message, RequestId};
 
-pub use self::methods::Protocol;
 use self::transport::{Incoming, Transport};
 use crate::{
     Error, Result,
@@ -121,52 +119,6 @@ impl Client {
         }
     }
 
-    /// Formats `uri` with `options`.
-    ///
-    /// Use [`Protocol::protocol_formatting`] for full params.
-    pub fn formatting(
-        &mut self,
-        uri: &Uri,
-        options: FormattingOptions,
-    ) -> crate::Result<Option<Vec<TextEdit>>> {
-        self.protocol_formatting(DocumentFormattingParams {
-            text_document: TextDocumentIdentifier { uri: uri.clone() },
-            options,
-            work_done_progress_params: gen_lsp_types::WorkDoneProgressParams::default(),
-        })
-    }
-
-    /// Requests code actions for `range` with `diagnostics`.
-    ///
-    /// Use [`Protocol::protocol_code_action`] for full params.
-    pub fn code_action(
-        &mut self,
-        uri: &Uri,
-        range: Range,
-        diagnostics: Vec<Diagnostic>,
-    ) -> crate::Result<Option<Vec<CodeActionResponse>>> {
-        self.protocol_code_action(CodeActionParams {
-            text_document: TextDocumentIdentifier { uri: uri.clone() },
-            range,
-            context: CodeActionContext {
-                diagnostics,
-                ..Default::default()
-            },
-            work_done_progress_params: WorkDoneProgressParams::default(),
-            partial_result_params: PartialResultParams::default(),
-        })
-    }
-
-    /// Notifies the server that `uri` was saved, optionally with its text.
-    ///
-    /// Use [`Protocol::protocol_did_save`] for full params.
-    pub fn did_save(&mut self, uri: &Uri, text: Option<String>) -> crate::Result<()> {
-        self.protocol_did_save(DidSaveTextDocumentParams {
-            text_document: TextDocumentIdentifier { uri: uri.clone() },
-            text,
-        })
-    }
-
     pub fn rss_bytes(&mut self) -> Option<u64> {
         self.transport.rss_bytes()
     }
@@ -181,6 +133,10 @@ impl Client {
     }
 
     /// Sends any request and waits for its response.
+    #[expect(
+        clippy::same_name_method,
+        reason = "inherent so callers need not import `Protocol`; its impl forwards here"
+    )]
     pub fn request<R: Request>(&mut self, params: R::Params) -> Result<R::Result> {
         assert_client_to_server!(R);
         let now = Instant::now();
@@ -214,6 +170,10 @@ impl Client {
     }
 
     /// Sends any notification.
+    #[expect(
+        clippy::same_name_method,
+        reason = "inherent so callers need not import `Protocol`; its impl forwards here"
+    )]
     pub fn notify<N: Notification>(&mut self, params: N::Params) -> Result<()> {
         assert_client_to_server!(N);
         self.state.require_initialized()?;
