@@ -1,10 +1,7 @@
 //! Generated client-to-server methods: raw [`Protocol`] methods plus simpler
 //! `Client` shortcuts.
 
-use gen_lsp_types::{
-    LspNotificationMethod, LspRequestMethod, Notification as LspNotification, Position, Range,
-    Request as LspRequest, Uri,
-};
+use gen_lsp_types::*;
 use serde::de::DeserializeOwned;
 
 use super::Client;
@@ -89,8 +86,8 @@ macro_rules! client_methods {
                 )]
                 fn [<protocol_ $request_name>](
                     &mut self,
-                    params: <gen_lsp_types::$request as LspRequest>::Params,
-                ) -> crate::Result<<gen_lsp_types::$request as LspRequest>::Result>;
+                    params: <gen_lsp_types::$request as Request>::Params,
+                ) -> crate::Result<<gen_lsp_types::$request as Request>::Result>;
             )*
             $(
                 #[doc = concat!(
@@ -99,7 +96,7 @@ macro_rules! client_methods {
                 )]
                 fn [<protocol_ $notification_name>](
                     &mut self,
-                    params: <gen_lsp_types::$notification as LspNotification>::Params,
+                    params: <gen_lsp_types::$notification as Notification>::Params,
                 ) -> crate::Result<()>;
             )*
         }
@@ -108,11 +105,11 @@ macro_rules! client_methods {
             $(
                 fn [<protocol_ $request_name>](
                     &mut self,
-                    params: <gen_lsp_types::$request as LspRequest>::Params,
-                ) -> crate::Result<<gen_lsp_types::$request as LspRequest>::Result> {
+                    params: <gen_lsp_types::$request as Request>::Params,
+                ) -> crate::Result<<gen_lsp_types::$request as Request>::Result> {
                     const {
                         assert!(matches!(
-                            <gen_lsp_types::$request as LspRequest>::METHOD,
+                            <gen_lsp_types::$request as Request>::METHOD,
                             LspRequestMethod::$request_variant
                         ));
                     }
@@ -123,11 +120,11 @@ macro_rules! client_methods {
             $(
                 fn [<protocol_ $notification_name>](
                     &mut self,
-                    params: <gen_lsp_types::$notification as LspNotification>::Params,
+                    params: <gen_lsp_types::$notification as Notification>::Params,
                 ) -> crate::Result<()> {
                     const {
                         assert!(matches!(
-                            <gen_lsp_types::$notification as LspNotification>::METHOD,
+                            <gen_lsp_types::$notification as Notification>::METHOD,
                             LspNotificationMethod::$notification_variant
                         ));
                     }
@@ -144,8 +141,8 @@ macro_rules! client_methods {
                     $request_name,
                     [<protocol_ $request_name>],
                     gen_lsp_types::$request,
-                    <gen_lsp_types::$request as LspRequest>::Params,
-                    crate::Result<<gen_lsp_types::$request as LspRequest>::Result>
+                    <gen_lsp_types::$request as Request>::Params,
+                    crate::Result<<gen_lsp_types::$request as Request>::Result>
                 );
             )*
             $(
@@ -154,7 +151,7 @@ macro_rules! client_methods {
                     $notification_name,
                     [<protocol_ $notification_name>],
                     gen_lsp_types::$notification,
-                    <gen_lsp_types::$notification as LspNotification>::Params,
+                    <gen_lsp_types::$notification as Notification>::Params,
                     crate::Result<()>
                 );
             )*

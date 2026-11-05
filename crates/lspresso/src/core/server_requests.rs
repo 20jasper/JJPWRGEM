@@ -1,20 +1,17 @@
-use gen_lsp_types::{
-    ApplyWorkspaceEditRequest, ApplyWorkspaceEditResult, ConfigurationParams, ConfigurationRequest,
-    LspRequestMethod, Request as LspRequest, ShowDocumentRequest, ShowDocumentResult,
-};
-use lsp_server::{ErrorCode, Request, Response};
+use gen_lsp_types::*;
+use lsp_server::{ErrorCode, Response};
 
-fn ok<R: LspRequest>(request: &Request, result: R::Result) -> Response {
+fn ok<R: Request>(request: &lsp_server::Request, result: R::Result) -> Response {
     let result = serde_json::to_value(result).expect("serializing a result as JSON cannot fail");
     Response::new_ok(request.id.clone(), result)
 }
 
-fn err(request: &Request, code: ErrorCode, message: String) -> Response {
+fn err(request: &lsp_server::Request, code: ErrorCode, message: String) -> Response {
     Response::new_err(request.id.clone(), code as i32, message)
 }
 
 // always give an answer so doesn't hang
-pub fn answer(request: &Request) -> Response {
+pub fn answer(request: &lsp_server::Request) -> Response {
     match LspRequestMethod::from(request.method.as_str()) {
         LspRequestMethod::WorkspaceConfiguration => {
             match serde_json::from_value::<ConfigurationParams>(request.params.clone()) {
@@ -69,7 +66,11 @@ mod tests {
     use super::*;
 
     fn answered(method: &str, params: serde_json::Value) -> Response {
-        let response = answer(&Request::new(RequestId::from(7), method.to_owned(), params));
+        let response = answer(&lsp_server::Request::new(
+            RequestId::from(7),
+            method.to_owned(),
+            params,
+        ));
         assert_eq!(
             response.id,
             RequestId::from(7),

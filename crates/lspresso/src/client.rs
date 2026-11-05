@@ -7,14 +7,8 @@ use std::{
 };
 
 use crossbeam_channel::RecvTimeoutError;
-use gen_lsp_types::{
-    ClientCapabilities, CodeActionContext, CodeActionParams, CodeActionResponse,
-    DidSaveTextDocumentParams, DocumentFormattingParams, ExitNotification, FormattingOptions,
-    InitializeRequest, InitializeResult, InitializedNotification, InitializedParams,
-    MessageDirection, Notification as LspNotification, Range, Request as LspRequest,
-    ServerCapabilities, ShutdownRequest, TextDocumentIdentifier, TextEdit, Uri,
-};
-use lsp_server::{Message, Notification, RequestId};
+use gen_lsp_types::*;
+use lsp_server::{Message, RequestId};
 
 pub use self::methods::Protocol;
 use self::transport::{Incoming, Transport};
@@ -181,7 +175,7 @@ impl Client {
     }
 
     /// Sends any request and waits for its response.
-    pub fn request<R: LspRequest>(&mut self, params: R::Params) -> Result<R::Result> {
+    pub fn request<R: Request>(&mut self, params: R::Params) -> Result<R::Result> {
         assert_client_to_server!(R);
         let now = Instant::now();
         let timeout = self.request_timeout;
@@ -214,17 +208,17 @@ impl Client {
     }
 
     /// Sends any notification.
-    pub fn notify<N: LspNotification>(&mut self, params: N::Params) -> Result<()> {
+    pub fn notify<N: Notification>(&mut self, params: N::Params) -> Result<()> {
         assert_client_to_server!(N);
         self.state.require_initialized()?;
         self.send_notification::<N>(params)
     }
 
-    fn send_notification<N: LspNotification>(&mut self, params: N::Params) -> Result<()> {
+    fn send_notification<N: Notification>(&mut self, params: N::Params) -> Result<()> {
         let params = serde_json::to_value(params)
             .expect("serializing notification params as JSON cannot fail");
         self.transport
-            .send(&Message::Notification(Notification::new(
+            .send(&Message::Notification(lsp_server::Notification::new(
                 N::METHOD.as_str().to_owned(),
                 params,
             )))
