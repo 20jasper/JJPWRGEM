@@ -27,7 +27,7 @@ gen-lsp-types = { git = "https://github.com/ribru17/gen-lsp-types", branch = "ma
 lsp-server = "0.10.0"
 serde = { workspace = true }
 serde_json = { workspace = true }
-sysinfo = "0.38"
+sysinfo = "0.40"
 thiserror = "2.0.21"
 
 [lints]
