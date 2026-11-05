@@ -2,14 +2,8 @@
 //! `Client` shortcuts.
 
 use gen_lsp_types::*;
-use serde::de::DeserializeOwned;
 
 use super::Client;
-
-/// Builds a params value from the fields a shape supplies.
-fn shape<P: DeserializeOwned>(fields: serde_json::Value) -> P {
-    serde_json::from_value(fields).expect("shape must cover required params")
-}
 
 trait FromUri {
     fn from_uri(uri: &Uri) -> Self;
@@ -66,6 +60,349 @@ macro_rules! impl_from_range {
     };
 }
 
+trait FromQuery {
+    fn from_query(query: String) -> Self;
+}
+
+macro_rules! impl_from_query {
+    ($ty:ty, $($extra:ident : $extra_value:expr),* $(,)?) => {
+        impl FromQuery for $ty {
+            fn from_query(query: String) -> Self {
+                Self { query, $($extra: $extra_value),* }
+            }
+        }
+    };
+}
+
+trait FromPositionIncludeDeclaration {
+    fn from_position_include_declaration(
+        uri: &Uri,
+        position: Position,
+        include_declaration: bool,
+    ) -> Self;
+}
+
+macro_rules! impl_from_position_include_declaration {
+    ($ty:ty, $($extra:ident : $extra_value:expr),* $(,)?) => {
+        impl FromPositionIncludeDeclaration for $ty {
+            fn from_position_include_declaration(
+                uri: &Uri,
+                position: Position,
+                include_declaration: bool,
+            ) -> Self {
+                Self {
+                    context: ReferenceContext { include_declaration },
+                    text_document_position_params: TextDocumentPositionParams {
+                        text_document: TextDocumentIdentifier { uri: uri.clone() },
+                        position,
+                    },
+                    $($extra: $extra_value),*
+                }
+            }
+        }
+    };
+}
+
+trait FromPositionNewName {
+    fn from_position_new_name(uri: &Uri, position: Position, new_name: String) -> Self;
+}
+
+macro_rules! impl_from_position_new_name {
+    ($ty:ty, $($extra:ident : $extra_value:expr),* $(,)?) => {
+        impl FromPositionNewName for $ty {
+            fn from_position_new_name(uri: &Uri, position: Position, new_name: String) -> Self {
+                Self {
+                    new_name,
+                    text_document_position_params: TextDocumentPositionParams {
+                        text_document: TextDocumentIdentifier { uri: uri.clone() },
+                        position,
+                    },
+                    $($extra: $extra_value),*
+                }
+            }
+        }
+    };
+}
+
+trait FromRangeOptions {
+    fn from_range_options(uri: &Uri, range: Range, options: FormattingOptions) -> Self;
+}
+
+macro_rules! impl_from_range_options {
+    ($ty:ty, $($extra:ident : $extra_value:expr),* $(,)?) => {
+        impl FromRangeOptions for $ty {
+            fn from_range_options(uri: &Uri, range: Range, options: FormattingOptions) -> Self {
+                Self {
+                    text_document: TextDocumentIdentifier { uri: uri.clone() },
+                    range,
+                    options,
+                    $($extra: $extra_value),*
+                }
+            }
+        }
+    };
+}
+
+trait FromDocumentReason {
+    fn from_document_reason(uri: &Uri, reason: TextDocumentSaveReason) -> Self;
+}
+
+macro_rules! impl_from_document_reason {
+    ($ty:ty) => {
+        impl FromDocumentReason for $ty {
+            fn from_document_reason(uri: &Uri, reason: TextDocumentSaveReason) -> Self {
+                Self {
+                    text_document: TextDocumentIdentifier { uri: uri.clone() },
+                    reason,
+                }
+            }
+        }
+    };
+}
+
+trait FromPositions {
+    fn from_positions(uri: &Uri, positions: Vec<Position>) -> Self;
+}
+
+macro_rules! impl_from_positions {
+    ($ty:ty, $($extra:ident : $extra_value:expr),* $(,)?) => {
+        impl FromPositions for $ty {
+            fn from_positions(uri: &Uri, positions: Vec<Position>) -> Self {
+                Self {
+                    text_document: TextDocumentIdentifier { uri: uri.clone() },
+                    positions,
+                    $($extra: $extra_value),*
+                }
+            }
+        }
+    };
+}
+
+trait FromOnTypeFormatting {
+    fn from_on_type_formatting(
+        uri: &Uri,
+        position: Position,
+        ch: String,
+        options: FormattingOptions,
+    ) -> Self;
+}
+
+macro_rules! impl_from_on_type_formatting {
+    ($ty:ty) => {
+        impl FromOnTypeFormatting for $ty {
+            fn from_on_type_formatting(
+                uri: &Uri,
+                position: Position,
+                ch: String,
+                options: FormattingOptions,
+            ) -> Self {
+                Self {
+                    text_document: TextDocumentIdentifier { uri: uri.clone() },
+                    position,
+                    ch,
+                    options,
+                }
+            }
+        }
+    };
+}
+
+trait FromColorPresentation {
+    fn from_color_presentation(uri: &Uri, color: Color, range: Range) -> Self;
+}
+
+macro_rules! impl_from_color_presentation {
+    ($ty:ty, $($extra:ident : $extra_value:expr),* $(,)?) => {
+        impl FromColorPresentation for $ty {
+            fn from_color_presentation(uri: &Uri, color: Color, range: Range) -> Self {
+                Self {
+                    text_document: TextDocumentIdentifier { uri: uri.clone() },
+                    color,
+                    range,
+                    $($extra: $extra_value),*
+                }
+            }
+        }
+    };
+}
+
+trait FromExecuteCommand {
+    fn from_execute_command(command: String, arguments: Option<Vec<LspAny>>) -> Self;
+}
+
+macro_rules! impl_from_execute_command {
+    ($ty:ty, $($extra:ident : $extra_value:expr),* $(,)?) => {
+        impl FromExecuteCommand for $ty {
+            fn from_execute_command(command: String, arguments: Option<Vec<LspAny>>) -> Self {
+                Self { command, arguments, $($extra: $extra_value),* }
+            }
+        }
+    };
+}
+
+trait FromSemanticTokensDelta {
+    fn from_semantic_tokens_delta(uri: &Uri, previous_result_id: String) -> Self;
+}
+
+macro_rules! impl_from_semantic_tokens_delta {
+    ($ty:ty, $($extra:ident : $extra_value:expr),* $(,)?) => {
+        impl FromSemanticTokensDelta for $ty {
+            fn from_semantic_tokens_delta(uri: &Uri, previous_result_id: String) -> Self {
+                Self {
+                    text_document: TextDocumentIdentifier { uri: uri.clone() },
+                    previous_result_id,
+                    $($extra: $extra_value),*
+                }
+            }
+        }
+    };
+}
+
+trait FromProgress {
+    fn from_progress(token: ProgressToken, value: LspAny) -> Self;
+}
+
+macro_rules! impl_from_progress {
+    ($ty:ty) => {
+        impl FromProgress for $ty {
+            fn from_progress(token: ProgressToken, value: LspAny) -> Self {
+                Self { token, value }
+            }
+        }
+    };
+}
+
+trait FromSetTrace {
+    fn from_set_trace(value: TraceValue) -> Self;
+}
+
+macro_rules! impl_from_set_trace {
+    ($ty:ty) => {
+        impl FromSetTrace for $ty {
+            fn from_set_trace(value: TraceValue) -> Self {
+                Self { value }
+            }
+        }
+    };
+}
+
+trait FromSettings {
+    fn from_settings(settings: LspAny) -> Self;
+}
+
+macro_rules! impl_from_settings {
+    ($ty:ty) => {
+        impl FromSettings for $ty {
+            fn from_settings(settings: LspAny) -> Self {
+                Self { settings }
+            }
+        }
+    };
+}
+
+trait FromWatchedFiles {
+    fn from_watched_files(changes: Vec<FileEvent>) -> Self;
+}
+
+macro_rules! impl_from_watched_files {
+    ($ty:ty) => {
+        impl FromWatchedFiles for $ty {
+            fn from_watched_files(changes: Vec<FileEvent>) -> Self {
+                Self { changes }
+            }
+        }
+    };
+}
+
+trait FromWorkspaceFolders {
+    fn from_workspace_folders(event: WorkspaceFoldersChangeEvent) -> Self;
+}
+
+macro_rules! impl_from_workspace_folders {
+    ($ty:ty) => {
+        impl FromWorkspaceFolders for $ty {
+            fn from_workspace_folders(event: WorkspaceFoldersChangeEvent) -> Self {
+                Self { event }
+            }
+        }
+    };
+}
+
+trait FromCancel {
+    fn from_cancel(id: Id) -> Self;
+}
+
+macro_rules! impl_from_cancel {
+    ($ty:ty) => {
+        impl FromCancel for $ty {
+            fn from_cancel(id: Id) -> Self {
+                Self { id }
+            }
+        }
+    };
+}
+
+trait FromCallHierarchyItem {
+    fn from_call_hierarchy_item(item: CallHierarchyItem) -> Self;
+}
+
+macro_rules! impl_from_call_hierarchy_item {
+    ($ty:ty, $($extra:ident : $extra_value:expr),* $(,)?) => {
+        impl FromCallHierarchyItem for $ty {
+            fn from_call_hierarchy_item(item: CallHierarchyItem) -> Self {
+                Self { item, $($extra: $extra_value),* }
+            }
+        }
+    };
+}
+
+trait FromTypeHierarchyItem {
+    fn from_type_hierarchy_item(item: TypeHierarchyItem) -> Self;
+}
+
+macro_rules! impl_from_type_hierarchy_item {
+    ($ty:ty, $($extra:ident : $extra_value:expr),* $(,)?) => {
+        impl FromTypeHierarchyItem for $ty {
+            fn from_type_hierarchy_item(item: TypeHierarchyItem) -> Self {
+                Self { item, $($extra: $extra_value),* }
+            }
+        }
+    };
+}
+
+trait FromRangesOptions {
+    fn from_ranges_options(uri: &Uri, ranges: Vec<Range>, options: FormattingOptions) -> Self;
+}
+
+macro_rules! impl_from_ranges_options {
+    ($ty:ty, $($extra:ident : $extra_value:expr),* $(,)?) => {
+        impl FromRangesOptions for $ty {
+            fn from_ranges_options(uri: &Uri, ranges: Vec<Range>, options: FormattingOptions) -> Self {
+                Self {
+                    text_document: TextDocumentIdentifier { uri: uri.clone() },
+                    ranges,
+                    options,
+                    $($extra: $extra_value),*
+                }
+            }
+        }
+    };
+}
+
+trait FromUriOnly {
+    fn from_uri_only(uri: &Uri) -> Self;
+}
+
+macro_rules! impl_from_uri_only {
+    ($ty:ty) => {
+        impl FromUriOnly for $ty {
+            fn from_uri_only(uri: &Uri) -> Self {
+                Self { uri: uri.clone() }
+            }
+        }
+    };
+}
+
 /// Builds a shortcut's doc comment and link to its raw params method.
 macro_rules! shaped_doc {
     ($item:ty, $name:ident) => {
@@ -116,22 +453,19 @@ macro_rules! shaped {
         #[doc = shaped_doc!("for `query`", $item, $name)]
         pub fn $name(&mut self, query: impl Into<String>) -> $ret {
             let query: String = query.into();
-            self.$protocol(shape(serde_json::json!({ "query": query })))
+            self.$protocol(<$params as FromQuery>::from_query(query))
         }
     };
     (position_include_declaration, $name:ident, $protocol:ident, $item:ty, $params:ty, $ret:ty) => {
         #[doc = shaped_doc!("for `uri` at `position`", $item, $name)]
-        pub fn $name(
-            &mut self,
-            uri: &Uri,
-            position: Position,
-            include_declaration: bool,
-        ) -> $ret {
-            self.$protocol(shape(serde_json::json!({
-                "textDocument": { "uri": uri },
-                "position": position,
-                "context": { "includeDeclaration": include_declaration },
-            })))
+        pub fn $name(&mut self, uri: &Uri, position: Position, include_declaration: bool) -> $ret {
+            self.$protocol(
+                <$params as FromPositionIncludeDeclaration>::from_position_include_declaration(
+                    uri,
+                    position,
+                    include_declaration,
+                ),
+            )
         }
     };
     (position_new_name, $name:ident, $protocol:ident, $item:ty, $params:ty, $ret:ty) => {
@@ -143,44 +477,31 @@ macro_rules! shaped {
             new_name: impl Into<String>,
         ) -> $ret {
             let new_name: String = new_name.into();
-            self.$protocol(shape(serde_json::json!({
-                "textDocument": { "uri": uri },
-                "position": position,
-                "newName": new_name,
-            })))
+            self.$protocol(<$params as FromPositionNewName>::from_position_new_name(
+                uri, position, new_name,
+            ))
         }
     };
     (range_options, $name:ident, $protocol:ident, $item:ty, $params:ty, $ret:ty) => {
         #[doc = shaped_doc!("for `range` of `uri`", $item, $name)]
-        pub fn $name(
-            &mut self,
-            uri: &Uri,
-            range: Range,
-            options: FormattingOptions,
-        ) -> $ret {
-            self.$protocol(shape(serde_json::json!({
-                "textDocument": { "uri": uri },
-                "range": range,
-                "options": options,
-            })))
+        pub fn $name(&mut self, uri: &Uri, range: Range, options: FormattingOptions) -> $ret {
+            self.$protocol(<$params as FromRangeOptions>::from_range_options(
+                uri, range, options,
+            ))
         }
     };
     (document_reason, $name:ident, $protocol:ident, $item:ty, $params:ty, $ret:ty) => {
         #[doc = shaped_doc!($item, $name)]
         pub fn $name(&mut self, uri: &Uri, reason: TextDocumentSaveReason) -> $ret {
-            self.$protocol(shape(serde_json::json!({
-                "textDocument": { "uri": uri },
-                "reason": reason,
-            })))
+            self.$protocol(<$params as FromDocumentReason>::from_document_reason(
+                uri, reason,
+            ))
         }
     };
     (positions, $name:ident, $protocol:ident, $item:ty, $params:ty, $ret:ty) => {
         #[doc = shaped_doc!($item, $name)]
         pub fn $name(&mut self, uri: &Uri, positions: Vec<Position>) -> $ret {
-            self.$protocol(shape(serde_json::json!({
-                "textDocument": { "uri": uri },
-                "positions": positions,
-            })))
+            self.$protocol(<$params as FromPositions>::from_positions(uri, positions))
         }
     };
     (on_type_formatting, $name:ident, $protocol:ident, $item:ty, $params:ty, $ret:ty) => {
@@ -193,22 +514,17 @@ macro_rules! shaped {
             options: FormattingOptions,
         ) -> $ret {
             let ch: String = ch.into();
-            self.$protocol(shape(serde_json::json!({
-                "textDocument": { "uri": uri },
-                "position": position,
-                "ch": ch,
-                "options": options,
-            })))
+            self.$protocol(<$params as FromOnTypeFormatting>::from_on_type_formatting(
+                uri, position, ch, options,
+            ))
         }
     };
     (color_presentation, $name:ident, $protocol:ident, $item:ty, $params:ty, $ret:ty) => {
         #[doc = shaped_doc!($item, $name)]
         pub fn $name(&mut self, uri: &Uri, color: Color, range: Range) -> $ret {
-            self.$protocol(shape(serde_json::json!({
-                "textDocument": { "uri": uri },
-                "color": color,
-                "range": range,
-            })))
+            self.$protocol(<$params as FromColorPresentation>::from_color_presentation(
+                uri, color, range,
+            ))
         }
     };
     (execute_command, $name:ident, $protocol:ident, $item:ty, $params:ty, $ret:ty) => {
@@ -219,93 +535,85 @@ macro_rules! shaped {
             arguments: Option<Vec<LspAny>>,
         ) -> $ret {
             let command: String = command.into();
-            self.$protocol(shape(serde_json::json!({
-                "command": command,
-                "arguments": arguments,
-            })))
+            self.$protocol(<$params as FromExecuteCommand>::from_execute_command(
+                command, arguments,
+            ))
         }
     };
     (semantic_tokens_delta, $name:ident, $protocol:ident, $item:ty, $params:ty, $ret:ty) => {
         #[doc = shaped_doc!($item, $name)]
-        pub fn $name(
-            &mut self,
-            uri: &Uri,
-            previous_result_id: impl Into<String>,
-        ) -> $ret {
+        pub fn $name(&mut self, uri: &Uri, previous_result_id: impl Into<String>) -> $ret {
             let previous_result_id: String = previous_result_id.into();
-            self.$protocol(shape(serde_json::json!({
-                "textDocument": { "uri": uri },
-                "previousResultId": previous_result_id,
-            })))
+            self.$protocol(
+                <$params as FromSemanticTokensDelta>::from_semantic_tokens_delta(
+                    uri,
+                    previous_result_id,
+                ),
+            )
         }
     };
     (progress, $name:ident, $protocol:ident, $item:ty, $params:ty, $ret:ty) => {
         #[doc = shaped_doc!($item, $name)]
         pub fn $name(&mut self, token: ProgressToken, value: LspAny) -> $ret {
-            self.$protocol(shape(serde_json::json!({ "token": token, "value": value })))
+            self.$protocol(<$params as FromProgress>::from_progress(token, value))
         }
     };
     (set_trace, $name:ident, $protocol:ident, $item:ty, $params:ty, $ret:ty) => {
         #[doc = shaped_doc!($item, $name)]
         pub fn $name(&mut self, value: TraceValue) -> $ret {
-            self.$protocol(shape(serde_json::json!({ "value": value })))
+            self.$protocol(<$params as FromSetTrace>::from_set_trace(value))
         }
     };
     (settings, $name:ident, $protocol:ident, $item:ty, $params:ty, $ret:ty) => {
         #[doc = shaped_doc!($item, $name)]
         pub fn $name(&mut self, settings: LspAny) -> $ret {
-            self.$protocol(shape(serde_json::json!({ "settings": settings })))
+            self.$protocol(<$params as FromSettings>::from_settings(settings))
         }
     };
     (watched_files, $name:ident, $protocol:ident, $item:ty, $params:ty, $ret:ty) => {
         #[doc = shaped_doc!($item, $name)]
         pub fn $name(&mut self, changes: Vec<FileEvent>) -> $ret {
-            self.$protocol(shape(serde_json::json!({ "changes": changes })))
+            self.$protocol(<$params as FromWatchedFiles>::from_watched_files(changes))
         }
     };
     (workspace_folders, $name:ident, $protocol:ident, $item:ty, $params:ty, $ret:ty) => {
         #[doc = shaped_doc!($item, $name)]
         pub fn $name(&mut self, event: WorkspaceFoldersChangeEvent) -> $ret {
-            self.$protocol(shape(serde_json::json!({ "event": event })))
+            self.$protocol(<$params as FromWorkspaceFolders>::from_workspace_folders(
+                event,
+            ))
         }
     };
     (cancel, $name:ident, $protocol:ident, $item:ty, $params:ty, $ret:ty) => {
         #[doc = shaped_doc!($item, $name)]
         pub fn $name(&mut self, id: Id) -> $ret {
-            self.$protocol(shape(serde_json::json!({ "id": id })))
+            self.$protocol(<$params as FromCancel>::from_cancel(id))
         }
     };
     (call_hierarchy_item, $name:ident, $protocol:ident, $item:ty, $params:ty, $ret:ty) => {
         #[doc = shaped_doc!($item, $name)]
         pub fn $name(&mut self, item: CallHierarchyItem) -> $ret {
-            self.$protocol(shape(serde_json::json!({ "item": item })))
+            self.$protocol(<$params as FromCallHierarchyItem>::from_call_hierarchy_item(item))
         }
     };
     (type_hierarchy_item, $name:ident, $protocol:ident, $item:ty, $params:ty, $ret:ty) => {
         #[doc = shaped_doc!($item, $name)]
         pub fn $name(&mut self, item: TypeHierarchyItem) -> $ret {
-            self.$protocol(shape(serde_json::json!({ "item": item })))
+            self.$protocol(<$params as FromTypeHierarchyItem>::from_type_hierarchy_item(item))
         }
     };
     (ranges_options, $name:ident, $protocol:ident, $item:ty, $params:ty, $ret:ty) => {
         #[doc = shaped_doc!($item, $name)]
-        pub fn $name(
-            &mut self,
-            uri: &Uri,
-            ranges: Vec<Range>,
-            options: FormattingOptions,
-        ) -> $ret {
-            self.$protocol(shape(serde_json::json!({
-                "textDocument": { "uri": uri },
-                "ranges": ranges,
-                "options": options,
-            })))
+        pub fn $name(&mut self, uri: &Uri, ranges: Vec<Range>, options: FormattingOptions) -> $ret {
+            self.$protocol(<$params as FromRangesOptions>::from_ranges_options(
+                uri, ranges, options,
+            ))
         }
     };
     (uri, $name:ident, $protocol:ident, $item:ty, $params:ty, $ret:ty) => {
         #[doc = shaped_doc!($item, $name)]
         pub fn $name(&mut self, uri: &Uri) -> $ret {
-            self.$protocol(shape(serde_json::json!({ "uri": uri })))
+            self.$protocol(<$params as FromUriOnly>::from_uri_only(uri))
         }
     };
     (params, $name:ident, $protocol:ident, $item:ty, $params:ty, $ret:ty) => {
@@ -426,6 +734,77 @@ impl_from_range!(
     work_done_progress_params: WorkDoneProgressParams::default(),
     partial_result_params: PartialResultParams::default(),
 );
+
+impl_from_query!(
+    WorkspaceSymbolParams,
+    work_done_progress_params: WorkDoneProgressParams::default(),
+    partial_result_params: PartialResultParams::default(),
+);
+impl_from_position_include_declaration!(
+    ReferenceParams,
+    work_done_progress_params: WorkDoneProgressParams::default(),
+    partial_result_params: PartialResultParams::default(),
+);
+impl_from_position_new_name!(
+    RenameParams,
+    work_done_progress_params: WorkDoneProgressParams::default(),
+);
+impl_from_range_options!(
+    DocumentRangeFormattingParams,
+    work_done_progress_params: WorkDoneProgressParams::default(),
+);
+impl_from_document_reason!(WillSaveTextDocumentParams);
+impl_from_positions!(
+    SelectionRangeParams,
+    work_done_progress_params: WorkDoneProgressParams::default(),
+    partial_result_params: PartialResultParams::default(),
+);
+impl_from_on_type_formatting!(DocumentOnTypeFormattingParams);
+impl_from_color_presentation!(
+    ColorPresentationParams,
+    work_done_progress_params: WorkDoneProgressParams::default(),
+    partial_result_params: PartialResultParams::default(),
+);
+impl_from_execute_command!(
+    ExecuteCommandParams,
+    work_done_progress_params: WorkDoneProgressParams::default(),
+);
+impl_from_semantic_tokens_delta!(
+    SemanticTokensDeltaParams,
+    work_done_progress_params: WorkDoneProgressParams::default(),
+    partial_result_params: PartialResultParams::default(),
+);
+impl_from_progress!(ProgressParams);
+impl_from_set_trace!(SetTraceParams);
+impl_from_settings!(DidChangeConfigurationParams);
+impl_from_watched_files!(DidChangeWatchedFilesParams);
+impl_from_workspace_folders!(DidChangeWorkspaceFoldersParams);
+impl_from_cancel!(CancelParams);
+impl_from_call_hierarchy_item!(
+    CallHierarchyIncomingCallsParams,
+    work_done_progress_params: WorkDoneProgressParams::default(),
+    partial_result_params: PartialResultParams::default(),
+);
+impl_from_call_hierarchy_item!(
+    CallHierarchyOutgoingCallsParams,
+    work_done_progress_params: WorkDoneProgressParams::default(),
+    partial_result_params: PartialResultParams::default(),
+);
+impl_from_type_hierarchy_item!(
+    TypeHierarchySubtypesParams,
+    work_done_progress_params: WorkDoneProgressParams::default(),
+    partial_result_params: PartialResultParams::default(),
+);
+impl_from_type_hierarchy_item!(
+    TypeHierarchySupertypesParams,
+    work_done_progress_params: WorkDoneProgressParams::default(),
+    partial_result_params: PartialResultParams::default(),
+);
+impl_from_ranges_options!(
+    DocumentRangesFormattingParams,
+    work_done_progress_params: WorkDoneProgressParams::default(),
+);
+impl_from_uri_only!(TextDocumentContentParams);
 
 macro_rules! check {
     (open, $self:ident, $params:ident) => {
@@ -683,5 +1062,48 @@ mod tests {
         let params = InlayHintParams::from_range(&uri, range);
         assert_eq!(params.text_document.uri, uri);
         assert_eq!(params.range, range);
+    }
+
+    #[test]
+    fn query_shape_sets_the_query() {
+        let params = WorkspaceSymbolParams::from_query("widget".to_owned());
+        assert_eq!(params.query, "widget");
+    }
+
+    #[test]
+    fn references_shape_sets_the_context() {
+        let uri = uri();
+        let position = Position::new(1, 2);
+        let params = ReferenceParams::from_position_include_declaration(&uri, position, true);
+        assert_eq!(params.text_document_position_params.text_document.uri, uri);
+        assert_eq!(params.text_document_position_params.position, position);
+        assert!(params.context.include_declaration);
+    }
+
+    #[test]
+    fn range_options_shape_sets_the_options() {
+        let uri = uri();
+        let range = Range::new(Position::new(0, 0), Position::new(1, 1));
+        let options = FormattingOptions {
+            tab_size: 4,
+            insert_spaces: true,
+            trim_trailing_whitespace: None,
+            insert_final_newline: None,
+            trim_final_newlines: None,
+        };
+        let params = DocumentRangeFormattingParams::from_range_options(&uri, range, options);
+        assert_eq!(params.text_document.uri, uri);
+        assert_eq!(params.range, range);
+        assert_eq!(params.options.tab_size, 4);
+    }
+
+    #[test]
+    fn progress_shape_sets_the_token_and_value() {
+        let params = ProgressParams::from_progress(
+            ProgressToken::from(7),
+            serde_json::json!({"kind": "begin"}),
+        );
+        assert_eq!(params.token, ProgressToken::from(7));
+        assert_eq!(params.value, serde_json::json!({"kind": "begin"}));
     }
 }
