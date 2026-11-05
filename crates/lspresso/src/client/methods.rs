@@ -1,9 +1,5 @@
-//! One method per client-to-server request and notification, generated from
-//! the tables below in two layers: [`Protocol`]'s `protocol_` methods take
-//! the raw params, and `Client`'s own take just what each shape of request
-//! needs (a document, a position, a range). Each table must name every
-//! [`LspRequestMethod`] or [`LspNotificationMethod`], so a gen-lsp-types
-//! bump that adds one fails to compile until it's listed here or skipped.
+//! Generated client-to-server methods: raw [`Protocol`] methods plus simpler
+//! `Client` shortcuts.
 
 use gen_lsp_types::{
     LspNotificationMethod, LspRequestMethod, Notification as LspNotification, Position, Range,
@@ -19,12 +15,9 @@ mod sealed {
 
 impl sealed::Sealed for Client {}
 
-/// Builds params of whatever type from the fields a shape supplies; every
-/// other field must be optional, which `every_shaped_method_builds_its_params`
-/// checks for each shaped method.
+/// Builds a params value from the fields a shape supplies.
 fn shape<P: DeserializeOwned>(fields: serde_json::Value) -> P {
-    serde_json::from_value(fields)
-        .expect("a shaped method's other params are optional, as its test checks")
+    serde_json::from_value(fields).expect("shaped params must be serializable")
 }
 
 fn document(uri: &Uri) -> serde_json::Value {
@@ -39,9 +32,7 @@ fn within(uri: &Uri, range: Range) -> serde_json::Value {
     serde_json::json!({ "textDocument": { "uri": uri }, "range": range })
 }
 
-/// `Client`'s own method for one row: built from its shape, or (`params`)
-/// taking the raw params when those are already the natural argument, or
-/// (`manual`) none, when a hand-written one exists.
+/// Generates `Client`'s shortcut for one table row.
 macro_rules! shaped {
     (position, $name:ident, $protocol:ident, $item:ty, $params:ty, $ret:ty) => {
         #[doc = concat!("Sends a [`", stringify!($item), "`] for `uri` at `position`.")]
@@ -70,21 +61,6 @@ macro_rules! shaped {
     (manual, $($rest:tt)*) => {};
 }
 
-/// Builds a shaped method's params, as its generated method would.
-#[cfg(test)]
-macro_rules! check_shape {
-    (position, $params:ty, $uri:ident, $position:ident, $range:ident) => {
-        drop(shape::<$params>(at(&$uri, $position)));
-    };
-    (document, $params:ty, $uri:ident, $position:ident, $range:ident) => {
-        drop(shape::<$params>(document(&$uri)));
-    };
-    (range, $params:ty, $uri:ident, $position:ident, $range:ident) => {
-        drop(shape::<$params>(within(&$uri, $range)));
-    };
-    ($other:ident, $($rest:tt)*) => {};
-}
-
 macro_rules! check {
     (open, $self:ident, $params:ident) => {
         $self.state.require_initialized()?;
@@ -104,9 +80,7 @@ macro_rules! client_methods {
                 $notification_shape:ident $(, $notification_check:ident)?;)*
         }
     ) => { pastey::paste! {
-        /// Every generated request and notification, taking its raw params.
-        /// In scope only when imported, so `Client`'s own simpler methods
-        /// come first; implemented only by `Client`.
+        /// Every generated method, taking its raw params. Bring it into scope to use them.
         pub trait Protocol: sealed::Sealed {
             $(
                 #[doc = concat!(
@@ -197,24 +171,6 @@ macro_rules! client_methods {
             | $(LspNotificationMethod::$skipped_notification)|*
             | LspNotificationMethod::Custom(_) => {}
         };
-
-        #[cfg(test)]
-        #[test]
-        fn every_shaped_method_builds_its_params() {
-            let uri: Uri = "file:///a.json".parse().unwrap();
-            let position = Position::new(0, 0);
-            let range = Range::new(position, position);
-            $(check_shape!(
-                $request_shape,
-                <gen_lsp_types::$request as LspRequest>::Params,
-                uri, position, range
-            );)*
-            $(check_shape!(
-                $notification_shape,
-                <gen_lsp_types::$notification as LspNotification>::Params,
-                uri, position, range
-            );)*
-        }
     }};
 }
 

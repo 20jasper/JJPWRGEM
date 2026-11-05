@@ -9,10 +9,10 @@ use std::{
 use crossbeam_channel::RecvTimeoutError;
 use gen_lsp_types::{
     ClientCapabilities, CodeActionContext, CodeActionParams, CodeActionResponse,
-    DocumentFormattingParams, ExitNotification, FormattingOptions, InitializeRequest,
-    InitializeResult, InitializedNotification, InitializedParams, MessageDirection,
-    Notification as LspNotification, Range, Request as LspRequest, ServerCapabilities,
-    ShutdownRequest, TextDocumentIdentifier, TextEdit, Uri,
+    DidSaveTextDocumentParams, DocumentFormattingParams, ExitNotification, FormattingOptions,
+    InitializeRequest, InitializeResult, InitializedNotification, InitializedParams,
+    MessageDirection, Notification as LspNotification, Range, Request as LspRequest,
+    ServerCapabilities, ShutdownRequest, TextDocumentIdentifier, TextEdit, Uri,
 };
 use lsp_server::{Message, Notification, RequestId};
 
@@ -127,14 +127,20 @@ impl Client {
         }
     }
 
-    pub fn formatting(&mut self, uri: &Uri) -> crate::Result<Option<Vec<TextEdit>>> {
+    /// Formats `uri` with `options`.
+    pub fn formatting(
+        &mut self,
+        uri: &Uri,
+        options: FormattingOptions,
+    ) -> crate::Result<Option<Vec<TextEdit>>> {
         self.protocol_formatting(DocumentFormattingParams {
             text_document: TextDocumentIdentifier { uri: uri.clone() },
-            options: FormattingOptions::default(),
+            options,
             work_done_progress_params: gen_lsp_types::WorkDoneProgressParams::default(),
         })
     }
 
+    /// Requests code actions for `range` with `diagnostics`.
     pub fn code_action(
         &mut self,
         uri: &Uri,
@@ -150,6 +156,14 @@ impl Client {
             },
             work_done_progress_params: gen_lsp_types::WorkDoneProgressParams::default(),
             partial_result_params: gen_lsp_types::PartialResultParams::default(),
+        })
+    }
+
+    /// Notifies the server that `uri` was saved, optionally with its text.
+    pub fn did_save(&mut self, uri: &Uri, text: Option<String>) -> crate::Result<()> {
+        self.protocol_did_save(DidSaveTextDocumentParams {
+            text_document: TextDocumentIdentifier { uri: uri.clone() },
+            text,
         })
     }
 
