@@ -123,6 +123,152 @@ macro_rules! shaped {
             })))
         }
     };
+    (document_reason, $name:ident, $protocol:ident, $item:ty, $params:ty, $ret:ty) => {
+        #[doc = concat!(
+            "Sends a [`", stringify!($item), "`].\n\n",
+            "Use [`Protocol::protocol_", stringify!($name), "`] for full params."
+        )]
+        pub fn $name(&mut self, uri: &Uri, reason: TextDocumentSaveReason) -> $ret {
+            self.$protocol(shape(serde_json::json!({
+                "textDocument": { "uri": uri },
+                "reason": reason,
+            })))
+        }
+    };
+    (positions, $name:ident, $protocol:ident, $item:ty, $params:ty, $ret:ty) => {
+        #[doc = concat!(
+            "Sends a [`", stringify!($item), "`].\n\n",
+            "Use [`Protocol::protocol_", stringify!($name), "`] for full params."
+        )]
+        pub fn $name(&mut self, uri: &Uri, positions: Vec<Position>) -> $ret {
+            self.$protocol(shape(serde_json::json!({
+                "textDocument": { "uri": uri },
+                "positions": positions,
+            })))
+        }
+    };
+    (on_type_formatting, $name:ident, $protocol:ident, $item:ty, $params:ty, $ret:ty) => {
+        #[doc = concat!(
+            "Sends a [`", stringify!($item), "`].\n\n",
+            "Use [`Protocol::protocol_", stringify!($name), "`] for full params."
+        )]
+        pub fn $name(
+            &mut self,
+            uri: &Uri,
+            position: Position,
+            ch: impl Into<String>,
+            options: FormattingOptions,
+        ) -> $ret {
+            let ch: String = ch.into();
+            self.$protocol(shape(serde_json::json!({
+                "textDocument": { "uri": uri },
+                "position": position,
+                "ch": ch,
+                "options": options,
+            })))
+        }
+    };
+    (color_presentation, $name:ident, $protocol:ident, $item:ty, $params:ty, $ret:ty) => {
+        #[doc = concat!(
+            "Sends a [`", stringify!($item), "`].\n\n",
+            "Use [`Protocol::protocol_", stringify!($name), "`] for full params."
+        )]
+        pub fn $name(&mut self, uri: &Uri, color: Color, range: Range) -> $ret {
+            self.$protocol(shape(serde_json::json!({
+                "textDocument": { "uri": uri },
+                "color": color,
+                "range": range,
+            })))
+        }
+    };
+    (execute_command, $name:ident, $protocol:ident, $item:ty, $params:ty, $ret:ty) => {
+        #[doc = concat!(
+            "Sends a [`", stringify!($item), "`].\n\n",
+            "Use [`Protocol::protocol_", stringify!($name), "`] for full params."
+        )]
+        pub fn $name(
+            &mut self,
+            command: impl Into<String>,
+            arguments: Option<Vec<LspAny>>,
+        ) -> $ret {
+            let command: String = command.into();
+            self.$protocol(shape(serde_json::json!({
+                "command": command,
+                "arguments": arguments,
+            })))
+        }
+    };
+    (semantic_tokens_delta, $name:ident, $protocol:ident, $item:ty, $params:ty, $ret:ty) => {
+        #[doc = concat!(
+            "Sends a [`", stringify!($item), "`].\n\n",
+            "Use [`Protocol::protocol_", stringify!($name), "`] for full params."
+        )]
+        pub fn $name(
+            &mut self,
+            uri: &Uri,
+            previous_result_id: impl Into<String>,
+        ) -> $ret {
+            let previous_result_id: String = previous_result_id.into();
+            self.$protocol(shape(serde_json::json!({
+                "textDocument": { "uri": uri },
+                "previousResultId": previous_result_id,
+            })))
+        }
+    };
+    (progress, $name:ident, $protocol:ident, $item:ty, $params:ty, $ret:ty) => {
+        #[doc = concat!(
+            "Sends a [`", stringify!($item), "`].\n\n",
+            "Use [`Protocol::protocol_", stringify!($name), "`] for full params."
+        )]
+        pub fn $name(&mut self, token: ProgressToken, value: LspAny) -> $ret {
+            self.$protocol(shape(serde_json::json!({ "token": token, "value": value })))
+        }
+    };
+    (set_trace, $name:ident, $protocol:ident, $item:ty, $params:ty, $ret:ty) => {
+        #[doc = concat!(
+            "Sends a [`", stringify!($item), "`].\n\n",
+            "Use [`Protocol::protocol_", stringify!($name), "`] for full params."
+        )]
+        pub fn $name(&mut self, value: TraceValue) -> $ret {
+            self.$protocol(shape(serde_json::json!({ "value": value })))
+        }
+    };
+    (settings, $name:ident, $protocol:ident, $item:ty, $params:ty, $ret:ty) => {
+        #[doc = concat!(
+            "Sends a [`", stringify!($item), "`].\n\n",
+            "Use [`Protocol::protocol_", stringify!($name), "`] for full params."
+        )]
+        pub fn $name(&mut self, settings: LspAny) -> $ret {
+            self.$protocol(shape(serde_json::json!({ "settings": settings })))
+        }
+    };
+    (watched_files, $name:ident, $protocol:ident, $item:ty, $params:ty, $ret:ty) => {
+        #[doc = concat!(
+            "Sends a [`", stringify!($item), "`].\n\n",
+            "Use [`Protocol::protocol_", stringify!($name), "`] for full params."
+        )]
+        pub fn $name(&mut self, changes: Vec<FileEvent>) -> $ret {
+            self.$protocol(shape(serde_json::json!({ "changes": changes })))
+        }
+    };
+    (workspace_folders, $name:ident, $protocol:ident, $item:ty, $params:ty, $ret:ty) => {
+        #[doc = concat!(
+            "Sends a [`", stringify!($item), "`].\n\n",
+            "Use [`Protocol::protocol_", stringify!($name), "`] for full params."
+        )]
+        pub fn $name(&mut self, event: WorkspaceFoldersChangeEvent) -> $ret {
+            self.$protocol(shape(serde_json::json!({ "event": event })))
+        }
+    };
+    (cancel, $name:ident, $protocol:ident, $item:ty, $params:ty, $ret:ty) => {
+        #[doc = concat!(
+            "Sends a [`", stringify!($item), "`].\n\n",
+            "Use [`Protocol::protocol_", stringify!($name), "`] for full params."
+        )]
+        pub fn $name(&mut self, id: Id) -> $ret {
+            self.$protocol(shape(serde_json::json!({ "id": id })))
+        }
+    };
     (params, $name:ident, $protocol:ident, $item:ty, $params:ty, $ret:ty) => {
         #[doc = concat!("Sends a [`", stringify!($item), "`].")]
         pub fn $name(&mut self, params: $params) -> $ret {
@@ -275,7 +421,7 @@ client_methods! {
         code_action_resolve: CodeActionResolve => CodeActionResolveRequest, params;
         code_lens: TextDocumentCodeLens => CodeLensRequest, document, open;
         code_lens_resolve: CodeLensResolve => CodeLensResolveRequest, params;
-        color_presentation: TextDocumentColorPresentation => ColorPresentationRequest, params, open;
+        color_presentation: TextDocumentColorPresentation => ColorPresentationRequest, color_presentation, open;
         completion: TextDocumentCompletion => CompletionRequest, position, open;
         completion_item_resolve: CompletionItemResolve => CompletionResolveRequest, params;
         declaration: TextDocumentDeclaration => DeclarationRequest, position, open;
@@ -296,7 +442,7 @@ client_methods! {
         inline_value: TextDocumentInlineValue => InlineValueRequest, params, open;
         linked_editing_range: TextDocumentLinkedEditingRange => LinkedEditingRangeRequest, position, open;
         moniker: TextDocumentMoniker => MonikerRequest, position, open;
-        on_type_formatting: TextDocumentOnTypeFormatting => DocumentOnTypeFormattingRequest, params, open;
+        on_type_formatting: TextDocumentOnTypeFormatting => DocumentOnTypeFormattingRequest, on_type_formatting, open;
         prepare_call_hierarchy: TextDocumentPrepareCallHierarchy => CallHierarchyPrepareRequest, position, open;
         prepare_rename: TextDocumentPrepareRename => PrepareRenameRequest, position, open;
         prepare_type_hierarchy: TextDocumentPrepareTypeHierarchy => TypeHierarchyPrepareRequest, position, open;
@@ -304,17 +450,17 @@ client_methods! {
         ranges_formatting: TextDocumentRangesFormatting => DocumentRangesFormattingRequest, params, open;
         references: TextDocumentReferences => ReferencesRequest, position_include_declaration, open;
         rename: TextDocumentRename => RenameRequest, position_new_name, open;
-        selection_range: TextDocumentSelectionRange => SelectionRangeRequest, params, open;
+        selection_range: TextDocumentSelectionRange => SelectionRangeRequest, positions, open;
         semantic_tokens_full: TextDocumentSemanticTokensFull => SemanticTokensRequest, document, open;
-        semantic_tokens_full_delta: TextDocumentSemanticTokensFullDelta => SemanticTokensDeltaRequest, params, open;
+        semantic_tokens_full_delta: TextDocumentSemanticTokensFullDelta => SemanticTokensDeltaRequest, semantic_tokens_delta, open;
         semantic_tokens_range: TextDocumentSemanticTokensRange => SemanticTokensRangeRequest, range, open;
         signature_help: TextDocumentSignatureHelp => SignatureHelpRequest, position, open;
         type_definition: TextDocumentTypeDefinition => TypeDefinitionRequest, position, open;
         type_hierarchy_subtypes: TypeHierarchySubtypes => TypeHierarchySubtypesRequest, params;
         type_hierarchy_supertypes: TypeHierarchySupertypes => TypeHierarchySupertypesRequest, params;
-        will_save_wait_until: TextDocumentWillSaveWaitUntil => WillSaveTextDocumentWaitUntilRequest, params, open;
+        will_save_wait_until: TextDocumentWillSaveWaitUntil => WillSaveTextDocumentWaitUntilRequest, document_reason, open;
         workspace_diagnostic: WorkspaceDiagnostic => WorkspaceDiagnosticRequest, params;
-        workspace_execute_command: WorkspaceExecuteCommand => ExecuteCommandRequest, params;
+        workspace_execute_command: WorkspaceExecuteCommand => ExecuteCommandRequest, execute_command;
         workspace_symbol: WorkspaceSymbol => WorkspaceSymbolRequest, query;
         workspace_symbol_resolve: WorkspaceSymbolResolve => WorkspaceSymbolResolveRequest, params;
         workspace_text_document_content: WorkspaceTextDocumentContent => TextDocumentContentRequest, params;
@@ -338,19 +484,19 @@ client_methods! {
             WindowLogMessage,
             WindowShowMessage,
         ]
-        cancel_request: CancelRequest => CancelNotification, params;
+        cancel_request: CancelRequest => CancelNotification, cancel;
         did_save: TextDocumentDidSave => DidSaveTextDocumentNotification, manual, open;
         notebook_document_did_change: NotebookDocumentDidChange => DidChangeNotebookDocumentNotification, params;
         notebook_document_did_close: NotebookDocumentDidClose => DidCloseNotebookDocumentNotification, params;
         notebook_document_did_open: NotebookDocumentDidOpen => DidOpenNotebookDocumentNotification, params;
         notebook_document_did_save: NotebookDocumentDidSave => DidSaveNotebookDocumentNotification, params;
-        progress: Progress => ProgressNotification, params;
-        set_trace: SetTrace => SetTraceNotification, params;
-        will_save: TextDocumentWillSave => WillSaveTextDocumentNotification, params, open;
+        progress: Progress => ProgressNotification, progress;
+        set_trace: SetTrace => SetTraceNotification, set_trace;
+        will_save: TextDocumentWillSave => WillSaveTextDocumentNotification, document_reason, open;
         window_work_done_progress_cancel: WindowWorkDoneProgressCancel => WorkDoneProgressCancelNotification, params;
-        workspace_did_change_configuration: WorkspaceDidChangeConfiguration => DidChangeConfigurationNotification, params;
-        workspace_did_change_watched_files: WorkspaceDidChangeWatchedFiles => DidChangeWatchedFilesNotification, params;
-        workspace_did_change_workspace_folders: WorkspaceDidChangeWorkspaceFolders => DidChangeWorkspaceFoldersNotification, params;
+        workspace_did_change_configuration: WorkspaceDidChangeConfiguration => DidChangeConfigurationNotification, settings;
+        workspace_did_change_watched_files: WorkspaceDidChangeWatchedFiles => DidChangeWatchedFilesNotification, watched_files;
+        workspace_did_change_workspace_folders: WorkspaceDidChangeWorkspaceFolders => DidChangeWorkspaceFoldersNotification, workspace_folders;
         workspace_did_create_files: WorkspaceDidCreateFiles => DidCreateFilesNotification, params;
         workspace_did_delete_files: WorkspaceDidDeleteFiles => DidDeleteFilesNotification, params;
         workspace_did_rename_files: WorkspaceDidRenameFiles => DidRenameFilesNotification, params;
