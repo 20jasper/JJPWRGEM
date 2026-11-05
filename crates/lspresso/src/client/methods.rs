@@ -32,21 +32,95 @@ fn within(uri: &Uri, range: Range) -> serde_json::Value {
 /// Generates `Client`'s shortcut for one table row.
 macro_rules! shaped {
     (position, $name:ident, $protocol:ident, $item:ty, $params:ty, $ret:ty) => {
-        #[doc = concat!("Sends a [`", stringify!($item), "`] for `uri` at `position`.")]
+        #[doc = concat!(
+            "Sends a [`", stringify!($item), "`] for `uri` at `position`.\n\n",
+            "Use [`Protocol::protocol_", stringify!($name), "`] for full params."
+        )]
         pub fn $name(&mut self, uri: &Uri, position: Position) -> $ret {
             self.$protocol(shape(at(uri, position)))
         }
     };
     (document, $name:ident, $protocol:ident, $item:ty, $params:ty, $ret:ty) => {
-        #[doc = concat!("Sends a [`", stringify!($item), "`] for `uri`.")]
+        #[doc = concat!(
+            "Sends a [`", stringify!($item), "`] for `uri`.\n\n",
+            "Use [`Protocol::protocol_", stringify!($name), "`] for full params."
+        )]
         pub fn $name(&mut self, uri: &Uri) -> $ret {
             self.$protocol(shape(document(uri)))
         }
     };
     (range, $name:ident, $protocol:ident, $item:ty, $params:ty, $ret:ty) => {
-        #[doc = concat!("Sends a [`", stringify!($item), "`] for `range` of `uri`.")]
+        #[doc = concat!(
+            "Sends a [`", stringify!($item), "`] for `range` of `uri`.\n\n",
+            "Use [`Protocol::protocol_", stringify!($name), "`] for full params."
+        )]
         pub fn $name(&mut self, uri: &Uri, range: Range) -> $ret {
             self.$protocol(shape(within(uri, range)))
+        }
+    };
+    (query, $name:ident, $protocol:ident, $item:ty, $params:ty, $ret:ty) => {
+        #[doc = concat!(
+            "Sends a [`", stringify!($item), "`] for `query`.\n\n",
+            "Use [`Protocol::protocol_", stringify!($name), "`] for full params."
+        )]
+        pub fn $name(&mut self, query: impl Into<String>) -> $ret {
+            let query: String = query.into();
+            self.$protocol(shape(serde_json::json!({ "query": query })))
+        }
+    };
+    (position_include_declaration, $name:ident, $protocol:ident, $item:ty, $params:ty, $ret:ty) => {
+        #[doc = concat!(
+            "Sends a [`", stringify!($item), "`] for `uri` at `position`.\n\n",
+            "Use [`Protocol::protocol_", stringify!($name), "`] for full params."
+        )]
+        pub fn $name(
+            &mut self,
+            uri: &Uri,
+            position: Position,
+            include_declaration: bool,
+        ) -> $ret {
+            self.$protocol(shape(serde_json::json!({
+                "textDocument": { "uri": uri },
+                "position": position,
+                "context": { "includeDeclaration": include_declaration },
+            })))
+        }
+    };
+    (position_new_name, $name:ident, $protocol:ident, $item:ty, $params:ty, $ret:ty) => {
+        #[doc = concat!(
+            "Sends a [`", stringify!($item), "`] for `uri` at `position`.\n\n",
+            "Use [`Protocol::protocol_", stringify!($name), "`] for full params."
+        )]
+        pub fn $name(
+            &mut self,
+            uri: &Uri,
+            position: Position,
+            new_name: impl Into<String>,
+        ) -> $ret {
+            let new_name: String = new_name.into();
+            self.$protocol(shape(serde_json::json!({
+                "textDocument": { "uri": uri },
+                "position": position,
+                "newName": new_name,
+            })))
+        }
+    };
+    (range_options, $name:ident, $protocol:ident, $item:ty, $params:ty, $ret:ty) => {
+        #[doc = concat!(
+            "Sends a [`", stringify!($item), "`] for `range` of `uri`.\n\n",
+            "Use [`Protocol::protocol_", stringify!($name), "`] for full params."
+        )]
+        pub fn $name(
+            &mut self,
+            uri: &Uri,
+            range: Range,
+            options: FormattingOptions,
+        ) -> $ret {
+            self.$protocol(shape(serde_json::json!({
+                "textDocument": { "uri": uri },
+                "range": range,
+                "options": options,
+            })))
         }
     };
     (params, $name:ident, $protocol:ident, $item:ty, $params:ty, $ret:ty) => {
@@ -226,10 +300,10 @@ client_methods! {
         prepare_call_hierarchy: TextDocumentPrepareCallHierarchy => CallHierarchyPrepareRequest, position, open;
         prepare_rename: TextDocumentPrepareRename => PrepareRenameRequest, position, open;
         prepare_type_hierarchy: TextDocumentPrepareTypeHierarchy => TypeHierarchyPrepareRequest, position, open;
-        range_formatting: TextDocumentRangeFormatting => DocumentRangeFormattingRequest, params, open;
+        range_formatting: TextDocumentRangeFormatting => DocumentRangeFormattingRequest, range_options, open;
         ranges_formatting: TextDocumentRangesFormatting => DocumentRangesFormattingRequest, params, open;
-        references: TextDocumentReferences => ReferencesRequest, params, open;
-        rename: TextDocumentRename => RenameRequest, params, open;
+        references: TextDocumentReferences => ReferencesRequest, position_include_declaration, open;
+        rename: TextDocumentRename => RenameRequest, position_new_name, open;
         selection_range: TextDocumentSelectionRange => SelectionRangeRequest, params, open;
         semantic_tokens_full: TextDocumentSemanticTokensFull => SemanticTokensRequest, document, open;
         semantic_tokens_full_delta: TextDocumentSemanticTokensFullDelta => SemanticTokensDeltaRequest, params, open;
@@ -241,7 +315,7 @@ client_methods! {
         will_save_wait_until: TextDocumentWillSaveWaitUntil => WillSaveTextDocumentWaitUntilRequest, params, open;
         workspace_diagnostic: WorkspaceDiagnostic => WorkspaceDiagnosticRequest, params;
         workspace_execute_command: WorkspaceExecuteCommand => ExecuteCommandRequest, params;
-        workspace_symbol: WorkspaceSymbol => WorkspaceSymbolRequest, params;
+        workspace_symbol: WorkspaceSymbol => WorkspaceSymbolRequest, query;
         workspace_symbol_resolve: WorkspaceSymbolResolve => WorkspaceSymbolResolveRequest, params;
         workspace_text_document_content: WorkspaceTextDocumentContent => TextDocumentContentRequest, params;
         workspace_will_create_files: WorkspaceWillCreateFiles => WillCreateFilesRequest, params;

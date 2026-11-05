@@ -122,6 +122,8 @@ impl Client {
     }
 
     /// Formats `uri` with `options`.
+    ///
+    /// Use [`Protocol::protocol_formatting`] for full params.
     pub fn formatting(
         &mut self,
         uri: &Uri,
@@ -135,6 +137,8 @@ impl Client {
     }
 
     /// Requests code actions for `range` with `diagnostics`.
+    ///
+    /// Use [`Protocol::protocol_code_action`] for full params.
     pub fn code_action(
         &mut self,
         uri: &Uri,
@@ -154,6 +158,8 @@ impl Client {
     }
 
     /// Notifies the server that `uri` was saved, optionally with its text.
+    ///
+    /// Use [`Protocol::protocol_did_save`] for full params.
     pub fn did_save(&mut self, uri: &Uri, text: Option<String>) -> crate::Result<()> {
         self.protocol_did_save(DidSaveTextDocumentParams {
             text_document: TextDocumentIdentifier { uri: uri.clone() },
