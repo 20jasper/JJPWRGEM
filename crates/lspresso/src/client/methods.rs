@@ -14,7 +14,7 @@ impl sealed::Sealed for Client {}
 
 /// Builds a params value from the fields a shape supplies.
 fn shape<P: DeserializeOwned>(fields: serde_json::Value) -> P {
-    serde_json::from_value(fields).expect("shaped params must be serializable")
+    serde_json::from_value(fields).expect("shape must cover required params")
 }
 
 fn document(uri: &Uri) -> serde_json::Value {
@@ -77,7 +77,7 @@ macro_rules! client_methods {
                 $notification_shape:ident $(, $notification_check:ident)?;)*
         }
     ) => { pastey::paste! {
-        /// Every generated method, taking its raw params. Bring it into scope to use them.
+        /// Every generated method, taking its raw params.
         pub trait Protocol: sealed::Sealed {
             $(
                 #[doc = concat!(
@@ -157,6 +157,7 @@ macro_rules! client_methods {
             )*
         }
 
+        // Each match fails to compile when gen-lsp-types adds an unlisted method.
         const _: fn(LspRequestMethod<'_>) = |method| match method {
             $(LspRequestMethod::$request_variant)|*
             | $(LspRequestMethod::$skipped_request)|*
@@ -249,9 +250,10 @@ client_methods! {
     }
     notifications {
         skip: [
-            // Hand-written: they drive the lifecycle or track documents.
+            // Hand-written: lifecycle.
             Initialized,
             Exit,
+            // Document tracking.
             TextDocumentDidOpen,
             TextDocumentDidChange,
             TextDocumentDidClose,
