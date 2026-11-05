@@ -3,7 +3,7 @@ use gen_lsp_types::*;
 use crate::{Client, Protocol, Result};
 
 impl Client {
-    /// Runs `command` on the server with `arguments`.
+    /// Sends [`workspace/executeCommand`](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#workspace_executeCommand).
     ///
     /// Use [`Protocol::protocol_workspace_execute_command`] for full params.
     pub fn workspace_execute_command(
@@ -18,7 +18,7 @@ impl Client {
         })
     }
 
-    /// Requests the content of the virtual document at `uri`.
+    /// Sends [`workspace/textDocumentContent`](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#workspace_textDocumentContent).
     ///
     /// Use [`Protocol::protocol_workspace_text_document_content`] for full params.
     pub fn workspace_text_document_content(
@@ -30,21 +30,21 @@ impl Client {
         })
     }
 
-    /// Notifies the server that its configuration changed to `settings`.
+    /// Sends [`workspace/didChangeConfiguration`](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#workspace_didChangeConfiguration).
     ///
     /// Use [`Protocol::protocol_workspace_did_change_configuration`] for full params.
     pub fn workspace_did_change_configuration(&mut self, settings: LspAny) -> Result<()> {
         self.protocol_workspace_did_change_configuration(DidChangeConfigurationParams { settings })
     }
 
-    /// Notifies the server that watched files changed.
+    /// Sends [`workspace/didChangeWatchedFiles`](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#workspace_didChangeWatchedFiles).
     ///
     /// Use [`Protocol::protocol_workspace_did_change_watched_files`] for full params.
     pub fn workspace_did_change_watched_files(&mut self, changes: Vec<FileEvent>) -> Result<()> {
         self.protocol_workspace_did_change_watched_files(DidChangeWatchedFilesParams { changes })
     }
 
-    /// Notifies the server that workspace folders changed.
+    /// Sends [`workspace/didChangeWorkspaceFolders`](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#workspace_didChangeWorkspaceFolders).
     ///
     /// Use [`Protocol::protocol_workspace_did_change_workspace_folders`] for full params.
     pub fn workspace_did_change_workspace_folders(
@@ -56,7 +56,9 @@ impl Client {
         })
     }
 
-    /// Asks the server for edits to apply before files are created.
+    /// Sends [`workspace/willCreateFiles`](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#workspace_willCreateFiles).
+    ///
+    /// Use [`Protocol::protocol_workspace_will_create_files`] for full params.
     pub fn workspace_will_create_files(
         &mut self,
         params: CreateFilesParams,
@@ -64,7 +66,9 @@ impl Client {
         self.protocol_workspace_will_create_files(params)
     }
 
-    /// Asks the server for edits to apply before files are renamed.
+    /// Sends [`workspace/willRenameFiles`](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#workspace_willRenameFiles).
+    ///
+    /// Use [`Protocol::protocol_workspace_will_rename_files`] for full params.
     pub fn workspace_will_rename_files(
         &mut self,
         params: RenameFilesParams,
@@ -72,7 +76,9 @@ impl Client {
         self.protocol_workspace_will_rename_files(params)
     }
 
-    /// Asks the server for edits to apply before files are deleted.
+    /// Sends [`workspace/willDeleteFiles`](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#workspace_willDeleteFiles).
+    ///
+    /// Use [`Protocol::protocol_workspace_will_delete_files`] for full params.
     pub fn workspace_will_delete_files(
         &mut self,
         params: DeleteFilesParams,
@@ -80,17 +86,23 @@ impl Client {
         self.protocol_workspace_will_delete_files(params)
     }
 
-    /// Notifies the server that files were created.
+    /// Sends [`workspace/didCreateFiles`](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#workspace_didCreateFiles).
+    ///
+    /// Use [`Protocol::protocol_workspace_did_create_files`] for full params.
     pub fn workspace_did_create_files(&mut self, params: CreateFilesParams) -> Result<()> {
         self.protocol_workspace_did_create_files(params)
     }
 
-    /// Notifies the server that files were renamed.
+    /// Sends [`workspace/didRenameFiles`](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#workspace_didRenameFiles).
+    ///
+    /// Use [`Protocol::protocol_workspace_did_rename_files`] for full params.
     pub fn workspace_did_rename_files(&mut self, params: RenameFilesParams) -> Result<()> {
         self.protocol_workspace_did_rename_files(params)
     }
 
-    /// Notifies the server that files were deleted.
+    /// Sends [`workspace/didDeleteFiles`](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#workspace_didDeleteFiles).
+    ///
+    /// Use [`Protocol::protocol_workspace_did_delete_files`] for full params.
     pub fn workspace_did_delete_files(&mut self, params: DeleteFilesParams) -> Result<()> {
         self.protocol_workspace_did_delete_files(params)
     }

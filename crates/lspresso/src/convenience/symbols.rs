@@ -4,7 +4,7 @@ use super::document;
 use crate::{Client, Protocol, Result};
 
 impl Client {
-    /// Lists the symbols in `uri`.
+    /// Sends [`textDocument/documentSymbol`](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#textDocument_documentSymbol).
     ///
     /// Use [`Protocol::protocol_document_symbol`] for full params.
     pub fn document_symbol(&mut self, uri: &Uri) -> Result<Option<DocumentSymbolResponse>> {
@@ -15,7 +15,7 @@ impl Client {
         })
     }
 
-    /// Searches the workspace for symbols matching `query`.
+    /// Sends [`workspace/symbol`](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#workspace_symbol).
     ///
     /// Use [`Protocol::protocol_workspace_symbol`] for full params.
     pub fn workspace_symbol(
@@ -29,7 +29,9 @@ impl Client {
         })
     }
 
-    /// Resolves the rest of a workspace `symbol`.
+    /// Sends [`workspaceSymbol/resolve`](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#workspace_symbolResolve).
+    ///
+    /// Use [`Protocol::protocol_workspace_symbol_resolve`] for full params.
     pub fn workspace_symbol_resolve(&mut self, symbol: WorkspaceSymbol) -> Result<WorkspaceSymbol> {
         self.protocol_workspace_symbol_resolve(symbol)
     }

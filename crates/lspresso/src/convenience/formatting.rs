@@ -4,7 +4,7 @@ use super::document;
 use crate::{Client, Protocol, Result};
 
 impl Client {
-    /// Formats `uri` with `options`.
+    /// Sends [`textDocument/formatting`](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#textDocument_formatting).
     ///
     /// Use [`Protocol::protocol_formatting`] for full params.
     pub fn formatting(
@@ -19,7 +19,7 @@ impl Client {
         })
     }
 
-    /// Formats `range` of `uri` with `options`.
+    /// Sends [`textDocument/rangeFormatting`](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#textDocument_rangeFormatting).
     ///
     /// Use [`Protocol::protocol_range_formatting`] for full params.
     pub fn range_formatting(
@@ -36,7 +36,7 @@ impl Client {
         })
     }
 
-    /// Formats each of `ranges` of `uri` with `options`.
+    /// Sends [`textDocument/rangesFormatting`](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#textDocument_rangeFormatting).
     ///
     /// Use [`Protocol::protocol_ranges_formatting`] for full params.
     pub fn ranges_formatting(
@@ -53,7 +53,7 @@ impl Client {
         })
     }
 
-    /// Formats `uri` after `ch` is typed at `position`.
+    /// Sends [`textDocument/onTypeFormatting`](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#textDocument_onTypeFormatting).
     ///
     /// Use [`Protocol::protocol_on_type_formatting`] for full params.
     pub fn on_type_formatting(

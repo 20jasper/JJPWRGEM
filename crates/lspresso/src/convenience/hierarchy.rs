@@ -4,7 +4,7 @@ use super::at;
 use crate::{Client, Protocol, Result};
 
 impl Client {
-    /// Finds the call hierarchy items at `position` in `uri`.
+    /// Sends [`textDocument/prepareCallHierarchy`](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#textDocument_prepareCallHierarchy).
     ///
     /// Use [`Protocol::protocol_prepare_call_hierarchy`] for full params.
     pub fn prepare_call_hierarchy(
@@ -18,7 +18,7 @@ impl Client {
         })
     }
 
-    /// Finds the calls to `item`.
+    /// Sends [`callHierarchy/incomingCalls`](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#callHierarchy_incomingCalls).
     ///
     /// Use [`Protocol::protocol_call_hierarchy_incoming_calls`] for full params.
     pub fn call_hierarchy_incoming_calls(
@@ -32,7 +32,7 @@ impl Client {
         })
     }
 
-    /// Finds the calls `item` makes.
+    /// Sends [`callHierarchy/outgoingCalls`](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#callHierarchy_outgoingCalls).
     ///
     /// Use [`Protocol::protocol_call_hierarchy_outgoing_calls`] for full params.
     pub fn call_hierarchy_outgoing_calls(
@@ -46,7 +46,7 @@ impl Client {
         })
     }
 
-    /// Finds the type hierarchy items at `position` in `uri`.
+    /// Sends [`textDocument/prepareTypeHierarchy`](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#textDocument_prepareTypeHierarchy).
     ///
     /// Use [`Protocol::protocol_prepare_type_hierarchy`] for full params.
     pub fn prepare_type_hierarchy(
@@ -60,7 +60,7 @@ impl Client {
         })
     }
 
-    /// Finds the subtypes of `item`.
+    /// Sends [`typeHierarchy/subtypes`](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#typeHierarchy_subtypes).
     ///
     /// Use [`Protocol::protocol_type_hierarchy_subtypes`] for full params.
     pub fn type_hierarchy_subtypes(
@@ -74,7 +74,7 @@ impl Client {
         })
     }
 
-    /// Finds the supertypes of `item`.
+    /// Sends [`typeHierarchy/supertypes`](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#typeHierarchy_supertypes).
     ///
     /// Use [`Protocol::protocol_type_hierarchy_supertypes`] for full params.
     pub fn type_hierarchy_supertypes(

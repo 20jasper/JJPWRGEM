@@ -4,7 +4,7 @@ use super::at;
 use crate::{Client, Protocol, Result};
 
 impl Client {
-    /// Finds the declaration of the symbol at `position` in `uri`.
+    /// Sends [`textDocument/declaration`](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#textDocument_declaration).
     ///
     /// Use [`Protocol::protocol_declaration`] for full params.
     pub fn declaration(
@@ -19,7 +19,7 @@ impl Client {
         })
     }
 
-    /// Finds the definition of the symbol at `position` in `uri`.
+    /// Sends [`textDocument/definition`](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#textDocument_definition).
     ///
     /// Use [`Protocol::protocol_definition`] for full params.
     pub fn definition(
@@ -34,7 +34,7 @@ impl Client {
         })
     }
 
-    /// Finds the type definition of the symbol at `position` in `uri`.
+    /// Sends [`textDocument/typeDefinition`](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#textDocument_typeDefinition).
     ///
     /// Use [`Protocol::protocol_type_definition`] for full params.
     pub fn type_definition(
@@ -49,7 +49,7 @@ impl Client {
         })
     }
 
-    /// Finds the implementations of the symbol at `position` in `uri`.
+    /// Sends [`textDocument/implementation`](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#textDocument_implementation).
     ///
     /// Use [`Protocol::protocol_implementation`] for full params.
     pub fn implementation(
@@ -64,7 +64,7 @@ impl Client {
         })
     }
 
-    /// Finds references to the symbol at `position` in `uri`.
+    /// Sends [`textDocument/references`](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#textDocument_references).
     ///
     /// Use [`Protocol::protocol_references`] for full params.
     pub fn references(
@@ -83,7 +83,7 @@ impl Client {
         })
     }
 
-    /// Highlights occurrences of the symbol at `position` in `uri`.
+    /// Sends [`textDocument/documentHighlight`](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#textDocument_documentHighlight).
     ///
     /// Use [`Protocol::protocol_document_highlight`] for full params.
     pub fn document_highlight(
@@ -98,7 +98,7 @@ impl Client {
         })
     }
 
-    /// Requests hover info at `position` in `uri`.
+    /// Sends [`textDocument/hover`](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#textDocument_hover).
     ///
     /// Use [`Protocol::protocol_hover`] for full params.
     pub fn hover(&mut self, uri: &Uri, position: Position) -> Result<Option<Hover>> {
@@ -108,7 +108,7 @@ impl Client {
         })
     }
 
-    /// Requests monikers for the symbol at `position` in `uri`.
+    /// Sends [`textDocument/moniker`](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#textDocument_moniker).
     ///
     /// Use [`Protocol::protocol_moniker`] for full params.
     pub fn moniker(&mut self, uri: &Uri, position: Position) -> Result<Option<Vec<Moniker>>> {

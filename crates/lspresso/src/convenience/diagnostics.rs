@@ -4,7 +4,7 @@ use super::document;
 use crate::{Client, Protocol, Result};
 
 impl Client {
-    /// Pulls the diagnostics for `uri`.
+    /// Sends [`textDocument/diagnostic`](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#textDocument_diagnostic).
     ///
     /// Use [`Protocol::protocol_diagnostic`] for full params.
     pub fn diagnostic(&mut self, uri: &Uri) -> Result<DocumentDiagnosticReport> {
@@ -17,7 +17,9 @@ impl Client {
         })
     }
 
-    /// Pulls the diagnostics for the whole workspace.
+    /// Sends [`workspace/diagnostic`](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#workspace_diagnostic).
+    ///
+    /// Use [`Protocol::protocol_workspace_diagnostic`] for full params.
     pub fn workspace_diagnostic(
         &mut self,
         params: WorkspaceDiagnosticParams,

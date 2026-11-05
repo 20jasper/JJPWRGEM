@@ -4,7 +4,7 @@ use super::document;
 use crate::{Client, Protocol, Result};
 
 impl Client {
-    /// Requests code lenses for `uri`.
+    /// Sends [`textDocument/codeLens`](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#textDocument_codeLens).
     ///
     /// Use [`Protocol::protocol_code_lens`] for full params.
     pub fn code_lens(&mut self, uri: &Uri) -> Result<Option<Vec<CodeLens>>> {
@@ -15,12 +15,14 @@ impl Client {
         })
     }
 
-    /// Resolves the rest of a code `lens`.
+    /// Sends [`codeLens/resolve`](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#codeLens_resolve).
+    ///
+    /// Use [`Protocol::protocol_code_lens_resolve`] for full params.
     pub fn code_lens_resolve(&mut self, lens: CodeLens) -> Result<CodeLens> {
         self.protocol_code_lens_resolve(lens)
     }
 
-    /// Requests the colors in `uri`.
+    /// Sends [`textDocument/documentColor`](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#textDocument_documentColor).
     ///
     /// Use [`Protocol::protocol_document_color`] for full params.
     pub fn document_color(&mut self, uri: &Uri) -> Result<Vec<ColorInformation>> {
@@ -31,7 +33,7 @@ impl Client {
         })
     }
 
-    /// Requests presentations of `color` at `range` of `uri`.
+    /// Sends [`textDocument/colorPresentation`](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#textDocument_colorPresentation).
     ///
     /// Use [`Protocol::protocol_color_presentation`] for full params.
     pub fn color_presentation(
@@ -49,7 +51,7 @@ impl Client {
         })
     }
 
-    /// Requests the links in `uri`.
+    /// Sends [`textDocument/documentLink`](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#textDocument_documentLink).
     ///
     /// Use [`Protocol::protocol_document_link`] for full params.
     pub fn document_link(&mut self, uri: &Uri) -> Result<Option<Vec<DocumentLink>>> {
@@ -60,12 +62,14 @@ impl Client {
         })
     }
 
-    /// Resolves the rest of a document `link`.
+    /// Sends [`documentLink/resolve`](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#documentLink_resolve).
+    ///
+    /// Use [`Protocol::protocol_document_link_resolve`] for full params.
     pub fn document_link_resolve(&mut self, link: DocumentLink) -> Result<DocumentLink> {
         self.protocol_document_link_resolve(link)
     }
 
-    /// Requests the folding ranges in `uri`.
+    /// Sends [`textDocument/foldingRange`](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#textDocument_foldingRange).
     ///
     /// Use [`Protocol::protocol_folding_range`] for full params.
     pub fn folding_range(&mut self, uri: &Uri) -> Result<Option<Vec<FoldingRange>>> {
@@ -76,7 +80,7 @@ impl Client {
         })
     }
 
-    /// Requests inlay hints for `range` of `uri`.
+    /// Sends [`textDocument/inlayHint`](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#textDocument_inlayHint).
     ///
     /// Use [`Protocol::protocol_inlay_hint`] for full params.
     pub fn inlay_hint(&mut self, uri: &Uri, range: Range) -> Result<Option<Vec<InlayHint>>> {
@@ -87,17 +91,21 @@ impl Client {
         })
     }
 
-    /// Resolves the rest of an inlay `hint`.
+    /// Sends [`inlayHint/resolve`](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#inlayHint_resolve).
+    ///
+    /// Use [`Protocol::protocol_inlay_hint_resolve`] for full params.
     pub fn inlay_hint_resolve(&mut self, hint: InlayHint) -> Result<InlayHint> {
         self.protocol_inlay_hint_resolve(hint)
     }
 
-    /// Requests inline values.
+    /// Sends [`textDocument/inlineValue`](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#textDocument_inlineValue).
+    ///
+    /// Use [`Protocol::protocol_inline_value`] for full params.
     pub fn inline_value(&mut self, params: InlineValueParams) -> Result<Option<Vec<InlineValue>>> {
         self.protocol_inline_value(params)
     }
 
-    /// Requests semantic tokens for all of `uri`.
+    /// Sends [`textDocument/semanticTokens/full`](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#semanticTokens_fullRequest).
     ///
     /// Use [`Protocol::protocol_semantic_tokens_full`] for full params.
     pub fn semantic_tokens_full(&mut self, uri: &Uri) -> Result<Option<SemanticTokens>> {
@@ -108,7 +116,7 @@ impl Client {
         })
     }
 
-    /// Requests semantic token changes for `uri` since `previous_result_id`.
+    /// Sends [`textDocument/semanticTokens/full/delta`](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#semanticTokens_deltaRequest).
     ///
     /// Use [`Protocol::protocol_semantic_tokens_full_delta`] for full params.
     pub fn semantic_tokens_full_delta(
@@ -124,7 +132,7 @@ impl Client {
         })
     }
 
-    /// Requests semantic tokens for `range` of `uri`.
+    /// Sends [`textDocument/semanticTokens/range`](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#semanticTokens_rangeRequest).
     ///
     /// Use [`Protocol::protocol_semantic_tokens_range`] for full params.
     pub fn semantic_tokens_range(

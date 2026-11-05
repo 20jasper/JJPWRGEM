@@ -4,7 +4,7 @@ use super::{at, document};
 use crate::{Client, Protocol, Result};
 
 impl Client {
-    /// Requests completions at `position` in `uri`.
+    /// Sends [`textDocument/completion`](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#textDocument_completion).
     ///
     /// Use [`Protocol::protocol_completion`] for full params.
     pub fn completion(
@@ -20,12 +20,16 @@ impl Client {
         })
     }
 
-    /// Resolves the rest of a completion `item`.
+    /// Sends [`completionItem/resolve`](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#completionItem_resolve).
+    ///
+    /// Use [`Protocol::protocol_completion_item_resolve`] for full params.
     pub fn completion_item_resolve(&mut self, item: CompletionItem) -> Result<CompletionItem> {
         self.protocol_completion_item_resolve(item)
     }
 
-    /// Requests inline completions.
+    /// Sends [`textDocument/inlineCompletion`](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#textDocument_inlineCompletion).
+    ///
+    /// Use [`Protocol::protocol_inline_completion`] for full params.
     pub fn inline_completion(
         &mut self,
         params: InlineCompletionParams,
@@ -33,7 +37,7 @@ impl Client {
         self.protocol_inline_completion(params)
     }
 
-    /// Requests signature help at `position` in `uri`.
+    /// Sends [`textDocument/signatureHelp`](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#textDocument_signatureHelp).
     ///
     /// Use [`Protocol::protocol_signature_help`] for full params.
     pub fn signature_help(
@@ -48,7 +52,7 @@ impl Client {
         })
     }
 
-    /// Requests code actions for `range` of `uri` with `diagnostics`.
+    /// Sends [`textDocument/codeAction`](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#textDocument_codeAction).
     ///
     /// Use [`Protocol::protocol_code_action`] for full params.
     pub fn code_action(
@@ -69,12 +73,14 @@ impl Client {
         })
     }
 
-    /// Resolves the rest of a code `action`.
+    /// Sends [`codeAction/resolve`](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#codeAction_resolve).
+    ///
+    /// Use [`Protocol::protocol_code_action_resolve`] for full params.
     pub fn code_action_resolve(&mut self, action: CodeAction) -> Result<CodeAction> {
         self.protocol_code_action_resolve(action)
     }
 
-    /// Checks whether the symbol at `position` in `uri` can be renamed.
+    /// Sends [`textDocument/prepareRename`](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#textDocument_prepareRename).
     ///
     /// Use [`Protocol::protocol_prepare_rename`] for full params.
     pub fn prepare_rename(
@@ -88,7 +94,7 @@ impl Client {
         })
     }
 
-    /// Renames the symbol at `position` in `uri` to `new_name`.
+    /// Sends [`textDocument/rename`](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#textDocument_rename).
     ///
     /// Use [`Protocol::protocol_rename`] for full params.
     pub fn rename(
@@ -104,7 +110,7 @@ impl Client {
         })
     }
 
-    /// Requests ranges at `position` in `uri` that edit together.
+    /// Sends [`textDocument/linkedEditingRange`](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#textDocument_linkedEditingRange).
     ///
     /// Use [`Protocol::protocol_linked_editing_range`] for full params.
     pub fn linked_editing_range(
@@ -118,7 +124,7 @@ impl Client {
         })
     }
 
-    /// Requests selection ranges around each of `positions` in `uri`.
+    /// Sends [`textDocument/selectionRange`](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#textDocument_selectionRange).
     ///
     /// Use [`Protocol::protocol_selection_range`] for full params.
     pub fn selection_range(

@@ -4,7 +4,7 @@ use super::document;
 use crate::{Client, Protocol, Result};
 
 impl Client {
-    /// Notifies the server that `uri` is about to be saved for `reason`.
+    /// Sends [`textDocument/willSave`](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#textDocument_willSave).
     ///
     /// Use [`Protocol::protocol_will_save`] for full params.
     pub fn will_save(&mut self, uri: &Uri, reason: TextDocumentSaveReason) -> Result<()> {
@@ -14,7 +14,7 @@ impl Client {
         })
     }
 
-    /// Asks the server for edits to apply before `uri` is saved for `reason`.
+    /// Sends [`textDocument/willSaveWaitUntil`](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#textDocument_willSaveWaitUntil).
     ///
     /// Use [`Protocol::protocol_will_save_wait_until`] for full params.
     pub fn will_save_wait_until(
@@ -28,7 +28,7 @@ impl Client {
         })
     }
 
-    /// Notifies the server that `uri` was saved, optionally with its text.
+    /// Sends [`textDocument/didSave`](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#textDocument_didSave).
     ///
     /// Use [`Protocol::protocol_did_save`] for full params.
     pub fn did_save(&mut self, uri: &Uri, text: Option<String>) -> Result<()> {
@@ -38,7 +38,9 @@ impl Client {
         })
     }
 
-    /// Notifies the server that a notebook document opened.
+    /// Sends [`notebookDocument/didOpen`](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#notebookDocument_didOpen).
+    ///
+    /// Use [`Protocol::protocol_notebook_document_did_open`] for full params.
     pub fn notebook_document_did_open(
         &mut self,
         params: DidOpenNotebookDocumentParams,
@@ -46,7 +48,9 @@ impl Client {
         self.protocol_notebook_document_did_open(params)
     }
 
-    /// Notifies the server that a notebook document changed.
+    /// Sends [`notebookDocument/didChange`](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#notebookDocument_didChange).
+    ///
+    /// Use [`Protocol::protocol_notebook_document_did_change`] for full params.
     pub fn notebook_document_did_change(
         &mut self,
         params: DidChangeNotebookDocumentParams,
@@ -54,7 +58,9 @@ impl Client {
         self.protocol_notebook_document_did_change(params)
     }
 
-    /// Notifies the server that a notebook document was saved.
+    /// Sends [`notebookDocument/didSave`](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#notebookDocument_didSave).
+    ///
+    /// Use [`Protocol::protocol_notebook_document_did_save`] for full params.
     pub fn notebook_document_did_save(
         &mut self,
         params: DidSaveNotebookDocumentParams,
@@ -62,7 +68,9 @@ impl Client {
         self.protocol_notebook_document_did_save(params)
     }
 
-    /// Notifies the server that a notebook document closed.
+    /// Sends [`notebookDocument/didClose`](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#notebookDocument_didClose).
+    ///
+    /// Use [`Protocol::protocol_notebook_document_did_close`] for full params.
     pub fn notebook_document_did_close(
         &mut self,
         params: DidCloseNotebookDocumentParams,
