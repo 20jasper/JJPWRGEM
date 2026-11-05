@@ -651,3 +651,37 @@ client_methods! {
         workspace_did_rename_files: WorkspaceDidRenameFiles => DidRenameFilesNotification, params;
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn uri() -> Uri {
+        "file:///a.json".parse().unwrap()
+    }
+
+    #[test]
+    fn document_shape_sets_the_uri() {
+        let uri = uri();
+        let params = DocumentSymbolParams::from_uri(&uri);
+        assert_eq!(params.text_document.uri, uri);
+    }
+
+    #[test]
+    fn position_shape_sets_the_uri_and_position() {
+        let uri = uri();
+        let position = Position::new(1, 2);
+        let params = HoverParams::from_position(&uri, position);
+        assert_eq!(params.text_document_position_params.text_document.uri, uri);
+        assert_eq!(params.text_document_position_params.position, position);
+    }
+
+    #[test]
+    fn range_shape_sets_the_uri_and_range() {
+        let uri = uri();
+        let range = Range::new(Position::new(0, 0), Position::new(1, 1));
+        let params = InlayHintParams::from_range(&uri, range);
+        assert_eq!(params.text_document.uri, uri);
+        assert_eq!(params.range, range);
+    }
+}
