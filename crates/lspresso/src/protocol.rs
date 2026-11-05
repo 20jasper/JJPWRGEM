@@ -3,7 +3,7 @@
 
 use gen_lsp_types::*;
 
-use crate::{Client, Result};
+use crate::Result;
 
 macro_rules! protocol_methods {
     (
@@ -79,16 +79,6 @@ macro_rules! protocol_methods {
             | LspNotificationMethod::Custom(_) => {}
         };
     }};
-}
-
-impl Protocol for Client {
-    fn request<R: Request>(&mut self, params: R::Params) -> Result<R::Result> {
-        Self::request::<R>(self, params)
-    }
-
-    fn notify<N: Notification>(&mut self, params: N::Params) -> Result<()> {
-        Self::notify::<N>(self, params)
-    }
 }
 
 protocol_methods! {

@@ -11,7 +11,7 @@ use lsp_server::{Message, RequestId};
 
 use self::transport::{Incoming, Transport};
 use crate::{
-    Error, Result,
+    Error, Protocol, Result,
     core::{self, ClientState, Effect},
     error::{ErrorKind, elapsed_ms},
 };
@@ -132,24 +132,6 @@ impl Client {
         &self.background_errors
     }
 
-    /// Sends any request and waits for its response.
-    #[expect(
-        clippy::same_name_method,
-        reason = "inherent so callers need not import `Protocol`; its impl forwards here"
-    )]
-    pub fn request<R: Request>(&mut self, params: R::Params) -> Result<R::Result> {
-        assert_client_to_server!(R);
-        let now = Instant::now();
-        let timeout = self.request_timeout;
-        let method = R::METHOD.as_str();
-        let params =
-            serde_json::to_value(params).expect("serializing request params as JSON cannot fail");
-        let (id, message) = self.state.start_generic(method, params, now, timeout)?;
-        self.send_request(&id, &message)?;
-        let result = self.wait_for_resolution(&id, method)?;
-        Self::deserialize_response(result, method)
-    }
-
     fn send_request(&mut self, id: &RequestId, message: &Message) -> Result<()> {
         self.transport.send(message).inspect_err(|_| {
             self.state.cancel_pending_request(id);
@@ -167,17 +149,6 @@ impl Client {
             }
             .into()
         })
-    }
-
-    /// Sends any notification.
-    #[expect(
-        clippy::same_name_method,
-        reason = "inherent so callers need not import `Protocol`; its impl forwards here"
-    )]
-    pub fn notify<N: Notification>(&mut self, params: N::Params) -> Result<()> {
-        assert_client_to_server!(N);
-        self.state.require_initialized()?;
-        self.send_notification::<N>(params)
     }
 
     fn send_notification<N: Notification>(&mut self, params: N::Params) -> Result<()> {
@@ -274,6 +245,27 @@ impl Client {
                 None
             }
         }
+    }
+}
+
+impl Protocol for Client {
+    fn request<R: Request>(&mut self, params: R::Params) -> Result<R::Result> {
+        assert_client_to_server!(R);
+        let now = Instant::now();
+        let timeout = self.request_timeout;
+        let method = R::METHOD.as_str();
+        let params =
+            serde_json::to_value(params).expect("serializing request params as JSON cannot fail");
+        let (id, message) = self.state.start_generic(method, params, now, timeout)?;
+        self.send_request(&id, &message)?;
+        let result = self.wait_for_resolution(&id, method)?;
+        Self::deserialize_response(result, method)
+    }
+
+    fn notify<N: Notification>(&mut self, params: N::Params) -> Result<()> {
+        assert_client_to_server!(N);
+        self.state.require_initialized()?;
+        self.send_notification::<N>(params)
     }
 }
 
