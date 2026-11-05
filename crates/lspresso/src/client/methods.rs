@@ -49,12 +49,9 @@ macro_rules! shaped {
             self.$protocol(shape(within(uri, range)))
         }
     };
-    (params, $name:ident, $protocol:ident, $item:ty, $params:ty, $ret:ty) => {
-        #[doc = concat!("Sends a [`", stringify!($item), "`].")]
-        pub fn $name(&mut self, params: $params) -> $ret {
-            self.$protocol(params)
-        }
-    };
+    // `params` and `manual` rows only get a raw `Protocol` method or a
+    // hand-written one, so `Client` doesn't duplicate them.
+    (params, $($rest:tt)*) => {};
     (manual, $($rest:tt)*) => {};
 }
 

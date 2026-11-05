@@ -134,20 +134,17 @@ impl Client {
         })
     }
 
-    /// Requests code actions for `range` with `diagnostics`.
+    /// Requests code actions for `range` with `context`.
     pub fn code_action(
         &mut self,
         uri: &Uri,
         range: Range,
-        diagnostics: Vec<gen_lsp_types::Diagnostic>,
+        context: CodeActionContext,
     ) -> crate::Result<Option<Vec<CodeActionResponse>>> {
         self.protocol_code_action(CodeActionParams {
             text_document: TextDocumentIdentifier { uri: uri.clone() },
             range,
-            context: CodeActionContext {
-                diagnostics,
-                ..Default::default()
-            },
+            context,
             work_done_progress_params: gen_lsp_types::WorkDoneProgressParams::default(),
             partial_result_params: gen_lsp_types::PartialResultParams::default(),
         })
