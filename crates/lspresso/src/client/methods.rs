@@ -269,6 +269,51 @@ macro_rules! shaped {
             self.$protocol(shape(serde_json::json!({ "id": id })))
         }
     };
+    (call_hierarchy_item, $name:ident, $protocol:ident, $item:ty, $params:ty, $ret:ty) => {
+        #[doc = concat!(
+            "Sends a [`", stringify!($item), "`].\n\n",
+            "Use [`Protocol::protocol_", stringify!($name), "`] for full params."
+        )]
+        pub fn $name(&mut self, item: CallHierarchyItem) -> $ret {
+            self.$protocol(shape(serde_json::json!({ "item": item })))
+        }
+    };
+    (type_hierarchy_item, $name:ident, $protocol:ident, $item:ty, $params:ty, $ret:ty) => {
+        #[doc = concat!(
+            "Sends a [`", stringify!($item), "`].\n\n",
+            "Use [`Protocol::protocol_", stringify!($name), "`] for full params."
+        )]
+        pub fn $name(&mut self, item: TypeHierarchyItem) -> $ret {
+            self.$protocol(shape(serde_json::json!({ "item": item })))
+        }
+    };
+    (ranges_options, $name:ident, $protocol:ident, $item:ty, $params:ty, $ret:ty) => {
+        #[doc = concat!(
+            "Sends a [`", stringify!($item), "`].\n\n",
+            "Use [`Protocol::protocol_", stringify!($name), "`] for full params."
+        )]
+        pub fn $name(
+            &mut self,
+            uri: &Uri,
+            ranges: Vec<Range>,
+            options: FormattingOptions,
+        ) -> $ret {
+            self.$protocol(shape(serde_json::json!({
+                "textDocument": { "uri": uri },
+                "ranges": ranges,
+                "options": options,
+            })))
+        }
+    };
+    (uri, $name:ident, $protocol:ident, $item:ty, $params:ty, $ret:ty) => {
+        #[doc = concat!(
+            "Sends a [`", stringify!($item), "`].\n\n",
+            "Use [`Protocol::protocol_", stringify!($name), "`] for full params."
+        )]
+        pub fn $name(&mut self, uri: &Uri) -> $ret {
+            self.$protocol(shape(serde_json::json!({ "uri": uri })))
+        }
+    };
     (params, $name:ident, $protocol:ident, $item:ty, $params:ty, $ret:ty) => {
         #[doc = concat!("Sends a [`", stringify!($item), "`].")]
         pub fn $name(&mut self, params: $params) -> $ret {
@@ -415,8 +460,8 @@ client_methods! {
             WorkspaceTextDocumentContentRefresh,
             WorkspaceWorkspaceFolders,
         ]
-        call_hierarchy_incoming_calls: CallHierarchyIncomingCalls => CallHierarchyIncomingCallsRequest, params;
-        call_hierarchy_outgoing_calls: CallHierarchyOutgoingCalls => CallHierarchyOutgoingCallsRequest, params;
+        call_hierarchy_incoming_calls: CallHierarchyIncomingCalls => CallHierarchyIncomingCallsRequest, call_hierarchy_item;
+        call_hierarchy_outgoing_calls: CallHierarchyOutgoingCalls => CallHierarchyOutgoingCallsRequest, call_hierarchy_item;
         code_action: TextDocumentCodeAction => CodeActionRequest, manual, open;
         code_action_resolve: CodeActionResolve => CodeActionResolveRequest, params;
         code_lens: TextDocumentCodeLens => CodeLensRequest, document, open;
@@ -447,7 +492,7 @@ client_methods! {
         prepare_rename: TextDocumentPrepareRename => PrepareRenameRequest, position, open;
         prepare_type_hierarchy: TextDocumentPrepareTypeHierarchy => TypeHierarchyPrepareRequest, position, open;
         range_formatting: TextDocumentRangeFormatting => DocumentRangeFormattingRequest, range_options, open;
-        ranges_formatting: TextDocumentRangesFormatting => DocumentRangesFormattingRequest, params, open;
+        ranges_formatting: TextDocumentRangesFormatting => DocumentRangesFormattingRequest, ranges_options, open;
         references: TextDocumentReferences => ReferencesRequest, position_include_declaration, open;
         rename: TextDocumentRename => RenameRequest, position_new_name, open;
         selection_range: TextDocumentSelectionRange => SelectionRangeRequest, positions, open;
@@ -456,14 +501,14 @@ client_methods! {
         semantic_tokens_range: TextDocumentSemanticTokensRange => SemanticTokensRangeRequest, range, open;
         signature_help: TextDocumentSignatureHelp => SignatureHelpRequest, position, open;
         type_definition: TextDocumentTypeDefinition => TypeDefinitionRequest, position, open;
-        type_hierarchy_subtypes: TypeHierarchySubtypes => TypeHierarchySubtypesRequest, params;
-        type_hierarchy_supertypes: TypeHierarchySupertypes => TypeHierarchySupertypesRequest, params;
+        type_hierarchy_subtypes: TypeHierarchySubtypes => TypeHierarchySubtypesRequest, type_hierarchy_item;
+        type_hierarchy_supertypes: TypeHierarchySupertypes => TypeHierarchySupertypesRequest, type_hierarchy_item;
         will_save_wait_until: TextDocumentWillSaveWaitUntil => WillSaveTextDocumentWaitUntilRequest, document_reason, open;
         workspace_diagnostic: WorkspaceDiagnostic => WorkspaceDiagnosticRequest, params;
         workspace_execute_command: WorkspaceExecuteCommand => ExecuteCommandRequest, execute_command;
         workspace_symbol: WorkspaceSymbol => WorkspaceSymbolRequest, query;
         workspace_symbol_resolve: WorkspaceSymbolResolve => WorkspaceSymbolResolveRequest, params;
-        workspace_text_document_content: WorkspaceTextDocumentContent => TextDocumentContentRequest, params;
+        workspace_text_document_content: WorkspaceTextDocumentContent => TextDocumentContentRequest, uri;
         workspace_will_create_files: WorkspaceWillCreateFiles => WillCreateFilesRequest, params;
         workspace_will_delete_files: WorkspaceWillDeleteFiles => WillDeleteFilesRequest, params;
         workspace_will_rename_files: WorkspaceWillRenameFiles => WillRenameFilesRequest, params;
