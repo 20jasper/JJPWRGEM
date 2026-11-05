@@ -6,12 +6,6 @@ use serde::de::DeserializeOwned;
 
 use super::Client;
 
-mod sealed {
-    pub trait Sealed {}
-}
-
-impl sealed::Sealed for Client {}
-
 /// Builds a params value from the fields a shape supplies.
 fn shape<P: DeserializeOwned>(fields: serde_json::Value) -> P {
     serde_json::from_value(fields).expect("shape must cover required params")
@@ -343,7 +337,7 @@ macro_rules! client_methods {
         }
     ) => { pastey::paste! {
         /// Every generated method, taking its raw params.
-        pub trait Protocol: sealed::Sealed {
+        pub trait Protocol {
             $(
                 #[doc = concat!(
                     "Sends a [`", stringify!($request), "`](gen_lsp_types::",
