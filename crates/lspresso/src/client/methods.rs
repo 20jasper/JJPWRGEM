@@ -11,62 +11,116 @@ fn shape<P: DeserializeOwned>(fields: serde_json::Value) -> P {
     serde_json::from_value(fields).expect("shape must cover required params")
 }
 
-fn document(uri: &Uri) -> serde_json::Value {
-    serde_json::json!({ "textDocument": { "uri": uri } })
+trait FromUri {
+    fn from_uri(uri: &Uri) -> Self;
 }
 
-fn at(uri: &Uri, position: Position) -> serde_json::Value {
-    serde_json::json!({ "textDocument": { "uri": uri }, "position": position })
+trait FromPosition {
+    fn from_position(uri: &Uri, position: Position) -> Self;
 }
 
-fn within(uri: &Uri, range: Range) -> serde_json::Value {
-    serde_json::json!({ "textDocument": { "uri": uri }, "range": range })
+trait FromRange {
+    fn from_range(uri: &Uri, range: Range) -> Self;
+}
+
+macro_rules! impl_from_uri {
+    ($ty:ty, $($extra:ident : $extra_value:expr),* $(,)?) => {
+        impl FromUri for $ty {
+            fn from_uri(uri: &Uri) -> Self {
+                Self {
+                    text_document: TextDocumentIdentifier { uri: uri.clone() },
+                    $($extra: $extra_value),*
+                }
+            }
+        }
+    };
+}
+
+macro_rules! impl_from_position {
+    ($ty:ty, $($extra:ident : $extra_value:expr),* $(,)?) => {
+        impl FromPosition for $ty {
+            fn from_position(uri: &Uri, position: Position) -> Self {
+                Self {
+                    text_document_position_params: TextDocumentPositionParams {
+                        text_document: TextDocumentIdentifier { uri: uri.clone() },
+                        position,
+                    },
+                    $($extra: $extra_value),*
+                }
+            }
+        }
+    };
+}
+
+macro_rules! impl_from_range {
+    ($ty:ty, $($extra:ident : $extra_value:expr),* $(,)?) => {
+        impl FromRange for $ty {
+            fn from_range(uri: &Uri, range: Range) -> Self {
+                Self {
+                    text_document: TextDocumentIdentifier { uri: uri.clone() },
+                    range,
+                    $($extra: $extra_value),*
+                }
+            }
+        }
+    };
+}
+
+/// Builds a shortcut's doc comment and link to its raw params method.
+macro_rules! shaped_doc {
+    ($item:ty, $name:ident) => {
+        concat!(
+            "Sends a [`",
+            stringify!($item),
+            "`].\n\n",
+            "Use [`Protocol::protocol_",
+            stringify!($name),
+            "`] for full params."
+        )
+    };
+    ($description:literal, $item:ty, $name:ident) => {
+        concat!(
+            "Sends a [`",
+            stringify!($item),
+            "`] ",
+            $description,
+            ".\n\n",
+            "Use [`Protocol::protocol_",
+            stringify!($name),
+            "`] for full params."
+        )
+    };
 }
 
 /// Generates `Client`'s shortcut for one table row.
 macro_rules! shaped {
     (position, $name:ident, $protocol:ident, $item:ty, $params:ty, $ret:ty) => {
-        #[doc = concat!(
-            "Sends a [`", stringify!($item), "`] for `uri` at `position`.\n\n",
-            "Use [`Protocol::protocol_", stringify!($name), "`] for full params."
-        )]
+        #[doc = shaped_doc!("for `uri` at `position`", $item, $name)]
         pub fn $name(&mut self, uri: &Uri, position: Position) -> $ret {
-            self.$protocol(shape(at(uri, position)))
+            self.$protocol(<$params as FromPosition>::from_position(uri, position))
         }
     };
     (document, $name:ident, $protocol:ident, $item:ty, $params:ty, $ret:ty) => {
-        #[doc = concat!(
-            "Sends a [`", stringify!($item), "`] for `uri`.\n\n",
-            "Use [`Protocol::protocol_", stringify!($name), "`] for full params."
-        )]
+        #[doc = shaped_doc!("for `uri`", $item, $name)]
         pub fn $name(&mut self, uri: &Uri) -> $ret {
-            self.$protocol(shape(document(uri)))
+            self.$protocol(<$params as FromUri>::from_uri(uri))
         }
     };
     (range, $name:ident, $protocol:ident, $item:ty, $params:ty, $ret:ty) => {
-        #[doc = concat!(
-            "Sends a [`", stringify!($item), "`] for `range` of `uri`.\n\n",
-            "Use [`Protocol::protocol_", stringify!($name), "`] for full params."
-        )]
+        #[doc = shaped_doc!("for `range` of `uri`", $item, $name)]
         pub fn $name(&mut self, uri: &Uri, range: Range) -> $ret {
-            self.$protocol(shape(within(uri, range)))
+            self.$protocol(<$params as FromRange>::from_range(uri, range))
         }
     };
     (query, $name:ident, $protocol:ident, $item:ty, $params:ty, $ret:ty) => {
-        #[doc = concat!(
-            "Sends a [`", stringify!($item), "`] for `query`.\n\n",
-            "Use [`Protocol::protocol_", stringify!($name), "`] for full params."
-        )]
+        #[doc = shaped_doc!("for `query`", $item, $name)]
         pub fn $name(&mut self, query: impl Into<String>) -> $ret {
             let query: String = query.into();
             self.$protocol(shape(serde_json::json!({ "query": query })))
         }
     };
     (position_include_declaration, $name:ident, $protocol:ident, $item:ty, $params:ty, $ret:ty) => {
-        #[doc = concat!(
-            "Sends a [`", stringify!($item), "`] for `uri` at `position`.\n\n",
-            "Use [`Protocol::protocol_", stringify!($name), "`] for full params."
-        )]
+        #[doc = shaped_doc!("for `uri` at `position`", $item, $name)]
         pub fn $name(
             &mut self,
             uri: &Uri,
@@ -81,10 +135,7 @@ macro_rules! shaped {
         }
     };
     (position_new_name, $name:ident, $protocol:ident, $item:ty, $params:ty, $ret:ty) => {
-        #[doc = concat!(
-            "Sends a [`", stringify!($item), "`] for `uri` at `position`.\n\n",
-            "Use [`Protocol::protocol_", stringify!($name), "`] for full params."
-        )]
+        #[doc = shaped_doc!("for `uri` at `position`", $item, $name)]
         pub fn $name(
             &mut self,
             uri: &Uri,
@@ -100,10 +151,7 @@ macro_rules! shaped {
         }
     };
     (range_options, $name:ident, $protocol:ident, $item:ty, $params:ty, $ret:ty) => {
-        #[doc = concat!(
-            "Sends a [`", stringify!($item), "`] for `range` of `uri`.\n\n",
-            "Use [`Protocol::protocol_", stringify!($name), "`] for full params."
-        )]
+        #[doc = shaped_doc!("for `range` of `uri`", $item, $name)]
         pub fn $name(
             &mut self,
             uri: &Uri,
@@ -118,10 +166,7 @@ macro_rules! shaped {
         }
     };
     (document_reason, $name:ident, $protocol:ident, $item:ty, $params:ty, $ret:ty) => {
-        #[doc = concat!(
-            "Sends a [`", stringify!($item), "`].\n\n",
-            "Use [`Protocol::protocol_", stringify!($name), "`] for full params."
-        )]
+        #[doc = shaped_doc!($item, $name)]
         pub fn $name(&mut self, uri: &Uri, reason: TextDocumentSaveReason) -> $ret {
             self.$protocol(shape(serde_json::json!({
                 "textDocument": { "uri": uri },
@@ -130,10 +175,7 @@ macro_rules! shaped {
         }
     };
     (positions, $name:ident, $protocol:ident, $item:ty, $params:ty, $ret:ty) => {
-        #[doc = concat!(
-            "Sends a [`", stringify!($item), "`].\n\n",
-            "Use [`Protocol::protocol_", stringify!($name), "`] for full params."
-        )]
+        #[doc = shaped_doc!($item, $name)]
         pub fn $name(&mut self, uri: &Uri, positions: Vec<Position>) -> $ret {
             self.$protocol(shape(serde_json::json!({
                 "textDocument": { "uri": uri },
@@ -142,10 +184,7 @@ macro_rules! shaped {
         }
     };
     (on_type_formatting, $name:ident, $protocol:ident, $item:ty, $params:ty, $ret:ty) => {
-        #[doc = concat!(
-            "Sends a [`", stringify!($item), "`].\n\n",
-            "Use [`Protocol::protocol_", stringify!($name), "`] for full params."
-        )]
+        #[doc = shaped_doc!($item, $name)]
         pub fn $name(
             &mut self,
             uri: &Uri,
@@ -163,10 +202,7 @@ macro_rules! shaped {
         }
     };
     (color_presentation, $name:ident, $protocol:ident, $item:ty, $params:ty, $ret:ty) => {
-        #[doc = concat!(
-            "Sends a [`", stringify!($item), "`].\n\n",
-            "Use [`Protocol::protocol_", stringify!($name), "`] for full params."
-        )]
+        #[doc = shaped_doc!($item, $name)]
         pub fn $name(&mut self, uri: &Uri, color: Color, range: Range) -> $ret {
             self.$protocol(shape(serde_json::json!({
                 "textDocument": { "uri": uri },
@@ -176,10 +212,7 @@ macro_rules! shaped {
         }
     };
     (execute_command, $name:ident, $protocol:ident, $item:ty, $params:ty, $ret:ty) => {
-        #[doc = concat!(
-            "Sends a [`", stringify!($item), "`].\n\n",
-            "Use [`Protocol::protocol_", stringify!($name), "`] for full params."
-        )]
+        #[doc = shaped_doc!($item, $name)]
         pub fn $name(
             &mut self,
             command: impl Into<String>,
@@ -193,10 +226,7 @@ macro_rules! shaped {
         }
     };
     (semantic_tokens_delta, $name:ident, $protocol:ident, $item:ty, $params:ty, $ret:ty) => {
-        #[doc = concat!(
-            "Sends a [`", stringify!($item), "`].\n\n",
-            "Use [`Protocol::protocol_", stringify!($name), "`] for full params."
-        )]
+        #[doc = shaped_doc!($item, $name)]
         pub fn $name(
             &mut self,
             uri: &Uri,
@@ -210,82 +240,55 @@ macro_rules! shaped {
         }
     };
     (progress, $name:ident, $protocol:ident, $item:ty, $params:ty, $ret:ty) => {
-        #[doc = concat!(
-            "Sends a [`", stringify!($item), "`].\n\n",
-            "Use [`Protocol::protocol_", stringify!($name), "`] for full params."
-        )]
+        #[doc = shaped_doc!($item, $name)]
         pub fn $name(&mut self, token: ProgressToken, value: LspAny) -> $ret {
             self.$protocol(shape(serde_json::json!({ "token": token, "value": value })))
         }
     };
     (set_trace, $name:ident, $protocol:ident, $item:ty, $params:ty, $ret:ty) => {
-        #[doc = concat!(
-            "Sends a [`", stringify!($item), "`].\n\n",
-            "Use [`Protocol::protocol_", stringify!($name), "`] for full params."
-        )]
+        #[doc = shaped_doc!($item, $name)]
         pub fn $name(&mut self, value: TraceValue) -> $ret {
             self.$protocol(shape(serde_json::json!({ "value": value })))
         }
     };
     (settings, $name:ident, $protocol:ident, $item:ty, $params:ty, $ret:ty) => {
-        #[doc = concat!(
-            "Sends a [`", stringify!($item), "`].\n\n",
-            "Use [`Protocol::protocol_", stringify!($name), "`] for full params."
-        )]
+        #[doc = shaped_doc!($item, $name)]
         pub fn $name(&mut self, settings: LspAny) -> $ret {
             self.$protocol(shape(serde_json::json!({ "settings": settings })))
         }
     };
     (watched_files, $name:ident, $protocol:ident, $item:ty, $params:ty, $ret:ty) => {
-        #[doc = concat!(
-            "Sends a [`", stringify!($item), "`].\n\n",
-            "Use [`Protocol::protocol_", stringify!($name), "`] for full params."
-        )]
+        #[doc = shaped_doc!($item, $name)]
         pub fn $name(&mut self, changes: Vec<FileEvent>) -> $ret {
             self.$protocol(shape(serde_json::json!({ "changes": changes })))
         }
     };
     (workspace_folders, $name:ident, $protocol:ident, $item:ty, $params:ty, $ret:ty) => {
-        #[doc = concat!(
-            "Sends a [`", stringify!($item), "`].\n\n",
-            "Use [`Protocol::protocol_", stringify!($name), "`] for full params."
-        )]
+        #[doc = shaped_doc!($item, $name)]
         pub fn $name(&mut self, event: WorkspaceFoldersChangeEvent) -> $ret {
             self.$protocol(shape(serde_json::json!({ "event": event })))
         }
     };
     (cancel, $name:ident, $protocol:ident, $item:ty, $params:ty, $ret:ty) => {
-        #[doc = concat!(
-            "Sends a [`", stringify!($item), "`].\n\n",
-            "Use [`Protocol::protocol_", stringify!($name), "`] for full params."
-        )]
+        #[doc = shaped_doc!($item, $name)]
         pub fn $name(&mut self, id: Id) -> $ret {
             self.$protocol(shape(serde_json::json!({ "id": id })))
         }
     };
     (call_hierarchy_item, $name:ident, $protocol:ident, $item:ty, $params:ty, $ret:ty) => {
-        #[doc = concat!(
-            "Sends a [`", stringify!($item), "`].\n\n",
-            "Use [`Protocol::protocol_", stringify!($name), "`] for full params."
-        )]
+        #[doc = shaped_doc!($item, $name)]
         pub fn $name(&mut self, item: CallHierarchyItem) -> $ret {
             self.$protocol(shape(serde_json::json!({ "item": item })))
         }
     };
     (type_hierarchy_item, $name:ident, $protocol:ident, $item:ty, $params:ty, $ret:ty) => {
-        #[doc = concat!(
-            "Sends a [`", stringify!($item), "`].\n\n",
-            "Use [`Protocol::protocol_", stringify!($name), "`] for full params."
-        )]
+        #[doc = shaped_doc!($item, $name)]
         pub fn $name(&mut self, item: TypeHierarchyItem) -> $ret {
             self.$protocol(shape(serde_json::json!({ "item": item })))
         }
     };
     (ranges_options, $name:ident, $protocol:ident, $item:ty, $params:ty, $ret:ty) => {
-        #[doc = concat!(
-            "Sends a [`", stringify!($item), "`].\n\n",
-            "Use [`Protocol::protocol_", stringify!($name), "`] for full params."
-        )]
+        #[doc = shaped_doc!($item, $name)]
         pub fn $name(
             &mut self,
             uri: &Uri,
@@ -300,10 +303,7 @@ macro_rules! shaped {
         }
     };
     (uri, $name:ident, $protocol:ident, $item:ty, $params:ty, $ret:ty) => {
-        #[doc = concat!(
-            "Sends a [`", stringify!($item), "`].\n\n",
-            "Use [`Protocol::protocol_", stringify!($name), "`] for full params."
-        )]
+        #[doc = shaped_doc!($item, $name)]
         pub fn $name(&mut self, uri: &Uri) -> $ret {
             self.$protocol(shape(serde_json::json!({ "uri": uri })))
         }
@@ -316,6 +316,116 @@ macro_rules! shaped {
     };
     (manual, $($rest:tt)*) => {};
 }
+
+impl_from_uri!(
+    DocumentSymbolParams,
+    work_done_progress_params: WorkDoneProgressParams::default(),
+    partial_result_params: PartialResultParams::default(),
+);
+impl_from_uri!(
+    FoldingRangeParams,
+    work_done_progress_params: WorkDoneProgressParams::default(),
+    partial_result_params: PartialResultParams::default(),
+);
+impl_from_uri!(
+    CodeLensParams,
+    work_done_progress_params: WorkDoneProgressParams::default(),
+    partial_result_params: PartialResultParams::default(),
+);
+impl_from_uri!(
+    DocumentLinkParams,
+    work_done_progress_params: WorkDoneProgressParams::default(),
+    partial_result_params: PartialResultParams::default(),
+);
+impl_from_uri!(
+    DocumentColorParams,
+    work_done_progress_params: WorkDoneProgressParams::default(),
+    partial_result_params: PartialResultParams::default(),
+);
+impl_from_uri!(
+    SemanticTokensParams,
+    work_done_progress_params: WorkDoneProgressParams::default(),
+    partial_result_params: PartialResultParams::default(),
+);
+impl_from_uri!(
+    DocumentDiagnosticParams,
+    identifier: None,
+    previous_result_id: None,
+    work_done_progress_params: WorkDoneProgressParams::default(),
+    partial_result_params: PartialResultParams::default(),
+);
+
+impl_from_position!(
+    CompletionParams,
+    context: None,
+    work_done_progress_params: WorkDoneProgressParams::default(),
+    partial_result_params: PartialResultParams::default(),
+);
+impl_from_position!(
+    DeclarationParams,
+    work_done_progress_params: WorkDoneProgressParams::default(),
+    partial_result_params: PartialResultParams::default(),
+);
+impl_from_position!(
+    DefinitionParams,
+    work_done_progress_params: WorkDoneProgressParams::default(),
+    partial_result_params: PartialResultParams::default(),
+);
+impl_from_position!(
+    DocumentHighlightParams,
+    work_done_progress_params: WorkDoneProgressParams::default(),
+    partial_result_params: PartialResultParams::default(),
+);
+impl_from_position!(
+    HoverParams,
+    work_done_progress_params: WorkDoneProgressParams::default(),
+);
+impl_from_position!(
+    ImplementationParams,
+    work_done_progress_params: WorkDoneProgressParams::default(),
+    partial_result_params: PartialResultParams::default(),
+);
+impl_from_position!(
+    LinkedEditingRangeParams,
+    work_done_progress_params: WorkDoneProgressParams::default(),
+);
+impl_from_position!(
+    MonikerParams,
+    work_done_progress_params: WorkDoneProgressParams::default(),
+    partial_result_params: PartialResultParams::default(),
+);
+impl_from_position!(
+    CallHierarchyPrepareParams,
+    work_done_progress_params: WorkDoneProgressParams::default(),
+);
+impl_from_position!(
+    PrepareRenameParams,
+    work_done_progress_params: WorkDoneProgressParams::default(),
+);
+impl_from_position!(
+    TypeHierarchyPrepareParams,
+    work_done_progress_params: WorkDoneProgressParams::default(),
+);
+impl_from_position!(
+    SignatureHelpParams,
+    context: None,
+    work_done_progress_params: WorkDoneProgressParams::default(),
+);
+impl_from_position!(
+    TypeDefinitionParams,
+    work_done_progress_params: WorkDoneProgressParams::default(),
+    partial_result_params: PartialResultParams::default(),
+);
+
+impl_from_range!(
+    InlayHintParams,
+    work_done_progress_params: WorkDoneProgressParams::default(),
+);
+impl_from_range!(
+    SemanticTokensRangeParams,
+    work_done_progress_params: WorkDoneProgressParams::default(),
+    partial_result_params: PartialResultParams::default(),
+);
 
 macro_rules! check {
     (open, $self:ident, $params:ident) => {
