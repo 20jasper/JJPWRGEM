@@ -17,7 +17,7 @@ run = [
 ]
 
 [tasks.format.tools]
-"aqua:oxc-project/oxc/oxfmt" = "0.75.0"
+"npm:oxfmt" = "0.75.0"
 
 [tasks.format-check]
 run = [
@@ -26,7 +26,7 @@ run = [
 ]
 
 [tasks.format-check.tools]
-"aqua:oxc-project/oxc/oxfmt" = "0.75.0"
+"npm:oxfmt" = "0.75.0"
 
 [tasks.lint]
 env = { RUSTFLAGS = "-Dwarnings" }

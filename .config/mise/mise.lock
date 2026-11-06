@@ -159,53 +159,6 @@ checksum = "sha256:bf6374b054f596d75b5bb203010394a340cdb44d4150cd03560564fbc35d8
 url = "https://github.com/mitsuhiko/insta/releases/download/1.49.0/cargo-insta-x86_64-pc-windows-msvc.zip"
 url_api = "https://api.github.com/repos/mitsuhiko/insta/releases/assets/606859993"
 
-[[tools."aqua:oxc-project/oxc/oxfmt"]]
-version = "0.75.0"
-backend = "aqua:oxc-project/oxc/oxfmt"
-specifiers = ["0.75.0"]
-
-[tools."aqua:oxc-project/oxc/oxfmt"."platforms.linux-arm64"]
-checksum = "sha256:d572f06bfa6367d6cb766a077c2e0c4fd70a13b323879829dda00274b3b2cee6"
-checksum_source = "mise-versions"
-url = "https://github.com/oxc-project/oxc/releases/download/oxfmt_v0.75.0/oxfmt-aarch64-unknown-linux-gnu.tar.gz"
-url_api = "https://api.github.com/repos/oxc-project/oxc/releases/assets/680610856"
-
-[tools."aqua:oxc-project/oxc/oxfmt"."platforms.linux-arm64-musl"]
-checksum = "sha256:b419aee50009e1fbde95766beb9760d4ebebfdb31ba2bd6aff5b875a1da63e90"
-checksum_source = "mise-versions"
-url = "https://github.com/oxc-project/oxc/releases/download/oxfmt_v0.75.0/oxfmt-aarch64-unknown-linux-musl.tar.gz"
-url_api = "https://api.github.com/repos/oxc-project/oxc/releases/assets/680610858"
-
-[tools."aqua:oxc-project/oxc/oxfmt"."platforms.linux-x64"]
-checksum = "sha256:6a111e38ab6edfe61b87deffbc95e461e3b7326d5d034bdee71ba92cdfd87641"
-checksum_source = "mise-versions"
-url = "https://github.com/oxc-project/oxc/releases/download/oxfmt_v0.75.0/oxfmt-x86_64-unknown-linux-gnu.tar.gz"
-url_api = "https://api.github.com/repos/oxc-project/oxc/releases/assets/680610917"
-
-[tools."aqua:oxc-project/oxc/oxfmt"."platforms.linux-x64-musl"]
-checksum = "sha256:e55000473da87f60974463456853799c3445a15a1608d39329e74ce43e3d1abc"
-checksum_source = "mise-versions"
-url = "https://github.com/oxc-project/oxc/releases/download/oxfmt_v0.75.0/oxfmt-x86_64-unknown-linux-musl.tar.gz"
-url_api = "https://api.github.com/repos/oxc-project/oxc/releases/assets/680610922"
-
-[tools."aqua:oxc-project/oxc/oxfmt"."platforms.macos-arm64"]
-checksum = "sha256:e7973efba410ee690afdf306c3a561ebd9e6072005d28fe50ef4a4d7d4649bb3"
-checksum_source = "mise-versions"
-url = "https://github.com/oxc-project/oxc/releases/download/oxfmt_v0.75.0/oxfmt-aarch64-apple-darwin.tar.gz"
-url_api = "https://api.github.com/repos/oxc-project/oxc/releases/assets/680610854"
-
-[tools."aqua:oxc-project/oxc/oxfmt"."platforms.macos-x64"]
-checksum = "sha256:e0242cd799da9e94d0676a003fe2912893a26f419b766614af1ca8b944aacfd9"
-checksum_source = "mise-versions"
-url = "https://github.com/oxc-project/oxc/releases/download/oxfmt_v0.75.0/oxfmt-x86_64-apple-darwin.tar.gz"
-url_api = "https://api.github.com/repos/oxc-project/oxc/releases/assets/680610913"
-
-[tools."aqua:oxc-project/oxc/oxfmt"."platforms.windows-x64"]
-checksum = "sha256:3b2e7c87397f82a78b6a0212e2fe94d24a4cacc4805994a8f69de44c33b8e8b3"
-checksum_source = "mise-versions"
-url = "https://github.com/oxc-project/oxc/releases/download/oxfmt_v0.75.0/oxfmt-x86_64-pc-windows-msvc.zip"
-url_api = "https://api.github.com/repos/oxc-project/oxc/releases/assets/680610912"
-
 [[tools."aqua:oxc-project/oxc/oxlint"]]
 version = "1.90.0"
 backend = "aqua:oxc-project/oxc/oxlint"
@@ -684,6 +637,12 @@ version = "6.44.1"
 aube = { path = "locks/npm-knip/6.44.1", digest = "sha256:7db6554cb4159cfe10749c7ae1e170b7775f95414923960716ee9bbae2e239a3" }
 backend = "npm:knip"
 specifiers = ["6.44.1"]
+
+[[tools."npm:oxfmt"]]
+version = "0.75.0"
+aube = { path = "locks/npm-oxfmt/0.75.0", digest = "sha256:1d4f470a5dbba272218132db6ff9ba1911075d29dcd3253a0e02b4a5037a8a23" }
+backend = "npm:oxfmt"
+specifiers = ["0.75.0"]
 
 [[tools."npm:prettier"]]
 version = "3.9.10"
