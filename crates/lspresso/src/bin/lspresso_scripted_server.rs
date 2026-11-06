@@ -20,8 +20,6 @@ use lsp_server::{Message, Notification, Request, Response};
 
 struct Step {
     action: Action,
-    result: Option<serde_json::Value>,
-    error: Option<serde_json::Value>,
 }
 
 enum Action {
@@ -30,9 +28,7 @@ enum Action {
     Exit,
 }
 
-/// Each step is `{"action": a}` plus an optional `"result": v` to answer
-/// with instead of the default, or `"error": {"code": c, "message": m,
-/// "data": d}` to answer with an error, where `a` is `"respond:<ms>"`, `"ignore"`,
+/// Each step is `{"action": a}`, where `a` is `"respond:<ms>"`, `"ignore"`,
 /// or `"exit"`.
 fn parse(step: &serde_json::Value) -> Step {
     let action = step["action"].as_str().unwrap();
@@ -47,8 +43,6 @@ fn parse(step: &serde_json::Value) -> Step {
                 _ => panic!("unknown action {action}"),
             },
         },
-        result: step.get("result").cloned(),
-        error: step.get("error").cloned(),
     }
 }
 
@@ -163,16 +157,7 @@ fn main() {
         match step.action {
             Action::Respond { delay_ms } => {
                 let out = Arc::clone(&out);
-                let response = match step.error {
-                    Some(error) => Response {
-                        id: request.id.clone(),
-                        response_result: Err(serde_json::from_value(error).unwrap()),
-                    },
-                    None => Response::new_ok(
-                        request.id.clone(),
-                        step.result.unwrap_or_else(|| result_for(&request)),
-                    ),
-                };
+                let response = Response::new_ok(request.id.clone(), result_for(&request));
                 std::thread::spawn(move || {
                     sleep(Duration::from_millis(delay_ms));
                     write(&out, &Message::Response(response));

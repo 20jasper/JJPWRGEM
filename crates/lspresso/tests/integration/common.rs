@@ -27,36 +27,15 @@ pub fn scripted_recording(steps: &serde_json::Value, record: &Path) -> Client {
 }
 
 pub fn initialized_with_capabilities(capabilities: &ServerCapabilities) -> Client {
-    initialized_with_capabilities_and_script(capabilities, &json!([{ "action": "respond:0" }]))
-}
-
-pub fn initialized_with_capabilities_and_script(
-    capabilities: &ServerCapabilities,
-    steps: &serde_json::Value,
-) -> Client {
     let mut command = Command::new(env!("CARGO_BIN_EXE_lspresso_scripted_server"));
-    command.env("LSPRESSO_SCRIPT", steps.to_string());
+    command.env(
+        "LSPRESSO_SCRIPT",
+        json!([{ "action": "respond:0" }]).to_string(),
+    );
     command.env(
         "LSPRESSO_INITIALIZE_RESULT",
         json!({ "capabilities": capabilities }).to_string(),
     );
-    let mut client = Client::spawn(command).expect("the scripted server should spawn");
-    client.initialize(ClientCapabilities::default()).unwrap();
-    client
-}
-
-pub fn initialized_with_capabilities_and_recording(
-    capabilities: &ServerCapabilities,
-    steps: &serde_json::Value,
-    record: &Path,
-) -> Client {
-    let mut command = Command::new(env!("CARGO_BIN_EXE_lspresso_scripted_server"));
-    command.env("LSPRESSO_SCRIPT", steps.to_string());
-    command.env(
-        "LSPRESSO_INITIALIZE_RESULT",
-        json!({ "capabilities": capabilities }).to_string(),
-    );
-    command.env("LSPRESSO_RECORD", record);
     let mut client = Client::spawn(command).expect("the scripted server should spawn");
     client.initialize(ClientCapabilities::default()).unwrap();
     client

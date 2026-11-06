@@ -1,5 +1,4 @@
 pub mod capabilities;
-pub(crate) mod diagnostics;
 mod documents;
 mod lifecycle;
 pub(crate) mod publications;

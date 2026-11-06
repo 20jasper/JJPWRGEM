@@ -140,26 +140,9 @@ impl Client {
         self.request_timeout
     }
 
-    pub(crate) fn require_open_document(&self, uri: &Uri) -> Result<()> {
-        self.state.require_initialized()?;
-        self.docs.require_open(uri)
-    }
-
     pub(crate) fn open_document_version(&self, uri: &Uri) -> Result<i32> {
         self.state.require_initialized()?;
         self.docs.current_version(uri)
-    }
-
-    pub(crate) fn previous_result_id(&self, uri: &Uri) -> Result<Option<String>> {
-        self.docs.previous_result_id(uri)
-    }
-
-    pub(crate) fn apply_pulled_report(
-        &mut self,
-        uri: &Uri,
-        report: DocumentDiagnosticReport,
-    ) -> Result<Vec<Diagnostic>> {
-        self.docs.apply_pulled_report(uri, report)
     }
 
     pub(crate) fn take_publication(&mut self, uri: &Uri, version: i32) -> Option<Vec<Diagnostic>> {
