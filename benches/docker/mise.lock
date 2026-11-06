@@ -441,52 +441,74 @@ url = "https://github.com/tidwall/jj/releases/download/v1.9.2/jj-1.9.2-windows-a
 url_api = "https://api.github.com/repos/tidwall/jj/releases/assets/55628043"
 
 [[tools.gojq]]
-version = "0.12.19"
+version = "0.12.20"
 backend = "aqua:itchyny/gojq"
 
 [tools.gojq."platforms.linux-arm64"]
-checksum = "sha256:b22794b4bebad11c42af52550bda317c5cd7ee79aaa729eb6ec91a63f623d8b5"
-url = "https://github.com/itchyny/gojq/releases/download/v0.12.19/gojq_v0.12.19_linux_arm64.tar.gz"
+checksum = "sha256:14384db99511f57f0dcb35c7b825f8afd5407f9c203631aad4dd163af1856c35"
+checksum_source = "mise-versions"
+url = "https://github.com/itchyny/gojq/releases/download/v0.12.20/gojq_v0.12.20_linux_arm64.tar.gz"
+url_api = "https://api.github.com/repos/itchyny/gojq/releases/assets/698221703"
 
 [tools.gojq."platforms.linux-arm64-musl"]
-checksum = "sha256:b22794b4bebad11c42af52550bda317c5cd7ee79aaa729eb6ec91a63f623d8b5"
-url = "https://github.com/itchyny/gojq/releases/download/v0.12.19/gojq_v0.12.19_linux_arm64.tar.gz"
+checksum = "sha256:14384db99511f57f0dcb35c7b825f8afd5407f9c203631aad4dd163af1856c35"
+checksum_source = "mise-versions"
+url = "https://github.com/itchyny/gojq/releases/download/v0.12.20/gojq_v0.12.20_linux_arm64.tar.gz"
+url_api = "https://api.github.com/repos/itchyny/gojq/releases/assets/698221703"
 
 [tools.gojq."platforms.linux-x64"]
-checksum = "sha256:bdfaf9acbe088973c549dadbf299c06dc9a84f1ca38c731ca04a08a901077f64"
-url = "https://github.com/itchyny/gojq/releases/download/v0.12.19/gojq_v0.12.19_linux_amd64.tar.gz"
+checksum = "sha256:92ce2328ce3099532d2b23abfa25a348ecdc48caa584d821feab563f7df4a856"
+checksum_source = "mise-versions"
+url = "https://github.com/itchyny/gojq/releases/download/v0.12.20/gojq_v0.12.20_linux_amd64.tar.gz"
+url_api = "https://api.github.com/repos/itchyny/gojq/releases/assets/698221710"
 
 [tools.gojq."platforms.linux-x64-baseline"]
-checksum = "sha256:bdfaf9acbe088973c549dadbf299c06dc9a84f1ca38c731ca04a08a901077f64"
-url = "https://github.com/itchyny/gojq/releases/download/v0.12.19/gojq_v0.12.19_linux_amd64.tar.gz"
+checksum = "sha256:92ce2328ce3099532d2b23abfa25a348ecdc48caa584d821feab563f7df4a856"
+checksum_source = "mise-versions"
+url = "https://github.com/itchyny/gojq/releases/download/v0.12.20/gojq_v0.12.20_linux_amd64.tar.gz"
+url_api = "https://api.github.com/repos/itchyny/gojq/releases/assets/698221710"
 
 [tools.gojq."platforms.linux-x64-musl"]
-checksum = "sha256:bdfaf9acbe088973c549dadbf299c06dc9a84f1ca38c731ca04a08a901077f64"
-url = "https://github.com/itchyny/gojq/releases/download/v0.12.19/gojq_v0.12.19_linux_amd64.tar.gz"
+checksum = "sha256:92ce2328ce3099532d2b23abfa25a348ecdc48caa584d821feab563f7df4a856"
+checksum_source = "mise-versions"
+url = "https://github.com/itchyny/gojq/releases/download/v0.12.20/gojq_v0.12.20_linux_amd64.tar.gz"
+url_api = "https://api.github.com/repos/itchyny/gojq/releases/assets/698221710"
 
 [tools.gojq."platforms.linux-x64-musl-baseline"]
-checksum = "sha256:bdfaf9acbe088973c549dadbf299c06dc9a84f1ca38c731ca04a08a901077f64"
-url = "https://github.com/itchyny/gojq/releases/download/v0.12.19/gojq_v0.12.19_linux_amd64.tar.gz"
+checksum = "sha256:92ce2328ce3099532d2b23abfa25a348ecdc48caa584d821feab563f7df4a856"
+checksum_source = "mise-versions"
+url = "https://github.com/itchyny/gojq/releases/download/v0.12.20/gojq_v0.12.20_linux_amd64.tar.gz"
+url_api = "https://api.github.com/repos/itchyny/gojq/releases/assets/698221710"
 
 [tools.gojq."platforms.macos-arm64"]
-checksum = "sha256:40208d4c385c5cebe3798f9d5a30ff1123537d66e171f2450a110347933482f7"
-url = "https://github.com/itchyny/gojq/releases/download/v0.12.19/gojq_v0.12.19_darwin_arm64.zip"
+checksum = "sha256:54be17aae49787bb92759bb8662b80f66b9655d42fe3b9e4c39a0c3587962afd"
+checksum_source = "mise-versions"
+url = "https://github.com/itchyny/gojq/releases/download/v0.12.20/gojq_v0.12.20_darwin_arm64.zip"
+url_api = "https://api.github.com/repos/itchyny/gojq/releases/assets/698221704"
 
 [tools.gojq."platforms.macos-x64"]
-checksum = "sha256:e8816cd2e1a276a03ed8f902475d2ed641043295f420aadc623929d717cd4314"
-url = "https://github.com/itchyny/gojq/releases/download/v0.12.19/gojq_v0.12.19_darwin_amd64.zip"
+checksum = "sha256:142a0c2f17802ca9a290ca8498adfcf5ec19d8c14b13303c9329511e70dae5bc"
+checksum_source = "mise-versions"
+url = "https://github.com/itchyny/gojq/releases/download/v0.12.20/gojq_v0.12.20_darwin_amd64.zip"
+url_api = "https://api.github.com/repos/itchyny/gojq/releases/assets/698221707"
 
 [tools.gojq."platforms.macos-x64-baseline"]
-checksum = "sha256:e8816cd2e1a276a03ed8f902475d2ed641043295f420aadc623929d717cd4314"
-url = "https://github.com/itchyny/gojq/releases/download/v0.12.19/gojq_v0.12.19_darwin_amd64.zip"
+checksum = "sha256:142a0c2f17802ca9a290ca8498adfcf5ec19d8c14b13303c9329511e70dae5bc"
+checksum_source = "mise-versions"
+url = "https://github.com/itchyny/gojq/releases/download/v0.12.20/gojq_v0.12.20_darwin_amd64.zip"
+url_api = "https://api.github.com/repos/itchyny/gojq/releases/assets/698221707"
 
 [tools.gojq."platforms.windows-x64"]
-checksum = "sha256:e7e874d54158c415aa22a8b5bafd8fe7b457b14d51c7033f7414155a907f52a0"
-url = "https://github.com/itchyny/gojq/releases/download/v0.12.19/gojq_v0.12.19_windows_amd64.zip"
+checksum = "sha256:fa418a4a97422d10e4f65f093ea4c35eab239f9c0957810d4f4fc1c4253fbf7c"
+checksum_source = "mise-versions"
+url = "https://github.com/itchyny/gojq/releases/download/v0.12.20/gojq_v0.12.20_windows_amd64.zip"
+url_api = "https://api.github.com/repos/itchyny/gojq/releases/assets/698221705"
 
 [tools.gojq."platforms.windows-x64-baseline"]
-checksum = "sha256:e7e874d54158c415aa22a8b5bafd8fe7b457b14d51c7033f7414155a907f52a0"
-url = "https://github.com/itchyny/gojq/releases/download/v0.12.19/gojq_v0.12.19_windows_amd64.zip"
+checksum = "sha256:fa418a4a97422d10e4f65f093ea4c35eab239f9c0957810d4f4fc1c4253fbf7c"
+checksum_source = "mise-versions"
+url = "https://github.com/itchyny/gojq/releases/download/v0.12.20/gojq_v0.12.20_windows_amd64.zip"
+url_api = "https://api.github.com/repos/itchyny/gojq/releases/assets/698221705"
 
 [[tools.jaq]]
 version = "3.1.2"
