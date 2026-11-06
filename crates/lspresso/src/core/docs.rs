@@ -57,30 +57,12 @@ mod tests {
     }
 
     #[test]
-    fn opening_twice_without_closing_is_rejected() {
+    fn next_version_continues_from_the_version_opened_with() {
         let mut tracker = DocumentTracker::default();
         let uri = uri("file:///a.json");
-        tracker.mark_open(uri.clone(), 1);
+        tracker.mark_open(uri.clone(), 7);
 
-        assert!(matches!(
-            tracker.require_not_open(&uri).unwrap_err().kind(),
-            ErrorKind::AlreadyOpen { .. }
-        ));
-    }
-
-    #[test]
-    fn changing_or_closing_an_unopened_document_is_rejected() {
-        let tracker = DocumentTracker::default();
-        let uri = uri("file:///a.json");
-
-        assert!(matches!(
-            tracker.require_open(&uri).unwrap_err().kind(),
-            ErrorKind::NotOpen { .. }
-        ));
-        assert!(matches!(
-            tracker.next_version(&uri).unwrap_err().kind(),
-            ErrorKind::NotOpen { .. }
-        ));
+        assert_eq!(tracker.next_version(&uri).unwrap(), 8);
     }
 
     #[test]

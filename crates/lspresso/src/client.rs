@@ -34,7 +34,7 @@ macro_rules! assert_client_to_server {
 #[derive(Debug)]
 pub struct Client {
     transport: Transport,
-    state: ClientState,
+    pub(crate) state: ClientState,
     pub(crate) docs: DocumentTracker,
     background_errors: Vec<Error>,
     request_timeout: Duration,

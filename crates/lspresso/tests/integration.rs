@@ -6,7 +6,7 @@ use std::{
 
 use gen_lsp_types::{
     ClientCapabilities, DidCloseTextDocumentParams, DidOpenTextDocumentParams, LanguageKind,
-    TextDocumentIdentifier, TextDocumentItem, TextDocumentSaveReason, TextDocumentSyncKind,
+    TextDocumentIdentifier, TextDocumentItem, TextDocumentSaveReason, TextDocumentSyncKind, Uri,
 };
 use lspresso::{Client, ErrorKind, Protocol};
 use serde_json::json;
@@ -46,6 +46,10 @@ fn initialized_with_capabilities(capabilities: &serde_json::Value) -> Client {
     let mut client = Client::spawn(command).expect("the scripted server should spawn");
     client.initialize(ClientCapabilities::default()).unwrap();
     client
+}
+
+fn a_json() -> Uri {
+    "file:///a.json".parse().unwrap()
 }
 
 fn notification<'a>(messages: &'a [serde_json::Value], method: &str) -> &'a serde_json::Value {
@@ -202,7 +206,7 @@ fn the_escape_hatch_rejects_calls_before_initialize() {
 #[test]
 fn a_document_opens_once_until_closed() {
     let mut client = spawn_scripted(1);
-    let uri = lspresso::parse_uri("file:///a.json");
+    let uri = a_json();
     client
         .did_open(uri.clone(), "{}", LanguageKind::JSON)
         .unwrap();
@@ -224,7 +228,7 @@ fn a_document_opens_once_until_closed() {
 #[test]
 fn raw_document_notifications_are_tracked_too() {
     let mut client = spawn_scripted(1);
-    let uri = lspresso::parse_uri("file:///a.json");
+    let uri = a_json();
     client
         .protocol_did_open(DidOpenTextDocumentParams {
             text_document: TextDocumentItem {
@@ -256,7 +260,7 @@ fn raw_document_notifications_are_tracked_too() {
 #[test]
 fn save_notifications_need_an_open_document() {
     let mut client = spawn_scripted(2);
-    let uri = lspresso::parse_uri("file:///a.json");
+    let uri = a_json();
 
     let errs = [
         client.did_save(&uri, None).unwrap_err(),
@@ -283,10 +287,25 @@ fn save_notifications_need_an_open_document() {
 #[test]
 fn document_sync_before_initialize_is_rejected() {
     let mut client = scripted(&json!([]));
-    let uri = lspresso::parse_uri("file:///a.json");
+    let uri = a_json();
 
-    let err = client.did_open(uri, "{}", LanguageKind::JSON).unwrap_err();
-    assert!(matches!(err.kind(), ErrorKind::NotInitialized), "{err:?}");
+    let errs = [
+        client
+            .did_open(uri.clone(), "{}", LanguageKind::JSON)
+            .unwrap_err(),
+        client.did_change_full(&uri, "[]").unwrap_err(),
+        client.did_close(&uri).unwrap_err(),
+        client.did_save(&uri, None).unwrap_err(),
+        client
+            .will_save(&uri, TextDocumentSaveReason::Manual)
+            .unwrap_err(),
+        client
+            .will_save_wait_until(&uri, TextDocumentSaveReason::Manual)
+            .unwrap_err(),
+    ];
+    for err in errs {
+        assert!(matches!(err.kind(), ErrorKind::NotInitialized), "{err:?}");
+    }
 }
 
 #[test]
@@ -306,11 +325,12 @@ fn document_sync_sends_versions_and_text() {
     );
     client.initialize(ClientCapabilities::default()).unwrap();
 
-    let uri = lspresso::parse_uri("file:///a.json");
+    let uri = a_json();
     client
         .did_open(uri.clone(), "{}", LanguageKind::JSON)
         .unwrap();
     client.did_change_full(&uri, "[]").unwrap();
+    client.did_change_full(&uri, "[1]").unwrap();
     client.did_close(&uri).unwrap();
     client.shutdown().unwrap();
     client.wait_for_exit(TIMEOUT).unwrap();
@@ -328,9 +348,15 @@ fn document_sync_sends_versions_and_text() {
     assert_eq!(opened["params"]["textDocument"]["text"], "{}");
     assert_eq!(opened["params"]["textDocument"]["languageId"], "json");
 
-    let changed = notification(&messages, "textDocument/didChange");
-    assert_eq!(changed["params"]["textDocument"]["version"], 2);
-    assert_eq!(changed["params"]["contentChanges"][0]["text"], "[]");
+    let changes: Vec<_> = messages
+        .iter()
+        .filter(|message| message["method"] == "textDocument/didChange")
+        .collect();
+    assert_eq!(changes.len(), 2);
+    assert_eq!(changes[0]["params"]["textDocument"]["version"], 2);
+    assert_eq!(changes[0]["params"]["contentChanges"][0]["text"], "[]");
+    assert_eq!(changes[1]["params"]["textDocument"]["version"], 3);
+    assert_eq!(changes[1]["params"]["contentChanges"][0]["text"], "[1]");
 
     let closed = notification(&messages, "textDocument/didClose");
     assert_eq!(closed["params"]["textDocument"]["uri"], "file:///a.json");
