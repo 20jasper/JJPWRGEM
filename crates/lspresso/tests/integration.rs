@@ -5,7 +5,7 @@ use std::{
 };
 
 use gen_lsp_types::ClientCapabilities;
-use lspresso::{Client, ErrorKind};
+use lspresso::{Client, ErrorKind, Protocol};
 use serde_json::json;
 
 const TIMEOUT: Duration = Duration::from_secs(5);
