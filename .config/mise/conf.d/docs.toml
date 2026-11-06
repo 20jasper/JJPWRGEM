@@ -8,14 +8,14 @@ run = [
 ]
 
 [tasks."bytes2chars-readme".tools]
-"cargo:cargo-rdme" = "2.2"
+"github:orium/cargo-rdme" = "2.2"
 
 [tasks."bytes2chars-readme-check"]
 description = "Verify the bytes2chars README matches its lib.rs docs"
 run = "cargo rdme --workspace-project bytes2chars --check"
 
 [tasks."bytes2chars-readme-check".tools]
-"cargo:cargo-rdme" = "2.2"
+"github:orium/cargo-rdme" = "2.2"
 
 [tasks.readmes]
 description = "Generate markdown files from templates"
@@ -40,8 +40,8 @@ outputs = [
 run = "cargo xtask generate-readmes"
 
 [tasks.readmes.tools]
-"cargo:cargo-rdme" = "2.2"
-"cargo:tracey" = "1.3.0"
+"github:orium/cargo-rdme" = "2.2"
+"github:bearcove/tracey" = "1.3.0"
 "npm:oxfmt" = "0.75.0"
 
 [tasks."readmes-check"]
@@ -50,6 +50,6 @@ depends_post = ["bytes2chars-readme-check"]
 run = "cargo xtask verify-readmes"
 
 [tasks."readmes-check".tools]
-"cargo:cargo-rdme" = "2.2"
-"cargo:tracey" = "1.3.0"
+"github:orium/cargo-rdme" = "2.2"
+"github:bearcove/tracey" = "1.3.0"
 "npm:oxfmt" = "0.75.0"
