@@ -17,7 +17,7 @@ run = [
 ]
 
 [tasks.format.tools]
-"npm:oxfmt" = "0.75.0"
+"aqua:oxc-project/oxc/oxfmt" = "0.75.0"
 
 [tasks.format-check]
 run = [
@@ -26,7 +26,7 @@ run = [
 ]
 
 [tasks.format-check.tools]
-"npm:oxfmt" = "0.75.0"
+"aqua:oxc-project/oxc/oxfmt" = "0.75.0"
 
 [tasks.lint]
 env = { RUSTFLAGS = "-Dwarnings" }
@@ -42,7 +42,7 @@ actionlint = "1.7.12"
 # actionlint checks workflow run blocks with it when on PATH
 shellcheck = "0.11.0"
 "npm:knip" = "6.44.1"
-"npm:oxlint" = "1.90.0"
+"aqua:oxc-project/oxc/oxlint" = "1.90.0"
 
 [tasks.vsce-pack-check]
 run = "pnpm --filter jjpwrgem-vscode run vsce:pack"
@@ -57,7 +57,7 @@ run = "knip --workspace npm-packages/jjpwrgem-vscode"
 run = "pnpm run lint"
 
 [tasks.oxlint.tools]
-"npm:oxlint" = "1.90.0"
+"aqua:oxc-project/oxc/oxlint" = "1.90.0"
 
 [tasks.diet]
 description = "Trim publishable crate dirs before release"

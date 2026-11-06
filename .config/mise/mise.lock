@@ -159,6 +159,100 @@ checksum = "sha256:bf6374b054f596d75b5bb203010394a340cdb44d4150cd03560564fbc35d8
 url = "https://github.com/mitsuhiko/insta/releases/download/1.49.0/cargo-insta-x86_64-pc-windows-msvc.zip"
 url_api = "https://api.github.com/repos/mitsuhiko/insta/releases/assets/606859993"
 
+[[tools."aqua:oxc-project/oxc/oxfmt"]]
+version = "0.75.0"
+backend = "aqua:oxc-project/oxc/oxfmt"
+specifiers = ["0.75.0"]
+
+[tools."aqua:oxc-project/oxc/oxfmt"."platforms.linux-arm64"]
+checksum = "sha256:d572f06bfa6367d6cb766a077c2e0c4fd70a13b323879829dda00274b3b2cee6"
+checksum_source = "mise-versions"
+url = "https://github.com/oxc-project/oxc/releases/download/oxfmt_v0.75.0/oxfmt-aarch64-unknown-linux-gnu.tar.gz"
+url_api = "https://api.github.com/repos/oxc-project/oxc/releases/assets/680610856"
+
+[tools."aqua:oxc-project/oxc/oxfmt"."platforms.linux-arm64-musl"]
+checksum = "sha256:b419aee50009e1fbde95766beb9760d4ebebfdb31ba2bd6aff5b875a1da63e90"
+checksum_source = "mise-versions"
+url = "https://github.com/oxc-project/oxc/releases/download/oxfmt_v0.75.0/oxfmt-aarch64-unknown-linux-musl.tar.gz"
+url_api = "https://api.github.com/repos/oxc-project/oxc/releases/assets/680610858"
+
+[tools."aqua:oxc-project/oxc/oxfmt"."platforms.linux-x64"]
+checksum = "sha256:6a111e38ab6edfe61b87deffbc95e461e3b7326d5d034bdee71ba92cdfd87641"
+checksum_source = "mise-versions"
+url = "https://github.com/oxc-project/oxc/releases/download/oxfmt_v0.75.0/oxfmt-x86_64-unknown-linux-gnu.tar.gz"
+url_api = "https://api.github.com/repos/oxc-project/oxc/releases/assets/680610917"
+
+[tools."aqua:oxc-project/oxc/oxfmt"."platforms.linux-x64-musl"]
+checksum = "sha256:e55000473da87f60974463456853799c3445a15a1608d39329e74ce43e3d1abc"
+checksum_source = "mise-versions"
+url = "https://github.com/oxc-project/oxc/releases/download/oxfmt_v0.75.0/oxfmt-x86_64-unknown-linux-musl.tar.gz"
+url_api = "https://api.github.com/repos/oxc-project/oxc/releases/assets/680610922"
+
+[tools."aqua:oxc-project/oxc/oxfmt"."platforms.macos-arm64"]
+checksum = "sha256:e7973efba410ee690afdf306c3a561ebd9e6072005d28fe50ef4a4d7d4649bb3"
+checksum_source = "mise-versions"
+url = "https://github.com/oxc-project/oxc/releases/download/oxfmt_v0.75.0/oxfmt-aarch64-apple-darwin.tar.gz"
+url_api = "https://api.github.com/repos/oxc-project/oxc/releases/assets/680610854"
+
+[tools."aqua:oxc-project/oxc/oxfmt"."platforms.macos-x64"]
+checksum = "sha256:e0242cd799da9e94d0676a003fe2912893a26f419b766614af1ca8b944aacfd9"
+checksum_source = "mise-versions"
+url = "https://github.com/oxc-project/oxc/releases/download/oxfmt_v0.75.0/oxfmt-x86_64-apple-darwin.tar.gz"
+url_api = "https://api.github.com/repos/oxc-project/oxc/releases/assets/680610913"
+
+[tools."aqua:oxc-project/oxc/oxfmt"."platforms.windows-x64"]
+checksum = "sha256:3b2e7c87397f82a78b6a0212e2fe94d24a4cacc4805994a8f69de44c33b8e8b3"
+checksum_source = "mise-versions"
+url = "https://github.com/oxc-project/oxc/releases/download/oxfmt_v0.75.0/oxfmt-x86_64-pc-windows-msvc.zip"
+url_api = "https://api.github.com/repos/oxc-project/oxc/releases/assets/680610912"
+
+[[tools."aqua:oxc-project/oxc/oxlint"]]
+version = "1.90.0"
+backend = "aqua:oxc-project/oxc/oxlint"
+specifiers = ["1.90.0"]
+
+[tools."aqua:oxc-project/oxc/oxlint"."platforms.linux-arm64"]
+checksum = "sha256:dda6ccf8e94d4cddb82672c9d230ab04cc52e13a31075e88e53bb97b31311468"
+checksum_source = "mise-versions"
+url = "https://github.com/oxc-project/oxc/releases/download/oxlint_v1.90.0/oxlint-aarch64-unknown-linux-gnu.tar.gz"
+url_api = "https://api.github.com/repos/oxc-project/oxc/releases/assets/680610988"
+
+[tools."aqua:oxc-project/oxc/oxlint"."platforms.linux-arm64-musl"]
+checksum = "sha256:b4af9b73c0cc87b2679dadcfa29abc7aeb4e8f45fca1469442e4d38bb5db1b49"
+checksum_source = "mise-versions"
+url = "https://github.com/oxc-project/oxc/releases/download/oxlint_v1.90.0/oxlint-aarch64-unknown-linux-musl.tar.gz"
+url_api = "https://api.github.com/repos/oxc-project/oxc/releases/assets/680610987"
+
+[tools."aqua:oxc-project/oxc/oxlint"."platforms.linux-x64"]
+checksum = "sha256:dd5b0c99ca7917fd6d3caabae260acc5bf7d65ae094541971862602fe288dca4"
+checksum_source = "mise-versions"
+url = "https://github.com/oxc-project/oxc/releases/download/oxlint_v1.90.0/oxlint-x86_64-unknown-linux-gnu.tar.gz"
+url_api = "https://api.github.com/repos/oxc-project/oxc/releases/assets/680611055"
+
+[tools."aqua:oxc-project/oxc/oxlint"."platforms.linux-x64-musl"]
+checksum = "sha256:70c5c44f0738b5d6a8716058e82aceff40524b476a6f533f9a94887352cb8f30"
+checksum_source = "mise-versions"
+url = "https://github.com/oxc-project/oxc/releases/download/oxlint_v1.90.0/oxlint-x86_64-unknown-linux-musl.tar.gz"
+url_api = "https://api.github.com/repos/oxc-project/oxc/releases/assets/680611085"
+
+[tools."aqua:oxc-project/oxc/oxlint"."platforms.macos-arm64"]
+checksum = "sha256:4654e2b8b450f25d3b3186b8e88ffbaf5c20b991a61243758a0944bc46726791"
+checksum_source = "mise-versions"
+url = "https://github.com/oxc-project/oxc/releases/download/oxlint_v1.90.0/oxlint-aarch64-apple-darwin.tar.gz"
+url_api = "https://api.github.com/repos/oxc-project/oxc/releases/assets/680610990"
+
+[tools."aqua:oxc-project/oxc/oxlint"."platforms.macos-x64"]
+checksum = "sha256:c5a633a676cc1efd5ae60b5afc0e36c77fa86a52f0409050b5ec2920f5c1646e"
+checksum_source = "mise-versions"
+url = "https://github.com/oxc-project/oxc/releases/download/oxlint_v1.90.0/oxlint-x86_64-apple-darwin.tar.gz"
+url_api = "https://api.github.com/repos/oxc-project/oxc/releases/assets/680611042"
+
+[tools."aqua:oxc-project/oxc/oxlint"."platforms.windows-x64"]
+checksum = "sha256:678145d7dd816cc77500878477938d4a73756d75edd6ebed821de51885c39bb2"
+checksum_source = "mise-versions"
+url = "https://github.com/oxc-project/oxc/releases/download/oxlint_v1.90.0/oxlint-x86_64-pc-windows-msvc.zip"
+url_api = "https://api.github.com/repos/oxc-project/oxc/releases/assets/680611045"
+
 [[tools."aqua:pnpm/pnpm"]]
 version = "12.17.0"
 backend = "aqua:pnpm/pnpm"
@@ -204,6 +298,53 @@ provenance = "github-attestations"
 checksum = "sha256:f160b053dac663c5931975d244920836ec26e6bc3516a42518db44c9d5c2ffc2"
 url = "https://github.com/pnpm/pnpm/releases/download/v12.17.0/pnpm-win32-x64.zip"
 url_api = "https://api.github.com/repos/pnpm/pnpm/releases/assets/692316721"
+provenance = "github-attestations"
+
+[[tools."aqua:taiki-e/cargo-llvm-cov"]]
+version = "0.9.1"
+backend = "aqua:taiki-e/cargo-llvm-cov"
+specifiers = ["0.9"]
+
+[tools."aqua:taiki-e/cargo-llvm-cov"."platforms.linux-arm64"]
+checksum = "sha256:abf5f13c1520f8756d2192bfaaeadb0208f5b7eaa8cadc15bf847befa42b7360"
+url = "https://github.com/taiki-e/cargo-llvm-cov/releases/download/v0.9.1/cargo-llvm-cov-aarch64-unknown-linux-gnu.tar.gz"
+url_api = "https://api.github.com/repos/taiki-e/cargo-llvm-cov/releases/assets/547403281"
+provenance = "github-attestations"
+
+[tools."aqua:taiki-e/cargo-llvm-cov"."platforms.linux-arm64-musl"]
+checksum = "sha256:49c0085628392a8d727c4464d91ec417c613c5015f5197cd16d5c05aa3fb5ad1"
+url = "https://github.com/taiki-e/cargo-llvm-cov/releases/download/v0.9.1/cargo-llvm-cov-aarch64-unknown-linux-musl.tar.gz"
+url_api = "https://api.github.com/repos/taiki-e/cargo-llvm-cov/releases/assets/547403283"
+provenance = "github-attestations"
+
+[tools."aqua:taiki-e/cargo-llvm-cov"."platforms.linux-x64"]
+checksum = "sha256:b3f68e625481fed9b16444174f3fa5ebcdbde4a1878803a35eabe2dcefcdc41a"
+url = "https://github.com/taiki-e/cargo-llvm-cov/releases/download/v0.9.1/cargo-llvm-cov-x86_64-unknown-linux-gnu.tar.gz"
+url_api = "https://api.github.com/repos/taiki-e/cargo-llvm-cov/releases/assets/547403171"
+provenance = "github-attestations"
+
+[tools."aqua:taiki-e/cargo-llvm-cov"."platforms.linux-x64-musl"]
+checksum = "sha256:3fca950394a3c49457657c158b1619cec8dfd2647ae5b48746734c0ab969a522"
+url = "https://github.com/taiki-e/cargo-llvm-cov/releases/download/v0.9.1/cargo-llvm-cov-x86_64-unknown-linux-musl.tar.gz"
+url_api = "https://api.github.com/repos/taiki-e/cargo-llvm-cov/releases/assets/547403186"
+provenance = "github-attestations"
+
+[tools."aqua:taiki-e/cargo-llvm-cov"."platforms.macos-arm64"]
+checksum = "sha256:7e821a6c90c0884f79f759f5d9be50799ade67bb82515186d922f26032ef43b8"
+url = "https://github.com/taiki-e/cargo-llvm-cov/releases/download/v0.9.1/cargo-llvm-cov-aarch64-apple-darwin.tar.gz"
+url_api = "https://api.github.com/repos/taiki-e/cargo-llvm-cov/releases/assets/547403359"
+provenance = "github-attestations"
+
+[tools."aqua:taiki-e/cargo-llvm-cov"."platforms.macos-x64"]
+checksum = "sha256:ddf949b82a63017441ea76aa068bdd7e2dde8055f47cd3ef736fdbbd633bc33e"
+url = "https://github.com/taiki-e/cargo-llvm-cov/releases/download/v0.9.1/cargo-llvm-cov-x86_64-apple-darwin.tar.gz"
+url_api = "https://api.github.com/repos/taiki-e/cargo-llvm-cov/releases/assets/547403156"
+provenance = "github-attestations"
+
+[tools."aqua:taiki-e/cargo-llvm-cov"."platforms.windows-x64"]
+checksum = "sha256:15eefd5b90fcdd4006b727c6e710d70a61aff509fcd7bb37f9c2a35c4f024948"
+url = "https://github.com/taiki-e/cargo-llvm-cov/releases/download/v0.9.1/cargo-llvm-cov-x86_64-pc-windows-msvc.tar.gz"
+url_api = "https://api.github.com/repos/taiki-e/cargo-llvm-cov/releases/assets/547404213"
 provenance = "github-attestations"
 
 [[tools."cargo:bacon"]]
@@ -491,53 +632,6 @@ checksum = "sha256:3f726a6b467782fec6dc877ace98f8e4bc94417775a9c40d9249b27ccd2e2
 url = "https://github.com/orium/cargo-rdme/releases/download/v2.2.3/cargo-rdme_v2.2.3_x86_64-pc-windows-gnu.zip"
 url_api = "https://api.github.com/repos/orium/cargo-rdme/releases/assets/577458015"
 
-[[tools."github:taiki-e/cargo-llvm-cov"]]
-version = "0.9.1"
-backend = "github:taiki-e/cargo-llvm-cov"
-specifiers = ["0.9"]
-
-[tools."github:taiki-e/cargo-llvm-cov"."platforms.linux-arm64"]
-checksum = "sha256:abf5f13c1520f8756d2192bfaaeadb0208f5b7eaa8cadc15bf847befa42b7360"
-url = "https://github.com/taiki-e/cargo-llvm-cov/releases/download/v0.9.1/cargo-llvm-cov-aarch64-unknown-linux-gnu.tar.gz"
-url_api = "https://api.github.com/repos/taiki-e/cargo-llvm-cov/releases/assets/547403281"
-provenance = "github-attestations"
-
-[tools."github:taiki-e/cargo-llvm-cov"."platforms.linux-arm64-musl"]
-checksum = "sha256:49c0085628392a8d727c4464d91ec417c613c5015f5197cd16d5c05aa3fb5ad1"
-url = "https://github.com/taiki-e/cargo-llvm-cov/releases/download/v0.9.1/cargo-llvm-cov-aarch64-unknown-linux-musl.tar.gz"
-url_api = "https://api.github.com/repos/taiki-e/cargo-llvm-cov/releases/assets/547403283"
-provenance = "github-attestations"
-
-[tools."github:taiki-e/cargo-llvm-cov"."platforms.linux-x64"]
-checksum = "sha256:b3f68e625481fed9b16444174f3fa5ebcdbde4a1878803a35eabe2dcefcdc41a"
-url = "https://github.com/taiki-e/cargo-llvm-cov/releases/download/v0.9.1/cargo-llvm-cov-x86_64-unknown-linux-gnu.tar.gz"
-url_api = "https://api.github.com/repos/taiki-e/cargo-llvm-cov/releases/assets/547403171"
-provenance = "github-attestations"
-
-[tools."github:taiki-e/cargo-llvm-cov"."platforms.linux-x64-musl"]
-checksum = "sha256:3fca950394a3c49457657c158b1619cec8dfd2647ae5b48746734c0ab969a522"
-url = "https://github.com/taiki-e/cargo-llvm-cov/releases/download/v0.9.1/cargo-llvm-cov-x86_64-unknown-linux-musl.tar.gz"
-url_api = "https://api.github.com/repos/taiki-e/cargo-llvm-cov/releases/assets/547403186"
-provenance = "github-attestations"
-
-[tools."github:taiki-e/cargo-llvm-cov"."platforms.macos-arm64"]
-checksum = "sha256:7e821a6c90c0884f79f759f5d9be50799ade67bb82515186d922f26032ef43b8"
-url = "https://github.com/taiki-e/cargo-llvm-cov/releases/download/v0.9.1/cargo-llvm-cov-aarch64-apple-darwin.tar.gz"
-url_api = "https://api.github.com/repos/taiki-e/cargo-llvm-cov/releases/assets/547403359"
-provenance = "github-attestations"
-
-[tools."github:taiki-e/cargo-llvm-cov"."platforms.macos-x64"]
-checksum = "sha256:ddf949b82a63017441ea76aa068bdd7e2dde8055f47cd3ef736fdbbd633bc33e"
-url = "https://github.com/taiki-e/cargo-llvm-cov/releases/download/v0.9.1/cargo-llvm-cov-x86_64-apple-darwin.tar.gz"
-url_api = "https://api.github.com/repos/taiki-e/cargo-llvm-cov/releases/assets/547403156"
-provenance = "github-attestations"
-
-[tools."github:taiki-e/cargo-llvm-cov"."platforms.windows-x64"]
-checksum = "sha256:656590cfa13bb7478595bbfdd3bc6bc075a4f7f3f0df5a439c1856cb03c5a4d2"
-url = "https://github.com/taiki-e/cargo-llvm-cov/releases/download/v0.9.1/cargo-llvm-cov-x86_64-pc-windows-msvc.zip"
-url_api = "https://api.github.com/repos/taiki-e/cargo-llvm-cov/releases/assets/547404215"
-provenance = "github-attestations"
-
 [[tools.jq]]
 version = "1.8.2"
 backend = "aqua:jqlang/jq"
@@ -590,18 +684,6 @@ version = "6.44.1"
 aube = { path = "locks/npm-knip/6.44.1", digest = "sha256:7db6554cb4159cfe10749c7ae1e170b7775f95414923960716ee9bbae2e239a3" }
 backend = "npm:knip"
 specifiers = ["6.44.1"]
-
-[[tools."npm:oxfmt"]]
-version = "0.75.0"
-aube = { path = "locks/npm-oxfmt/0.75.0", digest = "sha256:1d4f470a5dbba272218132db6ff9ba1911075d29dcd3253a0e02b4a5037a8a23" }
-backend = "npm:oxfmt"
-specifiers = ["0.75.0"]
-
-[[tools."npm:oxlint"]]
-version = "1.90.0"
-aube = { path = "locks/npm-oxlint/1.90.0", digest = "sha256:4163816792e9d3e4029fb300623b5cba67e87afddadca29181c64acf83188ffa" }
-backend = "npm:oxlint"
-specifiers = ["1.90.0"]
 
 [[tools."npm:prettier"]]
 version = "3.9.10"
