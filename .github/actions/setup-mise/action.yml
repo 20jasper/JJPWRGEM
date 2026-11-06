@@ -4,6 +4,11 @@ description: Install and cache mise tools
 runs:
   using: composite
   steps:
+    - name: Require the lockfile
+      shell: bash
+      # CI resolves tools only from mise.lock, so it never looks up releases
+      # (and hits rate limits) or rewrites the lockfile.
+      run: echo "MISE_LOCKED=1" >> "$GITHUB_ENV"
     - uses: taiki-e/install-action@5488ac5a951645ce95062214902ac4b6bc1a1037 # v2.87.32
       with:
         tool: cargo-binstall
