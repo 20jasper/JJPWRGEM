@@ -1,5 +1,7 @@
 pub mod capabilities;
+pub(crate) mod diagnostics;
 mod docs;
+pub(crate) mod inbox;
 mod lifecycle;
 mod server_requests;
 

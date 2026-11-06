@@ -1,7 +1,12 @@
 //! Answers each incoming request according to the next step of a script
 //! passed as JSON in `LSPRESSO_SCRIPT`, for tests of the client shell.
 //! Requests past the end of the script are ignored. Exits on `exit`, at
-//! end of input, or when a step says to.
+//! end of input, or when a step says to. Every document sync is answered
+//! with a stale publication, then one for the version just sent; emptying
+//! a document with one empty publication. `LSPRESSO_INITIALIZE_RESULT`
+//! overrides the `initialize` result, `LSPRESSO_NO_DIAGNOSTICS` suppresses
+//! publications, and `LSPRESSO_RECORD` names a file to append each received
+//! message to, as a line of JSON.
 
 use std::{
     io::{BufRead, BufReader, Stdout, Write, stdin, stdout},
@@ -10,10 +15,11 @@ use std::{
     time::Duration,
 };
 
-use lsp_server::{Message, Request, Response};
+use lsp_server::{Message, Notification, Request, Response};
 
 struct Step {
     action: Action,
+    result: Option<serde_json::Value>,
 }
 
 enum Action {
@@ -22,7 +28,8 @@ enum Action {
     Exit,
 }
 
-/// Each step is `{"action": a}`, where `a` is `"respond:<ms>"`, `"ignore"`,
+/// Each step is `{"action": a}` plus an optional `"result": v` to answer
+/// with instead of the default, where `a` is `"respond:<ms>"`, `"ignore"`,
 /// or `"exit"`.
 fn parse(step: &serde_json::Value) -> Step {
     let action = step["action"].as_str().unwrap();
@@ -37,6 +44,7 @@ fn parse(step: &serde_json::Value) -> Step {
                 _ => panic!("unknown action {action}"),
             },
         },
+        result: step.get("result").cloned(),
     }
 }
 
@@ -55,13 +63,60 @@ fn result_for(request: &Request) -> serde_json::Value {
     }
 }
 
+fn diagnostic(message: &str) -> serde_json::Value {
+    serde_json::json!({
+        "range": { "start": { "line": 0, "character": 0 }, "end": { "line": 0, "character": 0 } },
+        "message": message,
+    })
+}
+
+fn publish(out: &Mutex<Stdout>, params: &serde_json::Value) {
+    if std::env::var_os("LSPRESSO_NO_DIAGNOSTICS").is_some() {
+        return;
+    }
+    let document = &params["textDocument"];
+    let text = document["text"]
+        .as_str()
+        .or_else(|| params["contentChanges"][0]["text"].as_str());
+    let version = document["version"].as_i64().unwrap();
+    let publications = if text == Some("") {
+        vec![(version, vec![])]
+    } else {
+        vec![
+            (version - 1, vec![diagnostic("stale")]),
+            (version, vec![diagnostic(&format!("v{version}"))]),
+        ]
+    };
+    for (version, diagnostics) in publications {
+        write(
+            out,
+            &Message::Notification(Notification::new(
+                "textDocument/publishDiagnostics".to_owned(),
+                serde_json::json!({
+                    "uri": document["uri"],
+                    "version": version,
+                    "diagnostics": diagnostics,
+                }),
+            )),
+        );
+    }
+}
+
 struct Exit;
 
 /// Handles a non-request message, returning the request if it is one.
-fn dispatch(message: Message) -> Result<Option<Request>, Exit> {
+fn dispatch(out: &Mutex<Stdout>, message: Message) -> Result<Option<Request>, Exit> {
     match message {
         Message::Request(request) => return Ok(Some(request)),
         Message::Notification(n) if n.method == "exit" => return Err(Exit),
+        Message::Notification(n)
+            if matches!(
+                n.method.as_str(),
+                "textDocument/didOpen" | "textDocument/didChange"
+            ) =>
+        {
+            publish(out, &n.params);
+        }
         _ => {}
     }
     Ok(None)
@@ -88,7 +143,7 @@ fn main() {
     let mut reader = BufReader::new(stdin());
 
     loop {
-        let request = match read(&mut reader).and_then(dispatch) {
+        let request = match read(&mut reader).and_then(|message| dispatch(&out, message)) {
             Ok(Some(request)) => request,
             Ok(None) => continue,
             Err(Exit) => return,
@@ -98,7 +153,8 @@ fn main() {
         match step.action {
             Action::Respond { delay_ms } => {
                 let out = Arc::clone(&out);
-                let response = Response::new_ok(request.id.clone(), result_for(&request));
+                let result = step.result.unwrap_or_else(|| result_for(&request));
+                let response = Response::new_ok(request.id.clone(), result);
                 std::thread::spawn(move || {
                     sleep(Duration::from_millis(delay_ms));
                     write(&out, &Message::Response(response));

@@ -31,6 +31,10 @@ pub(crate) fn text_document_sync_kind(
     }
 }
 
+pub(crate) fn supports_pull_diagnostics(capabilities: &ServerCapabilities) -> bool {
+    capabilities.diagnostic_provider.is_some()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -62,5 +66,18 @@ mod tests {
         let options_without_change =
             declared(serde_json::json!({ "textDocumentSync": { "openClose": true } }));
         assert_eq!(text_document_sync_kind(&options_without_change), None);
+    }
+
+    #[test]
+    fn pull_diagnostics_are_detected_from_the_server_capabilities() {
+        assert!(!supports_pull_diagnostics(&declared(serde_json::json!({}))));
+
+        let pull = declared(serde_json::json!({
+            "diagnosticProvider": {
+                "interFileDependencies": false,
+                "workspaceDiagnostics": false
+            }
+        }));
+        assert!(supports_pull_diagnostics(&pull));
     }
 }

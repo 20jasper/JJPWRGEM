@@ -26,11 +26,15 @@ impl DocumentTracker {
         }
     }
 
-    pub(crate) fn next_version(&self, uri: &Uri) -> crate::Result<i32> {
+    pub(crate) fn current_version(&self, uri: &Uri) -> crate::Result<i32> {
         self.open_docs
             .get(uri)
-            .map(|version| version + 1)
+            .copied()
             .ok_or_else(|| ErrorKind::NotOpen { uri: uri.clone() }.into())
+    }
+
+    pub(crate) fn next_version(&self, uri: &Uri) -> crate::Result<i32> {
+        Ok(self.current_version(uri)? + 1)
     }
 
     pub(crate) fn mark_open(&mut self, uri: Uri, version: i32) {
