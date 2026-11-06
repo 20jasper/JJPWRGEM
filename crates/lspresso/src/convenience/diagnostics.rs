@@ -5,8 +5,7 @@ use lsp_server::Notification as LspNotification;
 
 use super::document;
 use crate::{
-    Client, Protocol, Result,
-    core::{self, inbox::Verdict},
+    Client, Protocol, Result, core,
     error::{ErrorKind, elapsed_ms},
 };
 
@@ -37,7 +36,10 @@ impl Client {
     pub fn next_diagnostics(&mut self, uri: &Uri, timeout: Duration) -> Result<Vec<Diagnostic>> {
         let start = Instant::now();
         let deadline = start + timeout;
-        let mut judge = self.diagnostics_judge(uri)?;
+        let version = self.open_document_version(uri)?;
+        let mut judge = |notification: &LspNotification| {
+            core::diagnostics::publication(uri, version, notification)
+        };
         if let Some(diagnostics) = self.take_notification(&mut judge) {
             return Ok(diagnostics);
         }
@@ -55,17 +57,6 @@ impl Client {
                 return Ok(diagnostics);
             }
         }
-    }
-
-    fn diagnostics_judge(
-        &self,
-        uri: &Uri,
-    ) -> Result<impl FnMut(&LspNotification) -> Verdict<Vec<Diagnostic>> + use<>> {
-        let version = self.open_document_version(uri)?;
-        let uri = uri.clone();
-        Ok(move |notification: &LspNotification| {
-            core::diagnostics::publication(&uri, version, notification)
-        })
     }
 
     fn pull_diagnostics(&mut self, uri: &Uri) -> Result<Vec<Diagnostic>> {
