@@ -31,8 +31,6 @@ serde_json = { workspace = true }
 sysinfo = "0.40"
 thiserror = "2.0.21"
 
-[dev-dependencies]
-
 [lints]
 workspace = true
 
