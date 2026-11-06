@@ -21,8 +21,8 @@ cargo rdme --workspace-project bytes2chars --force
 
 [tasks.bench.tools]
 "cargo:cargo-criterion" = "1.1.0"
-"cargo:cargo-rdme" = "2.2"
-"cargo:tracey" = "1.3.0"
+"github:orium/cargo-rdme" = "2.2"
+"github:bearcove/tracey" = "1.3.0"
 "npm:oxfmt" = "0.75.0"
 
 [tasks.bench-json]
@@ -36,8 +36,8 @@ run = [
 
 [tasks.bench-json.tools]
 "cargo:cargo-criterion" = "1.1.0"
-"cargo:cargo-rdme" = "2.2"
-"cargo:tracey" = "1.3.0"
+"github:orium/cargo-rdme" = "2.2"
+"github:bearcove/tracey" = "1.3.0"
 "npm:oxfmt" = "0.75.0"
 
 [tasks.bench-codspeed]
@@ -49,7 +49,7 @@ run = [
 ]
 
 [tasks.bench-codspeed.tools]
-"cargo:cargo-codspeed" = "6.0.0"
+"github:CodSpeedHQ/codspeed-rust" = "6.0.0"
 
 [tasks.bench-iai]
 description = "Run the iai (gungraun) bench"
@@ -57,7 +57,7 @@ dir = "{{config_root}}/benches"
 run = 'cargo bench --bench json_iai "$@"'
 
 [tasks.bench-iai.tools]
-"cargo:gungraun-runner" = "0.20.0"
+"github:gungraun/gungraun" = "0.20.0"
 
 [tasks.plot-bench]
 description = "Plot docker bench results"
@@ -116,8 +116,8 @@ cargo rdme --workspace-project bytes2chars --force
 
 [tasks.bench-docker.tools]
 "npm:oxfmt" = "0.75.0"
-"cargo:cargo-rdme" = "2.2"
-"cargo:tracey" = "1.3.0"
+"github:orium/cargo-rdme" = "2.2"
+"github:bearcove/tracey" = "1.3.0"
 
 [tasks.bench-lsp]
 hide = true
@@ -131,7 +131,7 @@ cargo xtask lsp-bench-report "${usage_fixture}"
 """
 
 [tasks.bench-lsp.tools]
-"cargo:lsp-bench" = "0.3.3"
+"github:asyncswap/lsp-bench" = "0.3.3"
 "npm:vscode-langservers-extracted" = "4.10.0"
 
 [tasks.bench-lsp-all]
@@ -145,8 +145,8 @@ cargo xtask generate-readmes
 """
 
 [tasks.bench-lsp-all.tools]
-"cargo:lsp-bench" = "0.3.3"
+"github:asyncswap/lsp-bench" = "0.3.3"
 "npm:vscode-langservers-extracted" = "4.10.0"
-"cargo:tracey" = "1.3.0"
+"github:bearcove/tracey" = "1.3.0"
 "npm:oxfmt" = "0.75.0"
-"cargo:cargo-rdme" = "2.2"
+"github:orium/cargo-rdme" = "2.2"
