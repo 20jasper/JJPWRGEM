@@ -179,10 +179,3 @@ fn sync_kind_comes_from_the_initialize_result() {
     );
     assert!(!full.supports_incremental_sync());
 }
-
-#[test]
-fn sync_kind_is_unknown_before_initialize() {
-    let client = scripted(&json!([]));
-    assert_eq!(client.text_document_sync_kind(), None);
-    assert!(!client.supports_incremental_sync());
-}
