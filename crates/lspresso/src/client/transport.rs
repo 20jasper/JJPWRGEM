@@ -32,7 +32,7 @@ pub(super) struct Transport {
     outgoing: Sender<Vec<u8>>,
     write_errors: Receiver<io::Error>,
     incoming: Receiver<Incoming>,
-    rss_monitor: System,
+    rss_monitor: Option<System>,
 }
 
 impl Transport {
@@ -90,7 +90,7 @@ impl Transport {
             outgoing,
             write_errors,
             incoming,
-            rss_monitor: System::new(),
+            rss_monitor: System::new().ok(),
         })
     }
 
@@ -130,11 +130,12 @@ impl Transport {
 
     pub(super) fn rss_bytes(&mut self) -> Option<u64> {
         let pid = Pid::from_u32(self.process.0.id());
-        self.rss_monitor.refresh_processes_specifics(
+        let monitor = self.rss_monitor.as_mut()?;
+        monitor.refresh_processes_specifics(
             ProcessesToUpdate::Some(&[pid]),
             true,
             ProcessRefreshKind::nothing().with_memory(),
         );
-        self.rss_monitor.process(pid).map(sysinfo::Process::memory)
+        monitor.process(pid).map(sysinfo::Process::memory)
     }
 }
