@@ -1,3 +1,4 @@
+mod capabilities;
 mod decorations;
 mod diagnostics;
 mod documents;

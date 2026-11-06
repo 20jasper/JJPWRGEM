@@ -31,6 +31,10 @@ pub(crate) fn text_document_sync_kind(
     }
 }
 
+pub(crate) fn supports_incremental_sync(capabilities: &ServerCapabilities) -> bool {
+    text_document_sync_kind(capabilities) == Some(TextDocumentSyncKind::Incremental)
+}
+
 pub(crate) fn supports_pull_diagnostics(capabilities: &ServerCapabilities) -> bool {
     capabilities.diagnostic_provider.is_some()
 }

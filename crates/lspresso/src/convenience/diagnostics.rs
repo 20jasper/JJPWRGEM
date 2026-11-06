@@ -19,10 +19,6 @@ impl Client {
         })
     }
 
-    pub fn supports_pull_diagnostics(&self) -> bool {
-        self.server_supports_pull_diagnostics()
-    }
-
     /// Pulls when supported or waits for pushed diagnostics.
     pub fn diagnostics(&mut self, uri: &Uri) -> Result<Vec<Diagnostic>> {
         self.diagnostics_for(uri)

@@ -1,7 +1,7 @@
 use gen_lsp_types::*;
 
 use super::document;
-use crate::{Client, Protocol, Result, core};
+use crate::{Client, Protocol, Result};
 
 impl Client {
     pub fn did_open(
@@ -37,15 +37,6 @@ impl Client {
         self.protocol_did_close(DidCloseTextDocumentParams {
             text_document: document(uri),
         })
-    }
-
-    pub fn text_document_sync_kind(&self) -> Option<TextDocumentSyncKind> {
-        self.server_capabilities()
-            .and_then(core::capabilities::text_document_sync_kind)
-    }
-
-    pub fn supports_incremental_sync(&self) -> bool {
-        self.text_document_sync_kind() == Some(TextDocumentSyncKind::Incremental)
     }
 
     /// Sends [`textDocument/willSave`](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#textDocument_willSave).

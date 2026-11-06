@@ -147,16 +147,10 @@ impl Client {
         self.docs.next_version(uri)
     }
 
-    pub(crate) fn server_supports_pull_diagnostics(&self) -> bool {
-        self.server_capabilities
-            .as_ref()
-            .is_some_and(core::capabilities::supports_pull_diagnostics)
-    }
-
     pub(crate) fn diagnostics_for(&mut self, uri: &Uri) -> Result<Vec<Diagnostic>> {
         self.state.require_initialized()?;
         self.docs.require_open(uri)?;
-        if self.server_supports_pull_diagnostics() {
+        if self.supports_pull_diagnostics() {
             self.pull_diagnostics(uri)
         } else {
             self.wait_for_pushed_diagnostics(uri, self.request_timeout)
