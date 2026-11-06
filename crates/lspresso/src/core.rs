@@ -1,8 +1,8 @@
 pub mod capabilities;
 pub(crate) mod diagnostics;
 mod documents;
-pub(crate) mod inbox;
 mod lifecycle;
+pub(crate) mod publications;
 mod server_requests;
 
 pub(crate) use documents::DocumentTracker;

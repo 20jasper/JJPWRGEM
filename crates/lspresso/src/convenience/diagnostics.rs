@@ -1,7 +1,6 @@
 use std::time::{Duration, Instant};
 
 use gen_lsp_types::*;
-use lsp_server::Notification as LspNotification;
 
 use super::document;
 use crate::{
@@ -14,13 +13,7 @@ impl Client {
     ///
     /// Use [`Protocol::protocol_diagnostic`] for full params.
     pub fn diagnostic(&mut self, uri: &Uri) -> Result<DocumentDiagnosticReport> {
-        self.protocol_diagnostic(DocumentDiagnosticParams {
-            text_document: document(uri),
-            identifier: None,
-            previous_result_id: None,
-            work_done_progress_params: WorkDoneProgressParams::default(),
-            partial_result_params: PartialResultParams::default(),
-        })
+        self.protocol_diagnostic(diagnostic_params(uri, None))
     }
 
     /// Pulls when supported or waits for pushed diagnostics.
@@ -37,13 +30,10 @@ impl Client {
         let start = Instant::now();
         let deadline = start + timeout;
         let version = self.open_document_version(uri)?;
-        let mut judge = |notification: &LspNotification| {
-            core::diagnostics::publication(uri, version, notification)
-        };
-        if let Some(diagnostics) = self.take_notification(&mut judge) {
-            return Ok(diagnostics);
-        }
         loop {
+            if let Some(diagnostics) = self.take_publication(uri, version) {
+                return Ok(diagnostics);
+            }
             let now = Instant::now();
             if now >= deadline {
                 return Err(ErrorKind::DiagnosticsTimeout {
@@ -53,22 +43,16 @@ impl Client {
                 .into());
             }
             self.receive_until(deadline, PublishDiagnosticsNotification::METHOD.as_str())?;
-            if let Some(diagnostics) = self.take_notification(&mut judge) {
-                return Ok(diagnostics);
-            }
         }
     }
 
     fn pull_diagnostics(&mut self, uri: &Uri) -> Result<Vec<Diagnostic>> {
         let mut attempt = 1;
         loop {
-            let result = self.protocol_diagnostic(DocumentDiagnosticParams {
-                text_document: TextDocumentIdentifier { uri: uri.clone() },
-                identifier: None,
-                previous_result_id: self.diagnostic_cache.previous_result_id(uri),
-                work_done_progress_params: WorkDoneProgressParams::default(),
-                partial_result_params: PartialResultParams::default(),
-            });
+            let result = self.protocol_diagnostic(diagnostic_params(
+                uri,
+                self.diagnostic_cache.previous_result_id(uri),
+            ));
             match result {
                 Ok(report) => return Ok(self.diagnostic_cache.apply(uri, report)),
                 Err(err)
@@ -90,5 +74,15 @@ impl Client {
         params: WorkspaceDiagnosticParams,
     ) -> Result<WorkspaceDiagnosticReport> {
         self.protocol_workspace_diagnostic(params)
+    }
+}
+
+fn diagnostic_params(uri: &Uri, previous_result_id: Option<String>) -> DocumentDiagnosticParams {
+    DocumentDiagnosticParams {
+        text_document: document(uri),
+        identifier: None,
+        previous_result_id,
+        work_done_progress_params: WorkDoneProgressParams::default(),
+        partial_result_params: PartialResultParams::default(),
     }
 }

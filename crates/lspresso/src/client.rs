@@ -7,15 +7,14 @@ use std::{
 
 use crossbeam_channel::RecvTimeoutError;
 use gen_lsp_types::*;
-use lsp_server::{Message, Notification as LspNotification, RequestId};
+use lsp_server::{Message, RequestId};
 
 use self::transport::{Incoming, Transport};
 use crate::{
     Error, Protocol, Result,
     core::{
-        self, ClientState, DocumentTracker, Effect,
-        diagnostics::DiagnosticCache,
-        inbox::{Inbox, Verdict},
+        self, ClientState, DocumentTracker, Effect, diagnostics::DiagnosticCache,
+        publications::Publications,
     },
     error::{ErrorKind, elapsed_ms},
 };
@@ -43,7 +42,7 @@ pub struct Client {
     background_errors: Vec<Error>,
     request_timeout: Duration,
     server_capabilities: Option<ServerCapabilities>,
-    inbox: Inbox,
+    publications: Publications,
     pub(crate) diagnostic_cache: DiagnosticCache,
 }
 
@@ -56,7 +55,7 @@ impl Client {
             background_errors: Vec::new(),
             request_timeout: DEFAULT_REQUEST_TIMEOUT,
             server_capabilities: None,
-            inbox: Inbox::default(),
+            publications: Publications::default(),
             diagnostic_cache: DiagnosticCache::default(),
         })
     }
@@ -156,15 +155,12 @@ impl Client {
         self.docs.current_version(uri)
     }
 
-    pub(crate) fn take_notification<T>(
-        &mut self,
-        judge: impl FnMut(&LspNotification) -> Verdict<T>,
-    ) -> Option<T> {
-        self.inbox.take_first(judge)
+    pub(crate) fn take_publication(&mut self, uri: &Uri, version: i32) -> Option<Vec<Diagnostic>> {
+        self.publications.take(uri, version)
     }
 
     /// Receives once, until `deadline` at the latest, so a caller can poll
-    /// the inbox between receives.
+    /// the publications between receives.
     pub(crate) fn receive_until(&mut self, deadline: Instant, method: &'static str) -> Result<()> {
         match self.recv_and_dispatch(Some(deadline), None) {
             RecvOutcome::Closed(closed) => Err(closed.into_error(method)),
@@ -236,7 +232,7 @@ impl Client {
         let outcome = match self.transport.recv_until(deadline) {
             Ok(Incoming::Message(message)) => {
                 if let Message::Notification(notification) = &message {
-                    self.inbox.push(notification.clone());
+                    self.publications.record(notification);
                 }
                 let effects = self.state.on_message(&message);
                 if let Some(result) = self.apply_effects(effects, waiting_for) {
@@ -321,8 +317,7 @@ impl Protocol for Client {
         let TextDocumentItem { uri, version, .. } = &params.text_document;
         self.docs.require_not_open(uri)?;
         let (uri, version) = (uri.clone(), *version);
-        self.inbox
-            .retain(|notification| !core::diagnostics::is_publication_for(notification, &uri));
+        self.publications.clear(&uri);
         self.notify::<DidOpenTextDocumentNotification>(params)?;
         self.docs.mark_open(uri, version);
         Ok(())
@@ -339,8 +334,7 @@ impl Protocol for Client {
         );
         self.notify::<DidChangeTextDocumentNotification>(params)?;
         self.docs.commit_change(&uri, version);
-        self.inbox
-            .retain(|notification| !core::diagnostics::is_publication_for(notification, &uri));
+        self.publications.clear(&uri);
         Ok(())
     }
 
@@ -351,8 +345,7 @@ impl Protocol for Client {
         self.notify::<DidCloseTextDocumentNotification>(params)?;
         self.docs.mark_closed(&uri);
         self.diagnostic_cache.forget(&uri);
-        self.inbox
-            .retain(|notification| !core::diagnostics::is_publication_for(notification, &uri));
+        self.publications.clear(&uri);
         Ok(())
     }
 

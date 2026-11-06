@@ -2,12 +2,9 @@ use std::collections::HashMap;
 
 use gen_lsp_types::{
     Diagnostic, DiagnosticServerCancellationData, DocumentDiagnosticReport,
-    FullDocumentDiagnosticReport, LspErrorCodes, Notification, PublishDiagnosticsNotification,
-    PublishDiagnosticsParams, Uri,
+    FullDocumentDiagnosticReport, LspErrorCodes, Uri,
 };
-use lsp_server::Notification as LspNotification;
 
-use super::inbox::Verdict;
 use crate::error::ErrorKind;
 
 pub(crate) const MAX_PULL_ATTEMPTS: usize = 3;
@@ -28,71 +25,38 @@ pub(crate) fn should_retry_pull(kind: &ErrorKind) -> bool {
 
 #[derive(Debug, Default)]
 pub(crate) struct DiagnosticCache {
-    result_ids: HashMap<Uri, String>,
-    items: HashMap<Uri, Vec<Diagnostic>>,
+    reports: HashMap<Uri, Cached>,
+}
+
+#[derive(Debug, Default)]
+struct Cached {
+    result_id: Option<String>,
+    items: Vec<Diagnostic>,
 }
 
 impl DiagnosticCache {
     pub(crate) fn previous_result_id(&self, uri: &Uri) -> Option<String> {
-        self.result_ids.get(uri).cloned()
+        self.reports.get(uri)?.result_id.clone()
     }
 
     pub(crate) fn apply(&mut self, uri: &Uri, report: DocumentDiagnosticReport) -> Vec<Diagnostic> {
-        let (result_id, items) = match report {
+        let cached = self.reports.entry(uri.clone()).or_default();
+        match report {
             DocumentDiagnosticReport::RelatedFullDocumentDiagnosticReport(full) => {
                 let FullDocumentDiagnosticReport { result_id, items } =
                     full.full_document_diagnostic_report;
-                self.items.insert(uri.clone(), items.clone());
-                (result_id, items)
+                *cached = Cached { result_id, items };
             }
-            DocumentDiagnosticReport::RelatedUnchangedDocumentDiagnosticReport(unchanged) => (
-                Some(unchanged.unchanged_document_diagnostic_report.result_id),
-                self.items.get(uri).cloned().unwrap_or_default(),
-            ),
-        };
-        match result_id {
-            Some(result_id) => {
-                self.result_ids.insert(uri.clone(), result_id);
-            }
-            None => {
-                self.result_ids.remove(uri);
+            DocumentDiagnosticReport::RelatedUnchangedDocumentDiagnosticReport(unchanged) => {
+                cached.result_id = Some(unchanged.unchanged_document_diagnostic_report.result_id);
             }
         }
-        items
+        cached.items.clone()
     }
 
     pub(crate) fn forget(&mut self, uri: &Uri) {
-        self.result_ids.remove(uri);
-        self.items.remove(uri);
+        self.reports.remove(uri);
     }
-}
-
-pub(crate) fn publication(
-    uri: &Uri,
-    current_version: i32,
-    notification: &LspNotification,
-) -> Verdict<Vec<Diagnostic>> {
-    if notification.method != PublishDiagnosticsNotification::METHOD.as_str() {
-        return Verdict::Keep;
-    }
-    let Ok(params) =
-        serde_json::from_value::<PublishDiagnosticsParams>(notification.params.clone())
-    else {
-        return Verdict::Keep;
-    };
-    if params.uri != *uri {
-        return Verdict::Keep;
-    }
-    match params.version {
-        Some(version) if version < current_version => Verdict::Discard,
-        _ => Verdict::Take(params.diagnostics),
-    }
-}
-
-pub(crate) fn is_publication_for(notification: &LspNotification, uri: &Uri) -> bool {
-    notification.method == PublishDiagnosticsNotification::METHOD.as_str()
-        && serde_json::from_value::<PublishDiagnosticsParams>(notification.params.clone())
-            .is_ok_and(|params| params.uri == *uri)
 }
 
 #[cfg(test)]
@@ -104,68 +68,6 @@ mod tests {
 
     fn uri(s: &str) -> Uri {
         s.parse().unwrap()
-    }
-
-    fn publish(uri: &Uri, version: Option<i32>, diagnostics: Vec<Diagnostic>) -> LspNotification {
-        LspNotification::new(
-            PublishDiagnosticsNotification::METHOD.as_str().to_owned(),
-            serde_json::to_value(PublishDiagnosticsParams {
-                uri: uri.clone(),
-                diagnostics,
-                version,
-            })
-            .unwrap(),
-        )
-    }
-
-    #[test]
-    fn takes_a_publication_for_the_same_uri() {
-        let uri = uri("file:///a.json");
-        assert_eq!(
-            publication(&uri, 1, &publish(&uri, None, vec![])),
-            Verdict::Take(vec![])
-        );
-    }
-
-    #[test]
-    fn discards_a_publication_for_an_older_version() {
-        let uri = uri("file:///a.json");
-        assert_eq!(
-            publication(&uri, 3, &publish(&uri, Some(2), vec![])),
-            Verdict::Discard
-        );
-        for version in [3, 4] {
-            assert_eq!(
-                publication(&uri, 3, &publish(&uri, Some(version), vec![])),
-                Verdict::Take(vec![])
-            );
-        }
-    }
-
-    #[test]
-    fn keeps_another_uri_s_and_other_methods_and_malformed_ones() {
-        let a = uri("file:///a.json");
-        let b = uri("file:///b.json");
-        let malformed = LspNotification::new(
-            PublishDiagnosticsNotification::METHOD.as_str().to_owned(),
-            serde_json::json!("not an object"),
-        );
-        let other = LspNotification::new("window/logMessage".to_owned(), serde_json::json!({}));
-        for notification in [publish(&b, Some(1), vec![]), malformed, other] {
-            assert_eq!(publication(&a, 3, &notification), Verdict::Keep);
-        }
-    }
-
-    #[test]
-    fn recognizes_publications_for_closing_a_document() {
-        let a = uri("file:///a.json");
-        let b = uri("file:///b.json");
-        assert!(is_publication_for(&publish(&a, Some(1), vec![]), &a));
-        assert!(!is_publication_for(&publish(&b, Some(1), vec![]), &a));
-        assert!(!is_publication_for(
-            &LspNotification::new("window/logMessage".to_owned(), serde_json::json!({})),
-            &a
-        ));
     }
 
     fn response_error(code: LspErrorCodes, data: Option<serde_json::Value>) -> ErrorKind {
