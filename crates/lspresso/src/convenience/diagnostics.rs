@@ -6,7 +6,6 @@ use lsp_server::Notification as LspNotification;
 use super::document;
 use crate::{
     Client, Protocol, Result,
-    client::RecvOutcome,
     core::{self, inbox::Verdict},
     error::{ErrorKind, elapsed_ms},
 };
@@ -27,12 +26,11 @@ impl Client {
 
     /// Pulls when supported or waits for pushed diagnostics.
     pub fn diagnostics(&mut self, uri: &Uri) -> Result<Vec<Diagnostic>> {
-        self.state.require_initialized()?;
-        self.docs.require_open(uri)?;
+        self.require_open_document(uri)?;
         if self.supports_pull_diagnostics() {
             self.pull_diagnostics(uri)
         } else {
-            self.next_diagnostics(uri, self.request_timeout)
+            self.next_diagnostics(uri, self.request_timeout())
         }
     }
 
@@ -40,7 +38,7 @@ impl Client {
         let start = Instant::now();
         let deadline = start + timeout;
         let mut judge = self.diagnostics_judge(uri)?;
-        if let Some(diagnostics) = self.inbox.take_first(&mut judge) {
+        if let Some(diagnostics) = self.take_notification(&mut judge) {
             return Ok(diagnostics);
         }
         loop {
@@ -52,13 +50,8 @@ impl Client {
                 }
                 .into());
             }
-            match self.recv_and_dispatch(Some(deadline), None) {
-                RecvOutcome::Closed(closed) => {
-                    return Err(closed.into_error(PublishDiagnosticsNotification::METHOD.as_str()));
-                }
-                RecvOutcome::Resolved(_) | RecvOutcome::Handled | RecvOutcome::TimedOut => {}
-            }
-            if let Some(diagnostics) = self.inbox.take_first(&mut judge) {
+            self.receive_until(deadline, PublishDiagnosticsNotification::METHOD.as_str())?;
+            if let Some(diagnostics) = self.take_notification(&mut judge) {
                 return Ok(diagnostics);
             }
         }
@@ -68,8 +61,7 @@ impl Client {
         &self,
         uri: &Uri,
     ) -> Result<impl FnMut(&LspNotification) -> Verdict<Vec<Diagnostic>> + use<>> {
-        self.state.require_initialized()?;
-        let version = self.docs.current_version(uri)?;
+        let version = self.open_document_version(uri)?;
         let uri = uri.clone();
         Ok(move |notification: &LspNotification| {
             core::diagnostics::publication(&uri, version, notification)

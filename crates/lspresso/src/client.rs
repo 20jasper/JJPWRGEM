@@ -7,13 +7,15 @@ use std::{
 
 use crossbeam_channel::RecvTimeoutError;
 use gen_lsp_types::*;
-use lsp_server::{Message, RequestId};
+use lsp_server::{Message, Notification as LspNotification, RequestId};
 
 use self::transport::{Incoming, Transport};
 use crate::{
     Error, Protocol, Result,
     core::{
-        self, ClientState, DocumentTracker, Effect, diagnostics::DiagnosticCache, inbox::Inbox,
+        self, ClientState, DocumentTracker, Effect,
+        diagnostics::DiagnosticCache,
+        inbox::{Inbox, Verdict},
     },
     error::{ErrorKind, elapsed_ms},
 };
@@ -36,12 +38,12 @@ macro_rules! assert_client_to_server {
 #[derive(Debug)]
 pub struct Client {
     transport: Transport,
-    pub(crate) state: ClientState,
-    pub(crate) docs: DocumentTracker,
+    state: ClientState,
+    docs: DocumentTracker,
     background_errors: Vec<Error>,
-    pub(crate) request_timeout: Duration,
+    request_timeout: Duration,
     server_capabilities: Option<ServerCapabilities>,
-    pub(crate) inbox: Inbox,
+    inbox: Inbox,
     pub(crate) diagnostic_cache: DiagnosticCache,
 }
 
@@ -140,6 +142,36 @@ impl Client {
         &self.background_errors
     }
 
+    pub(crate) const fn request_timeout(&self) -> Duration {
+        self.request_timeout
+    }
+
+    pub(crate) fn require_open_document(&self, uri: &Uri) -> Result<()> {
+        self.state.require_initialized()?;
+        self.docs.require_open(uri)
+    }
+
+    pub(crate) fn open_document_version(&self, uri: &Uri) -> Result<i32> {
+        self.state.require_initialized()?;
+        self.docs.current_version(uri)
+    }
+
+    pub(crate) fn take_notification<T>(
+        &mut self,
+        judge: impl FnMut(&LspNotification) -> Verdict<T>,
+    ) -> Option<T> {
+        self.inbox.take_first(judge)
+    }
+
+    /// Receives once, until `deadline` at the latest, so a caller can poll
+    /// the inbox between receives.
+    pub(crate) fn receive_until(&mut self, deadline: Instant, method: &'static str) -> Result<()> {
+        match self.recv_and_dispatch(Some(deadline), None) {
+            RecvOutcome::Closed(closed) => Err(closed.into_error(method)),
+            RecvOutcome::Resolved(_) | RecvOutcome::Handled | RecvOutcome::TimedOut => Ok(()),
+        }
+    }
+
     pub(crate) fn next_document_version(&self, uri: &Uri) -> Result<i32> {
         self.state.require_initialized()?;
         self.docs.next_version(uri)
@@ -195,7 +227,7 @@ impl Client {
     /// is sooner, dispatches what arrived through the core, then ticks it --
     /// after every receive, not just timeouts, since a server streaming
     /// notifications never lets a receive time out.
-    pub(crate) fn recv_and_dispatch(
+    fn recv_and_dispatch(
         &mut self,
         until: Option<Instant>,
         waiting_for: Option<&RequestId>,
@@ -346,7 +378,7 @@ impl Protocol for Client {
     }
 }
 
-pub(crate) enum RecvOutcome {
+enum RecvOutcome {
     Resolved(Result<serde_json::Value>),
     Closed(CloseReason),
     /// A notification, a server request (already answered), or a response
@@ -355,13 +387,13 @@ pub(crate) enum RecvOutcome {
     TimedOut,
 }
 
-pub(crate) enum CloseReason {
+enum CloseReason {
     Malformed(std::io::Error),
     Disconnected,
 }
 
 impl CloseReason {
-    pub(crate) fn into_error(self, method: &'static str) -> Error {
+    fn into_error(self, method: &'static str) -> Error {
         match self {
             Self::Malformed(source) => ErrorKind::MalformedMessage { method, source }.into(),
             Self::Disconnected => ErrorKind::Disconnected { method }.into(),
