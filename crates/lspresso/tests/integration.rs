@@ -75,6 +75,23 @@ fn scripted_without_diagnostics(steps: &serde_json::Value) -> Client {
     client
 }
 
+fn unversioned_scripted(steps: &serde_json::Value) -> Client {
+    let mut command = Command::new(env!("CARGO_BIN_EXE_lspresso_scripted_server"));
+    command.env("LSPRESSO_SCRIPT", steps.to_string());
+    command.env("LSPRESSO_UNVERSIONED", "1");
+    let mut client = Client::spawn(command).expect("the scripted server should spawn");
+    client.initialize(ClientCapabilities::default()).unwrap();
+    client
+}
+
+fn pull_error(code: i32, data: &serde_json::Value) -> serde_json::Value {
+    json!({ "action": "respond:0", "error": { "code": code, "message": "no", "data": data } })
+}
+
+const CONTENT_MODIFIED: i32 = -32801;
+const SERVER_CANCELLED: i32 = -32802;
+const REQUEST_FAILED: i32 = -32803;
+
 fn pull_capabilities() -> serde_json::Value {
     json!({
         "diagnosticProvider": {
@@ -614,6 +631,94 @@ fn pull_diagnostics_thread_the_previous_result_id() {
     assert_eq!(pulls.len(), 2);
     assert!(pulls[0]["params"].get("previousResultId").is_none());
     assert_eq!(pulls[1]["params"]["previousResultId"], "r1");
+}
+
+#[test]
+fn an_unversioned_publication_from_before_a_change_is_not_the_answer() {
+    let mut client =
+        unversioned_scripted(&json!([{ "action": "respond:0" }, { "action": "respond:0" }]));
+    let uri = a_json();
+    client
+        .did_open(uri.clone(), "{}", LanguageKind::JSON)
+        .unwrap();
+    client
+        .formatting(&uri, FormattingOptions::default())
+        .unwrap();
+
+    client.did_change_full(&uri, "{ }").unwrap();
+
+    assert_eq!(
+        first_message(&client.next_diagnostics(&uri, TIMEOUT).unwrap()),
+        "v2"
+    );
+}
+
+#[test]
+fn a_pull_is_sent_again_when_the_content_was_modified() {
+    let mut client = initialized_with_capabilities_and_script(
+        &pull_capabilities(),
+        &json!([
+            { "action": "respond:0" },
+            pull_error(CONTENT_MODIFIED, &json!(null)),
+            pull_error(
+                SERVER_CANCELLED,
+                &json!({ "retriggerRequest": true })
+            ),
+            { "action": "respond:0", "result": diagnostic_report("pulled", "r1") }
+        ]),
+    );
+    let uri = a_json();
+    client
+        .did_open(uri.clone(), "{}", LanguageKind::JSON)
+        .unwrap();
+
+    assert_eq!(first_message(&client.diagnostics(&uri).unwrap()), "pulled");
+}
+
+#[test]
+fn a_pull_gives_up_after_repeated_retriable_failures() {
+    let mut client = initialized_with_capabilities_and_script(
+        &pull_capabilities(),
+        &json!([
+            { "action": "respond:0" },
+            pull_error(CONTENT_MODIFIED, &json!(null)),
+            pull_error(CONTENT_MODIFIED, &json!(null)),
+            pull_error(CONTENT_MODIFIED, &json!(null)),
+            { "action": "respond:0", "result": diagnostic_report("too late", "r1") }
+        ]),
+    );
+    let uri = a_json();
+    client
+        .did_open(uri.clone(), "{}", LanguageKind::JSON)
+        .unwrap();
+
+    let err = client.diagnostics(&uri).unwrap_err();
+    assert!(
+        matches!(err.kind(), ErrorKind::Response { code, .. } if *code == CONTENT_MODIFIED),
+        "{err}"
+    );
+}
+
+#[test]
+fn a_pull_is_not_retried_after_other_failures() {
+    let mut client = initialized_with_capabilities_and_script(
+        &pull_capabilities(),
+        &json!([
+            { "action": "respond:0" },
+            pull_error(REQUEST_FAILED, &json!(null)),
+            { "action": "respond:0", "result": diagnostic_report("unused", "r1") }
+        ]),
+    );
+    let uri = a_json();
+    client
+        .did_open(uri.clone(), "{}", LanguageKind::JSON)
+        .unwrap();
+
+    let err = client.diagnostics(&uri).unwrap_err();
+    assert!(
+        matches!(err.kind(), ErrorKind::Response { code, .. } if *code == REQUEST_FAILED),
+        "{err}"
+    );
 }
 
 #[test]

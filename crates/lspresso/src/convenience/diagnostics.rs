@@ -19,22 +19,15 @@ impl Client {
         })
     }
 
-    /// Whether the server advertises pull diagnostics.
     pub fn supports_pull_diagnostics(&self) -> bool {
         self.server_supports_pull_diagnostics()
     }
 
-    /// Returns diagnostics for `uri`, pulling when the server supports it and
-    /// otherwise waiting for the next pushed publication.
-    ///
-    /// Waits at most the configured request timeout; see
-    /// [`Client::set_request_timeout`].
+    /// Pulls when supported or waits for pushed diagnostics.
     pub fn diagnostics(&mut self, uri: &Uri) -> Result<Vec<Diagnostic>> {
         self.diagnostics_for(uri)
     }
 
-    /// Waits for the next pushed diagnostics for `uri`, ignoring publications
-    /// for older document versions.
     pub fn next_diagnostics(&mut self, uri: &Uri, timeout: Duration) -> Result<Vec<Diagnostic>> {
         self.wait_for_pushed_diagnostics(uri, timeout)
     }

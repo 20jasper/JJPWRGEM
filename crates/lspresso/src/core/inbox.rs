@@ -1,6 +1,3 @@
-//! Notifications that arrived while the client was waiting for something
-//! else, kept in arrival order until a wait asks for them.
-
 use std::collections::VecDeque;
 
 use lsp_server::Notification;
@@ -9,14 +6,10 @@ use lsp_server::Notification;
 /// server (`window/logMessage` on every keystroke) mustn't grow it forever.
 const CAPACITY: usize = 4096;
 
-/// What a wait wants done with one notification.
 #[derive(Debug, PartialEq, Eq)]
 pub(crate) enum Verdict<T> {
-    /// The one being waited for.
     Take(T),
-    /// Someone else's; leave it for a later wait.
     Keep,
-    /// Superseded, e.g. diagnostics for an older version: drop it.
     Discard,
 }
 
@@ -33,8 +26,6 @@ impl Inbox {
         self.notifications.push_back(notification);
     }
 
-    /// Judges buffered notifications oldest first, removing each discarded
-    /// one, until one is taken.
     pub(crate) fn take_first<T>(
         &mut self,
         mut judge: impl FnMut(&Notification) -> Verdict<T>,
@@ -70,6 +61,8 @@ impl Inbox {
 
 #[cfg(test)]
 mod tests {
+    use proptest::prelude::*;
+
     use super::*;
 
     fn notification(method: &str) -> Notification {
@@ -125,5 +118,54 @@ mod tests {
         let mut inbox = inbox(&["a", "b", "a"]);
         inbox.retain(|notification| notification.method != "a");
         assert_eq!(inbox.methods(), ["b"]);
+    }
+
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    enum Kind {
+        Take,
+        Keep,
+        Discard,
+    }
+
+    proptest! {
+        #[test]
+        fn take_first_matches_a_scan(
+            kinds in prop::collection::vec(
+                prop_oneof![Just(Kind::Take), Just(Kind::Keep), Just(Kind::Discard)],
+                0..30,
+            ),
+        ) {
+            let methods: Vec<String> = kinds.iter().enumerate().map(|(i, _)| i.to_string()).collect();
+            let mut inbox = Inbox::default();
+            for method in &methods {
+                inbox.push(notification(method));
+            }
+
+            let taken = inbox.take_first(|notification| {
+                let index: usize = notification.method.parse().unwrap();
+                match kinds[index] {
+                    Kind::Take => Verdict::Take(index),
+                    Kind::Keep => Verdict::Keep,
+                    Kind::Discard => Verdict::Discard,
+                }
+            });
+
+            let first_take = kinds.iter().position(|kind| *kind == Kind::Take);
+            prop_assert_eq!(taken, first_take);
+            let judged_up_to = first_take.unwrap_or(kinds.len());
+            let expected: Vec<&str> = methods
+                .iter()
+                .enumerate()
+                .filter(|(i, _)| {
+                    if *i < judged_up_to {
+                        kinds[*i] != Kind::Discard
+                    } else {
+                        Some(*i) != first_take
+                    }
+                })
+                .map(|(_, method)| method.as_str())
+                .collect();
+            prop_assert_eq!(inbox.methods(), expected);
+        }
     }
 }

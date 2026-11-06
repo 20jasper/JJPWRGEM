@@ -1371,6 +1371,7 @@ dependencies = [
  "gen-lsp-types",
  "lsp-server",
  "pastey",
+ "proptest",
  "serde",
  "serde_json",
  "sysinfo",

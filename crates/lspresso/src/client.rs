@@ -1,7 +1,6 @@
 mod transport;
 
 use std::{
-    collections::HashMap,
     process::{Command, ExitStatus},
     time::{Duration, Instant},
 };
@@ -15,6 +14,7 @@ use crate::{
     Error, Protocol, Result,
     core::{
         self, ClientState, DocumentTracker, Effect,
+        diagnostics::DiagnosticCache,
         inbox::{Inbox, Verdict},
     },
     error::{ErrorKind, elapsed_ms},
@@ -44,8 +44,7 @@ pub struct Client {
     request_timeout: Duration,
     server_capabilities: Option<ServerCapabilities>,
     inbox: Inbox,
-    diagnostic_result_ids: HashMap<Uri, String>,
-    diagnostic_cache: HashMap<Uri, Vec<Diagnostic>>,
+    diagnostic_cache: DiagnosticCache,
 }
 
 impl Client {
@@ -58,8 +57,7 @@ impl Client {
             request_timeout: DEFAULT_REQUEST_TIMEOUT,
             server_capabilities: None,
             inbox: Inbox::default(),
-            diagnostic_result_ids: HashMap::new(),
-            diagnostic_cache: HashMap::new(),
+            diagnostic_cache: DiagnosticCache::default(),
         })
     }
 
@@ -210,43 +208,26 @@ impl Client {
     }
 
     fn pull_diagnostics(&mut self, uri: &Uri) -> Result<Vec<Diagnostic>> {
-        let previous_result_id = self.diagnostic_result_ids.get(uri).cloned();
-        let report = self.protocol_diagnostic(DocumentDiagnosticParams {
-            text_document: TextDocumentIdentifier { uri: uri.clone() },
-            identifier: None,
-            previous_result_id,
-            work_done_progress_params: WorkDoneProgressParams::default(),
-            partial_result_params: PartialResultParams::default(),
-        })?;
-        Ok(self.apply_diagnostic_report(uri, report))
-    }
-
-    fn apply_diagnostic_report(
-        &mut self,
-        uri: &Uri,
-        report: DocumentDiagnosticReport,
-    ) -> Vec<Diagnostic> {
-        let (result_id, items) = match report {
-            DocumentDiagnosticReport::RelatedFullDocumentDiagnosticReport(full) => {
-                let FullDocumentDiagnosticReport { result_id, items } =
-                    full.full_document_diagnostic_report;
-                self.diagnostic_cache.insert(uri.clone(), items.clone());
-                (result_id, items)
-            }
-            DocumentDiagnosticReport::RelatedUnchangedDocumentDiagnosticReport(unchanged) => (
-                Some(unchanged.unchanged_document_diagnostic_report.result_id),
-                self.diagnostic_cache.get(uri).cloned().unwrap_or_default(),
-            ),
-        };
-        match result_id {
-            Some(result_id) => {
-                self.diagnostic_result_ids.insert(uri.clone(), result_id);
-            }
-            None => {
-                self.diagnostic_result_ids.remove(uri);
+        let mut attempt = 1;
+        loop {
+            let result = self.protocol_diagnostic(DocumentDiagnosticParams {
+                text_document: TextDocumentIdentifier { uri: uri.clone() },
+                identifier: None,
+                previous_result_id: self.diagnostic_cache.previous_result_id(uri),
+                work_done_progress_params: WorkDoneProgressParams::default(),
+                partial_result_params: PartialResultParams::default(),
+            });
+            match result {
+                Ok(report) => return Ok(self.diagnostic_cache.apply(uri, report)),
+                Err(err)
+                    if attempt < core::diagnostics::MAX_PULL_ATTEMPTS
+                        && core::diagnostics::should_retry_pull(err.kind()) =>
+                {
+                    attempt += 1;
+                }
+                Err(err) => return Err(err),
             }
         }
-        items
     }
 
     fn send_request(&mut self, id: &RequestId, message: &Message) -> Result<()> {
@@ -411,6 +392,8 @@ impl Protocol for Client {
         );
         self.notify::<DidChangeTextDocumentNotification>(params)?;
         self.docs.commit_change(&uri, version);
+        self.inbox
+            .retain(|notification| !core::diagnostics::is_publication_for(notification, &uri));
         Ok(())
     }
 
@@ -420,8 +403,7 @@ impl Protocol for Client {
         self.docs.require_open(&uri)?;
         self.notify::<DidCloseTextDocumentNotification>(params)?;
         self.docs.mark_closed(&uri);
-        self.diagnostic_result_ids.remove(&uri);
-        self.diagnostic_cache.remove(&uri);
+        self.diagnostic_cache.forget(&uri);
         self.inbox
             .retain(|notification| !core::diagnostics::is_publication_for(notification, &uri));
         Ok(())
