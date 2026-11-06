@@ -13,17 +13,14 @@ impl Client {
         text: impl Into<String>,
         language: LanguageKind,
     ) -> Result<()> {
-        self.docs.require_not_open(&uri)?;
         self.protocol_did_open(DidOpenTextDocumentParams {
             text_document: TextDocumentItem {
-                uri: uri.clone(),
+                uri,
                 language_id: language,
                 version: 1,
                 text: text.into(),
             },
-        })?;
-        self.docs.mark_open(uri);
-        Ok(())
+        })
     }
 
     /// Sends [`textDocument/didChange`](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#textDocument_didChange) with the whole document.
@@ -39,21 +36,16 @@ impl Client {
             content_changes: vec![TextDocumentContentChangeEvent::from(
                 TextDocumentContentChangeWholeDocument { text: text.into() },
             )],
-        })?;
-        self.docs.commit_change(uri, version);
-        Ok(())
+        })
     }
 
     /// Sends [`textDocument/didClose`](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#textDocument_didClose).
     ///
     /// Use [`Protocol::protocol_did_close`] for full params.
     pub fn did_close(&mut self, uri: &Uri) -> Result<()> {
-        self.docs.require_open(uri)?;
         self.protocol_did_close(DidCloseTextDocumentParams {
             text_document: document(uri),
-        })?;
-        self.docs.mark_closed(uri);
-        Ok(())
+        })
     }
 
     /// The sync kind the server declared, if any.

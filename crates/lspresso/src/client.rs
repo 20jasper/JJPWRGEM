@@ -269,6 +269,39 @@ impl Protocol for Client {
         self.state.require_initialized()?;
         self.send_notification::<N>(params)
     }
+
+    fn protocol_did_open(&mut self, params: DidOpenTextDocumentParams) -> Result<()> {
+        self.state.require_initialized()?;
+        let TextDocumentItem { uri, version, .. } = &params.text_document;
+        self.docs.require_not_open(uri)?;
+        let (uri, version) = (uri.clone(), *version);
+        self.notify::<DidOpenTextDocumentNotification>(params)?;
+        self.docs.mark_open(uri, version);
+        Ok(())
+    }
+
+    fn protocol_did_change(&mut self, params: DidChangeTextDocumentParams) -> Result<()> {
+        self.state.require_initialized()?;
+        let identifier = &params.text_document;
+        self.docs
+            .require_open(&identifier.text_document_identifier.uri)?;
+        let (uri, version) = (
+            identifier.text_document_identifier.uri.clone(),
+            identifier.version,
+        );
+        self.notify::<DidChangeTextDocumentNotification>(params)?;
+        self.docs.commit_change(&uri, version);
+        Ok(())
+    }
+
+    fn protocol_did_close(&mut self, params: DidCloseTextDocumentParams) -> Result<()> {
+        self.state.require_initialized()?;
+        let uri = params.text_document.uri.clone();
+        self.docs.require_open(&uri)?;
+        self.notify::<DidCloseTextDocumentNotification>(params)?;
+        self.docs.mark_closed(&uri);
+        Ok(())
+    }
 }
 
 enum RecvOutcome {

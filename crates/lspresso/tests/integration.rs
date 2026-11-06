@@ -4,7 +4,10 @@ use std::{
     time::Duration,
 };
 
-use gen_lsp_types::{ClientCapabilities, LanguageKind, TextDocumentSyncKind};
+use gen_lsp_types::{
+    ClientCapabilities, DidCloseTextDocumentParams, DidOpenTextDocumentParams, LanguageKind,
+    TextDocumentIdentifier, TextDocumentItem, TextDocumentSyncKind,
+};
 use lspresso::{Client, ErrorKind, Protocol};
 use serde_json::json;
 
@@ -216,6 +219,38 @@ fn a_document_opens_once_until_closed() {
     let err = client.did_change_full(&uri, "[]").unwrap_err();
     assert!(matches!(err.kind(), ErrorKind::NotOpen { .. }), "{err:?}");
     client.did_open(uri, "{}", LanguageKind::JSON).unwrap();
+}
+
+#[test]
+fn raw_document_notifications_are_tracked_too() {
+    let mut client = spawn_scripted(1);
+    let uri = lspresso::parse_uri("file:///a.json");
+    client
+        .protocol_did_open(DidOpenTextDocumentParams {
+            text_document: TextDocumentItem {
+                uri: uri.clone(),
+                language_id: LanguageKind::JSON,
+                version: 7,
+                text: "{}".to_owned(),
+            },
+        })
+        .unwrap();
+
+    let err = client
+        .did_open(uri.clone(), "{}", LanguageKind::JSON)
+        .unwrap_err();
+    assert!(
+        matches!(err.kind(), ErrorKind::AlreadyOpen { .. }),
+        "{err:?}"
+    );
+    client.did_change_full(&uri, "[]").unwrap();
+    client
+        .protocol_did_close(DidCloseTextDocumentParams {
+            text_document: TextDocumentIdentifier { uri: uri.clone() },
+        })
+        .unwrap();
+    let err = client.did_change_full(&uri, "[]").unwrap_err();
+    assert!(matches!(err.kind(), ErrorKind::NotOpen { .. }), "{err:?}");
 }
 
 #[test]
