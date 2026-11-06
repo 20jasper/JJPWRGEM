@@ -1,12 +1,20 @@
 use std::collections::HashMap;
 
-use gen_lsp_types::Uri;
+use gen_lsp_types::{Diagnostic, DocumentDiagnosticReport, Uri};
 
+use super::diagnostics::PulledReport;
 use crate::error::ErrorKind;
 
 #[derive(Debug, Default)]
 pub(crate) struct DocumentTracker {
-    open_docs: HashMap<Uri, i32>,
+    open_docs: HashMap<Uri, OpenDocument>,
+}
+
+/// Everything remembered about an open document; closing drops it all.
+#[derive(Debug)]
+struct OpenDocument {
+    version: i32,
+    pulled: PulledReport,
 }
 
 impl DocumentTracker {
@@ -27,10 +35,29 @@ impl DocumentTracker {
     }
 
     pub(crate) fn current_version(&self, uri: &Uri) -> crate::Result<i32> {
+        Ok(self.open(uri)?.version)
+    }
+
+    fn open(&self, uri: &Uri) -> crate::Result<&OpenDocument> {
         self.open_docs
             .get(uri)
-            .copied()
             .ok_or_else(|| ErrorKind::NotOpen { uri: uri.clone() }.into())
+    }
+
+    pub(crate) fn previous_result_id(&self, uri: &Uri) -> crate::Result<Option<String>> {
+        Ok(self.open(uri)?.pulled.result_id())
+    }
+
+    pub(crate) fn apply_pulled_report(
+        &mut self,
+        uri: &Uri,
+        report: DocumentDiagnosticReport,
+    ) -> crate::Result<Vec<Diagnostic>> {
+        let document = self
+            .open_docs
+            .get_mut(uri)
+            .ok_or_else(|| ErrorKind::NotOpen { uri: uri.clone() })?;
+        Ok(document.pulled.apply(report))
     }
 
     pub(crate) fn next_version(&self, uri: &Uri) -> crate::Result<i32> {
@@ -38,12 +65,13 @@ impl DocumentTracker {
     }
 
     pub(crate) fn mark_open(&mut self, uri: Uri, version: i32) {
-        self.open_docs.insert(uri, version);
+        let pulled = PulledReport::default();
+        self.open_docs.insert(uri, OpenDocument { version, pulled });
     }
 
     pub(crate) fn commit_change(&mut self, uri: &Uri, version: i32) {
-        if let Some(current) = self.open_docs.get_mut(uri) {
-            *current = version;
+        if let Some(document) = self.open_docs.get_mut(uri) {
+            document.version = version;
         }
     }
 

@@ -1,8 +1,6 @@
-use std::collections::HashMap;
-
 use gen_lsp_types::{
     Diagnostic, DiagnosticServerCancellationData, DocumentDiagnosticReport,
-    FullDocumentDiagnosticReport, LspErrorCodes, Uri,
+    FullDocumentDiagnosticReport, LspErrorCodes,
 };
 
 use crate::error::ErrorKind;
@@ -23,39 +21,31 @@ pub(crate) fn should_retry_pull(kind: &ErrorKind) -> bool {
     }
 }
 
+/// The last pull report for one document: its `resultId` for the next
+/// request, and its items for an `unchanged` answer to stand in for.
 #[derive(Debug, Default)]
-pub(crate) struct DiagnosticCache {
-    reports: HashMap<Uri, Cached>,
-}
-
-#[derive(Debug, Default)]
-struct Cached {
+pub(crate) struct PulledReport {
     result_id: Option<String>,
     items: Vec<Diagnostic>,
 }
 
-impl DiagnosticCache {
-    pub(crate) fn previous_result_id(&self, uri: &Uri) -> Option<String> {
-        self.reports.get(uri)?.result_id.clone()
+impl PulledReport {
+    pub(crate) fn result_id(&self) -> Option<String> {
+        self.result_id.clone()
     }
 
-    pub(crate) fn apply(&mut self, uri: &Uri, report: DocumentDiagnosticReport) -> Vec<Diagnostic> {
-        let cached = self.reports.entry(uri.clone()).or_default();
+    pub(crate) fn apply(&mut self, report: DocumentDiagnosticReport) -> Vec<Diagnostic> {
         match report {
             DocumentDiagnosticReport::RelatedFullDocumentDiagnosticReport(full) => {
                 let FullDocumentDiagnosticReport { result_id, items } =
                     full.full_document_diagnostic_report;
-                *cached = Cached { result_id, items };
+                *self = Self { result_id, items };
             }
             DocumentDiagnosticReport::RelatedUnchangedDocumentDiagnosticReport(unchanged) => {
-                cached.result_id = Some(unchanged.unchanged_document_diagnostic_report.result_id);
+                self.result_id = Some(unchanged.unchanged_document_diagnostic_report.result_id);
             }
         }
-        cached.items.clone()
-    }
-
-    pub(crate) fn forget(&mut self, uri: &Uri) {
-        self.reports.remove(uri);
+        self.items.clone()
     }
 }
 
@@ -64,10 +54,6 @@ mod tests {
     use serde_json::json;
 
     use super::*;
-
-    fn uri(s: &str) -> Uri {
-        s.parse().unwrap()
-    }
 
     fn response_error(code: LspErrorCodes, data: Option<serde_json::Value>) -> ErrorKind {
         ErrorKind::Response {
@@ -143,24 +129,22 @@ mod tests {
 
     #[test]
     fn an_unchanged_report_returns_what_the_last_full_one_did() {
-        let a = uri("file:///a.json");
-        let mut cache = DiagnosticCache::default();
-        assert_eq!(cache.previous_result_id(&a), None);
+        let mut report = PulledReport::default();
+        assert_eq!(report.result_id(), None);
 
-        cache.apply(&a, full(Some("r1"), "boom"));
-        assert_eq!(cache.previous_result_id(&a).as_deref(), Some("r1"));
+        report.apply(full(Some("r1"), "boom"));
+        assert_eq!(report.result_id().as_deref(), Some("r1"));
 
-        let items = cache.apply(&a, unchanged("r2"));
+        let items = report.apply(unchanged("r2"));
         assert_eq!(messages(&items), vec!["boom".to_owned()]);
-        assert_eq!(cache.previous_result_id(&a).as_deref(), Some("r2"));
+        assert_eq!(report.result_id().as_deref(), Some("r2"));
     }
 
     #[test]
     fn a_full_report_without_a_result_id_forgets_the_previous_one() {
-        let a = uri("file:///a.json");
-        let mut cache = DiagnosticCache::default();
-        cache.apply(&a, full(Some("r1"), "boom"));
-        cache.apply(&a, full(None, "again"));
-        assert_eq!(cache.previous_result_id(&a), None);
+        let mut report = PulledReport::default();
+        report.apply(full(Some("r1"), "boom"));
+        report.apply(full(None, "again"));
+        assert_eq!(report.result_id(), None);
     }
 }

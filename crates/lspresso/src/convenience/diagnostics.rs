@@ -49,12 +49,10 @@ impl Client {
     fn pull_diagnostics(&mut self, uri: &Uri) -> Result<Vec<Diagnostic>> {
         let mut attempt = 1;
         loop {
-            let result = self.protocol_diagnostic(diagnostic_params(
-                uri,
-                self.diagnostic_cache.previous_result_id(uri),
-            ));
+            let previous_result_id = self.previous_result_id(uri)?;
+            let result = self.protocol_diagnostic(diagnostic_params(uri, previous_result_id));
             match result {
-                Ok(report) => return Ok(self.diagnostic_cache.apply(uri, report)),
+                Ok(report) => return self.apply_pulled_report(uri, report),
                 Err(err)
                     if attempt < core::diagnostics::MAX_PULL_ATTEMPTS
                         && core::diagnostics::should_retry_pull(err.kind()) =>

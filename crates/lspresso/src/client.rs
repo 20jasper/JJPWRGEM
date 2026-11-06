@@ -12,10 +12,7 @@ use lsp_server::{Message, RequestId};
 use self::transport::{Incoming, Transport};
 use crate::{
     Error, Protocol, Result,
-    core::{
-        self, ClientState, DocumentTracker, Effect, diagnostics::DiagnosticCache,
-        publications::Publications,
-    },
+    core::{self, ClientState, DocumentTracker, Effect, publications::Publications},
     error::{ErrorKind, elapsed_ms},
 };
 
@@ -43,7 +40,6 @@ pub struct Client {
     request_timeout: Duration,
     server_capabilities: Option<ServerCapabilities>,
     publications: Publications,
-    pub(crate) diagnostic_cache: DiagnosticCache,
 }
 
 impl Client {
@@ -56,7 +52,6 @@ impl Client {
             request_timeout: DEFAULT_REQUEST_TIMEOUT,
             server_capabilities: None,
             publications: Publications::default(),
-            diagnostic_cache: DiagnosticCache::default(),
         })
     }
 
@@ -153,6 +148,18 @@ impl Client {
     pub(crate) fn open_document_version(&self, uri: &Uri) -> Result<i32> {
         self.state.require_initialized()?;
         self.docs.current_version(uri)
+    }
+
+    pub(crate) fn previous_result_id(&self, uri: &Uri) -> Result<Option<String>> {
+        self.docs.previous_result_id(uri)
+    }
+
+    pub(crate) fn apply_pulled_report(
+        &mut self,
+        uri: &Uri,
+        report: DocumentDiagnosticReport,
+    ) -> Result<Vec<Diagnostic>> {
+        self.docs.apply_pulled_report(uri, report)
     }
 
     pub(crate) fn take_publication(&mut self, uri: &Uri, version: i32) -> Option<Vec<Diagnostic>> {
@@ -344,7 +351,6 @@ impl Protocol for Client {
         self.docs.require_open(&uri)?;
         self.notify::<DidCloseTextDocumentNotification>(params)?;
         self.docs.mark_closed(&uri);
-        self.diagnostic_cache.forget(&uri);
         self.publications.clear(&uri);
         Ok(())
     }
