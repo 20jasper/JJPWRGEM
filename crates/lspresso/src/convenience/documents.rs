@@ -21,8 +21,7 @@ impl Client {
     }
 
     pub fn did_change_full(&mut self, uri: &Uri, text: impl Into<String>) -> Result<()> {
-        self.state.require_initialized()?;
-        let version = self.docs.next_version(uri)?;
+        let version = self.next_document_version(uri)?;
         self.protocol_did_change(DidChangeTextDocumentParams {
             text_document: VersionedTextDocumentIdentifier {
                 version,

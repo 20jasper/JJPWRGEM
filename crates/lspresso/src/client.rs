@@ -34,8 +34,8 @@ macro_rules! assert_client_to_server {
 #[derive(Debug)]
 pub struct Client {
     transport: Transport,
-    pub(crate) state: ClientState,
-    pub(crate) docs: DocumentTracker,
+    state: ClientState,
+    docs: DocumentTracker,
     background_errors: Vec<Error>,
     request_timeout: Duration,
     server_capabilities: Option<ServerCapabilities>,
@@ -132,6 +132,11 @@ impl Client {
 
     pub fn background_errors(&self) -> &[Error] {
         &self.background_errors
+    }
+
+    pub(crate) fn next_document_version(&self, uri: &Uri) -> Result<i32> {
+        self.state.require_initialized()?;
+        self.docs.next_version(uri)
     }
 
     fn send_request(&mut self, id: &RequestId, message: &Message) -> Result<()> {
