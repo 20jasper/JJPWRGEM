@@ -6,7 +6,8 @@ edition.workspace = true
 authors.workspace = true
 license.workspace = true
 repository.workspace = true
-include = ["src/**/*"]
+readme = "README.md"
+include = ["src/**/*", "README.md", "lspresso.webp"]
 rust-version = "1.95"
 
 [lib]
