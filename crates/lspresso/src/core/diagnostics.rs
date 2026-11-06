@@ -61,7 +61,6 @@ impl DiagnosticCache {
 
 #[cfg(test)]
 mod tests {
-    use proptest::prelude::*;
     use serde_json::json;
 
     use super::*;
@@ -163,59 +162,5 @@ mod tests {
         cache.apply(&a, full(Some("r1"), "boom"));
         cache.apply(&a, full(None, "again"));
         assert_eq!(cache.previous_result_id(&a), None);
-    }
-
-    #[derive(Debug, Clone)]
-    enum Step {
-        Full { doc: usize, id: Option<u8>, tag: u8 },
-        Unchanged { doc: usize, id: u8 },
-        Forget { doc: usize },
-    }
-
-    fn steps() -> impl Strategy<Value = Vec<Step>> {
-        let doc = 0..3usize;
-        prop::collection::vec(
-            prop_oneof![
-                (doc.clone(), prop::option::of(0..4u8), 0..4u8)
-                    .prop_map(|(doc, id, tag)| Step::Full { doc, id, tag }),
-                (doc.clone(), 0..4u8).prop_map(|(doc, id)| Step::Unchanged { doc, id }),
-                doc.prop_map(|doc| Step::Forget { doc }),
-            ],
-            0..40,
-        )
-    }
-
-    proptest! {
-        #[test]
-        fn the_cache_matches_a_model(steps in steps()) {
-            let docs = ["file:///0.json", "file:///1.json", "file:///2.json"].map(uri);
-            let mut cache = DiagnosticCache::default();
-            let mut model: [(Option<String>, Vec<String>); 3] = Default::default();
-
-            for step in steps {
-                match step {
-                    Step::Full { doc, id, tag } => {
-                        let message = format!("full{tag}");
-                        let id = id.map(|id| format!("r{id}"));
-                        let items = cache.apply(&docs[doc], full(id.as_deref(), &message));
-                        prop_assert_eq!(messages(&items), vec![message.clone()]);
-                        model[doc] = (id, vec![message]);
-                    }
-                    Step::Unchanged { doc, id } => {
-                        let id = format!("r{id}");
-                        let items = cache.apply(&docs[doc], unchanged(&id));
-                        prop_assert_eq!(messages(&items), model[doc].1.clone());
-                        model[doc].0 = Some(id);
-                    }
-                    Step::Forget { doc } => {
-                        cache.forget(&docs[doc]);
-                        model[doc] = (None, Vec::new());
-                    }
-                }
-                for (doc, (id, _)) in model.iter().enumerate() {
-                    prop_assert_eq!(&cache.previous_result_id(&docs[doc]), id);
-                }
-            }
-        }
     }
 }

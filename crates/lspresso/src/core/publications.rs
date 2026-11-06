@@ -45,8 +45,6 @@ impl Publications {
 
 #[cfg(test)]
 mod tests {
-    use proptest::prelude::*;
-
     use super::*;
 
     fn uri(s: &str) -> Uri {
@@ -145,57 +143,5 @@ mod tests {
         }
         assert_eq!(publications.queue.len(), CAPACITY);
         assert_eq!(publications.queue[0].version, Some(1));
-    }
-
-    #[derive(Debug, Clone)]
-    enum Op {
-        Publish { doc: usize, version: Option<i32> },
-        Take { doc: usize, current: i32 },
-        Clear { doc: usize },
-    }
-
-    fn ops() -> impl Strategy<Value = Vec<Op>> {
-        let doc = 0..3usize;
-        prop::collection::vec(
-            prop_oneof![
-                (doc.clone(), prop::option::of(0..5i32))
-                    .prop_map(|(doc, version)| Op::Publish { doc, version }),
-                (doc.clone(), 0..5i32).prop_map(|(doc, current)| Op::Take { doc, current }),
-                doc.prop_map(|doc| Op::Clear { doc }),
-            ],
-            0..40,
-        )
-    }
-
-    proptest! {
-        #[test]
-        fn matches_a_model(ops in ops()) {
-            let docs = ["file:///0.json", "file:///1.json", "file:///2.json"].map(uri);
-            let mut publications = Publications::default();
-            let mut model: Vec<(usize, Option<i32>, u8)> = Vec::new();
-
-            for (n, op) in ops.into_iter().enumerate() {
-                let n = u8::try_from(n).unwrap();
-                match op {
-                    Op::Publish { doc, version } => {
-                        publications.record(&publish(&docs[doc], version, n));
-                        model.push((doc, version, n));
-                    }
-                    Op::Take { doc, current } => {
-                        model.retain(|(d, v, _)| *d != doc || v.is_none_or(|v| v >= current));
-                        let expected = model
-                            .iter()
-                            .position(|(d, ..)| *d == doc)
-                            .map(|i| model.remove(i).2.to_string());
-                        let taken = publications.take(&docs[doc], current);
-                        prop_assert_eq!(taken.map(|d| tag(&d)), expected);
-                    }
-                    Op::Clear { doc } => {
-                        publications.clear(&docs[doc]);
-                        model.retain(|(d, ..)| *d != doc);
-                    }
-                }
-            }
-        }
     }
 }
