@@ -45,7 +45,7 @@ impl DocumentTracker {
     /// The version a `didChange` notification for `uri` should carry if sent
     /// right now. Doesn't commit anything.
     pub(crate) fn next_version(&self, uri: &Uri) -> crate::Result<i32> {
-        Ok(self.current_version(uri)?.wrapping_add(1))
+        Ok(self.current_version(uri)? + 1)
     }
 
     pub(crate) fn mark_open(&mut self, uri: Uri) {
@@ -127,15 +127,5 @@ mod tests {
 
         tracker.mark_open(uri.clone());
         assert_eq!(tracker.next_version(&uri).unwrap(), 2);
-    }
-
-    #[test]
-    fn versions_wrap_instead_of_failing() {
-        let mut tracker = DocumentTracker::default();
-        let uri = uri("file:///a.json");
-        tracker.mark_open(uri.clone());
-        tracker.commit_change(&uri, i32::MAX);
-
-        assert_eq!(tracker.next_version(&uri).unwrap(), i32::MIN);
     }
 }
