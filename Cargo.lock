@@ -976,7 +976,8 @@ dependencies = [
 [[package]]
 name = "gen-lsp-types"
 version = "0.11.0"
-source = "git+https://github.com/ribru17/gen-lsp-types?branch=main#13bca6f333bbb62b4321ab1f33e88d0cb280a578"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b64887ac3a8083427ae935a7296db876871582cd57eac077564f8bc18fa49116"
 dependencies = [
  "fluent-uri",
  "serde",

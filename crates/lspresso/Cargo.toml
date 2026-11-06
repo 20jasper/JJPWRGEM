@@ -22,9 +22,7 @@ required-features = ["test-binaries"]
 [dependencies]
 crossbeam-channel = "0.5.17"
 displaydoc = { workspace = true }
-gen-lsp-types = { git = "https://github.com/ribru17/gen-lsp-types", branch = "main", features = [
-  "fluent-uri",
-] }
+gen-lsp-types = { version = "0.11.0", features = ["fluent-uri"] }
 lsp-server = "0.10.0"
 pastey = "0.2.3"
 serde = { workspace = true }
