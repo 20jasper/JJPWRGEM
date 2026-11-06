@@ -22,8 +22,6 @@ pub fn initialize_params(capabilities: ClientCapabilities) -> InitializeParams {
     }
 }
 
-/// `None` when the server declared no sync kind, in either the bare-kind
-/// or the options form of `textDocumentSync`.
 pub(crate) fn text_document_sync_kind(
     capabilities: &ServerCapabilities,
 ) -> Option<TextDocumentSyncKind> {

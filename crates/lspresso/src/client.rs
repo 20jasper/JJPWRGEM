@@ -302,6 +302,27 @@ impl Protocol for Client {
         self.docs.mark_closed(&uri);
         Ok(())
     }
+
+    fn protocol_did_save(&mut self, params: DidSaveTextDocumentParams) -> Result<()> {
+        self.state.require_initialized()?;
+        self.docs.require_open(&params.text_document.uri)?;
+        self.notify::<DidSaveTextDocumentNotification>(params)
+    }
+
+    fn protocol_will_save(&mut self, params: WillSaveTextDocumentParams) -> Result<()> {
+        self.state.require_initialized()?;
+        self.docs.require_open(&params.text_document.uri)?;
+        self.notify::<WillSaveTextDocumentNotification>(params)
+    }
+
+    fn protocol_will_save_wait_until(
+        &mut self,
+        params: WillSaveTextDocumentParams,
+    ) -> Result<Option<Vec<TextEdit>>> {
+        self.state.require_initialized()?;
+        self.docs.require_open(&params.text_document.uri)?;
+        self.request::<WillSaveTextDocumentWaitUntilRequest>(params)
+    }
 }
 
 enum RecvOutcome {

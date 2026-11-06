@@ -1,9 +1,7 @@
 //! Answers each incoming request according to the next step of a script
 //! passed as JSON in `LSPRESSO_SCRIPT`, for tests of the client shell.
 //! Requests past the end of the script are ignored. Exits on `exit`, at
-//! end of input, or when a step says to. `LSPRESSO_INITIALIZE_RESULT`
-//! overrides the `initialize` result; `LSPRESSO_RECORD` names a file to
-//! append each received message to, as a line of JSON.
+//! end of input, or when a step says to.
 
 use std::{
     io::{BufRead, BufReader, Stdout, Write, stdin, stdout},

@@ -6,7 +6,7 @@ use std::{
 
 use gen_lsp_types::{
     ClientCapabilities, DidCloseTextDocumentParams, DidOpenTextDocumentParams, LanguageKind,
-    TextDocumentIdentifier, TextDocumentItem, TextDocumentSyncKind,
+    TextDocumentIdentifier, TextDocumentItem, TextDocumentSaveReason, TextDocumentSyncKind,
 };
 use lspresso::{Client, ErrorKind, Protocol};
 use serde_json::json;
@@ -251,6 +251,33 @@ fn raw_document_notifications_are_tracked_too() {
         .unwrap();
     let err = client.did_change_full(&uri, "[]").unwrap_err();
     assert!(matches!(err.kind(), ErrorKind::NotOpen { .. }), "{err:?}");
+}
+
+#[test]
+fn save_notifications_need_an_open_document() {
+    let mut client = spawn_scripted(2);
+    let uri = lspresso::parse_uri("file:///a.json");
+
+    let errs = [
+        client.did_save(&uri, None).unwrap_err(),
+        client
+            .will_save(&uri, TextDocumentSaveReason::Manual)
+            .unwrap_err(),
+        client
+            .will_save_wait_until(&uri, TextDocumentSaveReason::Manual)
+            .unwrap_err(),
+    ];
+    for err in errs {
+        assert!(matches!(err.kind(), ErrorKind::NotOpen { .. }), "{err:?}");
+    }
+
+    client
+        .did_open(uri.clone(), "{}", LanguageKind::JSON)
+        .unwrap();
+    client.did_save(&uri, None).unwrap();
+    client
+        .will_save(&uri, TextDocumentSaveReason::Manual)
+        .unwrap();
 }
 
 #[test]

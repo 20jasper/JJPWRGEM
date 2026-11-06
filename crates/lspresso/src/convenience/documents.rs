@@ -4,9 +4,6 @@ use super::document;
 use crate::{Client, Protocol, Result, core};
 
 impl Client {
-    /// Sends [`textDocument/didOpen`](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#textDocument_didOpen).
-    ///
-    /// Use [`Protocol::protocol_did_open`] for full params.
     pub fn did_open(
         &mut self,
         uri: Uri,
@@ -23,9 +20,6 @@ impl Client {
         })
     }
 
-    /// Sends [`textDocument/didChange`](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#textDocument_didChange) with the whole document.
-    ///
-    /// Use [`Protocol::protocol_did_change`] for full params.
     pub fn did_change_full(&mut self, uri: &Uri, text: impl Into<String>) -> Result<()> {
         let version = self.docs.next_version(uri)?;
         self.protocol_did_change(DidChangeTextDocumentParams {
@@ -39,22 +33,17 @@ impl Client {
         })
     }
 
-    /// Sends [`textDocument/didClose`](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#textDocument_didClose).
-    ///
-    /// Use [`Protocol::protocol_did_close`] for full params.
     pub fn did_close(&mut self, uri: &Uri) -> Result<()> {
         self.protocol_did_close(DidCloseTextDocumentParams {
             text_document: document(uri),
         })
     }
 
-    /// The sync kind the server declared, if any.
     pub fn text_document_sync_kind(&self) -> Option<TextDocumentSyncKind> {
         self.server_capabilities()
             .and_then(core::capabilities::text_document_sync_kind)
     }
 
-    /// Whether the server asked for incremental document changes.
     pub fn supports_incremental_sync(&self) -> bool {
         self.text_document_sync_kind() == Some(TextDocumentSyncKind::Incremental)
     }

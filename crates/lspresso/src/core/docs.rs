@@ -4,7 +4,6 @@ use gen_lsp_types::Uri;
 
 use crate::error::ErrorKind;
 
-/// The version the server was last told each open document is at.
 #[derive(Debug, Default)]
 pub(crate) struct DocumentTracker {
     open_docs: HashMap<Uri, i32>,
@@ -27,7 +26,6 @@ impl DocumentTracker {
         }
     }
 
-    /// The version a full-document change for `uri` should carry next.
     pub(crate) fn next_version(&self, uri: &Uri) -> crate::Result<i32> {
         self.open_docs
             .get(uri)
