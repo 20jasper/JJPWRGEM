@@ -393,6 +393,8 @@ impl Protocol for Client {
         let TextDocumentItem { uri, version, .. } = &params.text_document;
         self.docs.require_not_open(uri)?;
         let (uri, version) = (uri.clone(), *version);
+        self.inbox
+            .retain(|notification| !core::diagnostics::is_publication_for(notification, &uri));
         self.notify::<DidOpenTextDocumentNotification>(params)?;
         self.docs.mark_open(uri, version);
         Ok(())
