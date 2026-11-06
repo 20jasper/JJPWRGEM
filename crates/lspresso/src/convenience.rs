@@ -1,10 +1,3 @@
-//! The convenience layer: `Client` methods taking the arguments callers
-//! usually have, filling in the rest of each method's params. Each method
-//! links the [`Protocol`](crate::Protocol) method that takes full params.
-//!
-//! Params are built as exhaustive struct literals, so a field added upstream
-//! fails to compile here instead of silently defaulting.
-
 mod decorations;
 mod diagnostics;
 mod documents;
