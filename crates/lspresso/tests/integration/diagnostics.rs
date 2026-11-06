@@ -24,39 +24,51 @@ fn unversioned_scripted(steps: &serde_json::Value) -> Client {
     client
 }
 
-fn pull_error(code: i32, data: &serde_json::Value) -> serde_json::Value {
-    json!({ "action": "respond:0", "error": { "code": code, "message": "no", "data": data } })
-}
-
-const CONTENT_MODIFIED: i32 = -32801;
-const SERVER_CANCELLED: i32 = -32802;
-const REQUEST_FAILED: i32 = -32803;
-
-fn pull_capabilities() -> serde_json::Value {
+fn pull_error(code: LspErrorCodes, retrigger_request: Option<bool>) -> serde_json::Value {
+    let data = retrigger_request
+        .map(|retrigger_request| DiagnosticServerCancellationData { retrigger_request });
     json!({
-        "diagnosticProvider": {
-            "interFileDependencies": false,
-            "workspaceDiagnostics": false
-        }
+        "action": "respond:0",
+        "error": { "code": i32::from(code), "message": "no", "data": data }
     })
 }
 
-fn diagnostic_report(message: &str, result_id: &str) -> serde_json::Value {
-    json!({
-        "kind": "full",
-        "items": [{
-            "range": {
-                "start": { "line": 0, "character": 0 },
-                "end": { "line": 0, "character": 0 }
-            },
-            "message": message
-        }],
-        "resultId": result_id
-    })
+fn pull_capabilities() -> ServerCapabilities {
+    ServerCapabilities {
+        diagnostic_provider: Some(DiagnosticOptions::default().into()),
+        ..Default::default()
+    }
 }
 
-fn first_message(diagnostics: &[Diagnostic]) -> serde_json::Value {
-    serde_json::to_value(diagnostics).unwrap()[0]["message"].clone()
+fn diagnostic_report(message: &str, result_id: &str) -> DocumentDiagnosticReport {
+    RelatedFullDocumentDiagnosticReport {
+        full_document_diagnostic_report: FullDocumentDiagnosticReport::new(
+            Some(result_id.to_owned()),
+            vec![Diagnostic {
+                message: message.into(),
+                ..Default::default()
+            }],
+        ),
+        ..Default::default()
+    }
+    .into()
+}
+
+fn unchanged_report(result_id: &str) -> DocumentDiagnosticReport {
+    RelatedUnchangedDocumentDiagnosticReport {
+        unchanged_document_diagnostic_report: UnchangedDocumentDiagnosticReport {
+            result_id: result_id.to_owned(),
+        },
+        ..Default::default()
+    }
+    .into()
+}
+
+fn first_message(diagnostics: &[Diagnostic]) -> &str {
+    match &diagnostics[0].message {
+        Message::String(message) => message,
+        other @ Message::MarkupContent(_) => panic!("expected a plain message, got {other:?}"),
+    }
 }
 
 #[test]
@@ -207,7 +219,7 @@ fn pull_diagnostics_thread_the_previous_result_id() {
         &json!([
             { "action": "respond:0" },
             { "action": "respond:0", "result": diagnostic_report("pulled", "r1") },
-            { "action": "respond:0", "result": { "kind": "unchanged", "resultId": "r2" } }
+            { "action": "respond:0", "result": unchanged_report("r2") }
         ]),
         &record,
     );
@@ -261,11 +273,8 @@ fn a_pull_is_sent_again_when_the_content_was_modified() {
         &pull_capabilities(),
         &json!([
             { "action": "respond:0" },
-            pull_error(CONTENT_MODIFIED, &json!(null)),
-            pull_error(
-                SERVER_CANCELLED,
-                &json!({ "retriggerRequest": true })
-            ),
+            pull_error(LspErrorCodes::ContentModified, None),
+            pull_error(LspErrorCodes::ServerCancelled, Some(true)),
             { "action": "respond:0", "result": diagnostic_report("pulled", "r1") }
         ]),
     );
@@ -283,9 +292,9 @@ fn a_pull_gives_up_after_repeated_retriable_failures() {
         &pull_capabilities(),
         &json!([
             { "action": "respond:0" },
-            pull_error(CONTENT_MODIFIED, &json!(null)),
-            pull_error(CONTENT_MODIFIED, &json!(null)),
-            pull_error(CONTENT_MODIFIED, &json!(null)),
+            pull_error(LspErrorCodes::ContentModified, None),
+            pull_error(LspErrorCodes::ContentModified, None),
+            pull_error(LspErrorCodes::ContentModified, None),
             { "action": "respond:0", "result": diagnostic_report("too late", "r1") }
         ]),
     );
@@ -296,7 +305,7 @@ fn a_pull_gives_up_after_repeated_retriable_failures() {
 
     let err = client.diagnostics(&uri).unwrap_err();
     assert!(
-        matches!(err.kind(), ErrorKind::Response { code, .. } if *code == CONTENT_MODIFIED),
+        matches!(err.kind(), ErrorKind::Response { code, .. } if *code == i32::from(LspErrorCodes::ContentModified)),
         "{err}"
     );
 }
@@ -307,7 +316,7 @@ fn a_pull_is_not_retried_after_other_failures() {
         &pull_capabilities(),
         &json!([
             { "action": "respond:0" },
-            pull_error(REQUEST_FAILED, &json!(null)),
+            pull_error(LspErrorCodes::RequestFailed, None),
             { "action": "respond:0", "result": diagnostic_report("unused", "r1") }
         ]),
     );
@@ -318,7 +327,7 @@ fn a_pull_is_not_retried_after_other_failures() {
 
     let err = client.diagnostics(&uri).unwrap_err();
     assert!(
-        matches!(err.kind(), ErrorKind::Response { code, .. } if *code == REQUEST_FAILED),
+        matches!(err.kind(), ErrorKind::Response { code, .. } if *code == i32::from(LspErrorCodes::RequestFailed)),
         "{err}"
     );
 }

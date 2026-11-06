@@ -26,12 +26,12 @@ pub fn scripted_recording(steps: &serde_json::Value, record: &Path) -> Client {
     Client::spawn(command).expect("the scripted server should spawn")
 }
 
-pub fn initialized_with_capabilities(capabilities: &serde_json::Value) -> Client {
+pub fn initialized_with_capabilities(capabilities: &ServerCapabilities) -> Client {
     initialized_with_capabilities_and_script(capabilities, &json!([{ "action": "respond:0" }]))
 }
 
 pub fn initialized_with_capabilities_and_script(
-    capabilities: &serde_json::Value,
+    capabilities: &ServerCapabilities,
     steps: &serde_json::Value,
 ) -> Client {
     let mut command = Command::new(env!("CARGO_BIN_EXE_lspresso_scripted_server"));
@@ -46,7 +46,7 @@ pub fn initialized_with_capabilities_and_script(
 }
 
 pub fn initialized_with_capabilities_and_recording(
-    capabilities: &serde_json::Value,
+    capabilities: &ServerCapabilities,
     steps: &serde_json::Value,
     record: &Path,
 ) -> Client {

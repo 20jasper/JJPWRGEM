@@ -51,6 +51,10 @@ impl PulledReport {
 
 #[cfg(test)]
 mod tests {
+    use gen_lsp_types::{
+        RelatedFullDocumentDiagnosticReport, RelatedUnchangedDocumentDiagnosticReport,
+        UnchangedDocumentDiagnosticReport,
+    };
     use serde_json::json;
 
     use super::*;
@@ -76,12 +80,12 @@ mod tests {
     #[test]
     fn retries_a_cancelled_pull_only_when_the_server_asks() {
         let cancelled = |data| response_error(LspErrorCodes::ServerCancelled, data);
-        assert!(should_retry_pull(&cancelled(Some(
-            json!({ "retriggerRequest": true })
-        ))));
-        assert!(!should_retry_pull(&cancelled(Some(
-            json!({ "retriggerRequest": false })
-        ))));
+        let retrigger = |retrigger_request| {
+            let data = DiagnosticServerCancellationData { retrigger_request };
+            cancelled(Some(serde_json::to_value(data).unwrap()))
+        };
+        assert!(should_retry_pull(&retrigger(true)));
+        assert!(!should_retry_pull(&retrigger(false)));
         assert!(!should_retry_pull(&cancelled(Some(json!("junk")))));
         assert!(!should_retry_pull(&cancelled(None)));
     }
@@ -95,36 +99,32 @@ mod tests {
         assert!(!should_retry_pull(&ErrorKind::AlreadyShutdown));
     }
 
+    fn diagnostic(message: &str) -> Diagnostic {
+        Diagnostic {
+            message: message.into(),
+            ..Default::default()
+        }
+    }
+
     fn full(result_id: Option<&str>, message: &str) -> DocumentDiagnosticReport {
-        serde_json::from_value(json!({
-            "kind": "full",
-            "resultId": result_id,
-            "items": [{
-                "range": {
-                    "start": { "line": 0, "character": 0 },
-                    "end": { "line": 0, "character": 0 }
-                },
-                "message": message
-            }]
-        }))
-        .unwrap()
+        RelatedFullDocumentDiagnosticReport {
+            full_document_diagnostic_report: FullDocumentDiagnosticReport::new(
+                result_id.map(str::to_owned),
+                vec![diagnostic(message)],
+            ),
+            ..Default::default()
+        }
+        .into()
     }
 
     fn unchanged(result_id: &str) -> DocumentDiagnosticReport {
-        serde_json::from_value(json!({ "kind": "unchanged", "resultId": result_id })).unwrap()
-    }
-
-    fn messages(diagnostics: &[Diagnostic]) -> Vec<String> {
-        diagnostics
-            .iter()
-            .map(|diagnostic| {
-                serde_json::to_value(&diagnostic.message)
-                    .unwrap()
-                    .as_str()
-                    .unwrap()
-                    .to_owned()
-            })
-            .collect()
+        RelatedUnchangedDocumentDiagnosticReport {
+            unchanged_document_diagnostic_report: UnchangedDocumentDiagnosticReport {
+                result_id: result_id.to_owned(),
+            },
+            ..Default::default()
+        }
+        .into()
     }
 
     #[test]
@@ -136,7 +136,7 @@ mod tests {
         assert_eq!(report.result_id().as_deref(), Some("r1"));
 
         let items = report.apply(unchanged("r2"));
-        assert_eq!(messages(&items), vec!["boom".to_owned()]);
+        assert_eq!(items, vec![diagnostic("boom")]);
         assert_eq!(report.result_id().as_deref(), Some("r2"));
     }
 

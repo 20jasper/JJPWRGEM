@@ -51,31 +51,19 @@ mod tests {
         s.parse().unwrap()
     }
 
-    fn diagnostic(tag: u8) -> Diagnostic {
-        serde_json::from_value(serde_json::json!({
-            "range": {
-                "start": { "line": 0, "character": 0 },
-                "end": { "line": 0, "character": 0 }
-            },
-            "message": tag.to_string()
-        }))
-        .unwrap()
+    fn diagnostic(message: &str) -> Diagnostic {
+        Diagnostic {
+            message: message.into(),
+            ..Default::default()
+        }
     }
 
-    fn tag(diagnostics: &[Diagnostic]) -> String {
-        serde_json::to_value(&diagnostics[0].message)
-            .unwrap()
-            .as_str()
-            .unwrap()
-            .to_owned()
-    }
-
-    fn publish(uri: &Uri, version: Option<i32>, tag: u8) -> LspNotification {
+    fn publish(uri: &Uri, version: Option<i32>, message: &str) -> LspNotification {
         LspNotification::new(
             PublishDiagnosticsNotification::METHOD.as_str().to_owned(),
             serde_json::to_value(PublishDiagnosticsParams {
                 uri: uri.clone(),
-                diagnostics: vec![diagnostic(tag)],
+                diagnostics: vec![diagnostic(message)],
                 version,
             })
             .unwrap(),
@@ -86,26 +74,26 @@ mod tests {
     fn takes_the_oldest_publication_for_the_uri() {
         let (a, b) = (uri("file:///a.json"), uri("file:///b.json"));
         let mut publications = Publications::default();
-        publications.record(&publish(&a, None, 1));
-        publications.record(&publish(&b, None, 2));
-        publications.record(&publish(&a, None, 3));
+        publications.record(&publish(&a, None, "1"));
+        publications.record(&publish(&b, None, "2"));
+        publications.record(&publish(&a, None, "3"));
 
-        assert_eq!(tag(&publications.take(&a, 1).unwrap()), "1");
-        assert_eq!(tag(&publications.take(&a, 1).unwrap()), "3");
+        assert_eq!(publications.take(&a, 1), Some(vec![diagnostic("1")]));
+        assert_eq!(publications.take(&a, 1), Some(vec![diagnostic("3")]));
         assert_eq!(publications.take(&a, 1), None);
-        assert_eq!(tag(&publications.take(&b, 1).unwrap()), "2");
+        assert_eq!(publications.take(&b, 1), Some(vec![diagnostic("2")]));
     }
 
     #[test]
     fn discards_publications_for_an_older_version() {
         let a = uri("file:///a.json");
         let mut publications = Publications::default();
-        publications.record(&publish(&a, Some(2), 1));
-        publications.record(&publish(&a, Some(3), 2));
-        publications.record(&publish(&a, Some(4), 3));
+        publications.record(&publish(&a, Some(2), "1"));
+        publications.record(&publish(&a, Some(3), "2"));
+        publications.record(&publish(&a, Some(4), "3"));
 
-        assert_eq!(tag(&publications.take(&a, 3).unwrap()), "2");
-        assert_eq!(tag(&publications.take(&a, 3).unwrap()), "3");
+        assert_eq!(publications.take(&a, 3), Some(vec![diagnostic("2")]));
+        assert_eq!(publications.take(&a, 3), Some(vec![diagnostic("3")]));
     }
 
     #[test]
@@ -127,11 +115,11 @@ mod tests {
     fn clear_drops_only_that_uri() {
         let (a, b) = (uri("file:///a.json"), uri("file:///b.json"));
         let mut publications = Publications::default();
-        publications.record(&publish(&a, None, 1));
-        publications.record(&publish(&b, None, 2));
+        publications.record(&publish(&a, None, "1"));
+        publications.record(&publish(&b, None, "2"));
         publications.clear(&a);
         assert_eq!(publications.take(&a, 1), None);
-        assert_eq!(tag(&publications.take(&b, 1).unwrap()), "2");
+        assert_eq!(publications.take(&b, 1), Some(vec![diagnostic("2")]));
     }
 
     #[test]
@@ -139,7 +127,7 @@ mod tests {
         let a = uri("file:///a.json");
         let mut publications = Publications::default();
         for i in 0..=CAPACITY {
-            publications.record(&publish(&a, Some(i32::try_from(i).unwrap()), 0));
+            publications.record(&publish(&a, Some(i32::try_from(i).unwrap()), ""));
         }
         assert_eq!(publications.queue.len(), CAPACITY);
         assert_eq!(publications.queue[0].version, Some(1));

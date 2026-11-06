@@ -165,14 +165,26 @@ fn document_sync_sends_versions_and_text() {
 
 #[test]
 fn sync_kind_comes_from_the_initialize_result() {
-    let incremental = initialized_with_capabilities(&json!({ "textDocumentSync": 2 }));
+    let incremental = initialized_with_capabilities(&ServerCapabilities {
+        text_document_sync: Some(TextDocumentSyncKind::Incremental.into()),
+        ..Default::default()
+    });
     assert_eq!(
         incremental.text_document_sync_kind(),
         Some(TextDocumentSyncKind::Incremental)
     );
     assert!(incremental.supports_incremental_sync());
 
-    let full = initialized_with_capabilities(&json!({ "textDocumentSync": { "change": 1 } }));
+    let full = initialized_with_capabilities(&ServerCapabilities {
+        text_document_sync: Some(
+            TextDocumentSyncOptions {
+                change: Some(TextDocumentSyncKind::Full),
+                ..Default::default()
+            }
+            .into(),
+        ),
+        ..Default::default()
+    });
     assert_eq!(
         full.text_document_sync_kind(),
         Some(TextDocumentSyncKind::Full)
