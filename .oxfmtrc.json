@@ -3,6 +3,7 @@
   "printWidth": 80,
   "ignorePatterns": [
     ".claude/",
+    ".config/mise/locks/",
     "crates/bytes2chars/README.md",
     "tests/conformance",
     "xtask/bench/data",
