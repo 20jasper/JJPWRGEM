@@ -12,7 +12,7 @@ use lsp_server::{Message, RequestId};
 use self::transport::{Incoming, Transport};
 use crate::{
     Error, Protocol, Result,
-    core::{self, ClientState, Effect},
+    core::{self, ClientState, DocumentTracker, Effect},
     error::{ErrorKind, elapsed_ms},
 };
 
@@ -35,6 +35,7 @@ macro_rules! assert_client_to_server {
 pub struct Client {
     transport: Transport,
     state: ClientState,
+    docs: DocumentTracker,
     background_errors: Vec<Error>,
     request_timeout: Duration,
     server_capabilities: Option<ServerCapabilities>,
@@ -45,6 +46,7 @@ impl Client {
         Ok(Self {
             transport: Transport::spawn(command)?,
             state: ClientState::default(),
+            docs: DocumentTracker::default(),
             background_errors: Vec::new(),
             request_timeout: DEFAULT_REQUEST_TIMEOUT,
             server_capabilities: None,
@@ -130,6 +132,11 @@ impl Client {
 
     pub fn background_errors(&self) -> &[Error] {
         &self.background_errors
+    }
+
+    pub(crate) fn next_document_version(&self, uri: &Uri) -> Result<i32> {
+        self.state.require_initialized()?;
+        self.docs.next_version(uri)
     }
 
     fn send_request(&mut self, id: &RequestId, message: &Message) -> Result<()> {
@@ -266,6 +273,60 @@ impl Protocol for Client {
         assert_client_to_server!(N);
         self.state.require_initialized()?;
         self.send_notification::<N>(params)
+    }
+
+    fn protocol_did_open(&mut self, params: DidOpenTextDocumentParams) -> Result<()> {
+        self.state.require_initialized()?;
+        let TextDocumentItem { uri, version, .. } = &params.text_document;
+        self.docs.require_not_open(uri)?;
+        let (uri, version) = (uri.clone(), *version);
+        self.notify::<DidOpenTextDocumentNotification>(params)?;
+        self.docs.mark_open(uri, version);
+        Ok(())
+    }
+
+    fn protocol_did_change(&mut self, params: DidChangeTextDocumentParams) -> Result<()> {
+        self.state.require_initialized()?;
+        let identifier = &params.text_document;
+        self.docs
+            .require_open(&identifier.text_document_identifier.uri)?;
+        let (uri, version) = (
+            identifier.text_document_identifier.uri.clone(),
+            identifier.version,
+        );
+        self.notify::<DidChangeTextDocumentNotification>(params)?;
+        self.docs.commit_change(&uri, version);
+        Ok(())
+    }
+
+    fn protocol_did_close(&mut self, params: DidCloseTextDocumentParams) -> Result<()> {
+        self.state.require_initialized()?;
+        let uri = params.text_document.uri.clone();
+        self.docs.require_open(&uri)?;
+        self.notify::<DidCloseTextDocumentNotification>(params)?;
+        self.docs.mark_closed(&uri);
+        Ok(())
+    }
+
+    fn protocol_did_save(&mut self, params: DidSaveTextDocumentParams) -> Result<()> {
+        self.state.require_initialized()?;
+        self.docs.require_open(&params.text_document.uri)?;
+        self.notify::<DidSaveTextDocumentNotification>(params)
+    }
+
+    fn protocol_will_save(&mut self, params: WillSaveTextDocumentParams) -> Result<()> {
+        self.state.require_initialized()?;
+        self.docs.require_open(&params.text_document.uri)?;
+        self.notify::<WillSaveTextDocumentNotification>(params)
+    }
+
+    fn protocol_will_save_wait_until(
+        &mut self,
+        params: WillSaveTextDocumentParams,
+    ) -> Result<Option<Vec<TextEdit>>> {
+        self.state.require_initialized()?;
+        self.docs.require_open(&params.text_document.uri)?;
+        self.request::<WillSaveTextDocumentWaitUntilRequest>(params)
     }
 }
 
