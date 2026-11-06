@@ -4,10 +4,7 @@ use std::{
     time::Duration,
 };
 
-use gen_lsp_types::{
-    ClientCapabilities, DidCloseTextDocumentParams, DidOpenTextDocumentParams, LanguageKind,
-    TextDocumentIdentifier, TextDocumentItem, TextDocumentSaveReason, TextDocumentSyncKind, Uri,
-};
+use gen_lsp_types::*;
 use lspresso::{Client, ErrorKind, Protocol};
 use serde_json::json;
 
