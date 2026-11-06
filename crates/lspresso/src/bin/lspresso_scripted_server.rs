@@ -1,10 +1,12 @@
 //! Answers each incoming request according to the next step of a script
 //! passed as JSON in `LSPRESSO_SCRIPT`, for tests of the client shell.
 //! Requests past the end of the script are ignored. Exits on `exit`, at
-//! end of input, or when a step says to.
+//! end of input, or when a step says to. `LSPRESSO_INITIALIZE_RESULT`
+//! overrides the `initialize` result; `LSPRESSO_RECORD` names a file to
+//! append each received message to, as a line of JSON.
 
 use std::{
-    io::{BufRead, BufReader, Stdout, stdin, stdout},
+    io::{BufRead, BufReader, Stdout, Write, stdin, stdout},
     sync::{Arc, Mutex},
     thread::sleep,
     time::Duration,
@@ -47,7 +49,10 @@ fn write(out: &Mutex<Stdout>, message: &Message) {
 
 fn result_for(request: &Request) -> serde_json::Value {
     match request.method.as_str() {
-        "initialize" => serde_json::json!({ "capabilities": {} }),
+        "initialize" => std::env::var("LSPRESSO_INITIALIZE_RESULT").map_or_else(
+            |_| serde_json::json!({ "capabilities": {} }),
+            |result| serde_json::from_str(&result).unwrap(),
+        ),
         _ => serde_json::Value::Null,
     }
 }
@@ -65,7 +70,16 @@ fn dispatch(message: Message) -> Result<Option<Request>, Exit> {
 }
 
 fn read(reader: &mut impl BufRead) -> Result<Message, Exit> {
-    Message::read(reader).ok().flatten().ok_or(Exit)
+    let message = Message::read(reader).ok().flatten().ok_or(Exit)?;
+    if let Ok(path) = std::env::var("LSPRESSO_RECORD") {
+        let mut file = std::fs::OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(path)
+            .unwrap();
+        writeln!(file, "{}", serde_json::to_string(&message).unwrap()).unwrap();
+    }
+    Ok(message)
 }
 
 fn main() {

@@ -162,10 +162,6 @@ protocol_methods! {
             // Hand-written: lifecycle.
             Initialized,
             Exit,
-            // Document tracking.
-            TextDocumentDidOpen,
-            TextDocumentDidChange,
-            TextDocumentDidClose,
             // Sent by the server, not the client.
             LogTrace,
             TelemetryEvent,
@@ -174,6 +170,9 @@ protocol_methods! {
             WindowShowMessage,
         ]
         cancel_request: CancelRequest => CancelNotification;
+        did_change: TextDocumentDidChange => DidChangeTextDocumentNotification;
+        did_close: TextDocumentDidClose => DidCloseTextDocumentNotification;
+        did_open: TextDocumentDidOpen => DidOpenTextDocumentNotification;
         did_save: TextDocumentDidSave => DidSaveTextDocumentNotification;
         notebook_document_did_change: NotebookDocumentDidChange => DidChangeNotebookDocumentNotification;
         notebook_document_did_close: NotebookDocumentDidClose => DidCloseNotebookDocumentNotification;
