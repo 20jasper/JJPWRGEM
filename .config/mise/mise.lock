@@ -519,40 +519,6 @@ url = "https://github.com/taiki-e/cargo-llvm-cov/releases/download/v0.9.1/cargo-
 url_api = "https://api.github.com/repos/taiki-e/cargo-llvm-cov/releases/assets/547404215"
 provenance = "github-attestations"
 
-[[tools.hk]]
-version = "2.10.0"
-backend = "aqua:jdx/hk"
-
-[tools.hk."platforms.linux-arm64"]
-checksum = "sha256:98772b6290cad5ba5fe77a203fd717c82f47bde2a9aa5b295bea22139ba4f602"
-url = "https://github.com/jdx/hk/releases/download/v2.10.0/hk-aarch64-unknown-linux-gnu.tar.gz"
-url_api = "https://api.github.com/repos/jdx/hk/releases/assets/688167966"
-
-[tools.hk."platforms.linux-arm64-musl"]
-checksum = "sha256:bc4dd452d409ae4ed3fc58697dfbe5797c5130c0d03cb2694a2ddee3cbed89b7"
-url = "https://github.com/jdx/hk/releases/download/v2.10.0/hk-aarch64-unknown-linux-musl.tar.gz"
-url_api = "https://api.github.com/repos/jdx/hk/releases/assets/688167965"
-
-[tools.hk."platforms.linux-x64"]
-checksum = "sha256:3a1d580ba031d684307a88ce07f1751d792325f2fdace7d24dfc59b816766ad5"
-url = "https://github.com/jdx/hk/releases/download/v2.10.0/hk-x86_64-unknown-linux-gnu.tar.gz"
-url_api = "https://api.github.com/repos/jdx/hk/releases/assets/688168002"
-
-[tools.hk."platforms.linux-x64-musl"]
-checksum = "sha256:bb537bcfe3d949323f4c8fefdd6011d2cff32fd2a22d6ed09ec02eb78f183e02"
-url = "https://github.com/jdx/hk/releases/download/v2.10.0/hk-x86_64-unknown-linux-musl.tar.gz"
-url_api = "https://api.github.com/repos/jdx/hk/releases/assets/688168011"
-
-[tools.hk."platforms.macos-arm64"]
-checksum = "sha256:ab54862e724bd4a1ef9180ef535cfeef7f7ff98ace911bd5ea36bb41fa4ebc94"
-url = "https://github.com/jdx/hk/releases/download/v2.10.0/hk-aarch64-apple-darwin.tar.gz"
-url_api = "https://api.github.com/repos/jdx/hk/releases/assets/688167962"
-
-[tools.hk."platforms.windows-x64"]
-checksum = "sha256:0dc2485dcf4542d7be2f37890072e6bc5de664f41295449cae761e78336031d4"
-url = "https://github.com/jdx/hk/releases/download/v2.10.0/hk-x86_64-pc-windows-msvc.zip"
-url_api = "https://api.github.com/repos/jdx/hk/releases/assets/688167961"
-
 [[tools.jq]]
 version = "1.8.2"
 backend = "aqua:jqlang/jq"
@@ -625,6 +591,40 @@ trust_policy_excludes = '["@yarnpkg/libzip@3.2.2"]'
 [[tools."npm:vscode-langservers-extracted"]]
 version = "4.10.0"
 backend = "npm:vscode-langservers-extracted"
+
+[[tools."packslip:github.com/jdx/hk"]]
+version = "2.10.0"
+backend = "packslip:github.com/jdx/hk"
+
+[tools."packslip:github.com/jdx/hk"."platforms.linux-arm64"]
+checksum = "sha256:98772b6290cad5ba5fe77a203fd717c82f47bde2a9aa5b295bea22139ba4f602"
+url = "https://github.com/jdx/hk/releases/download/v2.10.0/hk-aarch64-unknown-linux-gnu.tar.gz"
+signer = "sigstore-oidc:https://github.com/jdx/hk/.github/workflows/release.yml"
+
+[tools."packslip:github.com/jdx/hk"."platforms.linux-arm64-musl"]
+checksum = "sha256:bc4dd452d409ae4ed3fc58697dfbe5797c5130c0d03cb2694a2ddee3cbed89b7"
+url = "https://github.com/jdx/hk/releases/download/v2.10.0/hk-aarch64-unknown-linux-musl.tar.gz"
+signer = "sigstore-oidc:https://github.com/jdx/hk/.github/workflows/release.yml"
+
+[tools."packslip:github.com/jdx/hk"."platforms.linux-x64"]
+checksum = "sha256:3a1d580ba031d684307a88ce07f1751d792325f2fdace7d24dfc59b816766ad5"
+url = "https://github.com/jdx/hk/releases/download/v2.10.0/hk-x86_64-unknown-linux-gnu.tar.gz"
+signer = "sigstore-oidc:https://github.com/jdx/hk/.github/workflows/release.yml"
+
+[tools."packslip:github.com/jdx/hk"."platforms.linux-x64-musl"]
+checksum = "sha256:bb537bcfe3d949323f4c8fefdd6011d2cff32fd2a22d6ed09ec02eb78f183e02"
+url = "https://github.com/jdx/hk/releases/download/v2.10.0/hk-x86_64-unknown-linux-musl.tar.gz"
+signer = "sigstore-oidc:https://github.com/jdx/hk/.github/workflows/release.yml"
+
+[tools."packslip:github.com/jdx/hk"."platforms.macos-arm64"]
+checksum = "sha256:ab54862e724bd4a1ef9180ef535cfeef7f7ff98ace911bd5ea36bb41fa4ebc94"
+url = "https://github.com/jdx/hk/releases/download/v2.10.0/hk-aarch64-apple-darwin.tar.gz"
+signer = "sigstore-oidc:https://github.com/jdx/hk/.github/workflows/release.yml"
+
+[tools."packslip:github.com/jdx/hk"."platforms.windows-x64"]
+checksum = "sha256:0dc2485dcf4542d7be2f37890072e6bc5de664f41295449cae761e78336031d4"
+url = "https://github.com/jdx/hk/releases/download/v2.10.0/hk-x86_64-pc-windows-msvc.zip"
+signer = "sigstore-oidc:https://github.com/jdx/hk/.github/workflows/release.yml"
 
 [[tools.shellcheck]]
 version = "0.11.0"
