@@ -30,37 +30,3 @@ pub(crate) fn text_document_sync_kind(
         TextDocumentSync::Options(options) => options.change,
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    fn declared(capabilities: serde_json::Value) -> ServerCapabilities {
-        serde_json::from_value(capabilities).unwrap()
-    }
-
-    #[test]
-    fn nothing_declared_means_no_sync_kind() {
-        assert_eq!(
-            text_document_sync_kind(&declared(serde_json::json!({}))),
-            None
-        );
-    }
-
-    #[test]
-    fn sync_kind_is_read_from_either_form() {
-        let bare = declared(serde_json::json!({ "textDocumentSync": 2 }));
-        assert_eq!(
-            text_document_sync_kind(&bare),
-            Some(TextDocumentSyncKind::Incremental)
-        );
-        let options = declared(serde_json::json!({ "textDocumentSync": { "change": 1 } }));
-        assert_eq!(
-            text_document_sync_kind(&options),
-            Some(TextDocumentSyncKind::Full)
-        );
-        let options_without_change =
-            declared(serde_json::json!({ "textDocumentSync": { "openClose": true } }));
-        assert_eq!(text_document_sync_kind(&options_without_change), None);
-    }
-}

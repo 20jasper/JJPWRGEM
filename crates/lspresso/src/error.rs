@@ -73,6 +73,8 @@ pub enum ErrorKind {
         id: RequestId,
         after_ms: u64,
     },
+    /// timed out after {after_ms}ms waiting for diagnostics for {uri}
+    DiagnosticsTimeout { uri: Uri, after_ms: u64 },
     /// client already shut down: spawn a new Client for another session
     AlreadyShutdown,
     /// timed out after {after_ms}ms waiting for the server process to exit

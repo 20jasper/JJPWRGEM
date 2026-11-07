@@ -12,7 +12,7 @@ use lsp_server::{Message, RequestId};
 use self::transport::{Incoming, Transport};
 use crate::{
     Error, Protocol, Result,
-    core::{self, ClientState, DocumentTracker, Effect},
+    core::{self, ClientState, DocumentTracker, Effect, publications::Publications},
     error::{ErrorKind, elapsed_ms},
 };
 
@@ -39,6 +39,7 @@ pub struct Client {
     background_errors: Vec<Error>,
     request_timeout: Duration,
     server_capabilities: Option<ServerCapabilities>,
+    publications: Publications,
 }
 
 impl Client {
@@ -50,6 +51,7 @@ impl Client {
             background_errors: Vec::new(),
             request_timeout: DEFAULT_REQUEST_TIMEOUT,
             server_capabilities: None,
+            publications: Publications::default(),
         })
     }
 
@@ -134,6 +136,28 @@ impl Client {
         &self.background_errors
     }
 
+    pub(crate) const fn request_timeout(&self) -> Duration {
+        self.request_timeout
+    }
+
+    pub(crate) fn open_document_version(&self, uri: &Uri) -> Result<i32> {
+        self.state.require_initialized()?;
+        self.docs.current_version(uri)
+    }
+
+    pub(crate) fn take_publication(&mut self, uri: &Uri, version: i32) -> Option<Vec<Diagnostic>> {
+        self.publications.take(uri, version)
+    }
+
+    /// Receives once, until `deadline` at the latest, so a caller can poll
+    /// the publications between receives.
+    pub(crate) fn receive_until(&mut self, deadline: Instant, method: &'static str) -> Result<()> {
+        match self.recv_and_dispatch(Some(deadline), None) {
+            RecvOutcome::Closed(closed) => Err(closed.into_error(method)),
+            RecvOutcome::Resolved(_) | RecvOutcome::Handled | RecvOutcome::TimedOut => Ok(()),
+        }
+    }
+
     pub(crate) fn next_document_version(&self, uri: &Uri) -> Result<i32> {
         self.state.require_initialized()?;
         self.docs.next_version(uri)
@@ -197,6 +221,9 @@ impl Client {
         let deadline = until.into_iter().chain(self.state.next_deadline()).min();
         let outcome = match self.transport.recv_until(deadline) {
             Ok(Incoming::Message(message)) => {
+                if let Message::Notification(notification) = &message {
+                    self.publications.record(notification);
+                }
                 let effects = self.state.on_message(&message);
                 if let Some(result) = self.apply_effects(effects, waiting_for) {
                     return RecvOutcome::Resolved(result);
@@ -280,6 +307,7 @@ impl Protocol for Client {
         let TextDocumentItem { uri, version, .. } = &params.text_document;
         self.docs.require_not_open(uri)?;
         let (uri, version) = (uri.clone(), *version);
+        self.publications.clear(&uri);
         self.notify::<DidOpenTextDocumentNotification>(params)?;
         self.docs.mark_open(uri, version);
         Ok(())
@@ -296,6 +324,7 @@ impl Protocol for Client {
         );
         self.notify::<DidChangeTextDocumentNotification>(params)?;
         self.docs.commit_change(&uri, version);
+        self.publications.clear(&uri);
         Ok(())
     }
 
@@ -305,6 +334,7 @@ impl Protocol for Client {
         self.docs.require_open(&uri)?;
         self.notify::<DidCloseTextDocumentNotification>(params)?;
         self.docs.mark_closed(&uri);
+        self.publications.clear(&uri);
         Ok(())
     }
 

@@ -26,7 +26,7 @@ pub fn scripted_recording(steps: &serde_json::Value, record: &Path) -> Client {
     Client::spawn(command).expect("the scripted server should spawn")
 }
 
-pub fn initialized_with_capabilities(capabilities: &serde_json::Value) -> Client {
+pub fn initialized_with_capabilities(capabilities: &ServerCapabilities) -> Client {
     let mut command = Command::new(env!("CARGO_BIN_EXE_lspresso_scripted_server"));
     command.env(
         "LSPRESSO_SCRIPT",

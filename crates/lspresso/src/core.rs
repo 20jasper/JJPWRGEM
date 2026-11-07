@@ -1,9 +1,10 @@
 pub mod capabilities;
-mod docs;
+mod documents;
 mod lifecycle;
+pub(crate) mod publications;
 mod server_requests;
 
-pub(crate) use docs::DocumentTracker;
+pub(crate) use documents::DocumentTracker;
 pub(crate) use lifecycle::ClientState;
 
 use crate::error::Error;
