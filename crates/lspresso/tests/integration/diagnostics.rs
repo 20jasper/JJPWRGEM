@@ -24,6 +24,46 @@ fn unversioned_scripted(steps: &serde_json::Value) -> Client {
     client
 }
 
+fn pull_error(code: LspErrorCodes, retrigger_request: Option<bool>) -> serde_json::Value {
+    let data = retrigger_request
+        .map(|retrigger_request| DiagnosticServerCancellationData { retrigger_request });
+    json!({
+        "action": "respond:0",
+        "error": { "code": i32::from(code), "message": "no", "data": data }
+    })
+}
+
+fn pull_capabilities() -> ServerCapabilities {
+    ServerCapabilities {
+        diagnostic_provider: Some(DiagnosticOptions::default().into()),
+        ..Default::default()
+    }
+}
+
+fn diagnostic_report(message: &str, result_id: &str) -> DocumentDiagnosticReport {
+    RelatedFullDocumentDiagnosticReport {
+        full_document_diagnostic_report: FullDocumentDiagnosticReport::new(
+            Some(result_id.to_owned()),
+            vec![Diagnostic {
+                message: message.into(),
+                ..Default::default()
+            }],
+        ),
+        ..Default::default()
+    }
+    .into()
+}
+
+fn unchanged_report(result_id: &str) -> DocumentDiagnosticReport {
+    RelatedUnchangedDocumentDiagnosticReport {
+        unchanged_document_diagnostic_report: UnchangedDocumentDiagnosticReport {
+            result_id: result_id.to_owned(),
+        },
+        ..Default::default()
+    }
+    .into()
+}
+
 fn first_message(diagnostics: &[Diagnostic]) -> &str {
     match &diagnostics[0].message {
         Message::String(message) => message,
@@ -132,14 +172,79 @@ fn a_closed_document_cannot_be_waited_on() {
 }
 
 #[test]
-fn diagnostics_waits_for_the_published_ones() {
+fn pull_diagnostics_are_used_when_supported() {
+    let mut client = initialized_with_capabilities_and_script(
+        &pull_capabilities(),
+        &json!([
+            { "action": "respond:0" },
+            { "action": "respond:0", "result": diagnostic_report("pulled", "r1") }
+        ]),
+    );
+    assert!(client.supports_pull_diagnostics());
+
+    let uri = a_json();
+    client
+        .did_open(uri.clone(), "{}", LanguageKind::JSON)
+        .unwrap();
+    let diagnostics = client.diagnostics(&uri).unwrap();
+    assert_eq!(first_message(&diagnostics), "pulled");
+}
+
+#[test]
+fn pushed_diagnostics_are_used_when_pull_is_not_supported() {
     let mut client = scripted_initialized(&json!([{ "action": "respond:0" }]));
+    assert!(!client.supports_pull_diagnostics());
+
     let uri = a_json();
     client
         .did_open(uri.clone(), "{}", LanguageKind::JSON)
         .unwrap();
     let diagnostics = client.diagnostics(&uri).unwrap();
     assert_eq!(first_message(&diagnostics), "v1");
+}
+
+#[test]
+fn pull_diagnostics_thread_the_previous_result_id() {
+    let record = std::env::temp_dir().join(format!(
+        "lspresso-diagnostics-{}-{}.jsonl",
+        std::process::id(),
+        line!()
+    ));
+    if record.exists() {
+        std::fs::remove_file(&record).expect("removing the stale recording");
+    }
+
+    let mut client = initialized_with_capabilities_and_recording(
+        &pull_capabilities(),
+        &json!([
+            { "action": "respond:0" },
+            { "action": "respond:0", "result": diagnostic_report("pulled", "r1") },
+            { "action": "respond:0", "result": unchanged_report("r2") }
+        ]),
+        &record,
+    );
+    let uri = a_json();
+    client
+        .did_open(uri.clone(), "{}", LanguageKind::JSON)
+        .unwrap();
+
+    assert_eq!(first_message(&client.diagnostics(&uri).unwrap()), "pulled");
+    assert_eq!(first_message(&client.diagnostics(&uri).unwrap()), "pulled");
+
+    let messages: Vec<serde_json::Value> = std::fs::read_to_string(&record)
+        .unwrap()
+        .lines()
+        .map(|line| serde_json::from_str(line).unwrap())
+        .collect();
+    std::fs::remove_file(&record).expect("removing the recording");
+
+    let pulls: Vec<_> = messages
+        .iter()
+        .filter(|message| message["method"] == "textDocument/diagnostic")
+        .collect();
+    assert_eq!(pulls.len(), 2);
+    assert!(pulls[0]["params"].get("previousResultId").is_none());
+    assert_eq!(pulls[1]["params"]["previousResultId"], "r1");
 }
 
 #[test]
@@ -159,5 +264,70 @@ fn an_unversioned_publication_from_before_a_change_is_not_the_answer() {
     assert_eq!(
         first_message(&client.next_diagnostics(&uri, TIMEOUT).unwrap()),
         "v2"
+    );
+}
+
+#[test]
+fn a_pull_is_sent_again_when_the_content_was_modified() {
+    let mut client = initialized_with_capabilities_and_script(
+        &pull_capabilities(),
+        &json!([
+            { "action": "respond:0" },
+            pull_error(LspErrorCodes::ContentModified, None),
+            pull_error(LspErrorCodes::ServerCancelled, Some(true)),
+            { "action": "respond:0", "result": diagnostic_report("pulled", "r1") }
+        ]),
+    );
+    let uri = a_json();
+    client
+        .did_open(uri.clone(), "{}", LanguageKind::JSON)
+        .unwrap();
+
+    assert_eq!(first_message(&client.diagnostics(&uri).unwrap()), "pulled");
+}
+
+#[test]
+fn a_pull_gives_up_after_repeated_retriable_failures() {
+    let mut client = initialized_with_capabilities_and_script(
+        &pull_capabilities(),
+        &json!([
+            { "action": "respond:0" },
+            pull_error(LspErrorCodes::ContentModified, None),
+            pull_error(LspErrorCodes::ContentModified, None),
+            pull_error(LspErrorCodes::ContentModified, None),
+            { "action": "respond:0", "result": diagnostic_report("too late", "r1") }
+        ]),
+    );
+    let uri = a_json();
+    client
+        .did_open(uri.clone(), "{}", LanguageKind::JSON)
+        .unwrap();
+
+    let err = client.diagnostics(&uri).unwrap_err();
+    assert!(
+        matches!(err.kind(), ErrorKind::Response { code, .. } if *code == i32::from(LspErrorCodes::ContentModified)),
+        "{err}"
+    );
+}
+
+#[test]
+fn a_pull_is_not_retried_after_other_failures() {
+    let mut client = initialized_with_capabilities_and_script(
+        &pull_capabilities(),
+        &json!([
+            { "action": "respond:0" },
+            pull_error(LspErrorCodes::RequestFailed, None),
+            { "action": "respond:0", "result": diagnostic_report("unused", "r1") }
+        ]),
+    );
+    let uri = a_json();
+    client
+        .did_open(uri.clone(), "{}", LanguageKind::JSON)
+        .unwrap();
+
+    let err = client.diagnostics(&uri).unwrap_err();
+    assert!(
+        matches!(err.kind(), ErrorKind::Response { code, .. } if *code == i32::from(LspErrorCodes::RequestFailed)),
+        "{err}"
     );
 }
