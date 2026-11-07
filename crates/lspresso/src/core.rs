@@ -1,7 +1,7 @@
 pub mod capabilities;
 mod documents;
 mod lifecycle;
-pub(crate) mod publications;
+pub(crate) mod notification_buffer;
 mod server_requests;
 
 pub(crate) use documents::DocumentTracker;

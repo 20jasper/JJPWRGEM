@@ -1,12 +1,9 @@
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use gen_lsp_types::*;
 
 use super::document;
-use crate::{
-    Client, Protocol, Result,
-    error::{ErrorKind, elapsed_ms},
-};
+use crate::{Client, Protocol, Result};
 
 impl Client {
     /// Sends [`textDocument/diagnostic`](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#textDocument_diagnostic).
@@ -29,23 +26,12 @@ impl Client {
     }
 
     pub fn next_diagnostics(&mut self, uri: &Uri, timeout: Duration) -> Result<Vec<Diagnostic>> {
-        let start = Instant::now();
-        let deadline = start + timeout;
         let version = self.open_document_version(uri)?;
-        loop {
-            if let Some(diagnostics) = self.take_publication(uri, version) {
-                return Ok(diagnostics);
-            }
-            let now = Instant::now();
-            if now >= deadline {
-                return Err(ErrorKind::DiagnosticsTimeout {
-                    uri: uri.clone(),
-                    after_ms: elapsed_ms(start, now),
-                }
-                .into());
-            }
-            self.receive_until(deadline, PublishDiagnosticsNotification::METHOD.as_str())?;
-        }
+        let published = self
+            .wait_for_notification_where::<PublishDiagnosticsNotification>(timeout, |p| {
+                p.uri == *uri && p.version.is_none_or(|v| v >= version)
+            })?;
+        Ok(published.diagnostics)
     }
 
     /// Sends [`workspace/diagnostic`](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#workspace_diagnostic).
