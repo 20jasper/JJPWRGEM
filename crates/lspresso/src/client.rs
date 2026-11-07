@@ -19,7 +19,6 @@ use crate::{
 const EXIT_POLL_INTERVAL: Duration = Duration::from_millis(1);
 const DEFAULT_REQUEST_TIMEOUT: Duration = Duration::from_secs(5);
 
-/// Fails to compile for a method a client must not send.
 macro_rules! assert_client_to_server {
     ($item:ty) => {
         const {
@@ -72,13 +71,14 @@ impl Client {
         Ok(client)
     }
 
+    /// How many notifications to buffer before discarding them. Defaults to 4096
     #[must_use]
     pub fn with_notification_capacity(mut self, capacity: usize) -> Self {
         self.notifications.set_capacity(capacity);
         self
     }
 
-    /// How long each request waits for its response. Defaults to 5s.
+    /// How long each request waits for its response. Defaults to 5s
     #[must_use]
     pub const fn with_request_timeout(mut self, timeout: Duration) -> Self {
         self.request_timeout = timeout;
@@ -146,7 +146,6 @@ impl Client {
         self.transport.rss_bytes()
     }
 
-    /// What the server declared in its `initialize` response.
     pub const fn server_capabilities(&self) -> Option<&ServerCapabilities> {
         self.server_capabilities.as_ref()
     }
@@ -254,8 +253,7 @@ impl Client {
         }
     }
 
-    /// Receives until `until` or the core's next request deadline, whichever
-    /// is sooner, dispatches what arrived through the core, then ticks it --
+    /// Receives until `until` or the next request deadline, dispatches what arrived through the core, then ticks it --
     /// after every receive, not just timeouts, since a server streaming
     /// notifications never lets a receive time out.
     fn recv_and_dispatch(
