@@ -101,7 +101,7 @@ fn diagnostics_time_out_when_nothing_is_published() {
         .next_diagnostics(&uri, Duration::from_millis(100))
         .unwrap_err();
     assert!(
-        matches!(err.kind(), ErrorKind::DiagnosticsTimeout { .. }),
+        matches!(err.kind(), ErrorKind::NotificationTimeout { .. }),
         "{err:?}"
     );
 }

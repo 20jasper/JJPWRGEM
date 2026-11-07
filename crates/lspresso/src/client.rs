@@ -12,20 +12,30 @@ use lsp_server::{Message, RequestId};
 use self::transport::{Incoming, Transport};
 use crate::{
     Error, Protocol, Result,
-    core::{self, ClientState, DocumentTracker, Effect, publications::Publications},
+    core::{self, ClientState, DocumentTracker, Effect, notification_buffer::NotificationBuffer},
     error::{ErrorKind, elapsed_ms},
 };
 
 const EXIT_POLL_INTERVAL: Duration = Duration::from_millis(1);
 const DEFAULT_REQUEST_TIMEOUT: Duration = Duration::from_secs(5);
 
-/// Fails to compile for a method a client must not send.
 macro_rules! assert_client_to_server {
     ($item:ty) => {
         const {
             assert!(matches!(
                 <$item>::MESSAGE_DIRECTION,
                 MessageDirection::ClientToServer | MessageDirection::Both
+            ));
+        }
+    };
+}
+
+macro_rules! assert_server_to_client {
+    ($item:ty) => {
+        const {
+            assert!(matches!(
+                <$item>::MESSAGE_DIRECTION,
+                MessageDirection::ServerToClient | MessageDirection::Both
             ));
         }
     };
@@ -39,7 +49,7 @@ pub struct Client {
     background_errors: Vec<Error>,
     request_timeout: Duration,
     server_capabilities: Option<ServerCapabilities>,
-    publications: Publications,
+    notifications: NotificationBuffer,
 }
 
 impl Client {
@@ -51,7 +61,7 @@ impl Client {
             background_errors: Vec::new(),
             request_timeout: DEFAULT_REQUEST_TIMEOUT,
             server_capabilities: None,
-            publications: Publications::default(),
+            notifications: NotificationBuffer::default(),
         })
     }
 
@@ -61,9 +71,18 @@ impl Client {
         Ok(client)
     }
 
-    /// How long each request waits for its response. Defaults to 5s.
-    pub fn set_request_timeout(&mut self, timeout: Duration) {
+    /// How many notifications to buffer before discarding them. Defaults to 4096
+    #[must_use]
+    pub fn with_notification_capacity(mut self, capacity: usize) -> Self {
+        self.notifications.set_capacity(capacity);
+        self
+    }
+
+    /// How long each request waits for its response. Defaults to 5s
+    #[must_use]
+    pub const fn with_request_timeout(mut self, timeout: Duration) -> Self {
         self.request_timeout = timeout;
+        self
     }
 
     pub fn initialize(&mut self, capabilities: ClientCapabilities) -> Result<InitializeResult> {
@@ -127,7 +146,6 @@ impl Client {
         self.transport.rss_bytes()
     }
 
-    /// What the server declared in its `initialize` response.
     pub const fn server_capabilities(&self) -> Option<&ServerCapabilities> {
         self.server_capabilities.as_ref()
     }
@@ -145,17 +163,43 @@ impl Client {
         self.docs.current_version(uri)
     }
 
-    pub(crate) fn take_publication(&mut self, uri: &Uri, version: i32) -> Option<Vec<Diagnostic>> {
-        self.publications.take(uri, version)
+    pub fn wait_for_notification<N: Notification>(
+        &mut self,
+        timeout: Duration,
+    ) -> Result<N::Params> {
+        self.wait_for_notification_where::<N>(timeout, |_| true)
     }
 
-    /// Receives once, until `deadline` at the latest, so a caller can poll
-    /// the publications between receives.
-    pub(crate) fn receive_until(&mut self, deadline: Instant, method: &'static str) -> Result<()> {
-        match self.recv_and_dispatch(Some(deadline), None) {
-            RecvOutcome::Closed(closed) => Err(closed.into_error(method)),
-            RecvOutcome::Resolved(_) | RecvOutcome::Handled | RecvOutcome::TimedOut => Ok(()),
+    pub fn wait_for_notification_where<N: Notification>(
+        &mut self,
+        timeout: Duration,
+        mut matches: impl FnMut(&N::Params) -> bool,
+    ) -> Result<N::Params> {
+        assert_server_to_client!(N);
+        self.state.require_initialized()?;
+        let start = Instant::now();
+        let deadline = start + timeout;
+        loop {
+            if let Some(params) = self.notifications.take::<N>(&mut matches) {
+                return Ok(params);
+            }
+            let now = Instant::now();
+            if now >= deadline {
+                return Err(ErrorKind::NotificationTimeout {
+                    method: N::METHOD.as_str(),
+                    after_ms: elapsed_ms(start, now),
+                }
+                .into());
+            }
+            if let RecvOutcome::Closed(closed) = self.recv_and_dispatch(Some(deadline), None) {
+                return Err(closed.into_error(N::METHOD.as_str()));
+            }
         }
+    }
+
+    fn forget_diagnostics(&mut self, uri: &Uri) {
+        self.notifications
+            .retain::<PublishDiagnosticsNotification>(|p| p.uri != *uri);
     }
 
     pub(crate) fn next_document_version(&self, uri: &Uri) -> Result<i32> {
@@ -209,8 +253,7 @@ impl Client {
         }
     }
 
-    /// Receives until `until` or the core's next request deadline, whichever
-    /// is sooner, dispatches what arrived through the core, then ticks it --
+    /// Receives until `until` or the next request deadline, dispatches what arrived through the core, then ticks it --
     /// after every receive, not just timeouts, since a server streaming
     /// notifications never lets a receive time out.
     fn recv_and_dispatch(
@@ -222,7 +265,7 @@ impl Client {
         let outcome = match self.transport.recv_until(deadline) {
             Ok(Incoming::Message(message)) => {
                 if let Message::Notification(notification) = &message {
-                    self.publications.record(notification);
+                    self.notifications.record(notification);
                 }
                 let effects = self.state.on_message(&message);
                 if let Some(result) = self.apply_effects(effects, waiting_for) {
@@ -307,7 +350,7 @@ impl Protocol for Client {
         let TextDocumentItem { uri, version, .. } = &params.text_document;
         self.docs.require_not_open(uri)?;
         let (uri, version) = (uri.clone(), *version);
-        self.publications.clear(&uri);
+        self.forget_diagnostics(&uri);
         self.notify::<DidOpenTextDocumentNotification>(params)?;
         self.docs.mark_open(uri, version);
         Ok(())
@@ -324,7 +367,7 @@ impl Protocol for Client {
         );
         self.notify::<DidChangeTextDocumentNotification>(params)?;
         self.docs.commit_change(&uri, version);
-        self.publications.clear(&uri);
+        self.forget_diagnostics(&uri);
         Ok(())
     }
 
@@ -334,7 +377,7 @@ impl Protocol for Client {
         self.docs.require_open(&uri)?;
         self.notify::<DidCloseTextDocumentNotification>(params)?;
         self.docs.mark_closed(&uri);
-        self.publications.clear(&uri);
+        self.forget_diagnostics(&uri);
         Ok(())
     }
 

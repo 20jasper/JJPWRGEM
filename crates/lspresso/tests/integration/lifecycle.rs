@@ -63,8 +63,7 @@ fn exits_immediately_is_reported_as_disconnected() {
 
 #[test]
 fn never_responds_times_out() {
-    let mut client = scripted(&json!([]));
-    client.set_request_timeout(Duration::from_millis(100));
+    let mut client = scripted(&json!([])).with_request_timeout(Duration::from_millis(100));
 
     let err = client
         .initialize(ClientCapabilities::default())
