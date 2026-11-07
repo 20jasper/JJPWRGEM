@@ -5,8 +5,6 @@ use gen_lsp_types::{
 };
 use lsp_server::Notification as LspNotification;
 
-/// Past this, the oldest publication is dropped to make room: a server that
-/// publishes on every keystroke mustn't grow it forever.
 const CAPACITY: usize = 4096;
 
 #[derive(Debug, Default)]
