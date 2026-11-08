@@ -209,3 +209,36 @@ fn a_pull_gives_up_after_repeated_retriable_failures() {
     );
     assert_eq!(previous_ids_sent(&recording), [None, None, None]);
 }
+
+#[test]
+fn a_zero_timeout_still_sees_a_publication_that_already_arrived() {
+    let (mut client, uri) = ScriptedServer::new()
+        .publications(Publications::Unversioned)
+        .spawn_opened();
+    std::thread::sleep(Duration::from_millis(300));
+
+    let diagnostics = client.next_diagnostics(&uri, Duration::ZERO).unwrap();
+
+    assert_eq!(messages(&diagnostics), ["v1"]);
+}
+
+#[test]
+fn an_endless_timeout_does_not_overflow_while_waiting() {
+    let (mut client, uri) = ScriptedServer::new()
+        .publications(Publications::Unversioned)
+        .spawn_opened();
+
+    let diagnostics = client.next_diagnostics(&uri, Duration::MAX).unwrap();
+
+    assert_eq!(messages(&diagnostics), ["v1"]);
+}
+
+#[test]
+fn diagnostics_of_a_closed_session_do_not_answer_the_reopened_document() {
+    let (mut client, uri) = opened();
+    client.did_change_full(&uri, "{ }").unwrap();
+    client.did_close(&uri).unwrap();
+    open(&mut client, &uri);
+
+    assert_eq!(published(&mut client, &uri), ["v3"]);
+}

@@ -10,11 +10,12 @@ impl Client {
         text: impl Into<String>,
         language: LanguageKind,
     ) -> Result<()> {
+        let version = self.next_open_version(&uri);
         self.protocol_did_open(DidOpenTextDocumentParams {
             text_document: TextDocumentItem {
                 uri,
                 language_id: language,
-                version: 1,
+                version,
                 text: text.into(),
             },
         })
