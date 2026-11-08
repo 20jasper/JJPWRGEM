@@ -15,6 +15,7 @@ use crate::{
     core::{
         self, ClientState, DocumentTracker, Effect,
         notification_buffer::{NotificationBuffer, notification},
+        text::{self, Encoding},
     },
     error::{ErrorKind, deadline_after, elapsed_ms},
 };
@@ -171,6 +172,17 @@ impl Client {
     pub(crate) fn open_document_version(&self, uri: &Uri) -> Result<i32> {
         self.state.require_initialized()?;
         self.docs.current_version(uri)
+    }
+
+    pub(crate) fn tracked_text(&self, uri: &Uri) -> Result<&str> {
+        self.docs.text(uri)
+    }
+
+    pub(crate) fn position_encoding(&self) -> Encoding {
+        Encoding::negotiated(
+            self.server_capabilities()
+                .and_then(|capabilities| capabilities.position_encoding.as_ref()),
+        )
     }
 
     pub(crate) fn previous_result_id(&self, uri: &Uri) -> Result<Option<String>> {
@@ -371,26 +383,31 @@ impl Protocol for Client {
 
     fn protocol_did_open(&mut self, params: DidOpenTextDocumentParams) -> Result<()> {
         self.state.require_initialized()?;
-        let TextDocumentItem { uri, version, .. } = &params.text_document;
+        let TextDocumentItem {
+            uri, version, text, ..
+        } = &params.text_document;
         self.docs.require_not_open(uri)?;
-        let (uri, version) = (uri.clone(), *version);
+        let (uri, version, text) = (uri.clone(), *version, text.clone());
         self.forget_diagnostics(&uri);
         self.notify::<DidOpenTextDocumentNotification>(params)?;
-        self.docs.mark_open(uri, version);
+        self.docs.mark_open(uri, version, text);
         Ok(())
     }
 
     fn protocol_did_change(&mut self, params: DidChangeTextDocumentParams) -> Result<()> {
         self.state.require_initialized()?;
         let identifier = &params.text_document;
-        self.docs
-            .require_open(&identifier.text_document_identifier.uri)?;
-        let (uri, version) = (
-            identifier.text_document_identifier.uri.clone(),
-            identifier.version,
-        );
+        let uri = &identifier.text_document_identifier.uri;
+        self.docs.require_open(uri)?;
+        let version = identifier.version;
+        let text = text::apply_changes(
+            self.docs.text(uri)?,
+            &params.content_changes,
+            self.position_encoding(),
+        )?;
+        let uri = uri.clone();
         self.notify::<DidChangeTextDocumentNotification>(params)?;
-        self.docs.commit_change(&uri, version);
+        self.docs.commit_change(&uri, version, text);
         self.forget_diagnostics(&uri);
         Ok(())
     }

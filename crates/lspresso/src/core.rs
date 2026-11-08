@@ -4,6 +4,7 @@ mod documents;
 mod lifecycle;
 pub(crate) mod notification_buffer;
 mod server_requests;
+pub(crate) mod text;
 
 pub(crate) use documents::DocumentTracker;
 pub(crate) use lifecycle::ClientState;

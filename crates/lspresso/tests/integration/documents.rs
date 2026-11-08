@@ -33,17 +33,20 @@ fn raw_document_notifications_are_tracked_too() {
             },
         })
         .unwrap();
+    assert_eq!(client.document_text(&uri), Some("{}"));
 
     assert_err_kind!(
         client.did_open(uri.clone(), "{}", LanguageKind::JSON),
         ErrorKind::AlreadyOpen { .. }
     );
     client.did_change_full(&uri, "[]").unwrap();
+    assert_eq!(client.document_text(&uri), Some("[]"));
     client
         .protocol_did_close(DidCloseTextDocumentParams {
             text_document: TextDocumentIdentifier { uri: uri.clone() },
         })
         .unwrap();
+    assert_eq!(client.document_text(&uri), None);
     assert_err_kind!(
         client.did_change_full(&uri, "[]"),
         ErrorKind::NotOpen { .. }
@@ -56,7 +59,7 @@ fn save_notifications_need_an_open_document() {
     let uri = a_json();
 
     let errs = [
-        client.did_save(&uri, None).unwrap_err(),
+        client.did_save(&uri).unwrap_err(),
         client
             .will_save(&uri, TextDocumentSaveReason::Manual)
             .unwrap_err(),
@@ -69,7 +72,7 @@ fn save_notifications_need_an_open_document() {
     }
 
     open(&mut client, &uri);
-    client.did_save(&uri, None).unwrap();
+    client.did_save(&uri).unwrap();
     client
         .will_save(&uri, TextDocumentSaveReason::Manual)
         .unwrap();
@@ -86,7 +89,7 @@ fn document_sync_before_initialize_is_rejected() {
             .unwrap_err(),
         client.did_change_full(&uri, "[]").unwrap_err(),
         client.did_close(&uri).unwrap_err(),
-        client.did_save(&uri, None).unwrap_err(),
+        client.did_save(&uri).unwrap_err(),
         client
             .will_save(&uri, TextDocumentSaveReason::Manual)
             .unwrap_err(),

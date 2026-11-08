@@ -1,7 +1,7 @@
 use gen_lsp_types::*;
 
 use super::document;
-use crate::{Client, Protocol, Result};
+use crate::{Client, Protocol, Result, core};
 
 impl Client {
     pub fn did_open(
@@ -34,10 +34,38 @@ impl Client {
         })
     }
 
+    /// Applies `edits` to the document's text, each against it as it is,
+    /// and sends the change: as those edits if the server syncs
+    /// incrementally, otherwise as the whole new text.
+    pub fn did_change(&mut self, uri: &Uri, edits: &[TextEdit]) -> Result<()> {
+        let version = self.next_document_version(uri)?;
+        let applied = core::text::apply(self.tracked_text(uri)?, edits, self.position_encoding())?;
+        let content_changes = if self.supports_incremental_sync() {
+            applied.changes
+        } else {
+            vec![TextDocumentContentChangeEvent::from(
+                TextDocumentContentChangeWholeDocument { text: applied.text },
+            )]
+        };
+        self.protocol_did_change(DidChangeTextDocumentParams {
+            text_document: VersionedTextDocumentIdentifier {
+                version,
+                text_document_identifier: document(uri),
+            },
+            content_changes,
+        })
+    }
+
     pub fn did_close(&mut self, uri: &Uri) -> Result<()> {
         self.protocol_did_close(DidCloseTextDocumentParams {
             text_document: document(uri),
         })
+    }
+
+    /// The document's text as the server was last told it, or `None` when it
+    /// isn't open.
+    pub fn document_text(&self, uri: &Uri) -> Option<&str> {
+        self.tracked_text(uri).ok()
     }
 
     /// Sends [`textDocument/willSave`](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#textDocument_willSave).
@@ -64,10 +92,20 @@ impl Client {
         })
     }
 
-    /// Sends [`textDocument/didSave`](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#textDocument_didSave).
+    /// Sends [`textDocument/didSave`](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#textDocument_didSave),
+    /// with the document's text if the server asked for it.
     ///
     /// Use [`Protocol::protocol_did_save`] for full params.
-    pub fn did_save(&mut self, uri: &Uri, text: Option<String>) -> Result<()> {
+    pub fn did_save(&mut self, uri: &Uri) -> Result<()> {
+        self.require_open_document(uri)?;
+        let text = if self
+            .server_capabilities()
+            .is_some_and(core::capabilities::save_includes_text)
+        {
+            Some(self.tracked_text(uri)?.to_owned())
+        } else {
+            None
+        };
         self.protocol_did_save(DidSaveTextDocumentParams {
             text_document: document(uri),
             text,
