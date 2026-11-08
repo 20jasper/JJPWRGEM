@@ -12,7 +12,10 @@ use lsp_server::{Message, RequestId};
 use self::transport::{Incoming, Transport};
 use crate::{
     Error, Protocol, Result,
-    core::{self, ClientState, DocumentTracker, Effect, notification_buffer::NotificationBuffer},
+    core::{
+        self, ClientState, DocumentTracker, Effect,
+        notification_buffer::{NotificationBuffer, notification},
+    },
     error::{ErrorKind, elapsed_ms},
 };
 
@@ -244,13 +247,8 @@ impl Client {
     }
 
     fn send_notification<N: Notification>(&mut self, params: N::Params) -> Result<()> {
-        let params = serde_json::to_value(params)
-            .expect("serializing notification params as JSON cannot fail");
         self.transport
-            .send(&Message::Notification(lsp_server::Notification::new(
-                N::METHOD.as_str().to_owned(),
-                params,
-            )))
+            .send(&Message::Notification(notification::<N>(params)))
     }
 
     fn wait_for_resolution(

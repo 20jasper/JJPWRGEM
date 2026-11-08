@@ -1,6 +1,3 @@
-//! Scripted LSP server for client tests, driven by the `Config` in
-//! `LSPRESSO_CONFIG`.
-
 use std::{
     io::{BufRead, BufReader, Stdout, Write, stdin, stdout},
     sync::{Arc, Mutex},
@@ -8,9 +5,14 @@ use std::{
     time::Duration,
 };
 
-use gen_lsp_types::*;
+use gen_lsp_types::{
+    Diagnostic, DidChangeTextDocumentNotification, DidOpenTextDocumentNotification,
+    ExitNotification, InitializeRequest, InitializeResult, Notification as _,
+    PublishDiagnosticsNotification, PublishDiagnosticsParams, Request as _,
+    TextDocumentContentChangeEvent, Uri,
+};
 use lsp_server::{Message, Request, Response};
-use lspresso::scripted_server::{self, Config, Outcome, Publications, Step};
+use lspresso::scripted_server::{self, Config, Outcome, Publications, Step, notification, parse};
 
 fn write(out: &Mutex<Stdout>, message: &Message) {
     let mut out = out.lock().unwrap();
@@ -24,13 +26,14 @@ fn write_raw(out: &Mutex<Stdout>, text: &str) {
 }
 
 fn canned_result(request: &Request, config: &Config) -> serde_json::Value {
-    match request.method.as_str() {
-        "initialize" => serde_json::to_value(InitializeResult {
+    if request.method == InitializeRequest::METHOD.as_str() {
+        serde_json::to_value(InitializeResult {
             capabilities: config.capabilities.clone(),
             server_info: None,
         })
-        .unwrap(),
-        _ => serde_json::Value::Null,
+        .unwrap()
+    } else {
+        serde_json::Value::Null
     }
 }
 
@@ -58,51 +61,40 @@ fn publish(out: &Mutex<Stdout>, config: &Config, uri: &Uri, version: i32, text: 
             diagnostics,
             version: (config.publications == Publications::Versioned).then_some(version),
         };
-        let method = PublishDiagnosticsNotification::METHOD.as_str().to_owned();
-        let notification = lsp_server::Notification::new(method, params);
-        write(out, &Message::Notification(notification));
+        write(out, &notification::<PublishDiagnosticsNotification>(params));
     }
 }
 
 struct Exit;
-
-/// Handles a non-request message, returning the request if it is one.
 fn dispatch(
     out: &Mutex<Stdout>,
     config: &Config,
     message: Message,
 ) -> Result<Option<Request>, Exit> {
-    let Message::Notification(n) = message else {
-        return Ok(match message {
-            Message::Request(request) => Some(request),
-            _ => None,
-        });
+    let n = match message {
+        Message::Request(request) => return Ok(Some(request)),
+        Message::Notification(n) => n,
+        Message::Response(_) => return Ok(None),
     };
-    match n.method.as_str() {
-        "exit" => return Err(Exit),
-        "textDocument/didOpen" => {
-            let params: DidOpenTextDocumentParams = serde_json::from_value(n.params).unwrap();
-            let document = params.text_document;
-            publish(out, config, &document.uri, document.version, &document.text);
-        }
-        "textDocument/didChange" => {
-            let params: DidChangeTextDocumentParams = serde_json::from_value(n.params).unwrap();
-            let text = match &params.content_changes[0] {
-                TextDocumentContentChangeEvent::TextDocumentContentChangePartial(c) => &c.text,
-                TextDocumentContentChangeEvent::TextDocumentContentChangeWholeDocument(c) => {
-                    &c.text
-                }
-            };
-            let document = params.text_document;
-            publish(
-                out,
-                config,
-                &document.text_document_identifier.uri,
-                document.version,
-                text,
-            );
-        }
-        _ => {}
+    if n.method == ExitNotification::METHOD.as_str() {
+        return Err(Exit);
+    }
+    if let Some(params) = parse::<DidOpenTextDocumentNotification>(&n) {
+        let document = params.text_document;
+        publish(out, config, &document.uri, document.version, &document.text);
+    } else if let Some(params) = parse::<DidChangeTextDocumentNotification>(&n) {
+        let text = match &params.content_changes[0] {
+            TextDocumentContentChangeEvent::TextDocumentContentChangePartial(c) => &c.text,
+            TextDocumentContentChangeEvent::TextDocumentContentChangeWholeDocument(c) => &c.text,
+        };
+        let document = params.text_document;
+        publish(
+            out,
+            config,
+            &document.text_document_identifier.uri,
+            document.version,
+            text,
+        );
     }
     Ok(None)
 }

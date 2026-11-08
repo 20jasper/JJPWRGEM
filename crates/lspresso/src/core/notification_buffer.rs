@@ -57,7 +57,13 @@ impl NotificationBuffer {
     }
 }
 
-fn parse<N: Notification>(notification: &LspNotification) -> Option<N::Params> {
+pub(crate) fn notification<N: Notification>(params: N::Params) -> LspNotification {
+    let params =
+        serde_json::to_value(params).expect("serializing notification params as JSON cannot fail");
+    LspNotification::new(N::METHOD.as_str().to_owned(), params)
+}
+
+pub(crate) fn parse<N: Notification>(notification: &LspNotification) -> Option<N::Params> {
     if notification.method != N::METHOD.as_str() {
         return None;
     }
