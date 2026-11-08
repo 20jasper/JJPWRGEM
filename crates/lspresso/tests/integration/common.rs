@@ -180,11 +180,7 @@ impl Recording {
         self.messages()
             .into_iter()
             .filter_map(|message| match message {
-                Message::Notification(notification)
-                    if notification.method == N::METHOD.as_str() =>
-                {
-                    Some(serde_json::from_value(notification.params).unwrap())
-                }
+                Message::Notification(notification) => scripted_server::parse::<N>(&notification),
                 _ => None,
             })
             .collect()
