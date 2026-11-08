@@ -1,8 +1,4 @@
-use std::{
-    path::{Path, PathBuf},
-    process::Command,
-    time::Duration,
-};
+use std::{process::Command, time::Duration};
 
 use gen_lsp_types::*;
 use lspresso::{Client, ErrorKind, Protocol};
@@ -10,24 +6,15 @@ use serde_json::json;
 
 use crate::common::*;
 
-fn jjp_dist_binary_path() -> PathBuf {
-    if let Ok(path) = std::env::var("JJP_BIN") {
-        return PathBuf::from(path);
-    }
-    Path::new(env!("CARGO_MANIFEST_DIR")).join("../../target/dist/jjp")
-}
-
 fn spawn_real_server() -> Client {
-    let bin = jjp_dist_binary_path();
-    assert!(
-        bin.exists(),
-        "jjp binary not found at {}; run `cargo build --profile dist -p jjpwrgem` first, \
-         or set JJP_BIN to an explicit path",
-        bin.display()
+    let command = lspresso::server_command(
+        "JJP_BIN",
+        concat!(env!("CARGO_MANIFEST_DIR"), "/../../target/dist/jjp"),
+        ["lsp"],
     );
-    let mut command = Command::new(bin);
-    command.arg("lsp");
-    Client::spawn(command).expect("jjp lsp should spawn")
+    Client::spawn(command).expect(
+        "jjp should spawn; run `cargo build --profile dist -p jjpwrgem` first, or set JJP_BIN",
+    )
 }
 
 #[test]
