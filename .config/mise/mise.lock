@@ -427,31 +427,6 @@ checksum = "sha256:f6dd22a5c09bd4978b1331c0349c04e3c8aacb6a56b76343c6b016ce88f46
 url = "https://github.com/CodSpeedHQ/codspeed-rust/releases/download/v6.0.0/cargo-codspeed-aarch64-apple-darwin"
 url_api = "https://api.github.com/repos/CodSpeedHQ/codspeed-rust/releases/assets/663057845"
 
-[[tools."github:asyncswap/lsp-bench"]]
-version = "0.3.3"
-backend = "github:asyncswap/lsp-bench"
-specifiers = ["0.3.3"]
-
-[tools."github:asyncswap/lsp-bench"."platforms.linux-x64"]
-checksum = "sha256:cf66d5237951046b0dd83726b86e0c8b23fc20fe3315f184fea48543337a23df"
-url = "https://github.com/asyncswap/lsp-bench/releases/download/v0.3.3/lsp-bench-v0.3.3-x86_64-unknown-linux-gnu.tar.gz"
-url_api = "https://api.github.com/repos/asyncswap/lsp-bench/releases/assets/411391820"
-
-[tools."github:asyncswap/lsp-bench"."platforms.linux-x64-musl"]
-checksum = "sha256:cf66d5237951046b0dd83726b86e0c8b23fc20fe3315f184fea48543337a23df"
-url = "https://github.com/asyncswap/lsp-bench/releases/download/v0.3.3/lsp-bench-v0.3.3-x86_64-unknown-linux-gnu.tar.gz"
-url_api = "https://api.github.com/repos/asyncswap/lsp-bench/releases/assets/411391820"
-
-[tools."github:asyncswap/lsp-bench"."platforms.macos-arm64"]
-checksum = "sha256:d73b0357031be5432892560ee6044f5c0624f786e4c4abc1e4e78f52b580402d"
-url = "https://github.com/asyncswap/lsp-bench/releases/download/v0.3.3/lsp-bench-v0.3.3-aarch64-apple-darwin.tar.gz"
-url_api = "https://api.github.com/repos/asyncswap/lsp-bench/releases/assets/411391822"
-
-[tools."github:asyncswap/lsp-bench"."platforms.macos-x64"]
-checksum = "sha256:7f684a2633ff82e7db0c75f567c7f8a1baf73768b70c22f2f4bbcd8c65d24754"
-url = "https://github.com/asyncswap/lsp-bench/releases/download/v0.3.3/lsp-bench-v0.3.3-x86_64-apple-darwin.tar.gz"
-url_api = "https://api.github.com/repos/asyncswap/lsp-bench/releases/assets/411391821"
-
 [[tools."github:bearcove/tracey"]]
 version = "1.3.0"
 backend = "github:bearcove/tracey"
@@ -560,6 +535,47 @@ checksum = "sha256:ecd8452d5ad61939a71915982ba80e937eafeaa5b5596768f369976700e31
 url = "https://github.com/gungraun/gungraun/releases/download/v0.20.0/gungraun-runner-v0.20.0-x86_64-unknown-freebsd.tar.gz"
 url_api = "https://api.github.com/repos/gungraun/gungraun/releases/assets/591084038"
 
+[[tools."github:libkakashi/light-json-lsp"]]
+version = "0.1.0"
+backend = "github:libkakashi/light-json-lsp"
+specifiers = ["0.1.0"]
+
+[tools."github:libkakashi/light-json-lsp"."platforms.linux-arm64"]
+checksum = "sha256:b4ecbce6fcdeeec263e400f9cb4d95439931e681f70c51047a67f183f79a49d6"
+checksum_source = "mise-versions"
+url = "https://github.com/libkakashi/light-json-lsp/releases/download/v0.1.0/light-json-lsp-aarch64-linux.tar.gz"
+url_api = "https://api.github.com/repos/libkakashi/light-json-lsp/releases/assets/355034297"
+
+[tools."github:libkakashi/light-json-lsp"."platforms.linux-arm64-musl"]
+checksum = "sha256:b4ecbce6fcdeeec263e400f9cb4d95439931e681f70c51047a67f183f79a49d6"
+checksum_source = "mise-versions"
+url = "https://github.com/libkakashi/light-json-lsp/releases/download/v0.1.0/light-json-lsp-aarch64-linux.tar.gz"
+url_api = "https://api.github.com/repos/libkakashi/light-json-lsp/releases/assets/355034297"
+
+[tools."github:libkakashi/light-json-lsp"."platforms.linux-x64"]
+checksum = "sha256:a07498ccb5c8ab6aa9402dcb2c998811dd7d26c99ea26d00b4e5f72aab85c1dd"
+checksum_source = "mise-versions"
+url = "https://github.com/libkakashi/light-json-lsp/releases/download/v0.1.0/light-json-lsp-x86_64-linux.tar.gz"
+url_api = "https://api.github.com/repos/libkakashi/light-json-lsp/releases/assets/355034299"
+
+[tools."github:libkakashi/light-json-lsp"."platforms.linux-x64-musl"]
+checksum = "sha256:a07498ccb5c8ab6aa9402dcb2c998811dd7d26c99ea26d00b4e5f72aab85c1dd"
+checksum_source = "mise-versions"
+url = "https://github.com/libkakashi/light-json-lsp/releases/download/v0.1.0/light-json-lsp-x86_64-linux.tar.gz"
+url_api = "https://api.github.com/repos/libkakashi/light-json-lsp/releases/assets/355034299"
+
+[tools."github:libkakashi/light-json-lsp"."platforms.macos-arm64"]
+checksum = "sha256:80e4b8bfb0ceb9e2d1374ac4b5b9e4eee2146e5d019c559a53cb2e159fb779e4"
+checksum_source = "mise-versions"
+url = "https://github.com/libkakashi/light-json-lsp/releases/download/v0.1.0/light-json-lsp-aarch64-macos.tar.gz"
+url_api = "https://api.github.com/repos/libkakashi/light-json-lsp/releases/assets/355034298"
+
+[tools."github:libkakashi/light-json-lsp"."platforms.macos-x64"]
+checksum = "sha256:1b053b1cb6e14ae56eeda14c52273cd7ca8219ed323d4decd59981050049e312"
+checksum_source = "mise-versions"
+url = "https://github.com/libkakashi/light-json-lsp/releases/download/v0.1.0/light-json-lsp-x86_64-macos.tar.gz"
+url_api = "https://api.github.com/repos/libkakashi/light-json-lsp/releases/assets/355034296"
+
 [[tools."github:orium/cargo-rdme"]]
 version = "2.2.3"
 backend = "github:orium/cargo-rdme"
@@ -632,6 +648,15 @@ url = "https://github.com/jqlang/jq/releases/download/jq-1.8.2/jq-windows-amd64.
 url_api = "https://api.github.com/repos/jqlang/jq/releases/assets/453012788"
 provenance = "github-attestations"
 
+[[tools."npm:@t1ckbase/vscode-langservers-extracted"]]
+version = "2.0.5"
+aube = { path = "locks/npm-t1ckbase-vscode-langservers-extracted/2.0.5", digest = "sha256:06477821ae4b998e6cd01cc06e4e16ae5f8bc4c67ecc0805156e6b7385a61741" }
+backend = "npm:@t1ckbase/vscode-langservers-extracted"
+specifiers = ["2.0.5"]
+
+[tools."npm:@t1ckbase/vscode-langservers-extracted".provenance]
+repository = "github.com/T1ckbase/vscode-langservers-extracted"
+
 [[tools."npm:knip"]]
 version = "6.44.1"
 aube = { path = "locks/npm-knip/6.44.1", digest = "sha256:7db6554cb4159cfe10749c7ae1e170b7775f95414923960716ee9bbae2e239a3" }
@@ -658,12 +683,6 @@ specifiers = ["44.181.7"]
 
 [tools."npm:renovate".options]
 trust_policy_excludes = '["@yarnpkg/libzip@3.2.2"]'
-
-[[tools."npm:vscode-langservers-extracted"]]
-version = "4.10.0"
-aube = { path = "locks/npm-vscode-langservers-extracted/4.10.0", digest = "sha256:cfcde76c1138b72ec42fbaa9ffa06cc0e4a64bb3343ae5399e3a54d8b9a15de6" }
-backend = "npm:vscode-langservers-extracted"
-specifiers = ["4.10.0"]
 
 [[tools."packslip:github.com/jdx/hk"]]
 version = "2.10.0"

@@ -1,4 +1,6 @@
 [vars]
+# mise leaves freshly locked npm tools off PATH, so call the binary by its install path
+vscode_json_bin = "$(mise where npm:@t1ckbase/vscode-langservers-extracted)/node_modules/.bin/vscode-json-language-server"
 codspeed_benches = "--bench bytes2chars --bench json_deser --bench json_prettify --bench json_uglify --bench json_serialize --bench json_tokens"
 
 [tasks.bench]
@@ -44,6 +46,7 @@ run = [
 description = "Build and run all criterion benches via codspeed"
 dir = "{{config_root}}/benches"
 run = [
+  "cargo build --profile dist -p jjpwrgem",
   "cargo codspeed build {{vars.codspeed_benches}}",
   "cargo codspeed run {{vars.codspeed_benches}}",
 ]
@@ -120,33 +123,20 @@ cargo rdme --workspace-project bytes2chars --force
 "github:bearcove/tracey" = "1.3.0"
 
 [tasks.bench-lsp]
-hide = true
-dir = "{{config_root}}/benches/lsp"
-usage = 'arg "<fixture>" help="fixture name (canada, twitter, small, citm_catalog)"'
-run = """
+description = "Bench jjp's LSP against other JSON LSPs via lspresso and regenerate benches/lsp/lsp.md"
+dir = "{{config_root}}/benches"
+shell = "bash -c"
+run = '''
+set -euo pipefail
 cargo build --profile dist -p jjpwrgem
-lsp-bench -c "benchmark-${usage_fixture}.yaml"
-mkdir -p results
-cargo xtask lsp-bench-report "${usage_fixture}"
-"""
+VSCODE_JSON_BIN="{{vars.vscode_json_bin}}" cargo criterion --bench lsp --message-format=json | cargo xtask lsp-bench-report
+cargo xtask generate-readmes
+'''
 
 [tasks.bench-lsp.tools]
-"github:asyncswap/lsp-bench" = "0.3.3"
-"npm:vscode-langservers-extracted" = "4.10.0"
-
-[tasks.bench-lsp-all]
-description = "run lsp-bench for all fixtures and regenerate readmes"
-run = """
-mise run bench-lsp canada
-mise run bench-lsp twitter
-mise run bench-lsp small
-mise run bench-lsp citm_catalog
-cargo xtask generate-readmes
-"""
-
-[tasks.bench-lsp-all.tools]
-"github:asyncswap/lsp-bench" = "0.3.3"
-"npm:vscode-langservers-extracted" = "4.10.0"
+"cargo:cargo-criterion" = "1.1.0"
+"npm:@t1ckbase/vscode-langservers-extracted" = "2.0.5"
+"github:libkakashi/light-json-lsp" = "0.1.0"
 "github:bearcove/tracey" = "1.3.0"
 "npm:oxfmt" = "0.75.0"
 "github:orium/cargo-rdme" = "2.2"
