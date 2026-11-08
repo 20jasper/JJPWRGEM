@@ -1,4 +1,4 @@
-use gen_lsp_types::TextDocumentSyncKind;
+use gen_lsp_types::*;
 
 use crate::{Client, core};
 
@@ -10,5 +10,10 @@ impl Client {
 
     pub fn supports_incremental_sync(&self) -> bool {
         self.text_document_sync_kind() == Some(TextDocumentSyncKind::Incremental)
+    }
+
+    pub fn supports_pull_diagnostics(&self) -> bool {
+        self.server_capabilities()
+            .is_some_and(|capabilities| capabilities.diagnostic_provider.is_some())
     }
 }

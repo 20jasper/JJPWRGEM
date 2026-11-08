@@ -1,6 +1,7 @@
 //! Answers each incoming request according to the next step of a script
 //! passed as JSON in `LSPRESSO_SCRIPT`, for tests of the client shell.
-//! Requests past the end of the script are ignored. Exits on `exit`, at
+//! Requests past the end of the script are ignored, or answered at once when
+//! `LSPRESSO_RESPOND_TO_ALL` is set. Exits on `exit`, at
 //! end of input, or when a step says to. Every document sync is answered
 //! with a stale publication, then one for the version just sent; emptying
 //! a document with one empty publication. `LSPRESSO_INITIALIZE_RESULT`
@@ -20,6 +21,8 @@ use lsp_server::{Message, Notification, Request, Response};
 
 struct Step {
     action: Action,
+    result: Option<serde_json::Value>,
+    error: Option<serde_json::Value>,
 }
 
 enum Action {
@@ -28,7 +31,9 @@ enum Action {
     Exit,
 }
 
-/// Each step is `{"action": a}`, where `a` is `"respond:<ms>"`, `"ignore"`,
+/// Each step is `{"action": a}` plus an optional `"result": v` to answer
+/// with instead of the default, or `"error": {"code": c, "message": m,
+/// "data": d}` to answer with an error, where `a` is `"respond:<ms>"`, `"ignore"`,
 /// or `"exit"`.
 fn parse(step: &serde_json::Value) -> Step {
     let action = step["action"].as_str().unwrap();
@@ -43,6 +48,8 @@ fn parse(step: &serde_json::Value) -> Step {
                 _ => panic!("unknown action {action}"),
             },
         },
+        result: step.get("result").cloned(),
+        error: step.get("error").cloned(),
     }
 }
 
@@ -143,6 +150,7 @@ fn main() {
     let script: Vec<serde_json::Value> =
         serde_json::from_str(&std::env::var("LSPRESSO_SCRIPT").unwrap()).unwrap();
     let mut steps = script.iter().map(parse);
+    let respond_to_all = std::env::var_os("LSPRESSO_RESPOND_TO_ALL").is_some();
     let out = Arc::new(Mutex::new(stdout()));
     let mut reader = BufReader::new(stdin());
 
@@ -152,12 +160,29 @@ fn main() {
             Ok(None) => continue,
             Err(Exit) => return,
         };
-        let Some(step) = steps.next() else { continue };
+        let step = match steps.next() {
+            Some(step) => step,
+            None if respond_to_all => Step {
+                action: Action::Respond { delay_ms: 0 },
+                result: None,
+                error: None,
+            },
+            None => continue,
+        };
 
         match step.action {
             Action::Respond { delay_ms } => {
                 let out = Arc::clone(&out);
-                let response = Response::new_ok(request.id.clone(), result_for(&request));
+                let response = match step.error {
+                    Some(error) => Response {
+                        id: request.id.clone(),
+                        response_result: Err(serde_json::from_value(error).unwrap()),
+                    },
+                    None => Response::new_ok(
+                        request.id.clone(),
+                        step.result.unwrap_or_else(|| result_for(&request)),
+                    ),
+                };
                 std::thread::spawn(move || {
                     sleep(Duration::from_millis(delay_ms));
                     write(&out, &Message::Response(response));
