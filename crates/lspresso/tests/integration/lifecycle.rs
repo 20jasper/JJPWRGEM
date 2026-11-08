@@ -35,10 +35,7 @@ fn initialize_and_shutdown_round_trip() {
     let mut client = scripted(&json!([{ "action": "respond:0" }, { "action": "respond:0" }]));
 
     let result = client.initialize(ClientCapabilities::default()).unwrap();
-    assert_eq!(
-        result.capabilities,
-        gen_lsp_types::ServerCapabilities::default()
-    );
+    assert_eq!(result.capabilities, ServerCapabilities::default());
 
     client.shutdown().unwrap();
 
@@ -53,7 +50,7 @@ fn exits_immediately_is_reported_as_disconnected() {
     let err = client
         .initialize(ClientCapabilities::default())
         .unwrap_err();
-    assert!(matches!(err.kind(), ErrorKind::Disconnected { .. }));
+    assert_kind!(err, ErrorKind::Disconnected { .. });
 
     let retry_err = client
         .initialize(ClientCapabilities::default())
@@ -68,7 +65,7 @@ fn never_responds_times_out() {
     let err = client
         .initialize(ClientCapabilities::default())
         .unwrap_err();
-    assert!(matches!(err.kind(), ErrorKind::ResponseTimeout { .. }));
+    assert_kind!(err, ErrorKind::ResponseTimeout { .. });
 }
 
 #[test]
@@ -78,16 +75,14 @@ fn wait_for_exit_times_out_instead_of_blocking_forever_on_a_hung_process() {
     let err = client
         .wait_for_exit(Duration::from_millis(100))
         .unwrap_err();
-    assert!(matches!(err.kind(), ErrorKind::ExitTimeout { .. }));
+    assert_kind!(err, ErrorKind::ExitTimeout { .. });
 }
 
 #[test]
 fn spawning_a_missing_program_names_it_in_the_error() {
     let err = Client::spawn(Command::new("lspresso-no-such-server")).unwrap_err();
 
-    assert!(
-        matches!(err.kind(), ErrorKind::Spawn { program, .. } if program == "lspresso-no-such-server")
-    );
+    assert_kind!(err, ErrorKind::Spawn { program, .. } if program == "lspresso-no-such-server");
     assert!(err.to_string().contains("lspresso-no-such-server"));
 }
 
@@ -101,12 +96,12 @@ fn wait_for_exit_times_out_when_stdout_closes_but_the_process_keeps_running() {
     let err = client
         .wait_for_exit(Duration::from_millis(200))
         .unwrap_err();
-    assert!(matches!(err.kind(), ErrorKind::ExitTimeout { .. }));
+    assert_kind!(err, ErrorKind::ExitTimeout { .. });
 }
 
 #[test]
 fn rss_is_reported_only_while_the_server_runs() {
-    let mut client = spawn_scripted(2);
+    let mut client = initialized();
     let rss = client.rss_bytes().expect("the server is running");
     assert!(rss > 256 * 1024, "implausibly small RSS: {rss} bytes");
 
@@ -117,7 +112,7 @@ fn rss_is_reported_only_while_the_server_runs() {
 
 #[test]
 fn any_request_can_be_sent_through_the_typed_escape_hatch() {
-    let mut client = spawn_scripted(2);
+    let mut client = initialized();
 
     workspace_symbol(&mut client).unwrap();
 }
@@ -127,15 +122,13 @@ fn the_escape_hatch_rejects_calls_before_initialize() {
     let mut client = scripted(&json!([]));
 
     let err = workspace_symbol(&mut client).unwrap_err();
-    assert!(matches!(err.kind(), ErrorKind::NotInitialized), "{err:?}");
+    assert_kind!(err, ErrorKind::NotInitialized);
     let err = client
-        .notify::<gen_lsp_types::DidChangeConfigurationNotification>(
-            gen_lsp_types::DidChangeConfigurationParams {
-                settings: serde_json::Value::Null,
-            },
-        )
+        .notify::<DidChangeConfigurationNotification>(DidChangeConfigurationParams {
+            settings: serde_json::Value::Null,
+        })
         .unwrap_err();
-    assert!(matches!(err.kind(), ErrorKind::NotInitialized), "{err:?}");
+    assert_kind!(err, ErrorKind::NotInitialized);
 }
 
 #[test]

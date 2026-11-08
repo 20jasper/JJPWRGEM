@@ -1,6 +1,7 @@
 //! Answers each incoming request according to the next step of a script
 //! passed as JSON in `LSPRESSO_SCRIPT`, for tests of the client shell.
-//! Requests past the end of the script are ignored. Exits on `exit`, at
+//! Requests past the end of the script are ignored, or answered at once when
+//! `LSPRESSO_RESPOND_TO_ALL` is set. Exits on `exit`, at
 //! end of input, or when a step says to. Every document sync is answered
 //! with a stale publication, then one for the version just sent; emptying
 //! a document with one empty publication. `LSPRESSO_INITIALIZE_RESULT`
@@ -149,6 +150,7 @@ fn main() {
     let script: Vec<serde_json::Value> =
         serde_json::from_str(&std::env::var("LSPRESSO_SCRIPT").unwrap()).unwrap();
     let mut steps = script.iter().map(parse);
+    let respond_to_all = std::env::var_os("LSPRESSO_RESPOND_TO_ALL").is_some();
     let out = Arc::new(Mutex::new(stdout()));
     let mut reader = BufReader::new(stdin());
 
@@ -158,7 +160,15 @@ fn main() {
             Ok(None) => continue,
             Err(Exit) => return,
         };
-        let Some(step) = steps.next() else { continue };
+        let step = match steps.next() {
+            Some(step) => step,
+            None if respond_to_all => Step {
+                action: Action::Respond { delay_ms: 0 },
+                result: None,
+                error: None,
+            },
+            None => continue,
+        };
 
         match step.action {
             Action::Respond { delay_ms } => {
