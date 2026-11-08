@@ -1,24 +1,22 @@
 use gen_lsp_types::*;
 use lspresso::{Client, ErrorKind, Protocol};
-use serde_json::json;
 
 use crate::common::*;
 
 #[test]
 fn a_document_opens_once_until_closed() {
-    let mut client = initialized();
-    let uri = a_json();
-    open(&mut client, &uri);
-
-    let err = client
-        .did_open(uri.clone(), "{}", LanguageKind::JSON)
-        .unwrap_err();
-    assert_kind!(err, ErrorKind::AlreadyOpen { .. });
+    let (mut client, uri) = opened();
+    assert_err_kind!(
+        client.did_open(uri.clone(), "{}", LanguageKind::JSON),
+        ErrorKind::AlreadyOpen { .. }
+    );
 
     client.did_close(&uri).unwrap();
-    let err = client.did_change_full(&uri, "[]").unwrap_err();
-    assert_kind!(err, ErrorKind::NotOpen { .. });
-    client.did_open(uri, "{}", LanguageKind::JSON).unwrap();
+    assert_err_kind!(
+        client.did_change_full(&uri, "[]"),
+        ErrorKind::NotOpen { .. }
+    );
+    open(&mut client, &uri);
 }
 
 #[test]
@@ -36,18 +34,20 @@ fn raw_document_notifications_are_tracked_too() {
         })
         .unwrap();
 
-    let err = client
-        .did_open(uri.clone(), "{}", LanguageKind::JSON)
-        .unwrap_err();
-    assert_kind!(err, ErrorKind::AlreadyOpen { .. });
+    assert_err_kind!(
+        client.did_open(uri.clone(), "{}", LanguageKind::JSON),
+        ErrorKind::AlreadyOpen { .. }
+    );
     client.did_change_full(&uri, "[]").unwrap();
     client
         .protocol_did_close(DidCloseTextDocumentParams {
             text_document: TextDocumentIdentifier { uri: uri.clone() },
         })
         .unwrap();
-    let err = client.did_change_full(&uri, "[]").unwrap_err();
-    assert_kind!(err, ErrorKind::NotOpen { .. });
+    assert_err_kind!(
+        client.did_change_full(&uri, "[]"),
+        ErrorKind::NotOpen { .. }
+    );
 }
 
 #[test]
@@ -65,7 +65,7 @@ fn save_notifications_need_an_open_document() {
             .unwrap_err(),
     ];
     for err in errs {
-        assert_kind!(err, ErrorKind::NotOpen { .. });
+        assert!(matches!(err.kind(), ErrorKind::NotOpen { .. }), "{err:?}");
     }
 
     open(&mut client, &uri);
@@ -77,7 +77,7 @@ fn save_notifications_need_an_open_document() {
 
 #[test]
 fn document_sync_before_initialize_is_rejected() {
-    let mut client = scripted(&json!([]));
+    let mut client = uninitialized();
     let uri = a_json();
 
     let errs = [
@@ -94,45 +94,57 @@ fn document_sync_before_initialize_is_rejected() {
             .will_save_wait_until(&uri, TextDocumentSaveReason::Manual)
             .unwrap_err(),
     ];
-    for err in errs {
-        assert_kind!(err, ErrorKind::NotInitialized);
-    }
+    assert_not_initialized(errs);
 }
 
 #[test]
 fn document_sync_sends_versions_and_text() {
     let recording = Recording::new();
-    let mut client = ScriptedServer::new()
+    let (mut client, uri) = ScriptedServer::new()
         .respond_to_all()
         .recording_to(&recording)
-        .spawn_initialized();
-
-    let uri = a_json();
-    open(&mut client, &uri);
+        .spawn_opened();
     client.did_change_full(&uri, "[]").unwrap();
     client.did_change_full(&uri, "[1]").unwrap();
     client.did_close(&uri).unwrap();
     client.shutdown().unwrap();
     client.wait_for_exit(TIMEOUT).unwrap();
 
-    let opened = &recording.sent("textDocument/didOpen")[0];
-    assert_eq!(opened["params"]["textDocument"]["uri"], "file:///a.json");
-    assert_eq!(opened["params"]["textDocument"]["version"], 1);
-    assert_eq!(opened["params"]["textDocument"]["text"], "{}");
-    assert_eq!(opened["params"]["textDocument"]["languageId"], "json");
+    let opened = recording.notifications::<DidOpenTextDocumentNotification>();
+    assert_eq!(
+        opened.iter().map(|p| &p.text_document).collect::<Vec<_>>(),
+        [&TextDocumentItem {
+            uri: uri.clone(),
+            language_id: LanguageKind::JSON,
+            version: 1,
+            text: "{}".into(),
+        }]
+    );
 
-    let changes = recording.sent("textDocument/didChange");
-    assert_eq!(changes.len(), 2);
-    assert_eq!(changes[0]["params"]["textDocument"]["version"], 2);
-    assert_eq!(changes[0]["params"]["contentChanges"][0]["text"], "[]");
-    assert_eq!(changes[1]["params"]["textDocument"]["version"], 3);
-    assert_eq!(changes[1]["params"]["contentChanges"][0]["text"], "[1]");
+    let changes = recording.notifications::<DidChangeTextDocumentNotification>();
+    assert_eq!(
+        changes
+            .iter()
+            .map(|p| (p.text_document.version, &p.content_changes[..]))
+            .collect::<Vec<_>>(),
+        [(2, &[whole("[]")][..]), (3, &[whole("[1]")][..])]
+    );
 
-    let closed = &recording.sent("textDocument/didClose")[0];
-    assert_eq!(closed["params"]["textDocument"]["uri"], "file:///a.json");
+    let closed = recording.notifications::<DidCloseTextDocumentNotification>();
+    assert_eq!(
+        closed
+            .iter()
+            .map(|p| &p.text_document.uri)
+            .collect::<Vec<_>>(),
+        [&uri]
+    );
 }
 
-fn sync_server(capabilities: &ServerCapabilities) -> Client {
+fn whole(text: &str) -> TextDocumentContentChangeEvent {
+    TextDocumentContentChangeWholeDocument { text: text.into() }.into()
+}
+
+fn sync_server(capabilities: ServerCapabilities) -> Client {
     ScriptedServer::new()
         .respond_to_all()
         .capabilities(capabilities)
@@ -141,7 +153,7 @@ fn sync_server(capabilities: &ServerCapabilities) -> Client {
 
 #[test]
 fn sync_kind_comes_from_the_initialize_result() {
-    let incremental = sync_server(&ServerCapabilities {
+    let incremental = sync_server(ServerCapabilities {
         text_document_sync: Some(TextDocumentSyncKind::Incremental.into()),
         ..Default::default()
     });
@@ -151,7 +163,7 @@ fn sync_kind_comes_from_the_initialize_result() {
     );
     assert!(incremental.supports_incremental_sync());
 
-    let full = sync_server(&ServerCapabilities {
+    let full = sync_server(ServerCapabilities {
         text_document_sync: Some(
             TextDocumentSyncOptions {
                 change: Some(TextDocumentSyncKind::Full),

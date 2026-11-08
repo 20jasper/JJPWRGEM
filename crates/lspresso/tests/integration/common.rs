@@ -6,70 +6,128 @@ use std::{
 };
 
 use gen_lsp_types::*;
-use lspresso::{Client, Protocol};
-use serde_json::json;
+use lsp_server::Message;
+use lspresso::{
+    Client, Protocol,
+    scripted_server::{self, Config, Publications, Step},
+};
 
 pub const TIMEOUT: Duration = Duration::from_secs(5);
 
-macro_rules! assert_kind {
-    ($err:expr, $($pattern:tt)+) => {
-        assert!(matches!($err.kind(), $($pattern)+), "{:?}", $err)
-    };
+macro_rules! assert_err_kind {
+    ($result:expr, $($pattern:tt)+) => {{
+        let err = $result.unwrap_err();
+        assert!(matches!(err.kind(), $($pattern)+), "{err:?}");
+    }};
 }
-pub(crate) use assert_kind;
+pub(crate) use assert_err_kind;
+
+pub mod step {
+    use lsp_server::ResponseError;
+    use lspresso::scripted_server::{Outcome, Step};
+    use serde::Serialize;
+
+    fn respond_with_outcome(outcome: Outcome) -> Step {
+        Step::Respond {
+            delay_ms: 0,
+            outcome,
+        }
+    }
+
+    pub fn respond() -> Step {
+        respond_with_outcome(Outcome::Canned)
+    }
+
+    pub fn respond_with(result: impl Serialize) -> Step {
+        respond_with_outcome(Outcome::Result(serde_json::to_value(result).unwrap()))
+    }
+
+    pub fn fail(code: impl Into<i32>, data: impl Serialize) -> Step {
+        respond_with_outcome(Outcome::Error(ResponseError {
+            code: code.into(),
+            message: "failed".into(),
+            data: Some(serde_json::to_value(data).unwrap()),
+        }))
+    }
+
+    pub fn respond_after(delay_ms: u64) -> Step {
+        Step::Respond {
+            delay_ms,
+            outcome: Outcome::Canned,
+        }
+    }
+
+    pub fn send(message: impl Into<lsp_server::Message>) -> Step {
+        Step::Send(message.into())
+    }
+
+    pub fn write_raw(text: &str) -> Step {
+        Step::WriteRaw(text.to_owned())
+    }
+
+    pub fn exit() -> Step {
+        Step::Exit
+    }
+}
 
 pub struct ScriptedServer {
-    command: Command,
+    config: Config,
 }
 
 impl ScriptedServer {
     pub fn new() -> Self {
-        let mut command = Command::new(env!("CARGO_BIN_EXE_lspresso_scripted_server"));
-        command.env("LSPRESSO_SCRIPT", "[]");
-        Self { command }
+        Self {
+            config: Config::default(),
+        }
     }
 
-    pub fn steps(mut self, steps: &serde_json::Value) -> Self {
-        self.command.env("LSPRESSO_SCRIPT", steps.to_string());
+    pub fn steps(mut self, steps: impl IntoIterator<Item = Step>) -> Self {
+        self.config.steps = steps.into_iter().collect();
         self
     }
 
     pub fn respond_to_all(mut self) -> Self {
-        self.command.env("LSPRESSO_RESPOND_TO_ALL", "1");
+        self.config.respond_to_all = true;
         self
     }
 
-    pub fn capabilities(mut self, capabilities: &ServerCapabilities) -> Self {
-        self.command.env(
-            "LSPRESSO_INITIALIZE_RESULT",
-            json!({ "capabilities": capabilities }).to_string(),
-        );
+    pub fn capabilities(mut self, capabilities: ServerCapabilities) -> Self {
+        self.config.capabilities = capabilities;
         self
     }
 
-    pub fn without_diagnostics(mut self) -> Self {
-        self.command.env("LSPRESSO_NO_DIAGNOSTICS", "1");
-        self
-    }
-
-    pub fn unversioned(mut self) -> Self {
-        self.command.env("LSPRESSO_UNVERSIONED", "1");
+    pub fn publications(mut self, publications: Publications) -> Self {
+        self.config.publications = publications;
         self
     }
 
     pub fn recording_to(mut self, recording: &Recording) -> Self {
-        self.command.env("LSPRESSO_RECORD", &recording.path);
+        self.config.record = Some(recording.path.clone());
         self
     }
 
     pub fn spawn(self) -> Client {
-        Client::spawn(self.command).expect("the scripted server should spawn")
+        let mut command = Command::new(env!("CARGO_BIN_EXE_lspresso_scripted_server"));
+        command.env(
+            scripted_server::ENV,
+            serde_json::to_string(&self.config).unwrap(),
+        );
+        Client::spawn(command).expect("the scripted server should spawn")
     }
 
-    pub fn spawn_initialized(self) -> Client {
+    /// Answers the initialize request itself, ahead of any `steps`.
+    pub fn spawn_initialized(mut self) -> Client {
+        self.config.steps.insert(0, step::respond());
         let mut client = self.spawn();
         client.initialize(ClientCapabilities::default()).unwrap();
         client
+    }
+
+    pub fn spawn_opened(self) -> (Client, Uri) {
+        let mut client = self.spawn_initialized();
+        let uri = a_json();
+        open(&mut client, &uri);
+        (client, uri)
     }
 }
 
@@ -88,12 +146,43 @@ impl Recording {
         Self { path }
     }
 
-    pub fn sent(&self, method: &str) -> Vec<serde_json::Value> {
+    fn messages(&self) -> Vec<Message> {
         std::fs::read_to_string(&self.path)
             .unwrap_or_default()
             .lines()
-            .map(|line| serde_json::from_str::<serde_json::Value>(line).unwrap())
-            .filter(|message| message["method"] == method)
+            .map(|line| serde_json::from_str(line).unwrap())
+            .collect()
+    }
+
+    pub fn requests<R: Request>(&self) -> Vec<R::Params> {
+        self.messages()
+            .into_iter()
+            .filter_map(|message| match message {
+                Message::Request(request) if request.method == R::METHOD.as_str() => {
+                    Some(serde_json::from_value(request.params).unwrap())
+                }
+                _ => None,
+            })
+            .collect()
+    }
+
+    pub fn responses(&self) -> Vec<lsp_server::Response> {
+        self.messages()
+            .into_iter()
+            .filter_map(|message| match message {
+                Message::Response(response) => Some(response),
+                _ => None,
+            })
+            .collect()
+    }
+
+    pub fn notifications<N: Notification>(&self) -> Vec<N::Params> {
+        self.messages()
+            .into_iter()
+            .filter_map(|message| match message {
+                Message::Notification(notification) => scripted_server::parse::<N>(&notification),
+                _ => None,
+            })
             .collect()
     }
 }
@@ -104,12 +193,25 @@ impl Drop for Recording {
     }
 }
 
-pub fn scripted(steps: &serde_json::Value) -> Client {
-    ScriptedServer::new().steps(steps).spawn()
+pub fn uninitialized() -> Client {
+    ScriptedServer::new().spawn()
 }
 
 pub fn initialized() -> Client {
     ScriptedServer::new().respond_to_all().spawn_initialized()
+}
+
+pub fn opened() -> (Client, Uri) {
+    ScriptedServer::new().respond_to_all().spawn_opened()
+}
+
+pub fn assert_not_initialized(errs: impl IntoIterator<Item = lspresso::Error>) {
+    for err in errs {
+        assert!(
+            matches!(err.kind(), lspresso::ErrorKind::NotInitialized),
+            "{err:?}"
+        );
+    }
 }
 
 pub fn a_json() -> Uri {
