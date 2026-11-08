@@ -5,13 +5,8 @@ use std::{
     time::Duration,
 };
 
-use gen_lsp_types::{
-    Diagnostic, DidChangeTextDocumentNotification, DidOpenTextDocumentNotification,
-    ExitNotification, InitializeRequest, InitializeResult, Notification as _,
-    PublishDiagnosticsNotification, PublishDiagnosticsParams, Request as _,
-    TextDocumentContentChangeEvent, Uri,
-};
-use lsp_server::{Message, Request, Response};
+use gen_lsp_types::*;
+use lsp_server::{self, Message, Response};
 use lspresso::scripted_server::{self, Config, Outcome, Publications, Step, notification, parse};
 
 fn write(out: &Mutex<Stdout>, message: &Message) {
@@ -25,7 +20,7 @@ fn write_raw(out: &Mutex<Stdout>, text: &str) {
     out.flush().unwrap();
 }
 
-fn canned_result(request: &Request, config: &Config) -> serde_json::Value {
+fn canned_result(request: &lsp_server::Request, config: &Config) -> serde_json::Value {
     if request.method == InitializeRequest::METHOD.as_str() {
         serde_json::to_value(InitializeResult {
             capabilities: config.capabilities.clone(),
@@ -70,7 +65,7 @@ fn dispatch(
     out: &Mutex<Stdout>,
     config: &Config,
     message: Message,
-) -> Result<Option<Request>, Exit> {
+) -> Result<Option<lsp_server::Request>, Exit> {
     let n = match message {
         Message::Request(request) => return Ok(Some(request)),
         Message::Notification(n) => n,
