@@ -7,7 +7,7 @@ use gen_lsp_types::*;
 use lsp_server::{Message, RequestId};
 
 use super::Effect;
-use crate::error::{ErrorKind, elapsed_ms};
+use crate::error::{ErrorKind, deadline_after, elapsed_ms};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Lifecycle {
@@ -58,7 +58,7 @@ impl Pending {
         Self {
             kind,
             started_at,
-            deadline: started_at + timeout,
+            deadline: deadline_after(started_at, timeout),
             timed_out: false,
         }
     }
@@ -160,6 +160,12 @@ impl ClientState {
                 self.lifecycle = Lifecycle::ShuttingDown;
                 Ok((id, message))
             }
+        }
+    }
+
+    pub fn rollback_initialize(&mut self) {
+        if self.lifecycle == Lifecycle::Initialized {
+            self.lifecycle = Lifecycle::NotStarted;
         }
     }
 

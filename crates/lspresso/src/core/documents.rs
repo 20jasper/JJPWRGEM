@@ -8,6 +8,7 @@ use crate::error::ErrorKind;
 #[derive(Debug, Default)]
 pub(crate) struct DocumentTracker {
     open_docs: HashMap<Uri, OpenDocument>,
+    closed_versions: HashMap<Uri, i32>,
 }
 
 #[derive(Debug)]
@@ -63,7 +64,14 @@ impl DocumentTracker {
         Ok(self.current_version(uri)? + 1)
     }
 
+    pub(crate) fn next_open_version(&self, uri: &Uri) -> i32 {
+        self.closed_versions
+            .get(uri)
+            .map_or(1, |version| version + 1)
+    }
+
     pub(crate) fn mark_open(&mut self, uri: Uri, version: i32) {
+        self.closed_versions.remove(&uri);
         let pulled = PulledReport::default();
         self.open_docs.insert(uri, OpenDocument { version, pulled });
     }
@@ -75,7 +83,9 @@ impl DocumentTracker {
     }
 
     pub(crate) fn mark_closed(&mut self, uri: &Uri) {
-        self.open_docs.remove(uri);
+        if let Some(document) = self.open_docs.remove(uri) {
+            self.closed_versions.insert(uri.clone(), document.version);
+        }
     }
 }
 
@@ -85,6 +95,18 @@ mod tests {
 
     fn uri(s: &str) -> Uri {
         s.parse().unwrap()
+    }
+
+    #[test]
+    fn reopening_continues_past_the_last_version_of_the_closed_session() {
+        let mut tracker = DocumentTracker::default();
+        let uri = uri("file:///a.json");
+        tracker.mark_open(uri.clone(), 1);
+        tracker.commit_change(&uri, 4);
+        tracker.mark_closed(&uri);
+
+        assert_eq!(tracker.next_open_version(&uri), 5);
+        assert_eq!(tracker.next_open_version(&self::uri("file:///b.json")), 1);
     }
 
     #[test]

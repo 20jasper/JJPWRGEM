@@ -1,4 +1,7 @@
-use std::{io, time::Instant};
+use std::{
+    io,
+    time::{Duration, Instant},
+};
 
 use displaydoc::Display;
 use gen_lsp_types::Uri;
@@ -96,6 +99,11 @@ pub enum ErrorKind {
     },
 }
 
+pub(crate) fn deadline_after(start: Instant, timeout: Duration) -> Instant {
+    const CAP: Duration = Duration::from_hours(100 * 365 * 24);
+    start + timeout.min(CAP)
+}
+
 pub(crate) fn elapsed_ms(start: Instant, now: Instant) -> u64 {
     now.duration_since(start)
         .as_millis()
@@ -104,3 +112,18 @@ pub(crate) fn elapsed_ms(start: Instant, now: Instant) -> u64 {
 }
 
 pub type Result<T> = std::result::Result<T, Error>;
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn deadlines_cap_instead_of_overflowing() {
+        let start = Instant::now();
+        assert!(deadline_after(start, Duration::MAX) > start);
+        assert_eq!(
+            deadline_after(start, Duration::from_secs(1)),
+            start + Duration::from_secs(1)
+        );
+    }
+}

@@ -16,7 +16,7 @@ use crate::{
         self, ClientState, DocumentTracker, Effect,
         notification_buffer::{NotificationBuffer, notification},
     },
-    error::{ErrorKind, elapsed_ms},
+    error::{ErrorKind, deadline_after, elapsed_ms},
 };
 
 const EXIT_POLL_INTERVAL: Duration = Duration::from_millis(1);
@@ -98,10 +98,12 @@ impl Client {
         self.send_request(&id, &message)?;
         let result = self.wait_for_resolution(&id, InitializeRequest::METHOD.as_str())?;
         let result: InitializeResult =
-            Self::deserialize_response(result, InitializeRequest::METHOD.as_str())?;
+            Self::deserialize_response(result, InitializeRequest::METHOD.as_str())
+                .inspect_err(|_| self.state.rollback_initialize())?;
+        self.send_notification::<InitializedNotification>(InitializedParams::default())
+            .inspect_err(|_| self.state.rollback_initialize())?;
 
         self.server_capabilities = Some(result.capabilities.clone());
-        self.send_notification::<InitializedNotification>(InitializedParams::default())?;
 
         Ok(result)
     }
@@ -119,7 +121,7 @@ impl Client {
 
     pub fn wait_for_exit(&mut self, timeout: Duration) -> Result<ExitStatus> {
         let start = Instant::now();
-        let deadline = start + timeout;
+        let deadline = deadline_after(start, timeout);
         let mut stdout_closed = false;
         loop {
             if let Some(status) = self.transport.try_wait()? {
@@ -198,8 +200,14 @@ impl Client {
         assert_server_to_client!(N);
         self.state.require_initialized()?;
         let start = Instant::now();
-        let deadline = start + timeout;
+        let deadline = deadline_after(start, timeout);
         loop {
+            if let Some(params) = self.notifications.take::<N>(&mut matches) {
+                return Ok(params);
+            }
+            if let RecvOutcome::Closed(closed) = self.recv_and_dispatch(Some(deadline), None) {
+                return Err(closed.into_error(N::METHOD.as_str()));
+            }
             if let Some(params) = self.notifications.take::<N>(&mut matches) {
                 return Ok(params);
             }
@@ -211,15 +219,16 @@ impl Client {
                 }
                 .into());
             }
-            if let RecvOutcome::Closed(closed) = self.recv_and_dispatch(Some(deadline), None) {
-                return Err(closed.into_error(N::METHOD.as_str()));
-            }
         }
     }
 
     fn forget_diagnostics(&mut self, uri: &Uri) {
         self.notifications
             .retain::<PublishDiagnosticsNotification>(|p| p.uri != *uri);
+    }
+
+    pub(crate) fn next_open_version(&self, uri: &Uri) -> i32 {
+        self.docs.next_open_version(uri)
     }
 
     pub(crate) fn next_document_version(&self, uri: &Uri) -> Result<i32> {

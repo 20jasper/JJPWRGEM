@@ -127,6 +127,38 @@ fn the_escape_hatch_rejects_calls_before_initialize() {
 }
 
 #[test]
+fn a_malformed_initialize_result_leaves_the_client_uninitialized() {
+    let mut client = ScriptedServer::new()
+        .steps([
+            step::respond_with(json!({ "capabilities": 5 })),
+            step::respond(),
+            step::respond(),
+        ])
+        .spawn();
+
+    assert_err_kind!(
+        client.initialize(ClientCapabilities::default()),
+        ErrorKind::MalformedResponse { .. }
+    );
+    assert!(client.server_capabilities().is_none());
+    assert_not_initialized([workspace_symbol(&mut client).unwrap_err()]);
+
+    client.initialize(ClientCapabilities::default()).unwrap();
+    workspace_symbol(&mut client).unwrap();
+}
+
+#[test]
+fn an_endless_timeout_does_not_overflow() {
+    let mut client = ScriptedServer::new()
+        .respond_to_all()
+        .spawn()
+        .with_request_timeout(Duration::MAX);
+
+    client.initialize(ClientCapabilities::default()).unwrap();
+    workspace_symbol(&mut client).unwrap();
+}
+
+#[test]
 fn a_server_crash_while_a_request_is_pending_is_a_disconnect() {
     let mut client = ScriptedServer::new()
         .steps([step::exit()])
@@ -141,7 +173,7 @@ fn a_server_crash_while_a_request_is_pending_is_a_disconnect() {
 #[test]
 fn a_late_response_is_dropped_silently_and_later_requests_still_work() {
     let mut client = ScriptedServer::new()
-        .steps([step::respond_after(300), step::respond()])
+        .steps([step::respond_after(300), step::respond(), step::respond()])
         .spawn_initialized()
         .with_request_timeout(Duration::from_millis(100));
 
