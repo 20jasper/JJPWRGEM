@@ -13,6 +13,9 @@ mod convenience;
 mod core;
 mod error;
 mod protocol;
+#[cfg(feature = "test-binaries")]
+#[doc(hidden)]
+pub mod script;
 
 pub use core::capabilities;
 

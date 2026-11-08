@@ -1,8 +1,6 @@
 //! Scripted LSP server for client tests, driven by the `Config` in
 //! `LSPRESSO_CONFIG`.
 
-mod script;
-
 use std::{
     io::{BufRead, BufReader, Stdout, Write, stdin, stdout},
     sync::{Arc, Mutex},
@@ -12,7 +10,7 @@ use std::{
 
 use gen_lsp_types::*;
 use lsp_server::{Message, Request, Response};
-use script::{Config, Outcome, Publications, Step};
+use lspresso::script::{self, Config, Outcome, Publications, Step};
 
 fn write(out: &Mutex<Stdout>, message: &Message) {
     let mut out = out.lock().unwrap();

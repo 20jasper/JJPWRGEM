@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 
 pub const ENV: &str = "LSPRESSO_CONFIG";
 
-#[derive(Default, Serialize, Deserialize)]
+#[derive(Debug, Default, Serialize, Deserialize)]
 pub struct Config {
     /// One step per request, in order. Past the end, requests are ignored.
     pub steps: Vec<Step>,
@@ -22,7 +22,7 @@ pub struct Config {
 }
 
 /// What a document sync is answered with.
-#[derive(Default, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Publications {
     /// A stale publication, then one for the version sent.
     #[default]
@@ -32,7 +32,7 @@ pub enum Publications {
     Off,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub enum Step {
     Respond {
         delay_ms: u64,
@@ -46,7 +46,7 @@ pub enum Step {
     Exit,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub enum Outcome {
     /// The initialize result, or `null` for any other request.
     Canned,

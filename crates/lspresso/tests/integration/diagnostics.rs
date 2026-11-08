@@ -1,12 +1,12 @@
 use std::time::Duration;
 
 use gen_lsp_types::*;
-use lspresso::{Client, ErrorKind};
-
-use crate::{
-    common::*,
+use lspresso::{
+    Client, ErrorKind,
     script::{Publications, Step},
 };
+
+use crate::common::*;
 
 fn full_report(message: &str, result_id: &str) -> Step {
     let report: DocumentDiagnosticReport = RelatedFullDocumentDiagnosticReport {

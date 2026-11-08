@@ -7,9 +7,10 @@ use std::{
 
 use gen_lsp_types::*;
 use lsp_server::Message;
-use lspresso::{Client, Protocol};
-
-use crate::script::{self, Config, Publications, Step};
+use lspresso::{
+    Client, Protocol,
+    script::{self, Config, Publications, Step},
+};
 
 pub const TIMEOUT: Duration = Duration::from_secs(5);
 
@@ -23,9 +24,8 @@ pub(crate) use assert_err_kind;
 
 pub mod step {
     use lsp_server::ResponseError;
+    use lspresso::script::{Outcome, Step};
     use serde::Serialize;
-
-    use crate::script::{Outcome, Step};
 
     fn respond_with_outcome(outcome: Outcome) -> Step {
         Step::Respond {
