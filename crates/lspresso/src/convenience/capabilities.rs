@@ -1,4 +1,4 @@
-use gen_lsp_types::TextDocumentSyncKind;
+use gen_lsp_types::*;
 
 use crate::{Client, core};
 

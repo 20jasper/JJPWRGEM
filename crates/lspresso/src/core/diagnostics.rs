@@ -1,7 +1,4 @@
-use gen_lsp_types::{
-    Diagnostic, DiagnosticServerCancellationData, DocumentDiagnosticReport,
-    FullDocumentDiagnosticReport, LspErrorCodes,
-};
+use gen_lsp_types::*;
 
 use crate::error::ErrorKind;
 
@@ -49,10 +46,6 @@ impl PulledReport {
 
 #[cfg(test)]
 mod tests {
-    use gen_lsp_types::{
-        RelatedFullDocumentDiagnosticReport, RelatedUnchangedDocumentDiagnosticReport,
-        UnchangedDocumentDiagnosticReport,
-    };
     use serde_json::json;
 
     use super::*;

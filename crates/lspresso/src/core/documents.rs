@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use gen_lsp_types::{Diagnostic, DocumentDiagnosticReport, Uri};
+use gen_lsp_types::*;
 
 use super::diagnostics::PulledReport;
 use crate::error::ErrorKind;
