@@ -10,7 +10,7 @@ use std::{
 
 use gen_lsp_types::*;
 use lsp_server::{Message, Request, Response};
-use lspresso::script::{self, Config, Outcome, Publications, Step};
+use lspresso::scripted_server::{self, Config, Outcome, Publications, Step};
 
 fn write(out: &Mutex<Stdout>, message: &Message) {
     let mut out = out.lock().unwrap();
@@ -121,7 +121,8 @@ fn read(reader: &mut impl BufRead, config: &Config) -> Result<Message, Exit> {
 }
 
 fn main() {
-    let mut config: Config = serde_json::from_str(&std::env::var(script::ENV).unwrap()).unwrap();
+    let mut config: Config =
+        serde_json::from_str(&std::env::var(scripted_server::ENV).unwrap()).unwrap();
     let mut steps = std::mem::take(&mut config.steps).into_iter();
     let out = Arc::new(Mutex::new(stdout()));
     let mut reader = BufReader::new(stdin());

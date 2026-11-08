@@ -9,7 +9,7 @@ use gen_lsp_types::*;
 use lsp_server::Message;
 use lspresso::{
     Client, Protocol,
-    script::{self, Config, Publications, Step},
+    scripted_server::{self, Config, Publications, Step},
 };
 
 pub const TIMEOUT: Duration = Duration::from_secs(5);
@@ -24,7 +24,7 @@ pub(crate) use assert_err_kind;
 
 pub mod step {
     use lsp_server::ResponseError;
-    use lspresso::script::{Outcome, Step};
+    use lspresso::scripted_server::{Outcome, Step};
     use serde::Serialize;
 
     fn respond_with_outcome(outcome: Outcome) -> Step {
@@ -108,7 +108,10 @@ impl ScriptedServer {
 
     pub fn spawn(self) -> Client {
         let mut command = Command::new(env!("CARGO_BIN_EXE_lspresso_scripted_server"));
-        command.env(script::ENV, serde_json::to_string(&self.config).unwrap());
+        command.env(
+            scripted_server::ENV,
+            serde_json::to_string(&self.config).unwrap(),
+        );
         Client::spawn(command).expect("the scripted server should spawn")
     }
 

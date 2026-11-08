@@ -3,7 +3,7 @@ use std::time::Duration;
 use gen_lsp_types::*;
 use lspresso::{
     Client, ErrorKind,
-    script::{Publications, Step},
+    scripted_server::{Publications, Step},
 };
 
 use crate::common::*;

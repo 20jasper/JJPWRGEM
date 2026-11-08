@@ -15,7 +15,7 @@ mod error;
 mod protocol;
 #[cfg(feature = "test-binaries")]
 #[doc(hidden)]
-pub mod script;
+pub mod scripted_server;
 
 pub use core::capabilities;
 
