@@ -4,7 +4,7 @@ use std::{
 };
 
 use displaydoc::Display;
-use gen_lsp_types::Uri;
+use gen_lsp_types::{Range, Uri};
 use lsp_server::RequestId;
 
 /// {0}
@@ -92,6 +92,10 @@ pub enum ErrorKind {
     AlreadyOpen { uri: Uri },
     /// {uri} is not open: call did_open before sending document notifications for it
     NotOpen { uri: Uri },
+    /// change {index} has a range that isn't valid in the document: {range:?}
+    InvalidEdit { index: usize, range: Range },
+    /// edits overlap
+    OverlappingEdits,
     /// {method} response was malformed: {message}
     MalformedResponse {
         method: &'static str,

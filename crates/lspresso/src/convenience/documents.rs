@@ -3,6 +3,10 @@ use gen_lsp_types::*;
 use super::document;
 use crate::{Client, Protocol, Result};
 
+fn whole_document(text: String) -> TextDocumentContentChangeEvent {
+    TextDocumentContentChangeWholeDocument { text }.into()
+}
+
 impl Client {
     pub fn did_open(
         &mut self,
@@ -22,22 +26,36 @@ impl Client {
     }
 
     pub fn did_change_full(&mut self, uri: &Uri, text: impl Into<String>) -> Result<()> {
-        let version = self.next_document_version(uri)?;
-        self.protocol_did_change(DidChangeTextDocumentParams {
-            text_document: VersionedTextDocumentIdentifier {
-                version,
-                text_document_identifier: document(uri),
-            },
-            content_changes: vec![TextDocumentContentChangeEvent::from(
-                TextDocumentContentChangeWholeDocument { text: text.into() },
-            )],
-        })
+        let (version, _) = self.next_document_version_and_text(uri)?;
+        let text = text.into();
+        let content_changes = vec![whole_document(text.clone())];
+        self.send_validated_change(uri, version, content_changes, text)
+    }
+
+    /// Sends edits as incremental or whole-document changes.
+    pub fn did_change(&mut self, uri: &Uri, edits: &[TextEdit]) -> Result<()> {
+        if edits.is_empty() {
+            self.require_open_document(uri)?;
+            return Ok(());
+        }
+        let (version, text) = self.next_document_version_and_text(uri)?;
+        let applied = self.apply_edits(text, edits)?;
+        let content_changes = if self.supports_incremental_sync() {
+            applied.changes
+        } else {
+            vec![whole_document(applied.text.clone())]
+        };
+        self.send_validated_change(uri, version, content_changes, applied.text)
     }
 
     pub fn did_close(&mut self, uri: &Uri) -> Result<()> {
         self.protocol_did_close(DidCloseTextDocumentParams {
             text_document: document(uri),
         })
+    }
+
+    pub fn document_text(&self, uri: &Uri) -> Option<&str> {
+        self.tracked_text(uri).ok()
     }
 
     /// Sends [`textDocument/willSave`](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#textDocument_willSave).
@@ -67,7 +85,11 @@ impl Client {
     /// Sends [`textDocument/didSave`](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#textDocument_didSave).
     ///
     /// Use [`Protocol::protocol_did_save`] for full params.
-    pub fn did_save(&mut self, uri: &Uri, text: Option<String>) -> Result<()> {
+    pub fn did_save(&mut self, uri: &Uri) -> Result<()> {
+        let text = self
+            .supports_save_text()
+            .then(|| self.tracked_text(uri).map(str::to_owned))
+            .transpose()?;
         self.protocol_did_save(DidSaveTextDocumentParams {
             text_document: document(uri),
             text,

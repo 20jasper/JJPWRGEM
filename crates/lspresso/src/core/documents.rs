@@ -14,6 +14,7 @@ pub(crate) struct DocumentTracker {
 #[derive(Debug)]
 struct OpenDocument {
     version: i32,
+    text: String,
     pulled: PulledReport,
 }
 
@@ -38,6 +39,10 @@ impl DocumentTracker {
         Ok(self.open(uri)?.version)
     }
 
+    pub(crate) fn text(&self, uri: &Uri) -> crate::Result<&str> {
+        Ok(self.open(uri)?.text.as_str())
+    }
+
     fn open(&self, uri: &Uri) -> crate::Result<&OpenDocument> {
         self.open_docs
             .get(uri)
@@ -60,8 +65,9 @@ impl DocumentTracker {
         Ok(document.pulled.apply(report))
     }
 
-    pub(crate) fn next_version(&self, uri: &Uri) -> crate::Result<i32> {
-        Ok(self.current_version(uri)? + 1)
+    pub(crate) fn next_version_and_text(&self, uri: &Uri) -> crate::Result<(i32, &str)> {
+        let document = self.open(uri)?;
+        Ok((document.version + 1, document.text.as_str()))
     }
 
     pub(crate) fn next_open_version(&self, uri: &Uri) -> i32 {
@@ -70,15 +76,23 @@ impl DocumentTracker {
             .map_or(1, |version| version + 1)
     }
 
-    pub(crate) fn mark_open(&mut self, uri: Uri, version: i32) {
+    pub(crate) fn mark_open(&mut self, uri: Uri, version: i32, text: String) {
         self.closed_versions.remove(&uri);
         let pulled = PulledReport::default();
-        self.open_docs.insert(uri, OpenDocument { version, pulled });
+        self.open_docs.insert(
+            uri,
+            OpenDocument {
+                version,
+                text,
+                pulled,
+            },
+        );
     }
 
-    pub(crate) fn commit_change(&mut self, uri: &Uri, version: i32) {
+    pub(crate) fn commit_change(&mut self, uri: &Uri, version: i32, text: String) {
         if let Some(document) = self.open_docs.get_mut(uri) {
             document.version = version;
+            document.text = text;
         }
     }
 
@@ -101,8 +115,8 @@ mod tests {
     fn reopening_continues_past_the_last_version_of_the_closed_session() {
         let mut tracker = DocumentTracker::default();
         let uri = uri("file:///a.json");
-        tracker.mark_open(uri.clone(), 1);
-        tracker.commit_change(&uri, 4);
+        tracker.mark_open(uri.clone(), 1, String::new());
+        tracker.commit_change(&uri, 4, String::new());
         tracker.mark_closed(&uri);
 
         assert_eq!(tracker.next_open_version(&uri), 5);
@@ -113,36 +127,39 @@ mod tests {
     fn next_version_continues_from_the_version_opened_with() {
         let mut tracker = DocumentTracker::default();
         let uri = uri("file:///a.json");
-        tracker.mark_open(uri.clone(), 7);
+        tracker.mark_open(uri.clone(), 7, "text".to_owned());
 
-        assert_eq!(tracker.next_version(&uri).unwrap(), 8);
+        assert_eq!(tracker.next_version_and_text(&uri).unwrap().0, 8);
     }
 
     #[test]
     fn next_version_does_not_commit_until_commit_change_runs() {
         let mut tracker = DocumentTracker::default();
         let uri = uri("file:///a.json");
-        tracker.mark_open(uri.clone(), 1);
+        tracker.mark_open(uri.clone(), 1, String::new());
 
-        let peeked = tracker.next_version(&uri).unwrap();
+        let peeked = tracker.next_version_and_text(&uri).unwrap().0;
         assert_eq!(peeked, 2);
-        assert_eq!(tracker.next_version(&uri).unwrap(), 2);
+        assert_eq!(tracker.next_version_and_text(&uri).unwrap(), (2, ""));
 
-        tracker.commit_change(&uri, peeked);
-        assert_eq!(tracker.next_version(&uri).unwrap(), 3);
+        tracker.commit_change(&uri, peeked, "changed".to_owned());
+        assert_eq!(tracker.next_version_and_text(&uri).unwrap(), (3, "changed"));
+        assert_eq!(tracker.text(&uri).unwrap(), "changed");
     }
 
     #[test]
-    fn closing_then_reopening_resets_the_version() {
+    fn closing_then_reopening_resets_the_version_and_text() {
         let mut tracker = DocumentTracker::default();
         let uri = uri("file:///a.json");
-        tracker.mark_open(uri.clone(), 1);
-        tracker.commit_change(&uri, 5);
+        tracker.mark_open(uri.clone(), 1, "first".to_owned());
+        tracker.commit_change(&uri, 5, "changed".to_owned());
 
         tracker.mark_closed(&uri);
         assert!(tracker.require_open(&uri).is_err());
+        assert!(tracker.text(&uri).is_err());
 
-        tracker.mark_open(uri.clone(), 1);
-        assert_eq!(tracker.next_version(&uri).unwrap(), 2);
+        tracker.mark_open(uri.clone(), 1, "reopened".to_owned());
+        assert_eq!(tracker.next_version_and_text(&uri).unwrap().0, 2);
+        assert_eq!(tracker.text(&uri).unwrap(), "reopened");
     }
 }

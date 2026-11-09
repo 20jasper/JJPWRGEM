@@ -15,6 +15,7 @@ use crate::{
     core::{
         self, ClientState, DocumentTracker, Effect,
         notification_buffer::{NotificationBuffer, notification},
+        text,
     },
     error::{ErrorKind, deadline_after, elapsed_ms},
 };
@@ -177,6 +178,33 @@ impl Client {
         self.docs.current_version(uri)
     }
 
+    pub(crate) fn tracked_text(&self, uri: &Uri) -> Result<&str> {
+        self.docs.text(uri)
+    }
+
+    fn position_encoding(&self) -> PositionEncodingKind {
+        match self
+            .server_capabilities()
+            .and_then(|capabilities| capabilities.position_encoding.as_ref())
+        {
+            Some(PositionEncodingKind::UTF8) => PositionEncodingKind::UTF8,
+            Some(PositionEncodingKind::UTF32) => PositionEncodingKind::UTF32,
+            _ => PositionEncodingKind::UTF16,
+        }
+    }
+
+    pub(crate) fn apply_edits(&self, text: &str, edits: &[TextEdit]) -> Result<text::Applied> {
+        text::apply(text, edits, &self.position_encoding())
+    }
+
+    fn apply_changes(
+        &self,
+        uri: &Uri,
+        changes: &[TextDocumentContentChangeEvent],
+    ) -> Result<String> {
+        text::apply_changes(self.tracked_text(uri)?, changes, &self.position_encoding())
+    }
+
     pub(crate) fn previous_result_id(&self, uri: &Uri) -> Result<Option<String>> {
         self.docs.previous_result_id(uri)
     }
@@ -233,9 +261,28 @@ impl Client {
         self.docs.next_open_version(uri)
     }
 
-    pub(crate) fn next_document_version(&self, uri: &Uri) -> Result<i32> {
+    pub(crate) fn next_document_version_and_text(&self, uri: &Uri) -> Result<(i32, &str)> {
         self.state.require_initialized()?;
-        self.docs.next_version(uri)
+        self.docs.next_version_and_text(uri)
+    }
+
+    pub(crate) fn send_validated_change(
+        &mut self,
+        uri: &Uri,
+        version: i32,
+        content_changes: Vec<TextDocumentContentChangeEvent>,
+        text: String,
+    ) -> Result<()> {
+        self.notify::<DidChangeTextDocumentNotification>(DidChangeTextDocumentParams {
+            text_document: VersionedTextDocumentIdentifier {
+                version,
+                text_document_identifier: TextDocumentIdentifier { uri: uri.clone() },
+            },
+            content_changes,
+        })?;
+        self.docs.commit_change(uri, version, text);
+        self.forget_diagnostics(uri);
+        Ok(())
     }
 
     fn send_request(&mut self, id: &RequestId, message: &Message) -> Result<()> {
@@ -373,28 +420,26 @@ impl Protocol for Client {
 
     fn protocol_did_open(&mut self, params: DidOpenTextDocumentParams) -> Result<()> {
         self.state.require_initialized()?;
-        let TextDocumentItem { uri, version, .. } = &params.text_document;
+        let TextDocumentItem {
+            uri, version, text, ..
+        } = &params.text_document;
         self.docs.require_not_open(uri)?;
-        let (uri, version) = (uri.clone(), *version);
+        let (uri, version, text) = (uri.clone(), *version, text.clone());
         self.forget_diagnostics(&uri);
         self.notify::<DidOpenTextDocumentNotification>(params)?;
-        self.docs.mark_open(uri, version);
+        self.docs.mark_open(uri, version, text);
         Ok(())
     }
 
     fn protocol_did_change(&mut self, params: DidChangeTextDocumentParams) -> Result<()> {
         self.state.require_initialized()?;
-        let identifier = &params.text_document;
-        self.docs
-            .require_open(&identifier.text_document_identifier.uri)?;
-        let (uri, version) = (
-            identifier.text_document_identifier.uri.clone(),
-            identifier.version,
-        );
-        self.notify::<DidChangeTextDocumentNotification>(params)?;
-        self.docs.commit_change(&uri, version);
-        self.forget_diagnostics(&uri);
-        Ok(())
+        let DidChangeTextDocumentParams {
+            text_document,
+            content_changes,
+        } = params;
+        let uri = text_document.text_document_identifier.uri.clone();
+        let text = self.apply_changes(&uri, &content_changes)?;
+        self.send_validated_change(&uri, text_document.version, content_changes, text)
     }
 
     fn protocol_did_close(&mut self, params: DidCloseTextDocumentParams) -> Result<()> {

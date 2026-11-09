@@ -198,6 +198,17 @@ pub fn initialized() -> Client {
     ScriptedServer::new().respond_to_all().spawn_initialized()
 }
 
+pub fn initialized_with(capabilities: ServerCapabilities) -> Client {
+    ScriptedServer::new()
+        .respond_to_all()
+        .capabilities(capabilities)
+        .spawn_initialized()
+}
+
+pub fn whole(text: &str) -> TextDocumentContentChangeEvent {
+    TextDocumentContentChangeWholeDocument { text: text.into() }.into()
+}
+
 pub fn opened() -> (Client, Uri) {
     ScriptedServer::new().respond_to_all().spawn_opened()
 }
