@@ -63,7 +63,6 @@ impl Client {
             state: ClientState::default(),
             docs: DocumentTracker::default(),
             background_errors: Vec::new(),
-            // default 15s, set to a reasonable upper bound so test timeouts are short
             timeout: DEFAULT_TIMEOUT,
             exit_timeout: DEFAULT_TIMEOUT,
             server_capabilities: None,

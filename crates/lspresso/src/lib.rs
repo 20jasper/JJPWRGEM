@@ -5,7 +5,7 @@
 //! ![an orange axolotl in a blue coffee cup falling over. coffee is spilling out and the axolotl looks distressed](./lspresso.webp)
 //!
 //! ```no_run
-//! # use std::process::Command;
+//! # use std::{process::Command, time::Duration};
 //! use lspresso::{Client, capabilities, gen_lsp_types::*};
 //!
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -14,7 +14,9 @@
 //!     // use capabilities captured from real editors
 //!     // emacs, helix, neovim, and vscode are supported
 //!     capabilities::vscode::latest(),
-//! )?;
+//! )?
+//! // default 15s, set to a reasonable upper bound so test timeouts are short
+//! .with_timeout(Duration::from_secs(15));
 //! let uri: Uri = "hi.json".parse()?;
 //!
 //! // convenience methods provide a simpler API
@@ -43,7 +45,7 @@
 //!     },
 //! })?;
 //!
-//! // push diagnostics wait for a notification or the client timeout, see `Client::with_timeout`
+//! // push diagnostics wait for a notification or the timeout
 //! let published =
 //!     client.wait_for_notification_where::<PublishDiagnosticsNotification>(|p| p.uri == uri)?;
 //! assert!(published.diagnostics.is_empty());
@@ -57,7 +59,7 @@
 //! Use existing benchmarking tools like criterion to benchmark
 //!
 //! ```no_run
-//! # use std::process::Command;
+//! # use std::{process::Command, time::Duration};
 //! # use criterion::{Criterion, criterion_group, criterion_main};
 //! # use lspresso::{Client, capabilities, gen_lsp_types::*};
 //! fn bench_diagnostics(c: &mut Criterion) {
