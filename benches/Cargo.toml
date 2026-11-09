@@ -9,7 +9,7 @@ include = []
 
 [dev-dependencies]
 bytes2chars = { path = "../crates/bytes2chars" }
-criterion = { package = "codspeed-criterion-compat", version = "=6.0.0" }
+criterion = { workspace = true }
 gungraun = "=0.20.0"
 jjpwrgem-parse = { path = "../crates/parse", features = ["serde"] }
 lspresso = { path = "../crates/lspresso" }
