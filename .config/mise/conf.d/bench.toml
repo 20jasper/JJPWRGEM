@@ -140,3 +140,16 @@ cargo xtask generate-readmes
 "github:bearcove/tracey" = "1.3.0"
 "npm:oxfmt" = "0.75.0"
 "github:orium/cargo-rdme" = "2.2"
+
+[tasks.test-lsp-e2e]
+description = "Run the language server e2e properties against jjp and every comparison server"
+env = { LSP_E2E_REQUIRE = "vscode-json,light-json-lsp" }
+shell = "bash -c"
+run = '''
+set -euo pipefail
+VSCODE_JSON_BIN="{{vars.vscode_json_bin}}" cargo test --test integration lsp_e2e
+'''
+
+[tasks.test-lsp-e2e.tools]
+"npm:@t1ckbase/vscode-langservers-extracted" = "2.0.5"
+"github:libkakashi/light-json-lsp" = "0.1.0"

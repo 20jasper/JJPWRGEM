@@ -1229,9 +1229,12 @@ dependencies = [
  "jjpwrgem-lsp",
  "jjpwrgem-parse",
  "jjpwrgem-ui",
+ "lspresso",
  "proptest",
  "rstest",
  "rstest_reuse",
+ "serde",
+ "serde_json",
  "simdutf8",
 ]
 
