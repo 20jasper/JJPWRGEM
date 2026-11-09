@@ -14,7 +14,9 @@ let mut client = Client::spawn_initialized(
     // use capabilities captured from real editors
     // emacs, helix, neovim, and vscode are supported
     capabilities::vscode::latest(),
-)?;
+)?
+// default 15s, set to a reasonable upper bound so test timeouts are short
+.with_timeout(Duration::from_secs(15));
 let uri: Uri = "hi.json".parse()?;
 
 // convenience methods provide a simpler API
@@ -44,10 +46,8 @@ let diags = client.protocol_diagnostic(DocumentDiagnosticParams {
 })?;
 
 // push diagnostics wait for a notification or the timeout
-let published = client.wait_for_notification_where::<PublishDiagnosticsNotification>(
-    Duration::from_secs(5),
-    |p| p.uri == uri,
-)?;
+let published =
+    client.wait_for_notification_where::<PublishDiagnosticsNotification>(|p| p.uri == uri)?;
 assert!(published.diagnostics.is_empty());
 
 ```

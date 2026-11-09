@@ -21,7 +21,7 @@ use crate::{
 };
 
 const EXIT_POLL_INTERVAL: Duration = Duration::from_millis(1);
-const DEFAULT_REQUEST_TIMEOUT: Duration = Duration::from_secs(5);
+const DEFAULT_TIMEOUT: Duration = Duration::from_secs(15);
 
 macro_rules! assert_client_to_server {
     ($item:ty) => {
@@ -51,7 +51,8 @@ pub struct Client {
     state: ClientState,
     docs: DocumentTracker,
     background_errors: Vec<Error>,
-    request_timeout: Duration,
+    timeout: Duration,
+    exit_timeout: Duration,
     server_capabilities: Option<ServerCapabilities>,
     notifications: NotificationBuffer,
 }
@@ -63,7 +64,8 @@ impl Client {
             state: ClientState::default(),
             docs: DocumentTracker::default(),
             background_errors: Vec::new(),
-            request_timeout: DEFAULT_REQUEST_TIMEOUT,
+            timeout: DEFAULT_TIMEOUT,
+            exit_timeout: DEFAULT_TIMEOUT,
             server_capabilities: None,
             notifications: NotificationBuffer::default(),
         })
@@ -82,10 +84,18 @@ impl Client {
         self
     }
 
-    /// How long each request waits for its response. Defaults to 5s
+    /// How long to wait for a response or a notification
     #[must_use]
-    pub const fn with_request_timeout(mut self, timeout: Duration) -> Self {
-        self.request_timeout = timeout;
+    pub const fn with_timeout(mut self, timeout: Duration) -> Self {
+        self.timeout = timeout;
+        self
+    }
+
+    /// How long [`Client::wait_for_exit`] waits for the process to exit. Separate
+    /// from [`Client::with_timeout`] since teardown can be slower than a round trip
+    #[must_use]
+    pub const fn with_exit_timeout(mut self, timeout: Duration) -> Self {
+        self.exit_timeout = timeout;
         self
     }
 
@@ -93,9 +103,7 @@ impl Client {
         let now = Instant::now();
         let params = core::capabilities::initialize_params(capabilities);
         let params = serde_json::to_value(params).expect("serializing as JSON cannot fail");
-        let (id, message) = self
-            .state
-            .start_initialize(params, now, self.request_timeout)?;
+        let (id, message) = self.state.start_initialize(params, now, self.timeout)?;
         self.send_request(&id, &message)?;
         let result = self.wait_for_resolution(&id, InitializeRequest::METHOD.as_str())?;
         let result: InitializeResult =
@@ -111,7 +119,7 @@ impl Client {
 
     pub fn shutdown(&mut self) -> Result<()> {
         let now = Instant::now();
-        let (id, message) = self.state.start_shutdown(now, self.request_timeout)?;
+        let (id, message) = self.state.start_shutdown(now, self.timeout)?;
         self.send_request(&id, &message)?;
         self.wait_for_resolution(&id, ShutdownRequest::METHOD.as_str())?;
 
@@ -120,9 +128,9 @@ impl Client {
         Ok(())
     }
 
-    pub fn wait_for_exit(&mut self, timeout: Duration) -> Result<ExitStatus> {
+    pub fn wait_for_exit(&mut self) -> Result<ExitStatus> {
         let start = Instant::now();
-        let deadline = deadline_after(start, timeout);
+        let deadline = deadline_after(start, self.exit_timeout);
         let mut stdout_closed = false;
         loop {
             if let Some(status) = self.transport.try_wait()? {
@@ -160,10 +168,6 @@ impl Client {
         &self.background_errors
     }
 
-    pub(crate) const fn request_timeout(&self) -> Duration {
-        self.request_timeout
-    }
-
     pub(crate) fn require_open_document(&self, uri: &Uri) -> Result<()> {
         self.state.require_initialized()?;
         self.docs.require_open(uri)
@@ -197,22 +201,20 @@ impl Client {
         self.docs.apply_pulled_report(uri, report)
     }
 
-    pub fn wait_for_notification<N: Notification>(
-        &mut self,
-        timeout: Duration,
-    ) -> Result<N::Params> {
-        self.wait_for_notification_where::<N>(timeout, |_| true)
+    /// Waits up to the client timeout, see [`Client::with_timeout`]
+    pub fn wait_for_notification<N: Notification>(&mut self) -> Result<N::Params> {
+        self.wait_for_notification_where::<N>(|_| true)
     }
 
+    /// Waits up to the client timeout, see [`Client::with_timeout`]
     pub fn wait_for_notification_where<N: Notification>(
         &mut self,
-        timeout: Duration,
         mut matches: impl FnMut(&N::Params) -> bool,
     ) -> Result<N::Params> {
         assert_server_to_client!(N);
         self.state.require_initialized()?;
         let start = Instant::now();
-        let deadline = deadline_after(start, timeout);
+        let deadline = deadline_after(start, self.timeout);
         loop {
             if let Some(params) = self.notifications.take::<N>(&mut matches) {
                 return Ok(params);
@@ -365,7 +367,7 @@ impl Protocol for Client {
     fn request<R: Request>(&mut self, params: R::Params) -> Result<R::Result> {
         assert_client_to_server!(R);
         let now = Instant::now();
-        let timeout = self.request_timeout;
+        let timeout = self.timeout;
         let method = R::METHOD.as_str();
         let params =
             serde_json::to_value(params).expect("serializing request params as JSON cannot fail");

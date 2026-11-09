@@ -2,7 +2,6 @@ use std::{
     path::PathBuf,
     process::Command,
     sync::atomic::{AtomicUsize, Ordering},
-    time::Duration,
 };
 
 use gen_lsp_types::*;
@@ -11,8 +10,6 @@ use lspresso::{
     Client, Protocol,
     scripted_server::{self, Config, Publications, Step},
 };
-
-pub const TIMEOUT: Duration = Duration::from_secs(5);
 
 macro_rules! assert_err_kind {
     ($result:expr, $($pattern:tt)+) => {{

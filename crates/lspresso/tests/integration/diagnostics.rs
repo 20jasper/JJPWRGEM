@@ -54,7 +54,7 @@ fn messages(diagnostics: &[Diagnostic]) -> Vec<String> {
 }
 
 fn published(client: &mut Client, uri: &Uri) -> Vec<String> {
-    messages(&client.next_diagnostics(uri, TIMEOUT).unwrap())
+    messages(&client.next_diagnostics(uri).unwrap())
 }
 
 fn pulled(client: &mut Client, uri: &Uri) -> Vec<String> {
@@ -99,13 +99,14 @@ fn notifications_received_during_another_wait_are_kept() {
 
 #[test]
 fn diagnostics_time_out_when_nothing_is_published() {
-    let (mut client, uri) = ScriptedServer::new()
+    let (client, uri) = ScriptedServer::new()
         .respond_to_all()
         .publications(Publications::Off)
         .spawn_opened();
+    let mut client = client.with_timeout(Duration::from_millis(100));
 
     assert_err_kind!(
-        client.next_diagnostics(&uri, Duration::from_millis(100)),
+        client.next_diagnostics(&uri),
         ErrorKind::NotificationTimeout { .. }
     );
 }
@@ -116,7 +117,7 @@ fn diagnostics_before_initialize_is_rejected() {
     let uri = a_json();
 
     assert_not_initialized([
-        client.next_diagnostics(&uri, TIMEOUT).unwrap_err(),
+        client.next_diagnostics(&uri).unwrap_err(),
         client.diagnostics(&uri).unwrap_err(),
     ]);
 }
@@ -126,10 +127,7 @@ fn a_closed_document_cannot_be_waited_on() {
     let (mut client, uri) = opened();
     client.did_close(&uri).unwrap();
 
-    assert_err_kind!(
-        client.next_diagnostics(&uri, TIMEOUT),
-        ErrorKind::NotOpen { .. }
-    );
+    assert_err_kind!(client.next_diagnostics(&uri), ErrorKind::NotOpen { .. });
 }
 
 #[test]
@@ -212,23 +210,25 @@ fn a_pull_gives_up_after_repeated_retriable_failures() {
 
 #[test]
 fn a_zero_timeout_still_sees_a_publication_that_already_arrived() {
-    let (mut client, uri) = ScriptedServer::new()
+    let (client, uri) = ScriptedServer::new()
         .publications(Publications::Unversioned)
         .spawn_opened();
+    let mut client = client.with_timeout(Duration::ZERO);
     std::thread::sleep(Duration::from_millis(300));
 
-    let diagnostics = client.next_diagnostics(&uri, Duration::ZERO).unwrap();
+    let diagnostics = client.next_diagnostics(&uri).unwrap();
 
     assert_eq!(messages(&diagnostics), ["v1"]);
 }
 
 #[test]
 fn an_endless_timeout_does_not_overflow_while_waiting() {
-    let (mut client, uri) = ScriptedServer::new()
+    let (client, uri) = ScriptedServer::new()
         .publications(Publications::Unversioned)
         .spawn_opened();
+    let mut client = client.with_timeout(Duration::MAX);
 
-    let diagnostics = client.next_diagnostics(&uri, Duration::MAX).unwrap();
+    let diagnostics = client.next_diagnostics(&uri).unwrap();
 
     assert_eq!(messages(&diagnostics), ["v1"]);
 }
