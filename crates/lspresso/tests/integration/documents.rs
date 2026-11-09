@@ -114,80 +114,53 @@ fn document_sync_sends_versions_and_text() {
     client.wait_for_exit().unwrap();
 
     let opened = recording.notifications::<DidOpenTextDocumentNotification>();
+    assert_eq!(opened.len(), 1);
     assert_eq!(
-        opened.iter().map(|p| &p.text_document).collect::<Vec<_>>(),
-        [&TextDocumentItem {
+        opened[0].text_document,
+        TextDocumentItem {
             uri: uri.clone(),
             language_id: LanguageKind::JSON,
             version: 1,
             text: "{}".into(),
-        }]
+        }
     );
 
     let changes = recording.notifications::<DidChangeTextDocumentNotification>();
-    assert_eq!(
-        changes
-            .iter()
-            .map(|p| (p.text_document.version, &p.content_changes[..]))
-            .collect::<Vec<_>>(),
-        [(2, &[whole("[]")][..]), (3, &[whole("[1]")][..])]
-    );
+    assert_eq!(changes.len(), 2);
+    assert_eq!(changes[0].text_document.version, 2);
+    assert_eq!(changes[0].content_changes, vec![whole("[]")]);
+    assert_eq!(changes[1].text_document.version, 3);
+    assert_eq!(changes[1].content_changes, vec![whole("[1]")]);
 
     let closed = recording.notifications::<DidCloseTextDocumentNotification>();
-    assert_eq!(
-        closed
-            .iter()
-            .map(|p| &p.text_document.uri)
-            .collect::<Vec<_>>(),
-        [&uri]
-    );
+    assert_eq!(closed.len(), 1);
+    assert_eq!(closed[0].text_document.uri, uri);
 }
 
-fn whole(text: &str) -> TextDocumentContentChangeEvent {
-    TextDocumentContentChangeWholeDocument { text: text.into() }.into()
-}
-
-fn sync_server(capabilities: ServerCapabilities) -> Client {
-    ScriptedServer::new()
-        .respond_to_all()
-        .capabilities(capabilities)
-        .spawn_initialized()
+fn save_server(include_text: bool) -> Client {
+    initialized_with(ServerCapabilities {
+        text_document_sync: Some(
+            TextDocumentSyncOptions {
+                save: Some(Save::SaveOptions(SaveOptions {
+                    include_text: Some(include_text),
+                })),
+                ..Default::default()
+            }
+            .into(),
+        ),
+        ..Default::default()
+    })
 }
 
 #[test]
 fn save_text_comes_from_the_initialize_result() {
-    let includes_text = sync_server(ServerCapabilities {
-        text_document_sync: Some(
-            TextDocumentSyncOptions {
-                save: Some(Save::SaveOptions(SaveOptions {
-                    include_text: Some(true),
-                })),
-                ..Default::default()
-            }
-            .into(),
-        ),
-        ..Default::default()
-    });
-    assert!(includes_text.supports_save_text());
-
-    let no_text = sync_server(ServerCapabilities {
-        text_document_sync: Some(
-            TextDocumentSyncOptions {
-                save: Some(Save::SaveOptions(SaveOptions {
-                    include_text: Some(false),
-                })),
-                ..Default::default()
-            }
-            .into(),
-        ),
-        ..Default::default()
-    });
-    assert!(!no_text.supports_save_text());
+    assert!(save_server(true).supports_save_text());
+    assert!(!save_server(false).supports_save_text());
 }
 
 #[test]
 fn sync_kind_comes_from_the_initialize_result() {
-    let incremental = sync_server(ServerCapabilities {
+    let incremental = initialized_with(ServerCapabilities {
         text_document_sync: Some(TextDocumentSyncKind::Incremental.into()),
         ..Default::default()
     });
@@ -197,7 +170,7 @@ fn sync_kind_comes_from_the_initialize_result() {
     );
     assert!(incremental.supports_incremental_sync());
 
-    let full = sync_server(ServerCapabilities {
+    let full = initialized_with(ServerCapabilities {
         text_document_sync: Some(
             TextDocumentSyncOptions {
                 change: Some(TextDocumentSyncKind::Full),

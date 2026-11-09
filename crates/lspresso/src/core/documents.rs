@@ -66,7 +66,7 @@ impl DocumentTracker {
     }
 
     pub(crate) fn next_version(&self, uri: &Uri) -> crate::Result<i32> {
-        Ok(self.current_version(uri)? + 1)
+        Ok(self.next_version_and_text(uri)?.0)
     }
 
     pub(crate) fn next_version_and_text(&self, uri: &Uri) -> crate::Result<(i32, &str)> {

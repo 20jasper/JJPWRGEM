@@ -22,10 +22,6 @@ fn partial(start: (u32, u32), end: (u32, u32), text: &str) -> TextDocumentConten
     .into()
 }
 
-fn whole(text: &str) -> TextDocumentContentChangeEvent {
-    TextDocumentContentChangeWholeDocument { text: text.into() }.into()
-}
-
 fn capabilities(sync: TextDocumentSync) -> ServerCapabilities {
     ServerCapabilities {
         position_encoding: Some(PositionEncodingKind::UTF8),
@@ -91,63 +87,40 @@ fn run_edit_session(capabilities: ServerCapabilities) -> Session {
 fn edits_go_out_as_incremental_changes_and_save_includes_text() {
     let (opened, changes, saves) = run_edit_session(incremental_capabilities());
 
+    assert_eq!(opened.len(), 1);
     assert_eq!(
-        opened
-            .iter()
-            .map(|params| &params.text_document)
-            .collect::<Vec<_>>(),
-        [&TextDocumentItem {
+        opened[0].text_document,
+        TextDocumentItem {
             uri: a_json(),
             language_id: LanguageKind::JSON,
             version: 1,
             text: OPEN_TEXT.into(),
-        }]
+        }
     );
+    assert_eq!(changes.len(), 1);
+    assert_eq!(changes[0].text_document.version, 2);
     assert_eq!(
-        changes
-            .iter()
-            .map(|params| (params.text_document.version, &params.content_changes[..]))
-            .collect::<Vec<_>>(),
-        [(
-            2,
-            &[partial((1, 7), (1, 7), " "), partial((0, 9), (0, 10), "10"),][..]
-        )]
+        changes[0].content_changes,
+        vec![partial((1, 7), (1, 7), " "), partial((0, 9), (0, 10), "10"),]
     );
-    assert_eq!(
-        saves
-            .iter()
-            .map(|params| params.text.as_deref())
-            .collect::<Vec<_>>(),
-        [Some(CHANGED_TEXT)]
-    );
+    assert_eq!(saves.len(), 1);
+    assert_eq!(saves[0].text.as_deref(), Some(CHANGED_TEXT));
 }
 
 #[test]
 fn edits_go_out_as_the_whole_text_when_the_server_syncs_fully() {
     let (_, changes, saves) = run_edit_session(capabilities(TextDocumentSyncKind::Full.into()));
 
-    assert_eq!(
-        changes
-            .iter()
-            .map(|params| (params.text_document.version, &params.content_changes[..]))
-            .collect::<Vec<_>>(),
-        [(2, &[whole(CHANGED_TEXT)][..])]
-    );
-    assert_eq!(
-        saves
-            .iter()
-            .map(|params| params.text.as_deref())
-            .collect::<Vec<_>>(),
-        [None]
-    );
+    assert_eq!(changes.len(), 1);
+    assert_eq!(changes[0].text_document.version, 2);
+    assert_eq!(changes[0].content_changes, vec![whole(CHANGED_TEXT)]);
+    assert_eq!(saves.len(), 1);
+    assert_eq!(saves[0].text.as_deref(), None);
 }
 
 #[test]
 fn document_text_tracks_full_changes_and_is_forgotten_on_close() {
-    let mut client = ScriptedServer::new()
-        .respond_to_all()
-        .capabilities(capabilities(TextDocumentSyncKind::Full.into()))
-        .spawn_initialized();
+    let mut client = initialized_with(capabilities(TextDocumentSyncKind::Full.into()));
     let uri = a_json();
     client
         .did_open(uri.clone(), OPEN_TEXT, LanguageKind::JSON)
@@ -163,10 +136,7 @@ fn document_text_tracks_full_changes_and_is_forgotten_on_close() {
 
 #[test]
 fn overlapping_edits_are_rejected_without_sending() {
-    let mut client = ScriptedServer::new()
-        .respond_to_all()
-        .capabilities(incremental_capabilities())
-        .spawn_initialized();
+    let mut client = initialized_with(incremental_capabilities());
     let uri = a_json();
     client
         .did_open(uri.clone(), "abc", LanguageKind::JSON)
@@ -189,10 +159,7 @@ fn overlapping_edits_are_rejected_without_sending() {
 
 #[test]
 fn raw_incremental_changes_update_the_tracked_text() {
-    let mut client = ScriptedServer::new()
-        .respond_to_all()
-        .capabilities(incremental_capabilities())
-        .spawn_initialized();
+    let mut client = initialized_with(incremental_capabilities());
     let uri = a_json();
     client
         .did_open(uri.clone(), "abc", LanguageKind::JSON)
