@@ -2,6 +2,6 @@
   "name": "mise-npm-install",
   "private": true,
   "dependencies": {
-    "vscode-langservers-extracted": "4.10.0"
+    "@t1ckbase/vscode-langservers-extracted": "2.0.5"
   }
 }

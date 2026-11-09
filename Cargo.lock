@@ -155,6 +155,7 @@ dependencies = [
  "codspeed-criterion-compat",
  "gungraun",
  "jjpwrgem-parse",
+ "lspresso",
  "serde",
  "serde_json",
  "simd-json",
@@ -1366,6 +1367,7 @@ dependencies = [
 name = "lspresso"
 version = "0.1.0"
 dependencies = [
+ "codspeed-criterion-compat",
  "crossbeam-channel",
  "displaydoc",
  "gen-lsp-types",
