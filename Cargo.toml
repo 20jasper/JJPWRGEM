@@ -63,6 +63,7 @@ const_format = "0.2.37"
 lsp = { path = "crates/lsp", version = "0.1", package = "jjpwrgem-lsp" }
 serde = "1.0.228"
 serde_json = "1.0.154"
+criterion = { package = "codspeed-criterion-compat", version = "=6.0.0" }
 
 [dependencies]
 anstream = "1"

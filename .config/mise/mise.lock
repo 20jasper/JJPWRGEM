@@ -669,6 +669,9 @@ aube = { path = "locks/npm-oxfmt/0.75.0", digest = "sha256:1d4f470a5dbba27221813
 backend = "npm:oxfmt"
 specifiers = ["0.75.0"]
 
+[tools."npm:oxfmt".provenance]
+repository = "github.com/oxc-project/oxc"
+
 [[tools."npm:prettier"]]
 version = "3.9.10"
 aube = { path = "locks/npm-prettier/3.9.10", digest = "sha256:0a52cf3e98ebe971f9f0c338c08e668756d290a8d14fe3fd308251084fba1522" }
