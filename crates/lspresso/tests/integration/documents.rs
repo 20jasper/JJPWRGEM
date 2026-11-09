@@ -192,3 +192,29 @@ fn sync_kind_comes_from_the_initialize_result() {
     );
     assert!(!full.supports_incremental_sync());
 }
+
+#[test]
+fn generic_notify_and_request_track_documents_like_the_typed_methods() {
+    let mut client = initialized();
+    let uri = a_json();
+    assert_err_kind!(
+        client.request::<WillSaveTextDocumentWaitUntilRequest>(WillSaveTextDocumentParams {
+            text_document: TextDocumentIdentifier { uri: uri.clone() },
+            reason: TextDocumentSaveReason::Manual,
+        }),
+        ErrorKind::NotOpen { .. }
+    );
+    client
+        .notify::<DidOpenTextDocumentNotification>(DidOpenTextDocumentParams {
+            text_document: TextDocumentItem {
+                uri: uri.clone(),
+                language_id: LanguageKind::JSON,
+                version: 1,
+                text: "{}".to_owned(),
+            },
+        })
+        .unwrap();
+    assert_eq!(client.document_text(&uri), Some("{}"));
+    client.did_change_full(&uri, "[]").unwrap();
+    assert_eq!(client.document_text(&uri), Some("[]"));
+}

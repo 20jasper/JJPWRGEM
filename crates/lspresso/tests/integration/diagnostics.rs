@@ -175,6 +175,19 @@ fn pull_diagnostics_thread_the_previous_result_id() {
 }
 
 #[test]
+fn a_report_pulled_through_the_plain_request_is_remembered_too() {
+    let recording = Recording::new();
+    let (mut client, uri) = pull_server([full_report("pulled", "r1"), unchanged_report("r2")])
+        .recording_to(&recording)
+        .spawn_opened();
+
+    client.diagnostic(&uri).unwrap();
+
+    assert_eq!(pulled(&mut client, &uri), ["pulled"]);
+    assert_eq!(previous_ids_sent(&recording), [None, Some("r1".to_owned())]);
+}
+
+#[test]
 fn reopening_a_document_forgets_its_previous_result_id() {
     let recording = Recording::new();
     let (mut client, uri) = pull_server([full_report("first", "r1"), full_report("second", "r2")])

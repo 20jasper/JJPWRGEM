@@ -29,7 +29,11 @@ impl PulledReport {
         self.result_id.clone()
     }
 
-    pub(crate) fn apply(&mut self, report: DocumentDiagnosticReport) -> Vec<Diagnostic> {
+    pub(crate) fn items(&self) -> Vec<Diagnostic> {
+        self.items.clone()
+    }
+
+    pub(crate) fn apply(&mut self, report: DocumentDiagnosticReport) {
         match report {
             DocumentDiagnosticReport::RelatedFullDocumentDiagnosticReport(full) => {
                 let FullDocumentDiagnosticReport { result_id, items } =
@@ -40,7 +44,6 @@ impl PulledReport {
                 self.result_id = Some(unchanged.unchanged_document_diagnostic_report.result_id);
             }
         }
-        self.items.clone()
     }
 }
 
@@ -126,8 +129,8 @@ mod tests {
         report.apply(full(Some("r1"), "boom"));
         assert_eq!(report.result_id().as_deref(), Some("r1"));
 
-        let items = report.apply(unchanged("r2"));
-        assert_eq!(items, vec![diagnostic("boom")]);
+        report.apply(unchanged("r2"));
+        assert_eq!(report.items(), vec![diagnostic("boom")]);
         assert_eq!(report.result_id().as_deref(), Some("r2"));
     }
 
