@@ -183,10 +183,14 @@ impl Client {
     }
 
     fn position_encoding(&self) -> PositionEncodingKind {
-        text::negotiated(
-            self.server_capabilities()
-                .and_then(|capabilities| capabilities.position_encoding.as_ref()),
-        )
+        match self
+            .server_capabilities()
+            .and_then(|capabilities| capabilities.position_encoding.as_ref())
+        {
+            Some(PositionEncodingKind::UTF8) => PositionEncodingKind::UTF8,
+            Some(PositionEncodingKind::UTF32) => PositionEncodingKind::UTF32,
+            _ => PositionEncodingKind::UTF16,
+        }
     }
 
     pub(crate) fn apply_edits(&self, text: &str, edits: &[TextEdit]) -> Result<text::Applied> {

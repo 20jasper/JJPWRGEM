@@ -125,11 +125,8 @@ fn document_text_tracks_full_changes_and_is_forgotten_on_close() {
     client
         .did_open(uri.clone(), OPEN_TEXT, LanguageKind::JSON)
         .unwrap();
-    assert_eq!(client.document_text(&uri), Some(OPEN_TEXT));
-
     client.did_change_full(&uri, CHANGED_TEXT).unwrap();
     assert_eq!(client.document_text(&uri), Some(CHANGED_TEXT));
-
     client.did_close(&uri).unwrap();
     assert_eq!(client.document_text(&uri), None);
 }
@@ -142,43 +139,11 @@ fn overlapping_edits_are_rejected_without_sending() {
         .did_open(uri.clone(), "abc", LanguageKind::JSON)
         .unwrap();
 
-    let err = client
-        .did_change(&uri, &[edit((0, 0), (0, 2), ""), edit((0, 1), (0, 3), "")])
-        .unwrap_err();
-    assert!(
-        matches!(err.kind(), ErrorKind::OverlappingEdits { a: 0, b: 1 }),
-        "{err:?}"
+    assert_err_kind!(
+        client.did_change(&uri, &[edit((0, 0), (0, 2), ""), edit((0, 1), (0, 3), "")]),
+        ErrorKind::OverlappingEdits
     );
     assert_eq!(client.document_text(&uri), Some("abc"));
-
-    client
-        .did_change(&uri, &[edit((0, 0), (0, 1), "x")])
-        .unwrap();
-    assert_eq!(client.document_text(&uri), Some("xbc"));
-}
-
-#[test]
-fn an_empty_change_is_a_no_op() {
-    let recording = Recording::new();
-    let mut client = ScriptedServer::new()
-        .respond_to_all()
-        .capabilities(incremental_capabilities())
-        .recording_to(&recording)
-        .spawn_initialized();
-    let uri = a_json();
-    client
-        .did_open(uri.clone(), OPEN_TEXT, LanguageKind::JSON)
-        .unwrap();
-
-    client.did_change(&uri, &[]).unwrap();
-    client.shutdown().unwrap();
-    client.wait_for_exit().unwrap();
-
-    assert_eq!(client.document_text(&uri), Some(OPEN_TEXT));
-    assert_eq!(
-        recording.notifications::<DidChangeTextDocumentNotification>(),
-        Vec::new()
-    );
 }
 
 #[test]

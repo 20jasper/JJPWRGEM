@@ -94,8 +94,8 @@ pub enum ErrorKind {
     NotOpen { uri: Uri },
     /// change {index} has a range that isn't valid in the document: {range:?}
     InvalidEdit { index: usize, range: Range },
-    /// edits {a} and {b} overlap
-    OverlappingEdits { a: usize, b: usize },
+    /// edits overlap
+    OverlappingEdits,
     /// {method} response was malformed: {message}
     MalformedResponse {
         method: &'static str,

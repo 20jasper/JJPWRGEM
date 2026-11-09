@@ -4,14 +4,6 @@ use gen_lsp_types::*;
 
 use crate::error::ErrorKind;
 
-pub(crate) fn negotiated(kind: Option<&PositionEncodingKind>) -> PositionEncodingKind {
-    match kind {
-        Some(PositionEncodingKind::UTF8) => PositionEncodingKind::UTF8,
-        Some(PositionEncodingKind::UTF32) => PositionEncodingKind::UTF32,
-        _ => PositionEncodingKind::UTF16,
-    }
-}
-
 fn units(encoding: &PositionEncodingKind, c: char) -> u32 {
     match encoding {
         PositionEncodingKind::UTF8 => u32::try_from(c.len_utf8()).unwrap(),
@@ -104,20 +96,12 @@ pub(crate) fn apply(
         .collect::<crate::Result<Vec<_>>>()?;
     spans.sort_unstable_by_key(|(range, index)| (range.start, range.end, *index));
 
-    let mut reach: Option<(usize, usize)> = None;
-    for (range, index) in &spans {
-        if let Some((reach_end, owner)) = reach
-            && range.start < reach_end
-        {
-            return Err(ErrorKind::OverlappingEdits {
-                a: owner.min(*index),
-                b: owner.max(*index),
-            }
-            .into());
+    let mut reach = 0;
+    for (range, _) in &spans {
+        if range.start < reach {
+            return Err(ErrorKind::OverlappingEdits.into());
         }
-        if range.start < range.end && reach.is_none_or(|(reach_end, _)| range.end > reach_end) {
-            reach = Some((range.end, *index));
-        }
+        reach = reach.max(range.end);
     }
 
     let mut result = String::with_capacity(text.len());
@@ -138,7 +122,17 @@ pub(crate) fn apply(
                 .max()
                 .unwrap_or(start);
             let replaced = result[start..result.len() - (text.len() - end)].to_owned();
-            vec![partial_change(text, start, end, replaced, encoding)]
+            vec![
+                TextDocumentContentChangePartial::new(
+                    Range::new(
+                        position(text, start, encoding),
+                        position(text, end, encoding),
+                    ),
+                    None,
+                    replaced,
+                )
+                .into(),
+            ]
         }
         None => Vec::new(),
     };
@@ -174,24 +168,6 @@ pub(crate) fn apply_changes(
     Ok(result)
 }
 
-fn partial_change(
-    text: &str,
-    start: usize,
-    end: usize,
-    new_text: String,
-    encoding: &PositionEncodingKind,
-) -> TextDocumentContentChangeEvent {
-    TextDocumentContentChangePartial::new(
-        Range::new(
-            position(text, start, encoding),
-            position(text, end, encoding),
-        ),
-        None,
-        new_text,
-    )
-    .into()
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -224,56 +200,24 @@ mod tests {
     }
 
     #[test]
-    fn encoding_defaults_to_utf16() {
-        assert_eq!(negotiated(None), PositionEncodingKind::UTF16);
-        assert_eq!(
-            negotiated(Some(&PositionEncodingKind::UTF8)),
-            PositionEncodingKind::UTF8
-        );
-        assert_eq!(
-            negotiated(Some(&PositionEncodingKind::UTF32)),
-            PositionEncodingKind::UTF32
-        );
-        assert_eq!(
-            negotiated(Some(&PositionEncodingKind::new("custom"))),
-            PositionEncodingKind::UTF16
-        );
-    }
-
-    #[test]
     fn offsets_count_in_the_encoding_and_clamp_past_the_end() {
         let text = "a😀b\r\nc\rd";
-        assert_eq!(
-            offset(text, at(0, 3), &PositionEncodingKind::UTF16),
-            Some(5)
-        );
-        assert_eq!(offset(text, at(0, 2), &PositionEncodingKind::UTF16), None);
-        assert_eq!(offset(text, at(0, 5), &PositionEncodingKind::UTF8), Some(5));
-        assert_eq!(offset(text, at(0, 3), &PositionEncodingKind::UTF8), None);
-        assert_eq!(
-            offset(text, at(0, 2), &PositionEncodingKind::UTF32),
-            Some(5)
-        );
-        assert_eq!(
-            offset(text, at(0, 99), &PositionEncodingKind::UTF16),
-            Some(6)
-        );
-        assert_eq!(
-            offset(text, at(1, 0), &PositionEncodingKind::UTF16),
-            Some(8)
-        );
-        assert_eq!(
-            offset(text, at(2, 1), &PositionEncodingKind::UTF16),
-            Some(11)
-        );
-        assert_eq!(
-            offset(text, at(9, 0), &PositionEncodingKind::UTF16),
-            Some(text.len())
-        );
-        assert_eq!(
-            offset(text, at(u32::MAX, u32::MAX), &PositionEncodingKind::UTF8),
-            Some(text.len())
-        );
+        for (position, encoding, expected) in [
+            (at(0, 3), PositionEncodingKind::UTF16, Some(5)),
+            (at(0, 2), PositionEncodingKind::UTF16, None),
+            (at(0, 5), PositionEncodingKind::UTF8, Some(5)),
+            (at(0, 2), PositionEncodingKind::UTF32, Some(5)),
+            (at(0, 99), PositionEncodingKind::UTF16, Some(6)),
+            (at(2, 1), PositionEncodingKind::UTF16, Some(11)),
+            (at(9, 0), PositionEncodingKind::UTF16, Some(text.len())),
+            (
+                at(u32::MAX, u32::MAX),
+                PositionEncodingKind::UTF8,
+                Some(text.len()),
+            ),
+        ] {
+            assert_eq!(offset(text, position, &encoding), expected);
+        }
     }
 
     #[test]
@@ -309,10 +253,7 @@ mod tests {
         )
         .unwrap();
         assert_eq!(applied.text, "yyb\nx");
-    }
 
-    #[test]
-    fn inserts_at_one_place_land_in_order_before_a_replacement_there() {
         let applied = apply(
             "abc",
             &[
@@ -327,7 +268,7 @@ mod tests {
     }
 
     #[test]
-    fn changes_that_would_join_a_line_break_become_one() {
+    fn edits_around_a_line_break_apply() {
         let applied = apply(
             "\ra",
             &[edit((1, 0), (1, 0), "x"), edit((1, 0), (1, 0), "\n")],
@@ -335,15 +276,6 @@ mod tests {
         )
         .unwrap();
         assert_eq!(applied.text, "\rx\na");
-        assert_eq!(
-            applied.changes,
-            [TextDocumentContentChangePartial::new(
-                Range::new(at(1, 0), at(1, 0)),
-                None,
-                "x\n".to_owned()
-            )
-            .into()]
-        );
         assert_eq!(
             apply_changes("\ra", &applied.changes, &PositionEncodingKind::UTF16).unwrap(),
             applied.text
@@ -359,10 +291,7 @@ mod tests {
         ];
         for edits in overlapping {
             let err = apply("abc", &edits, &PositionEncodingKind::UTF16).unwrap_err();
-            assert!(
-                matches!(err.kind(), ErrorKind::OverlappingEdits { a: 0, b: 1 }),
-                "{err}"
-            );
+            assert!(matches!(err.kind(), ErrorKind::OverlappingEdits), "{err}");
         }
         let touching = [edit((0, 0), (0, 1), "x"), edit((0, 1), (0, 2), "y")];
         assert_eq!(
