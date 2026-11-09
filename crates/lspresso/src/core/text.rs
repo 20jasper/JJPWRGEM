@@ -115,11 +115,7 @@ pub(crate) fn apply(
     let changes = match spans.first() {
         Some((first, _)) => {
             let start = first.start;
-            let end = spans
-                .iter()
-                .map(|(range, _)| range.end)
-                .max()
-                .unwrap_or(start);
+            let end = spans.last().map_or(start, |(range, _)| range.end);
             let replaced = result[start..result.len() - (text.len() - end)].to_owned();
             vec![
                 TextDocumentContentChangePartial::new(
