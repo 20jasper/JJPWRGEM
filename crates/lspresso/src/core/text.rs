@@ -96,12 +96,11 @@ pub(crate) fn apply(
         .collect::<crate::Result<Vec<_>>>()?;
     spans.sort_unstable_by_key(|(range, index)| (range.start, range.end, *index));
 
-    let mut reach = 0;
-    for (range, _) in &spans {
-        if range.start < reach {
-            return Err(ErrorKind::OverlappingEdits.into());
-        }
-        reach = reach.max(range.end);
+    if spans.windows(2).any(|pair| {
+        let [a, b] = pair else { return false };
+        a.0.end > b.0.start
+    }) {
+        return Err(ErrorKind::OverlappingEdits.into());
     }
 
     let mut result = String::with_capacity(text.len());
