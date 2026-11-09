@@ -78,7 +78,7 @@ fn run_edit_session(capabilities: ServerCapabilities) -> Session {
     );
     client.did_save(&uri).unwrap();
     client.shutdown().unwrap();
-    client.wait_for_exit(TIMEOUT).unwrap();
+    client.wait_for_exit().unwrap();
 
     (
         recording.notifications::<DidOpenTextDocumentNotification>(),
