@@ -222,7 +222,18 @@ mod tests {
 
     #[test]
     fn position_and_offset_round_trip() {
-        for text in ["", "a", "a😀b\r\nc\rd", "😀", "\r\nx"] {
+        for text in [
+            "",
+            "a",
+            "a\n",
+            "a\r\n",
+            "a\r",
+            "a😀b\r\nc\rd",
+            "😀",
+            "\r\nx",
+            "\n\nyee\n\n",
+            "€ abc\nline 2",
+        ] {
             let boundaries: Vec<usize> = text
                 .char_indices()
                 .map(|(index, _)| index)
