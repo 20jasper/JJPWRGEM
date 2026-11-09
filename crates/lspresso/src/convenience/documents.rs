@@ -97,11 +97,10 @@ impl Client {
     ///
     /// Use [`Protocol::protocol_did_save`] for full params.
     pub fn did_save(&mut self, uri: &Uri) -> Result<()> {
-        let text = if self.supports_save_text() {
-            Some(self.tracked_text(uri)?.to_owned())
-        } else {
-            None
-        };
+        let text = self
+            .supports_save_text()
+            .then(|| self.tracked_text(uri).map(str::to_owned))
+            .transpose()?;
         self.protocol_did_save(DidSaveTextDocumentParams {
             text_document: document(uri),
             text,

@@ -1,9 +1,6 @@
 //! editor capabilities captured from real editors
 
-use gen_lsp_types::{
-    ClientCapabilities, InitializeParams, Save, SaveOptions, ServerCapabilities, TextDocumentSync,
-    TextDocumentSyncKind, TextDocumentSyncOptions,
-};
+use gen_lsp_types::*;
 
 pub mod emacs;
 pub mod helix;

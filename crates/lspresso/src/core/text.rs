@@ -1,7 +1,4 @@
-use gen_lsp_types::{
-    Position, PositionEncodingKind, Range, TextDocumentContentChangeEvent,
-    TextDocumentContentChangePartial, TextEdit,
-};
+use gen_lsp_types::*;
 
 use crate::error::ErrorKind;
 
