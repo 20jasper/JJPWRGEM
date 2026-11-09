@@ -3,6 +3,10 @@ use gen_lsp_types::*;
 use super::document;
 use crate::{Client, Protocol, Result, core};
 
+fn whole_document(text: String) -> TextDocumentContentChangeEvent {
+    TextDocumentContentChangeWholeDocument { text }.into()
+}
+
 impl Client {
     pub fn did_open(
         &mut self,
@@ -23,38 +27,24 @@ impl Client {
 
     pub fn did_change_full(&mut self, uri: &Uri, text: impl Into<String>) -> Result<()> {
         let version = self.next_document_version(uri)?;
-        self.protocol_did_change(DidChangeTextDocumentParams {
-            text_document: VersionedTextDocumentIdentifier {
-                version,
-                text_document_identifier: document(uri),
-            },
-            content_changes: vec![TextDocumentContentChangeEvent::from(
-                TextDocumentContentChangeWholeDocument { text: text.into() },
-            )],
-        })
+        let text = text.into();
+        let content_changes = vec![whole_document(text.clone())];
+        self.send_change(uri, version, content_changes, text)
     }
 
     /// Applies `edits` to the tracked text and sends the next change, as
     /// incremental edits when the server syncs incrementally and as the whole
     /// new text otherwise.
     pub fn did_change(&mut self, uri: &Uri, edits: &[TextEdit]) -> Result<()> {
-        let version = self.next_document_version(uri)?;
+        let (version, text) = self.next_document_version_and_text(uri)?;
         let encoding = self.position_encoding();
-        let applied = core::text::apply(self.tracked_text(uri)?, edits, &encoding)?;
+        let applied = core::text::apply(text, edits, &encoding)?;
         let content_changes = if self.supports_incremental_sync() {
             applied.changes
         } else {
-            vec![TextDocumentContentChangeEvent::from(
-                TextDocumentContentChangeWholeDocument { text: applied.text },
-            )]
+            vec![whole_document(applied.text.clone())]
         };
-        self.protocol_did_change(DidChangeTextDocumentParams {
-            text_document: VersionedTextDocumentIdentifier {
-                version,
-                text_document_identifier: document(uri),
-            },
-            content_changes,
-        })
+        self.send_change(uri, version, content_changes, applied.text)
     }
 
     pub fn did_close(&mut self, uri: &Uri) -> Result<()> {

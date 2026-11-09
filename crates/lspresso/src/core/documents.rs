@@ -69,6 +69,11 @@ impl DocumentTracker {
         Ok(self.current_version(uri)? + 1)
     }
 
+    pub(crate) fn next_version_and_text(&self, uri: &Uri) -> crate::Result<(i32, &str)> {
+        let document = self.open(uri)?;
+        Ok((document.version + 1, document.text.as_str()))
+    }
+
     pub(crate) fn next_open_version(&self, uri: &Uri) -> i32 {
         self.closed_versions
             .get(uri)
@@ -140,9 +145,11 @@ mod tests {
         let peeked = tracker.next_version(&uri).unwrap();
         assert_eq!(peeked, 2);
         assert_eq!(tracker.next_version(&uri).unwrap(), 2);
+        assert_eq!(tracker.next_version_and_text(&uri).unwrap(), (2, ""));
 
         tracker.commit_change(&uri, peeked, "changed".to_owned());
         assert_eq!(tracker.next_version(&uri).unwrap(), 3);
+        assert_eq!(tracker.next_version_and_text(&uri).unwrap(), (3, "changed"));
         assert_eq!(tracker.text(&uri).unwrap(), "changed");
     }
 
