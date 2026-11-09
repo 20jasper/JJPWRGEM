@@ -1,3 +1,5 @@
+use std::ops::Range as ByteRange;
+
 use gen_lsp_types::*;
 
 use crate::error::ErrorKind;
@@ -18,10 +20,10 @@ fn units(encoding: &PositionEncodingKind, c: char) -> u32 {
     }
 }
 
-fn span(text: &str, range: Range, encoding: &PositionEncodingKind) -> Option<(usize, usize)> {
+fn span(text: &str, range: Range, encoding: &PositionEncodingKind) -> Option<ByteRange<usize>> {
     let start = offset(text, range.start, encoding)?;
     let end = offset(text, range.end, encoding)?;
-    (start <= end).then_some((start, end))
+    (start <= end).then_some(start..end)
 }
 
 fn line_end(text: &str, from: usize) -> Option<(usize, usize)> {
@@ -94,7 +96,7 @@ pub(crate) fn apply(
         .enumerate()
         .map(|(index, edit)| {
             span(text, edit.range, encoding)
-                .map(|(start, end)| (start, end, index))
+                .map(|range| (range, index))
                 .ok_or_else(|| {
                     ErrorKind::InvalidEdit {
                         index,
@@ -104,42 +106,48 @@ pub(crate) fn apply(
                 })
         })
         .collect::<crate::Result<Vec<_>>>()?;
-    spans.sort_unstable();
+    spans.sort_unstable_by_key(|(range, index)| (range.start, range.end, *index));
 
     let mut reach: Option<(usize, usize)> = None;
-    for &(start, end, index) in &spans {
+    for (range, index) in &spans {
         if let Some((reach_end, owner)) = reach
-            && start < reach_end
+            && range.start < reach_end
         {
             return Err(ErrorKind::OverlappingEdits {
-                a: owner.min(index),
-                b: owner.max(index),
+                a: owner.min(*index),
+                b: owner.max(*index),
             }
             .into());
         }
-        if start < end && reach.is_none_or(|(reach_end, _)| end > reach_end) {
-            reach = Some((end, index));
+        if range.start < range.end && reach.is_none_or(|(reach_end, _)| range.end > reach_end) {
+            reach = Some((range.end, *index));
         }
     }
 
     let mut result = text.to_owned();
     let mut changes = Vec::with_capacity(spans.len());
     let mut representable = true;
-    for &(start, end, index) in spans.iter().rev() {
-        representable &= !splits_line_break(&result, start) && !splits_line_break(&result, end);
-        let new_text = &edits[index].new_text;
+    for (range, index) in spans.iter().rev() {
+        representable &=
+            !splits_line_break(&result, range.start) && !splits_line_break(&result, range.end);
+        let new_text = &edits[*index].new_text;
         changes.push(partial_change(
             &result,
-            start,
-            end,
+            range.start,
+            range.end,
             new_text.clone(),
             encoding,
         ));
-        result.replace_range(start..end, new_text);
+        result.replace_range(range.start..range.end, new_text);
     }
     // A position can't fall between \r and \n; combine the edits instead.
-    if !representable && let Some(&(start, ..)) = spans.first() {
-        let end = spans.iter().map(|&(_, end, _)| end).max().unwrap_or(start);
+    if !representable && let Some((first, _)) = spans.first() {
+        let start = first.start;
+        let end = spans
+            .iter()
+            .map(|(range, _)| range.end)
+            .max()
+            .unwrap_or(start);
         let replaced = result[start..result.len() - (text.len() - end)].to_owned();
         changes = vec![partial_change(text, start, end, replaced, encoding)];
     }
@@ -161,14 +169,14 @@ pub(crate) fn apply_changes(
                 result.clone_from(&whole.text);
             }
             TextDocumentContentChangeEvent::TextDocumentContentChangePartial(partial) => {
-                let Some((start, end)) = span(&result, partial.range, encoding) else {
+                let Some(range) = span(&result, partial.range, encoding) else {
                     return Err(ErrorKind::InvalidEdit {
                         index,
                         range: partial.range,
                     }
                     .into());
                 };
-                result.replace_range(start..end, &partial.text);
+                result.replace_range(range, &partial.text);
             }
         }
     }
