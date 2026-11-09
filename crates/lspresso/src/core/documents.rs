@@ -65,10 +65,6 @@ impl DocumentTracker {
         Ok(document.pulled.apply(report))
     }
 
-    pub(crate) fn next_version(&self, uri: &Uri) -> crate::Result<i32> {
-        Ok(self.next_version_and_text(uri)?.0)
-    }
-
     pub(crate) fn next_version_and_text(&self, uri: &Uri) -> crate::Result<(i32, &str)> {
         let document = self.open(uri)?;
         Ok((document.version + 1, document.text.as_str()))
@@ -133,7 +129,7 @@ mod tests {
         let uri = uri("file:///a.json");
         tracker.mark_open(uri.clone(), 7, "text".to_owned());
 
-        assert_eq!(tracker.next_version(&uri).unwrap(), 8);
+        assert_eq!(tracker.next_version_and_text(&uri).unwrap().0, 8);
     }
 
     #[test]
@@ -142,13 +138,11 @@ mod tests {
         let uri = uri("file:///a.json");
         tracker.mark_open(uri.clone(), 1, String::new());
 
-        let peeked = tracker.next_version(&uri).unwrap();
+        let peeked = tracker.next_version_and_text(&uri).unwrap().0;
         assert_eq!(peeked, 2);
-        assert_eq!(tracker.next_version(&uri).unwrap(), 2);
         assert_eq!(tracker.next_version_and_text(&uri).unwrap(), (2, ""));
 
         tracker.commit_change(&uri, peeked, "changed".to_owned());
-        assert_eq!(tracker.next_version(&uri).unwrap(), 3);
         assert_eq!(tracker.next_version_and_text(&uri).unwrap(), (3, "changed"));
         assert_eq!(tracker.text(&uri).unwrap(), "changed");
     }
@@ -165,7 +159,7 @@ mod tests {
         assert!(tracker.text(&uri).is_err());
 
         tracker.mark_open(uri.clone(), 1, "reopened".to_owned());
-        assert_eq!(tracker.next_version(&uri).unwrap(), 2);
+        assert_eq!(tracker.next_version_and_text(&uri).unwrap().0, 2);
         assert_eq!(tracker.text(&uri).unwrap(), "reopened");
     }
 }

@@ -261,11 +261,6 @@ impl Client {
         self.docs.next_open_version(uri)
     }
 
-    pub(crate) fn next_document_version(&self, uri: &Uri) -> Result<i32> {
-        self.state.require_initialized()?;
-        self.docs.next_version(uri)
-    }
-
     pub(crate) fn next_document_version_and_text(&self, uri: &Uri) -> Result<(i32, &str)> {
         self.state.require_initialized()?;
         self.docs.next_version_and_text(uri)

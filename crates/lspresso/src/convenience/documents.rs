@@ -26,7 +26,7 @@ impl Client {
     }
 
     pub fn did_change_full(&mut self, uri: &Uri, text: impl Into<String>) -> Result<()> {
-        let version = self.next_document_version(uri)?;
+        let (version, _) = self.next_document_version_and_text(uri)?;
         let text = text.into();
         let content_changes = vec![whole_document(text.clone())];
         self.send_validated_change(uri, version, content_changes, text)
