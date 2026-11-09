@@ -59,7 +59,7 @@ impl Profile {
     fn spawn(&self) -> Client {
         Client::spawn((self.command)())
             .unwrap()
-            .with_request_timeout(TIMEOUT)
+            .with_timeout(TIMEOUT)
     }
 
     fn initialized(&self) -> Client {
