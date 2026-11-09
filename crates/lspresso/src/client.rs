@@ -267,8 +267,7 @@ impl Client {
         self.docs.next_version_and_text(uri)
     }
 
-    /// Sends a change for an open document. Callers validate the document first.
-    pub(crate) fn send_change(
+    pub(crate) fn send_validated_change(
         &mut self,
         uri: &Uri,
         version: i32,
@@ -441,7 +440,7 @@ impl Protocol for Client {
         } = params;
         let uri = text_document.text_document_identifier.uri.clone();
         let text = self.apply_changes(&uri, &content_changes)?;
-        self.send_change(&uri, text_document.version, content_changes, text)
+        self.send_validated_change(&uri, text_document.version, content_changes, text)
     }
 
     fn protocol_did_close(&mut self, params: DidCloseTextDocumentParams) -> Result<()> {

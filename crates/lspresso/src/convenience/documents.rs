@@ -29,12 +29,10 @@ impl Client {
         let version = self.next_document_version(uri)?;
         let text = text.into();
         let content_changes = vec![whole_document(text.clone())];
-        self.send_change(uri, version, content_changes, text)
+        self.send_validated_change(uri, version, content_changes, text)
     }
 
-    /// Applies `edits` to the tracked text and sends the next change, as
-    /// incremental edits when the server syncs incrementally and as the whole
-    /// new text otherwise.
+    /// Sends edits as incremental or whole-document changes.
     pub fn did_change(&mut self, uri: &Uri, edits: &[TextEdit]) -> Result<()> {
         if edits.is_empty() {
             self.require_open_document(uri)?;
@@ -47,7 +45,7 @@ impl Client {
         } else {
             vec![whole_document(applied.text.clone())]
         };
-        self.send_change(uri, version, content_changes, applied.text)
+        self.send_validated_change(uri, version, content_changes, applied.text)
     }
 
     pub fn did_close(&mut self, uri: &Uri) -> Result<()> {
@@ -56,8 +54,6 @@ impl Client {
         })
     }
 
-    /// The document's text as the server was last told it, or `None` when it
-    /// isn't open.
     pub fn document_text(&self, uri: &Uri) -> Option<&str> {
         self.tracked_text(uri).ok()
     }
@@ -86,8 +82,7 @@ impl Client {
         })
     }
 
-    /// Sends [`textDocument/didSave`](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#textDocument_didSave),
-    /// with the document's text if the server asked for it.
+    /// Sends [`textDocument/didSave`](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#textDocument_didSave).
     ///
     /// Use [`Protocol::protocol_did_save`] for full params.
     pub fn did_save(&mut self, uri: &Uri) -> Result<()> {

@@ -2,7 +2,6 @@ use gen_lsp_types::*;
 
 use crate::error::ErrorKind;
 
-/// UTF-16 unless the server picked another, as the spec defaults.
 pub(crate) fn negotiated(kind: Option<&PositionEncodingKind>) -> PositionEncodingKind {
     match kind {
         Some(PositionEncodingKind::UTF8) => PositionEncodingKind::UTF8,
@@ -25,8 +24,6 @@ fn span(text: &str, range: Range, encoding: &PositionEncodingKind) -> Option<(us
     (start <= end).then_some((start, end))
 }
 
-/// Where the line starting at `from` ends, and where the next one starts:
-/// lines end at `\n`, `\r\n` or `\r`.
 fn line_end(text: &str, from: usize) -> Option<(usize, usize)> {
     let end = from + text[from..].find(['\n', '\r'])?;
     let terminator = if text[end..].starts_with("\r\n") {
@@ -37,9 +34,7 @@ fn line_end(text: &str, from: usize) -> Option<(usize, usize)> {
     Some((end, end + terminator))
 }
 
-/// The byte offset of `position`, reading a line past the last as the end
-/// of the document and a character past its line's end as the end of the
-/// line, as editors do. `None` if it falls inside a character.
+/// Clamps past the end; `None` inside a character.
 pub(crate) fn offset(
     text: &str,
     position: Position,
@@ -66,8 +61,7 @@ pub(crate) fn offset(
     Some(end)
 }
 
-/// The position of byte `offset`, which must be a char boundary outside any
-/// line terminator.
+/// `offset` must be a char boundary outside any line terminator.
 pub(crate) fn position(text: &str, offset: usize, encoding: &PositionEncodingKind) -> Position {
     let mut line = 0;
     let mut start = 0;
@@ -87,15 +81,9 @@ pub(crate) fn position(text: &str, offset: usize, encoding: &PositionEncodingKin
 #[derive(Debug)]
 pub(crate) struct Applied {
     pub(crate) text: String,
-    /// The same edits as changes applied in turn, as incremental sync sends
-    /// them.
     pub(crate) changes: Vec<TextDocumentContentChangeEvent>,
 }
 
-/// Applies `edits` to `text` as the spec says a set of `TextEdit`s applies,
-/// each against the text as it is. Edits may not overlap, though they may
-/// touch, and inserts at the same place land in order; an insert inside a
-/// replaced range overlaps it.
 pub(crate) fn apply(
     text: &str,
     edits: &[TextEdit],
@@ -149,8 +137,7 @@ pub(crate) fn apply(
         ));
         result.replace_range(start..end, new_text);
     }
-    // A change can't point between \r and \n. If applying the edits in turn
-    // would put a boundary there, send one change covering the edited range.
+    // A position can't fall between \r and \n; combine the edits instead.
     if !representable && let Some(&(start, ..)) = spans.first() {
         let end = spans.iter().map(|&(_, end, _)| end).max().unwrap_or(start);
         let replaced = result[start..result.len() - (text.len() - end)].to_owned();
@@ -162,8 +149,6 @@ pub(crate) fn apply(
     })
 }
 
-/// Applies the content changes a `didChange` carries, in order, the way a
-/// server applies them.
 pub(crate) fn apply_changes(
     text: &str,
     changes: &[TextDocumentContentChangeEvent],
@@ -190,9 +175,6 @@ pub(crate) fn apply_changes(
     Ok(result)
 }
 
-/// Whether `offset` falls between a `\r` and a `\n`, where no position can
-/// point. Another change can create that boundary by inserting `\n` after a
-/// lone `\r`.
 fn splits_line_break(text: &str, offset: usize) -> bool {
     text[..offset].ends_with('\r') && text[offset..].starts_with('\n')
 }
