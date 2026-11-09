@@ -155,6 +155,37 @@ fn sync_server(capabilities: ServerCapabilities) -> Client {
 }
 
 #[test]
+fn save_text_comes_from_the_initialize_result() {
+    let includes_text = sync_server(ServerCapabilities {
+        text_document_sync: Some(
+            TextDocumentSyncOptions {
+                save: Some(Save::SaveOptions(SaveOptions {
+                    include_text: Some(true),
+                })),
+                ..Default::default()
+            }
+            .into(),
+        ),
+        ..Default::default()
+    });
+    assert!(includes_text.supports_save_text());
+
+    let no_text = sync_server(ServerCapabilities {
+        text_document_sync: Some(
+            TextDocumentSyncOptions {
+                save: Some(Save::SaveOptions(SaveOptions {
+                    include_text: Some(false),
+                })),
+                ..Default::default()
+            }
+            .into(),
+        ),
+        ..Default::default()
+    });
+    assert!(!no_text.supports_save_text());
+}
+
+#[test]
 fn sync_kind_comes_from_the_initialize_result() {
     let incremental = sync_server(ServerCapabilities {
         text_document_sync: Some(TextDocumentSyncKind::Incremental.into()),
