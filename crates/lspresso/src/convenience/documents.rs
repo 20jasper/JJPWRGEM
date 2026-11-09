@@ -97,10 +97,7 @@ impl Client {
     ///
     /// Use [`Protocol::protocol_did_save`] for full params.
     pub fn did_save(&mut self, uri: &Uri) -> Result<()> {
-        let text = if self
-            .server_capabilities()
-            .is_some_and(core::capabilities::save_includes_text)
-        {
+        let text = if self.supports_save_text() {
             Some(self.tracked_text(uri)?.to_owned())
         } else {
             None
