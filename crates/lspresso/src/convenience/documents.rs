@@ -1,7 +1,7 @@
 use gen_lsp_types::*;
 
 use super::document;
-use crate::{Client, Protocol, Result, core};
+use crate::{Client, Protocol, Result};
 
 fn whole_document(text: String) -> TextDocumentContentChangeEvent {
     TextDocumentContentChangeWholeDocument { text }.into()
@@ -36,9 +36,12 @@ impl Client {
     /// incremental edits when the server syncs incrementally and as the whole
     /// new text otherwise.
     pub fn did_change(&mut self, uri: &Uri, edits: &[TextEdit]) -> Result<()> {
+        if edits.is_empty() {
+            self.require_open_document(uri)?;
+            return Ok(());
+        }
         let (version, text) = self.next_document_version_and_text(uri)?;
-        let encoding = self.position_encoding();
-        let applied = core::text::apply(text, edits, &encoding)?;
+        let applied = self.apply_edits(text, edits)?;
         let content_changes = if self.supports_incremental_sync() {
             applied.changes
         } else {

@@ -114,27 +114,33 @@ fn document_sync_sends_versions_and_text() {
     client.wait_for_exit().unwrap();
 
     let opened = recording.notifications::<DidOpenTextDocumentNotification>();
-    assert_eq!(opened.len(), 1);
     assert_eq!(
-        opened[0].text_document,
-        TextDocumentItem {
+        opened.iter().map(|p| &p.text_document).collect::<Vec<_>>(),
+        [&TextDocumentItem {
             uri: uri.clone(),
             language_id: LanguageKind::JSON,
             version: 1,
             text: "{}".into(),
-        }
+        }]
     );
 
     let changes = recording.notifications::<DidChangeTextDocumentNotification>();
-    assert_eq!(changes.len(), 2);
-    assert_eq!(changes[0].text_document.version, 2);
-    assert_eq!(changes[0].content_changes, vec![whole("[]")]);
-    assert_eq!(changes[1].text_document.version, 3);
-    assert_eq!(changes[1].content_changes, vec![whole("[1]")]);
+    assert_eq!(
+        changes
+            .iter()
+            .map(|p| (p.text_document.version, &p.content_changes[..]))
+            .collect::<Vec<_>>(),
+        [(2, &[whole("[]")][..]), (3, &[whole("[1]")][..])]
+    );
 
     let closed = recording.notifications::<DidCloseTextDocumentNotification>();
-    assert_eq!(closed.len(), 1);
-    assert_eq!(closed[0].text_document.uri, uri);
+    assert_eq!(
+        closed
+            .iter()
+            .map(|p| &p.text_document.uri)
+            .collect::<Vec<_>>(),
+        [&uri]
+    );
 }
 
 fn save_server(include_text: bool) -> Client {

@@ -15,9 +15,14 @@ fn units(encoding: &PositionEncodingKind, c: char) -> u32 {
     match encoding {
         PositionEncodingKind::UTF8 => u32::try_from(c.len_utf8()).unwrap(),
         PositionEncodingKind::UTF16 => u32::try_from(c.len_utf16()).unwrap(),
-        PositionEncodingKind::UTF32 => 1,
-        PositionEncodingKind::Custom(_) => u32::try_from(c.len_utf16()).unwrap(),
+        _ => 1,
     }
+}
+
+fn span(text: &str, range: Range, encoding: &PositionEncodingKind) -> Option<(usize, usize)> {
+    let start = offset(text, range.start, encoding)?;
+    let end = offset(text, range.end, encoding)?;
+    (start <= end).then_some((start, end))
 }
 
 /// Where the line starting at `from` ends, and where the next one starts:
@@ -100,17 +105,15 @@ pub(crate) fn apply(
         .iter()
         .enumerate()
         .map(|(index, edit)| {
-            match (
-                offset(text, edit.range.start, encoding),
-                offset(text, edit.range.end, encoding),
-            ) {
-                (Some(start), Some(end)) if start <= end => Ok((start, end, index)),
-                _ => Err(ErrorKind::InvalidEdit {
-                    index,
-                    range: edit.range,
-                }
-                .into()),
-            }
+            span(text, edit.range, encoding)
+                .map(|(start, end)| (start, end, index))
+                .ok_or_else(|| {
+                    ErrorKind::InvalidEdit {
+                        index,
+                        range: edit.range,
+                    }
+                    .into()
+                })
         })
         .collect::<crate::Result<Vec<_>>>()?;
     spans.sort_unstable();
@@ -170,33 +173,16 @@ pub(crate) fn apply_changes(
     for (index, change) in changes.iter().enumerate() {
         match change {
             TextDocumentContentChangeEvent::TextDocumentContentChangeWholeDocument(whole) => {
-                if changes.len() != 1 {
-                    return Err(ErrorKind::InvalidContentChange { index }.into());
-                }
                 result.clone_from(&whole.text);
             }
             TextDocumentContentChangeEvent::TextDocumentContentChangePartial(partial) => {
-                let Some(start) = offset(&result, partial.range.start, encoding) else {
+                let Some((start, end)) = span(&result, partial.range, encoding) else {
                     return Err(ErrorKind::InvalidEdit {
                         index,
                         range: partial.range,
                     }
                     .into());
                 };
-                let Some(end) = offset(&result, partial.range.end, encoding) else {
-                    return Err(ErrorKind::InvalidEdit {
-                        index,
-                        range: partial.range,
-                    }
-                    .into());
-                };
-                if start > end {
-                    return Err(ErrorKind::InvalidEdit {
-                        index,
-                        range: partial.range,
-                    }
-                    .into());
-                }
                 result.replace_range(start..end, &partial.text);
             }
         }
@@ -205,8 +191,8 @@ pub(crate) fn apply_changes(
 }
 
 /// Whether `offset` falls between a `\r` and a `\n`, where no position can
-/// point: one change can make that of where the next one starts, by
-/// inserting a `\n` after a lone `\r`.
+/// point. Another change can create that boundary by inserting `\n` after a
+/// lone `\r`.
 fn splits_line_break(text: &str, offset: usize) -> bool {
     text[..offset].ends_with('\r') && text[offset..].starts_with('\n')
 }
@@ -447,19 +433,14 @@ mod tests {
             .unwrap(),
             "aYXc"
         );
-    }
-
-    #[test]
-    fn a_whole_document_change_mixed_with_others_is_rejected() {
-        let err = apply_changes(
-            "abc",
-            &[whole("xyz"), partial((0, 0), (0, 1), "a")],
-            &PositionEncodingKind::UTF16,
-        )
-        .unwrap_err();
-        assert!(
-            matches!(err.kind(), ErrorKind::InvalidContentChange { index: 0 }),
-            "{err}"
+        assert_eq!(
+            apply_changes(
+                "abc",
+                &[whole("xyz"), partial((0, 0), (0, 1), "A")],
+                &PositionEncodingKind::UTF16,
+            )
+            .unwrap(),
+            "Ayz"
         );
     }
 }

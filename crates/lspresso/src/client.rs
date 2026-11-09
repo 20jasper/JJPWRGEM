@@ -189,6 +189,18 @@ impl Client {
         )
     }
 
+    pub(crate) fn apply_edits(&self, text: &str, edits: &[TextEdit]) -> Result<text::Applied> {
+        text::apply(text, edits, &self.position_encoding())
+    }
+
+    pub(crate) fn apply_changes(
+        &self,
+        uri: &Uri,
+        changes: &[TextDocumentContentChangeEvent],
+    ) -> Result<String> {
+        text::apply_changes(self.tracked_text(uri)?, changes, &self.position_encoding())
+    }
+
     pub(crate) fn previous_result_id(&self, uri: &Uri) -> Result<Option<String>> {
         self.docs.previous_result_id(uri)
     }
@@ -255,6 +267,7 @@ impl Client {
         self.docs.next_version_and_text(uri)
     }
 
+    /// Sends a change for an open document. Callers validate the document first.
     pub(crate) fn send_change(
         &mut self,
         uri: &Uri,
@@ -262,8 +275,6 @@ impl Client {
         content_changes: Vec<TextDocumentContentChangeEvent>,
         text: String,
     ) -> Result<()> {
-        self.state.require_initialized()?;
-        self.docs.require_open(uri)?;
         self.notify::<DidChangeTextDocumentNotification>(DidChangeTextDocumentParams {
             text_document: VersionedTextDocumentIdentifier {
                 version,
@@ -429,9 +440,7 @@ impl Protocol for Client {
             content_changes,
         } = params;
         let uri = text_document.text_document_identifier.uri.clone();
-        self.docs.require_open(&uri)?;
-        let encoding = self.position_encoding();
-        let text = text::apply_changes(self.docs.text(&uri)?, &content_changes, &encoding)?;
+        let text = self.apply_changes(&uri, &content_changes)?;
         self.send_change(&uri, text_document.version, content_changes, text)
     }
 

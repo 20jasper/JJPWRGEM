@@ -158,6 +158,30 @@ fn overlapping_edits_are_rejected_without_sending() {
 }
 
 #[test]
+fn an_empty_change_is_a_no_op() {
+    let recording = Recording::new();
+    let mut client = ScriptedServer::new()
+        .respond_to_all()
+        .capabilities(incremental_capabilities())
+        .recording_to(&recording)
+        .spawn_initialized();
+    let uri = a_json();
+    client
+        .did_open(uri.clone(), OPEN_TEXT, LanguageKind::JSON)
+        .unwrap();
+
+    client.did_change(&uri, &[]).unwrap();
+    client.shutdown().unwrap();
+    client.wait_for_exit().unwrap();
+
+    assert_eq!(client.document_text(&uri), Some(OPEN_TEXT));
+    assert_eq!(
+        recording.notifications::<DidChangeTextDocumentNotification>(),
+        Vec::new()
+    );
+}
+
+#[test]
 fn raw_incremental_changes_update_the_tracked_text() {
     let mut client = initialized_with(incremental_capabilities());
     let uri = a_json();

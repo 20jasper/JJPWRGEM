@@ -92,12 +92,10 @@ pub enum ErrorKind {
     AlreadyOpen { uri: Uri },
     /// {uri} is not open: call did_open before sending document notifications for it
     NotOpen { uri: Uri },
-    /// edit {index} has a range that isn't valid in the document: {range:?}
+    /// change {index} has a range that isn't valid in the document: {range:?}
     InvalidEdit { index: usize, range: Range },
     /// edits {a} and {b} overlap
     OverlappingEdits { a: usize, b: usize },
-    /// document change {index} is a whole-document change alongside others
-    InvalidContentChange { index: usize },
     /// {method} response was malformed: {message}
     MalformedResponse {
         method: &'static str,
