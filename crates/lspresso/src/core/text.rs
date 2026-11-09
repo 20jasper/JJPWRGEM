@@ -37,11 +37,7 @@ fn line_end(text: &str, from: usize) -> Option<(usize, usize)> {
 }
 
 /// Clamps past the end; `None` inside a character.
-pub(crate) fn offset(
-    text: &str,
-    position: Position,
-    encoding: &PositionEncodingKind,
-) -> Option<usize> {
+fn offset(text: &str, position: Position, encoding: &PositionEncodingKind) -> Option<usize> {
     let mut start = 0;
     for _ in 0..position.line {
         match line_end(text, start) {
@@ -64,7 +60,7 @@ pub(crate) fn offset(
 }
 
 /// `offset` must be a char boundary outside any line terminator.
-pub(crate) fn position(text: &str, offset: usize, encoding: &PositionEncodingKind) -> Position {
+fn position(text: &str, offset: usize, encoding: &PositionEncodingKind) -> Position {
     let mut line = 0;
     let mut start = 0;
     while let Some((_, next)) = line_end(text, start)

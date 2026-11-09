@@ -182,7 +182,7 @@ impl Client {
         self.docs.text(uri)
     }
 
-    pub(crate) fn position_encoding(&self) -> PositionEncodingKind {
+    fn position_encoding(&self) -> PositionEncodingKind {
         text::negotiated(
             self.server_capabilities()
                 .and_then(|capabilities| capabilities.position_encoding.as_ref()),
@@ -193,7 +193,7 @@ impl Client {
         text::apply(text, edits, &self.position_encoding())
     }
 
-    pub(crate) fn apply_changes(
+    fn apply_changes(
         &self,
         uri: &Uri,
         changes: &[TextDocumentContentChangeEvent],
