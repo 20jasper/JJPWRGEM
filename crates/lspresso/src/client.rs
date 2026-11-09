@@ -51,6 +51,7 @@ pub struct Client {
     docs: DocumentTracker,
     background_errors: Vec<Error>,
     timeout: Duration,
+    exit_timeout: Duration,
     server_capabilities: Option<ServerCapabilities>,
     notifications: NotificationBuffer,
 }
@@ -62,7 +63,9 @@ impl Client {
             state: ClientState::default(),
             docs: DocumentTracker::default(),
             background_errors: Vec::new(),
+            // default 15s, set to a reasonable upper bound so test timeouts are short
             timeout: DEFAULT_TIMEOUT,
+            exit_timeout: DEFAULT_TIMEOUT,
             server_capabilities: None,
             notifications: NotificationBuffer::default(),
         })
@@ -81,10 +84,18 @@ impl Client {
         self
     }
 
-    /// How long to wait for a response or a notification. Defaults to 15s
+    /// How long to wait for a response or a notification
     #[must_use]
     pub const fn with_timeout(mut self, timeout: Duration) -> Self {
         self.timeout = timeout;
+        self
+    }
+
+    /// How long [`Client::wait_for_exit`] waits for the process to exit. Separate
+    /// from [`Client::with_timeout`] since teardown can be slower than a round trip
+    #[must_use]
+    pub const fn with_exit_timeout(mut self, timeout: Duration) -> Self {
+        self.exit_timeout = timeout;
         self
     }
 
@@ -117,9 +128,9 @@ impl Client {
         Ok(())
     }
 
-    pub fn wait_for_exit(&mut self, timeout: Duration) -> Result<ExitStatus> {
+    pub fn wait_for_exit(&mut self) -> Result<ExitStatus> {
         let start = Instant::now();
-        let deadline = deadline_after(start, timeout);
+        let deadline = deadline_after(start, self.exit_timeout);
         let mut stdout_closed = false;
         loop {
             if let Some(status) = self.transport.try_wait()? {
