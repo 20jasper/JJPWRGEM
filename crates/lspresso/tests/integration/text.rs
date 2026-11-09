@@ -84,7 +84,7 @@ fn run_edit_session(capabilities: ServerCapabilities) -> Session {
 }
 
 #[test]
-fn edits_go_out_as_incremental_changes_and_save_includes_text() {
+fn edits_go_out_as_an_incremental_change_and_save_includes_text() {
     let (opened, changes, saves) = run_edit_session(incremental_capabilities());
 
     assert_eq!(opened.len(), 1);
@@ -101,7 +101,7 @@ fn edits_go_out_as_incremental_changes_and_save_includes_text() {
     assert_eq!(changes[0].text_document.version, 2);
     assert_eq!(
         changes[0].content_changes,
-        vec![partial((1, 7), (1, 7), " "), partial((0, 9), (0, 10), "10"),]
+        vec![partial((0, 9), (1, 7), "10,\n \"b\": 2 ")]
     );
     assert_eq!(saves.len(), 1);
     assert_eq!(saves[0].text.as_deref(), Some(CHANGED_TEXT));

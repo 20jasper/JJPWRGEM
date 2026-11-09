@@ -120,33 +120,28 @@ pub(crate) fn apply(
         }
     }
 
-    let mut result = text.to_owned();
-    let mut changes = Vec::with_capacity(spans.len());
-    let mut representable = true;
-    for (range, index) in spans.iter().rev() {
-        representable &=
-            !splits_line_break(&result, range.start) && !splits_line_break(&result, range.end);
-        let new_text = &edits[*index].new_text;
-        changes.push(partial_change(
-            &result,
-            range.start,
-            range.end,
-            new_text.clone(),
-            encoding,
-        ));
-        result.replace_range(range.start..range.end, new_text);
+    let mut result = String::with_capacity(text.len());
+    let mut last = 0;
+    for (range, index) in &spans {
+        result.push_str(&text[last..range.start]);
+        result.push_str(&edits[*index].new_text);
+        last = range.end;
     }
-    // A position can't fall between \r and \n; combine the edits instead.
-    if !representable && let Some((first, _)) = spans.first() {
-        let start = first.start;
-        let end = spans
-            .iter()
-            .map(|(range, _)| range.end)
-            .max()
-            .unwrap_or(start);
-        let replaced = result[start..result.len() - (text.len() - end)].to_owned();
-        changes = vec![partial_change(text, start, end, replaced, encoding)];
-    }
+    result.push_str(&text[last..]);
+
+    let changes = match spans.first() {
+        Some((first, _)) => {
+            let start = first.start;
+            let end = spans
+                .iter()
+                .map(|(range, _)| range.end)
+                .max()
+                .unwrap_or(start);
+            let replaced = result[start..result.len() - (text.len() - end)].to_owned();
+            vec![partial_change(text, start, end, replaced, encoding)]
+        }
+        None => Vec::new(),
+    };
     Ok(Applied {
         text: result,
         changes,
@@ -177,10 +172,6 @@ pub(crate) fn apply_changes(
         }
     }
     Ok(result)
-}
-
-fn splits_line_break(text: &str, offset: usize) -> bool {
-    text[..offset].ends_with('\r') && text[offset..].starts_with('\n')
 }
 
 fn partial_change(
@@ -292,7 +283,9 @@ mod tests {
                 .char_indices()
                 .map(|(index, _)| index)
                 .chain([text.len()])
-                .filter(|&index| !splits_line_break(text, index))
+                .filter(|&index| {
+                    !(text[..index].ends_with('\r') && text[index..].starts_with('\n'))
+                })
                 .collect();
             for encoding in [
                 &PositionEncodingKind::UTF8,
