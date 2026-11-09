@@ -39,7 +39,8 @@ impl Client {
     /// new text otherwise.
     pub fn did_change(&mut self, uri: &Uri, edits: &[TextEdit]) -> Result<()> {
         let version = self.next_document_version(uri)?;
-        let applied = core::text::apply(self.tracked_text(uri)?, edits, self.position_encoding())?;
+        let encoding = self.position_encoding();
+        let applied = core::text::apply(self.tracked_text(uri)?, edits, &encoding)?;
         let content_changes = if self.supports_incremental_sync() {
             applied.changes
         } else {

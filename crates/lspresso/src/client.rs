@@ -15,7 +15,7 @@ use crate::{
     core::{
         self, ClientState, DocumentTracker, Effect,
         notification_buffer::{NotificationBuffer, notification},
-        text::{self, Encoding},
+        text,
     },
     error::{ErrorKind, deadline_after, elapsed_ms},
 };
@@ -178,8 +178,8 @@ impl Client {
         self.docs.text(uri)
     }
 
-    pub(crate) fn position_encoding(&self) -> Encoding {
-        Encoding::negotiated(
+    pub(crate) fn position_encoding(&self) -> PositionEncodingKind {
+        text::negotiated(
             self.server_capabilities()
                 .and_then(|capabilities| capabilities.position_encoding.as_ref()),
         )
@@ -400,11 +400,8 @@ impl Protocol for Client {
         let uri = &identifier.text_document_identifier.uri;
         self.docs.require_open(uri)?;
         let version = identifier.version;
-        let text = text::apply_changes(
-            self.docs.text(uri)?,
-            &params.content_changes,
-            self.position_encoding(),
-        )?;
+        let encoding = self.position_encoding();
+        let text = text::apply_changes(self.docs.text(uri)?, &params.content_changes, &encoding)?;
         let uri = uri.clone();
         self.notify::<DidChangeTextDocumentNotification>(params)?;
         self.docs.commit_change(&uri, version, text);
