@@ -98,7 +98,7 @@ pub(crate) fn apply(
 
     if spans.windows(2).any(|pair| {
         let [a, b] = pair else { return false };
-        a.0.end > b.0.start
+        a.0.contains(&b.0.start)
     }) {
         return Err(ErrorKind::OverlappingEdits.into());
     }
