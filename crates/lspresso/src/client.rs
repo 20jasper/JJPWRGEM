@@ -282,8 +282,7 @@ impl Client {
         })
     }
 
-    /// Every notification goes out here, so document tracking follows the
-    /// wire whichever API built it, and commits only once it's sent.
+    /// Every notification goes out here. State updates only after the send.
     fn send_notification<N: Notification>(&mut self, params: N::Params) -> Result<()> {
         let notification = notification::<N>(params);
         let commit = self.docs.prepare(

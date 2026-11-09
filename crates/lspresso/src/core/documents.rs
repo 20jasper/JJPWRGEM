@@ -70,7 +70,7 @@ impl DocumentTracker {
             .map_or(1, |version| version + 1)
     }
 
-    pub(crate) fn mark_open(&mut self, uri: Uri, version: i32, text: String) {
+    fn mark_open(&mut self, uri: Uri, version: i32, text: String) {
         self.closed_versions.remove(&uri);
         let pulled = PulledReport::default();
         self.open_docs.insert(
@@ -83,21 +83,21 @@ impl DocumentTracker {
         );
     }
 
-    pub(crate) fn commit_change(&mut self, uri: &Uri, version: i32, text: String) {
+    fn commit_change(&mut self, uri: &Uri, version: i32, text: String) {
         if let Some(document) = self.open_docs.get_mut(uri) {
             document.version = version;
             document.text = text;
         }
     }
 
-    pub(crate) fn mark_closed(&mut self, uri: &Uri) {
+    fn mark_closed(&mut self, uri: &Uri) {
         if let Some(document) = self.open_docs.remove(uri) {
             self.closed_versions.insert(uri.clone(), document.version);
         }
     }
 }
 
-/// What to write once a checked message is on the wire.
+/// State change to apply once the message is sent.
 #[derive(Debug, PartialEq, Eq)]
 #[must_use]
 pub(crate) enum Commit {
@@ -118,7 +118,7 @@ pub(crate) enum Commit {
 }
 
 impl Commit {
-    /// The document whose pushed diagnostics this commit makes stale.
+    /// The URI whose pushed diagnostics go stale.
     pub(crate) const fn invalidates(&self) -> Option<&Uri> {
         match self {
             Self::Open { uri, .. } | Self::Change { uri, .. } | Self::Close { uri } => Some(uri),
@@ -133,15 +133,14 @@ struct Scoped {
     text_document: TextDocumentIdentifier,
 }
 
-/// `None` when `params` isn't its method's shape: it goes out untracked, so
-/// servers can still be sent malformed messages on purpose.
+/// `None` if `params` has the wrong shape. Those go out untracked, so tests
+/// can send malformed messages on purpose.
 fn decode<'a, T: Deserialize<'a>>(params: &'a Value) -> Option<T> {
     T::deserialize(params).ok()
 }
 
 impl DocumentTracker {
-    /// Checks an outgoing notification, as it will go on the wire, against
-    /// the tracked documents without changing them.
+    /// Validates an outgoing notification. Changes nothing until [`Self::commit`].
     pub(crate) fn prepare(
         &self,
         method: &str,
@@ -192,8 +191,8 @@ impl DocumentTracker {
         }
     }
 
-    /// Checks an outgoing request the same way. Returns the document whose
-    /// pulled diagnostics the response carries, for [`Self::record_pulled`].
+    /// Validates an outgoing request. Returns the URI to pass to
+    /// [`Self::record_pulled`] for pull diagnostics.
     pub(crate) fn check_request(&self, method: &str, params: &Value) -> crate::Result<Option<Uri>> {
         match LspRequestMethod::from(method) {
             LspRequestMethod::TextDocumentWillSaveWaitUntil => {
@@ -206,8 +205,7 @@ impl DocumentTracker {
         }
     }
 
-    /// Remembers a pull-diagnostics response so an unchanged report can be
-    /// answered with the items of the last full one.
+    /// Stores a pull response so an "unchanged" report can reuse the last items.
     pub(crate) fn record_pulled(&mut self, uri: &Uri, result: &Value) {
         let Some(report) = decode::<DocumentDiagnosticReport>(result) else {
             return;
