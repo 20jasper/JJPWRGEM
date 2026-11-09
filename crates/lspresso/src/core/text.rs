@@ -91,10 +91,10 @@ pub(crate) struct Applied {
     pub(crate) changes: Vec<TextDocumentContentChangeEvent>,
 }
 
-/// Applies `edits`, each against `text` as it is, as the spec has a set of
-/// `TextEdit`s apply. Edits may not overlap, though they may touch, and
-/// inserts at the same place land in order; an insert inside a replaced
-/// range overlaps it.
+/// Applies `edits` to `text` as the spec says a set of `TextEdit`s applies,
+/// each against the text as it is. Edits may not overlap, though they may
+/// touch, and inserts at the same place land in order; an insert inside a
+/// replaced range overlaps it.
 pub(crate) fn apply(text: &str, edits: &[TextEdit], encoding: Encoding) -> crate::Result<Applied> {
     let mut spans = edits
         .iter()
@@ -137,13 +137,21 @@ pub(crate) fn apply(text: &str, edits: &[TextEdit], encoding: Encoding) -> crate
     for &(start, end, index) in spans.iter().rev() {
         representable &= !splits_line_break(&result, start) && !splits_line_break(&result, end);
         let new_text = &edits[index].new_text;
-        changes.push(change(&result, start, end, new_text.clone(), encoding));
+        changes.push(partial_change(
+            &result,
+            start,
+            end,
+            new_text.clone(),
+            encoding,
+        ));
         result.replace_range(start..end, new_text);
     }
+    // A change can't point between \r and \n. If applying the edits in turn
+    // would put a boundary there, send one change covering the edited range.
     if !representable && let Some(&(start, ..)) = spans.first() {
         let end = spans.iter().map(|&(_, end, _)| end).max().unwrap_or(start);
         let replaced = result[start..result.len() - (text.len() - end)].to_owned();
-        changes = vec![change(text, start, end, replaced, encoding)];
+        changes = vec![partial_change(text, start, end, replaced, encoding)];
     }
     Ok(Applied {
         text: result,
@@ -203,7 +211,7 @@ fn splits_line_break(text: &str, offset: usize) -> bool {
     text[..offset].ends_with('\r') && text[offset..].starts_with('\n')
 }
 
-fn change(
+fn partial_change(
     text: &str,
     start: usize,
     end: usize,
