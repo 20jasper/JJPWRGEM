@@ -5,7 +5,7 @@
 //! ![an orange axolotl in a blue coffee cup falling over. coffee is spilling out and the axolotl looks distressed](./lspresso.webp)
 //!
 //! ```no_run
-//! # use std::{process::Command, time::Duration};
+//! # use std::process::Command;
 //! use lspresso::{Client, capabilities, gen_lsp_types::*};
 //!
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -43,11 +43,9 @@
 //!     },
 //! })?;
 //!
-//! // push diagnostics wait for a notification or the timeout
-//! let published = client.wait_for_notification_where::<PublishDiagnosticsNotification>(
-//!     Duration::from_secs(5),
-//!     |p| p.uri == uri,
-//! )?;
+//! // push diagnostics wait for a notification or the client timeout, see `Client::with_timeout`
+//! let published =
+//!     client.wait_for_notification_where::<PublishDiagnosticsNotification>(|p| p.uri == uri)?;
 //! assert!(published.diagnostics.is_empty());
 //!
 //! # Ok(())

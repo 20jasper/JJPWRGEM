@@ -43,11 +43,9 @@ let diags = client.protocol_diagnostic(DocumentDiagnosticParams {
     },
 })?;
 
-// push diagnostics wait for a notification or the timeout
-let published = client.wait_for_notification_where::<PublishDiagnosticsNotification>(
-    Duration::from_secs(5),
-    |p| p.uri == uri,
-)?;
+// push diagnostics wait for a notification or the client timeout, see `Client::with_timeout`
+let published =
+    client.wait_for_notification_where::<PublishDiagnosticsNotification>(|p| p.uri == uri)?;
 assert!(published.diagnostics.is_empty());
 
 ```
