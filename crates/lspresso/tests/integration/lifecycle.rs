@@ -26,7 +26,7 @@ fn initialize_and_shutdown_round_trip() {
 
     client.shutdown().unwrap();
 
-    let status = client.wait_for_exit(TIMEOUT).unwrap();
+    let status = client.wait_for_exit().unwrap();
     assert!(status.success());
 }
 
@@ -47,7 +47,7 @@ fn exits_immediately_is_reported_as_disconnected() {
 
 #[test]
 fn never_responds_times_out() {
-    let mut client = uninitialized().with_request_timeout(Duration::from_millis(100));
+    let mut client = uninitialized().with_timeout(Duration::from_millis(100));
 
     assert_err_kind!(
         client.initialize(ClientCapabilities::default()),
@@ -57,12 +57,9 @@ fn never_responds_times_out() {
 
 #[test]
 fn wait_for_exit_times_out_instead_of_blocking_forever_on_a_hung_process() {
-    let mut client = uninitialized();
+    let mut client = uninitialized().with_exit_timeout(Duration::from_millis(100));
 
-    assert_err_kind!(
-        client.wait_for_exit(Duration::from_millis(100)),
-        ErrorKind::ExitTimeout { .. }
-    );
+    assert_err_kind!(client.wait_for_exit(), ErrorKind::ExitTimeout { .. });
 }
 
 #[test]
@@ -80,12 +77,11 @@ fn spawning_a_missing_program_names_it_in_the_error() {
 fn wait_for_exit_times_out_when_stdout_closes_but_the_process_keeps_running() {
     let mut command = Command::new("sh");
     command.args(["-c", "exec >&-; sleep 30"]);
-    let mut client = Client::spawn(command).unwrap();
+    let mut client = Client::spawn(command)
+        .unwrap()
+        .with_exit_timeout(Duration::from_millis(200));
 
-    assert_err_kind!(
-        client.wait_for_exit(Duration::from_millis(200)),
-        ErrorKind::ExitTimeout { .. }
-    );
+    assert_err_kind!(client.wait_for_exit(), ErrorKind::ExitTimeout { .. });
 }
 
 #[test]
@@ -95,7 +91,7 @@ fn rss_is_reported_only_while_the_server_runs() {
     assert!(rss > 256 * 1024, "implausibly small RSS: {rss} bytes");
 
     client.shutdown().unwrap();
-    client.wait_for_exit(TIMEOUT).unwrap();
+    client.wait_for_exit().unwrap();
     assert_eq!(client.rss_bytes(), None);
 }
 
@@ -139,7 +135,7 @@ fn an_endless_timeout_does_not_overflow() {
     let mut client = ScriptedServer::new()
         .respond_to_all()
         .spawn()
-        .with_request_timeout(Duration::MAX);
+        .with_timeout(Duration::MAX);
 
     client.initialize(ClientCapabilities::default()).unwrap();
     workspace_symbol(&mut client).unwrap();
@@ -162,7 +158,7 @@ fn a_late_response_is_dropped_silently_and_later_requests_still_work() {
     let mut client = ScriptedServer::new()
         .steps([step::respond_after(300), step::respond(), step::respond()])
         .spawn_initialized()
-        .with_request_timeout(Duration::from_millis(100));
+        .with_timeout(Duration::from_millis(100));
 
     assert_err_kind!(
         workspace_symbol(&mut client),
@@ -208,7 +204,7 @@ fn server_requests_are_answered_while_a_request_is_pending() {
 
     workspace_symbol(&mut client).unwrap();
     client.shutdown().unwrap();
-    client.wait_for_exit(TIMEOUT).unwrap();
+    client.wait_for_exit().unwrap();
 
     let responses = recording.responses();
     let [response] = &responses[..] else {
@@ -260,6 +256,6 @@ fn initialize_against_the_real_server() {
     assert_eq!(result.server_info.unwrap().name, "jjpwrgem");
 
     client.shutdown().unwrap();
-    let status = client.wait_for_exit(TIMEOUT).unwrap();
+    let status = client.wait_for_exit().unwrap();
     assert!(status.success());
 }

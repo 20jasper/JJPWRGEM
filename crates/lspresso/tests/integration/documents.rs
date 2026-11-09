@@ -108,7 +108,7 @@ fn document_sync_sends_versions_and_text() {
     client.did_change_full(&uri, "[1]").unwrap();
     client.did_close(&uri).unwrap();
     client.shutdown().unwrap();
-    client.wait_for_exit(TIMEOUT).unwrap();
+    client.wait_for_exit().unwrap();
 
     let opened = recording.notifications::<DidOpenTextDocumentNotification>();
     assert_eq!(

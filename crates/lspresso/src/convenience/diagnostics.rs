@@ -1,5 +1,3 @@
-use std::time::Duration;
-
 use gen_lsp_types::*;
 
 use super::document;
@@ -13,20 +11,21 @@ impl Client {
         self.protocol_diagnostic(diagnostic_params(uri, None))
     }
 
-    /// Pulls when supported or waits for pushed diagnostics.
+    /// Pulls when supported or waits for pushed diagnostics
     pub fn diagnostics(&mut self, uri: &Uri) -> Result<Vec<Diagnostic>> {
         self.require_open_document(uri)?;
         if self.supports_pull_diagnostics() {
             self.pull_diagnostics(uri)
         } else {
-            self.next_diagnostics(uri, self.request_timeout())
+            self.next_diagnostics(uri)
         }
     }
 
-    pub fn next_diagnostics(&mut self, uri: &Uri, timeout: Duration) -> Result<Vec<Diagnostic>> {
+    /// Waits up to the client timeout, see [`Client::with_timeout`]
+    pub fn next_diagnostics(&mut self, uri: &Uri) -> Result<Vec<Diagnostic>> {
         let version = self.open_document_version(uri)?;
-        let published = self
-            .wait_for_notification_where::<PublishDiagnosticsNotification>(timeout, |p| {
+        let published =
+            self.wait_for_notification_where::<PublishDiagnosticsNotification>(|p| {
                 p.uri == *uri && p.version.is_none_or(|v| v >= version)
             })?;
         Ok(published.diagnostics)
