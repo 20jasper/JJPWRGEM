@@ -1,3 +1,5 @@
+type TestResult<T = ()> = core::result::Result<T, Box<dyn std::error::Error>>;
+
 use std::time::Duration;
 
 use gen_lsp_types::*;
@@ -70,31 +72,37 @@ fn previous_ids_sent(recording: &Recording) -> Vec<Option<String>> {
 }
 
 #[test]
-fn diagnostics_published_for_an_older_version_are_skipped() {
+fn diagnostics_published_for_an_older_version_are_skipped() -> TestResult {
     let (mut client, uri) = opened();
     assert_eq!(published(&mut client, &uri), ["v1"]);
 
-    client.did_change_full(&uri, "{ }").unwrap();
+    client.did_change_full(&uri, "{ }")?;
     assert_eq!(published(&mut client, &uri), ["v2"]);
+
+    Ok(())
 }
 
 #[test]
-fn waiting_on_one_document_keeps_the_diagnostics_of_another() {
+fn waiting_on_one_document_keeps_the_diagnostics_of_another() -> TestResult {
     let (mut client, a) = opened();
-    let b: Uri = "file:///b.json".parse().unwrap();
+    let b: Uri = "file:///b.json".parse()?;
     open(&mut client, &b);
 
     assert_eq!(published(&mut client, &b), ["v1"]);
     assert_eq!(published(&mut client, &a), ["v1"]);
+
+    Ok(())
 }
 
 #[test]
-fn notifications_received_during_another_wait_are_kept() {
+fn notifications_received_during_another_wait_are_kept() -> TestResult {
     let (mut client, uri) = opened();
 
-    workspace_symbol(&mut client).unwrap();
+    workspace_symbol(&mut client)?;
 
     assert_eq!(published(&mut client, &uri), ["v1"]);
+
+    Ok(())
 }
 
 #[test]
@@ -123,26 +131,28 @@ fn diagnostics_before_initialize_is_rejected() {
 }
 
 #[test]
-fn a_closed_document_cannot_be_waited_on() {
+fn a_closed_document_cannot_be_waited_on() -> TestResult {
     let (mut client, uri) = opened();
-    client.did_close(&uri).unwrap();
+    client.did_close(&uri)?;
 
     assert_err_kind!(client.next_diagnostics(&uri), ErrorKind::NotOpen { .. });
+
+    Ok(())
 }
 
 #[test]
-fn an_unversioned_publication_from_before_a_change_is_not_the_answer() {
+fn an_unversioned_publication_from_before_a_change_is_not_the_answer() -> TestResult {
     let (mut client, uri) = ScriptedServer::new()
         .respond_to_all()
         .publications(Publications::Unversioned)
         .spawn_opened();
-    client
-        .formatting(&uri, FormattingOptions::default())
-        .unwrap();
+    client.formatting(&uri, FormattingOptions::default())?;
 
-    client.did_change_full(&uri, "{ }").unwrap();
+    client.did_change_full(&uri, "{ }")?;
 
     assert_eq!(published(&mut client, &uri), ["v2"]);
+
+    Ok(())
 }
 
 #[test]
@@ -175,31 +185,35 @@ fn pull_diagnostics_thread_the_previous_result_id() {
 }
 
 #[test]
-fn a_report_pulled_through_the_plain_request_is_remembered_too() {
+fn a_report_pulled_through_the_plain_request_is_remembered_too() -> TestResult {
     let recording = Recording::new();
     let (mut client, uri) = pull_server([full_report("pulled", "r1"), unchanged_report("r2")])
         .recording_to(&recording)
         .spawn_opened();
 
-    client.diagnostic(&uri).unwrap();
+    client.diagnostic(&uri)?;
 
     assert_eq!(pulled(&mut client, &uri), ["pulled"]);
     assert_eq!(previous_ids_sent(&recording), [None, Some("r1".to_owned())]);
+
+    Ok(())
 }
 
 #[test]
-fn reopening_a_document_forgets_its_previous_result_id() {
+fn reopening_a_document_forgets_its_previous_result_id() -> TestResult {
     let recording = Recording::new();
     let (mut client, uri) = pull_server([full_report("first", "r1"), full_report("second", "r2")])
         .recording_to(&recording)
         .spawn_opened();
     assert_eq!(pulled(&mut client, &uri), ["first"]);
 
-    client.did_close(&uri).unwrap();
+    client.did_close(&uri)?;
     open(&mut client, &uri);
     assert_eq!(pulled(&mut client, &uri), ["second"]);
 
     assert_eq!(previous_ids_sent(&recording), [None, None]);
+
+    Ok(())
 }
 
 #[test]
@@ -222,36 +236,42 @@ fn a_pull_gives_up_after_repeated_retriable_failures() {
 }
 
 #[test]
-fn a_zero_timeout_still_sees_a_publication_that_already_arrived() {
+fn a_zero_timeout_still_sees_a_publication_that_already_arrived() -> TestResult {
     let (client, uri) = ScriptedServer::new()
         .publications(Publications::Unversioned)
         .spawn_opened();
     let mut client = client.with_timeout(Duration::ZERO);
     std::thread::sleep(Duration::from_millis(300));
 
-    let diagnostics = client.next_diagnostics(&uri).unwrap();
+    let diagnostics = client.next_diagnostics(&uri)?;
 
     assert_eq!(messages(&diagnostics), ["v1"]);
+
+    Ok(())
 }
 
 #[test]
-fn an_endless_timeout_does_not_overflow_while_waiting() {
+fn an_endless_timeout_does_not_overflow_while_waiting() -> TestResult {
     let (client, uri) = ScriptedServer::new()
         .publications(Publications::Unversioned)
         .spawn_opened();
     let mut client = client.with_timeout(Duration::MAX);
 
-    let diagnostics = client.next_diagnostics(&uri).unwrap();
+    let diagnostics = client.next_diagnostics(&uri)?;
 
     assert_eq!(messages(&diagnostics), ["v1"]);
+
+    Ok(())
 }
 
 #[test]
-fn diagnostics_of_a_closed_session_do_not_answer_the_reopened_document() {
+fn diagnostics_of_a_closed_session_do_not_answer_the_reopened_document() -> TestResult {
     let (mut client, uri) = opened();
-    client.did_change_full(&uri, "{ }").unwrap();
-    client.did_close(&uri).unwrap();
+    client.did_change_full(&uri, "{ }")?;
+    client.did_close(&uri)?;
     open(&mut client, &uri);
 
     assert_eq!(published(&mut client, &uri), ["v3"]);
+
+    Ok(())
 }

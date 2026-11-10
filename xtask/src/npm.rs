@@ -139,6 +139,7 @@ fn apply_patches(
 
 #[cfg(test)]
 mod tests {
+    type TestResult<T = ()> = core::result::Result<T, Box<dyn std::error::Error>>;
     use cargo_metadata::{
         PackageBuilder, PackageId, PackageName, camino::Utf8PathBuf, semver::Version,
     };
@@ -227,11 +228,11 @@ mod tests {
     }
 
     #[test]
-    fn patch_matches_expected() {
+    fn patch_matches_expected() -> TestResult {
         let cargo_meta = make_cargo_meta();
         let platforms = make_platforms();
-        let template: Value = serde_json::from_str(TEMPLATE).unwrap();
-        let actual = apply_patches(template, &cargo_meta, platforms).unwrap();
+        let template: Value = serde_json::from_str(TEMPLATE)?;
+        let actual = apply_patches(template, &cargo_meta, platforms)?;
 
         let expected = json!({
           "name": "jjpwrgem",
@@ -302,5 +303,7 @@ mod tests {
         });
 
         assert_eq!(actual, expected);
+
+        Ok(())
     }
 }

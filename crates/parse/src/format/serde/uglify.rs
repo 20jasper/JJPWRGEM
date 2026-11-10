@@ -580,6 +580,7 @@ impl ser::Serializer for MapKeySerializer<'_> {
 
 #[cfg(test)]
 mod tests {
+    type TestResult<T = ()> = core::result::Result<T, Box<dyn std::error::Error>>;
     use std::collections::BTreeMap;
 
     use rstest::rstest;
@@ -595,36 +596,41 @@ mod tests {
     }
 
     #[test]
-    fn uglify_serializable_writes_expected_json() {
+    fn uglify_serializable_writes_expected_json() -> TestResult {
         let actual = uglify_serializable(Example {
             text: "quote=\" slash=/ newline=\n tab=\t",
             values: [1, 2, 3],
             flag: true,
-        })
-        .unwrap();
+        })?;
 
         assert_eq!(
             actual,
             r#"{"text":"quote=\" slash=/ newline=\n tab=\t","values":[1,2,3],"flag":true}"#
         );
+
+        Ok(())
     }
 
     #[test]
-    fn uglify_serializable_supports_externally_tagged_variants() {
+    fn uglify_serializable_supports_externally_tagged_variants() -> TestResult {
         assert_eq!(
-            uglify_serializable(Result::<u8, &str>::Ok(7)).unwrap(),
+            uglify_serializable(Result::<u8, &str>::Ok(7))?,
             r#"{"Ok":7}"#
         );
         assert_eq!(
-            uglify_serializable(Result::<u8, &str>::Err("x")).unwrap(),
+            uglify_serializable(Result::<u8, &str>::Err("x"))?,
             r#"{"Err":"x"}"#
         );
+
+        Ok(())
     }
 
     #[test]
-    fn uglify_serializable_stringifies_scalar_map_keys() {
-        let actual = uglify_serializable(BTreeMap::from([(12, false), (34, true)])).unwrap();
+    fn uglify_serializable_stringifies_scalar_map_keys() -> TestResult {
+        let actual = uglify_serializable(BTreeMap::from([(12, false), (34, true)]))?;
         assert_eq!(actual, r#"{"12":false,"34":true}"#);
+
+        Ok(())
     }
 
     #[rstest]
@@ -640,12 +646,14 @@ mod tests {
     }
 
     #[test]
-    fn uglify_serializable_writes_integer_extremes() {
-        let actual = uglify_serializable((i8::MIN, 0_u16, u64::MAX, i128::MIN)).unwrap();
+    fn uglify_serializable_writes_integer_extremes() -> TestResult {
+        let actual = uglify_serializable((i8::MIN, 0_u16, u64::MAX, i128::MIN))?;
         assert_eq!(
             actual,
             "[-128,0,18446744073709551615,-170141183460469231731687303715884105728]"
         );
+
+        Ok(())
     }
 
     #[rstest]
@@ -657,13 +665,17 @@ mod tests {
     fn uglify_serializable_writes_floats_like_serde_json(
         #[case] float: f64,
         #[case] expected: &str,
-    ) {
-        assert_eq!(uglify_serializable(float).unwrap(), expected);
+    ) -> TestResult {
+        assert_eq!(uglify_serializable(float)?, expected);
+
+        Ok(())
     }
 
     #[test]
-    fn uglify_serializable_escapes_around_multibyte_chars() {
-        let actual = uglify_serializable("é\"\u{1}😀\\").unwrap();
+    fn uglify_serializable_escapes_around_multibyte_chars() -> TestResult {
+        let actual = uglify_serializable("é\"\u{1}😀\\")?;
         assert_eq!(actual, r#""é\"\u0001😀\\""#);
+
+        Ok(())
     }
 }

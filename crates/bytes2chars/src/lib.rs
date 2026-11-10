@@ -115,6 +115,9 @@
 //!
 //! also lazy. swallows errors. does not provide a push based decoder. really fast
 
+#[cfg(test)]
+extern crate std;
+
 mod decoder;
 mod iter;
 

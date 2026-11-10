@@ -482,6 +482,7 @@ fn linear_range(max: f64) -> std::ops::Range<f64> {
 
 #[cfg(test)]
 mod tests {
+    type TestResult<T = ()> = core::result::Result<T, Box<dyn std::error::Error>>;
     use super::*;
 
     // trimmed from `hyperfine 2.0.0 --export-json`
@@ -508,8 +509,8 @@ mod tests {
 }"#;
 
     #[test]
-    fn parses_hyperfine_v2_results() {
-        let results = parse_benchmark_results(HYPERFINE_V2).unwrap();
+    fn parses_hyperfine_v2_results() -> TestResult {
+        let results = parse_benchmark_results(HYPERFINE_V2)?;
 
         let summary: Vec<_> = results
             .iter()
@@ -522,6 +523,8 @@ mod tests {
                 ("jq < data.json", [0.017, 0.018].as_slice()),
             ]
         );
+
+        Ok(())
     }
 
     #[test]
@@ -532,16 +535,18 @@ mod tests {
     }
 
     #[test]
-    fn plots_hyperfine_v2_results() {
+    fn plots_hyperfine_v2_results() -> TestResult {
         let dir = std::env::temp_dir().join(format!("xtask-plot-{}", std::process::id()));
-        std::fs::create_dir_all(&dir).unwrap();
+        std::fs::create_dir_all(&dir)?;
         let input = dir.join("bench.json");
         let output = dir.join("bench.png");
-        std::fs::write(&input, HYPERFINE_V2).unwrap();
+        std::fs::write(&input, HYPERFINE_V2)?;
 
-        plot_benchmark_candlesticks(&input, &output, "title", "subtitle").unwrap();
+        plot_benchmark_candlesticks(&input, &output, "title", "subtitle")?;
 
-        assert!(std::fs::metadata(&output).unwrap().len() > 0);
-        std::fs::remove_dir_all(&dir).unwrap();
+        assert!(std::fs::metadata(&output)?.len() > 0);
+        std::fs::remove_dir_all(&dir)?;
+
+        Ok(())
     }
 }

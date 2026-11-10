@@ -227,6 +227,7 @@ impl DocumentTracker {
 
 #[cfg(test)]
 mod tests {
+    type TestResult<T = ()> = core::result::Result<T, Box<dyn std::error::Error>>;
     use super::*;
 
     fn uri(s: &str) -> Uri {
@@ -246,31 +247,35 @@ mod tests {
     }
 
     #[test]
-    fn next_version_continues_from_the_version_opened_with() {
+    fn next_version_continues_from_the_version_opened_with() -> TestResult {
         let mut tracker = DocumentTracker::default();
         let uri = uri("file:///a.json");
         tracker.mark_open(uri.clone(), 7, "text".to_owned());
 
-        assert_eq!(tracker.next_version_and_text(&uri).unwrap().0, 8);
+        assert_eq!(tracker.next_version_and_text(&uri)?.0, 8);
+
+        Ok(())
     }
 
     #[test]
-    fn next_version_does_not_commit_until_commit_change_runs() {
+    fn next_version_does_not_commit_until_commit_change_runs() -> TestResult {
         let mut tracker = DocumentTracker::default();
         let uri = uri("file:///a.json");
         tracker.mark_open(uri.clone(), 1, String::new());
 
-        let peeked = tracker.next_version_and_text(&uri).unwrap().0;
+        let peeked = tracker.next_version_and_text(&uri)?.0;
         assert_eq!(peeked, 2);
-        assert_eq!(tracker.next_version_and_text(&uri).unwrap(), (2, ""));
+        assert_eq!(tracker.next_version_and_text(&uri)?, (2, ""));
 
         tracker.commit_change(&uri, peeked, "changed".to_owned());
-        assert_eq!(tracker.next_version_and_text(&uri).unwrap(), (3, "changed"));
-        assert_eq!(tracker.text(&uri).unwrap(), "changed");
+        assert_eq!(tracker.next_version_and_text(&uri)?, (3, "changed"));
+        assert_eq!(tracker.text(&uri)?, "changed");
+
+        Ok(())
     }
 
     #[test]
-    fn closing_then_reopening_resets_the_version_and_text() {
+    fn closing_then_reopening_resets_the_version_and_text() -> TestResult {
         let mut tracker = DocumentTracker::default();
         let uri = uri("file:///a.json");
         tracker.mark_open(uri.clone(), 1, "first".to_owned());
@@ -281,8 +286,10 @@ mod tests {
         assert!(tracker.text(&uri).is_err());
 
         tracker.mark_open(uri.clone(), 1, "reopened".to_owned());
-        assert_eq!(tracker.next_version_and_text(&uri).unwrap().0, 2);
-        assert_eq!(tracker.text(&uri).unwrap(), "reopened");
+        assert_eq!(tracker.next_version_and_text(&uri)?.0, 2);
+        assert_eq!(tracker.text(&uri)?, "reopened");
+
+        Ok(())
     }
 
     fn open_params(uri: &str, text: &str) -> Value {
@@ -292,26 +299,27 @@ mod tests {
     }
 
     #[test]
-    fn prepare_leaves_the_tracker_alone_until_commit() {
+    fn prepare_leaves_the_tracker_alone_until_commit() -> TestResult {
         let mut tracker = DocumentTracker::default();
         let utf16 = PositionEncodingKind::UTF16;
         let params = open_params("file:///a.json", "{}");
 
-        let commit = tracker
-            .prepare(LspNotificationMethod::TextDocumentDidOpen, &params, &utf16)
-            .unwrap();
+        let commit =
+            tracker.prepare(LspNotificationMethod::TextDocumentDidOpen, &params, &utf16)?;
         assert_eq!(tracker.text(&uri("file:///a.json")).ok(), None);
 
         tracker.commit(commit);
-        assert_eq!(tracker.text(&uri("file:///a.json")).unwrap(), "{}");
+        assert_eq!(tracker.text(&uri("file:///a.json"))?, "{}");
         assert!(matches!(
             tracker.prepare(LspNotificationMethod::TextDocumentDidOpen, &params, &utf16),
             Err(err) if matches!(err.kind(), ErrorKind::AlreadyOpen { .. })
         ));
+
+        Ok(())
     }
 
     #[test]
-    fn prepare_applies_changes_and_close_forgets_the_document() {
+    fn prepare_applies_changes_and_close_forgets_the_document() -> TestResult {
         let mut tracker = DocumentTracker::default();
         let utf16 = PositionEncodingKind::UTF16;
         let a = uri("file:///a.json");
@@ -321,22 +329,21 @@ mod tests {
             "textDocument": { "uri": "file:///a.json", "version": 2 },
             "contentChanges": [{ "text": "xyz" }]
         });
-        let commit = tracker
-            .prepare(
-                LspNotificationMethod::TextDocumentDidChange,
-                &change,
-                &utf16,
-            )
-            .unwrap();
+        let commit = tracker.prepare(
+            LspNotificationMethod::TextDocumentDidChange,
+            &change,
+            &utf16,
+        )?;
         tracker.commit(commit);
-        assert_eq!(tracker.text(&a).unwrap(), "xyz");
+        assert_eq!(tracker.text(&a)?, "xyz");
 
         let close = serde_json::json!({ "textDocument": { "uri": "file:///a.json" } });
-        let commit = tracker
-            .prepare(LspNotificationMethod::TextDocumentDidClose, &close, &utf16)
-            .unwrap();
+        let commit =
+            tracker.prepare(LspNotificationMethod::TextDocumentDidClose, &close, &utf16)?;
         tracker.commit(commit);
         assert!(tracker.text(&a).is_err());
+
+        Ok(())
     }
 
     #[test]
@@ -363,7 +370,7 @@ mod tests {
     }
 
     #[test]
-    fn params_of_the_wrong_shape_go_out_untracked() {
+    fn params_of_the_wrong_shape_go_out_untracked() -> TestResult {
         let tracker = DocumentTracker::default();
         let junk = serde_json::json!(5);
 
@@ -374,11 +381,11 @@ mod tests {
             LspNotificationMethod::TextDocumentDidSave,
             LspNotificationMethod::TextDocumentWillSave,
         ] {
-            let commit = tracker
-                .prepare(method, &junk, &PositionEncodingKind::UTF16)
-                .unwrap();
+            let commit = tracker.prepare(method, &junk, &PositionEncodingKind::UTF16)?;
             assert_eq!(commit, Commit::Nothing);
         }
+
+        Ok(())
     }
 
     #[test]
@@ -403,25 +410,23 @@ mod tests {
     }
 
     #[test]
-    fn a_diagnostic_request_names_the_uri_to_record_for() {
+    fn a_diagnostic_request_names_the_uri_to_record_for() -> TestResult {
         let tracker = DocumentTracker::default();
         let params = serde_json::json!({ "textDocument": { "uri": "file:///a.json" } });
 
         assert_eq!(
-            tracker
-                .check_request(LspRequestMethod::TextDocumentDiagnostic, &params)
-                .unwrap(),
+            tracker.check_request(LspRequestMethod::TextDocumentDiagnostic, &params)?,
             Some(uri("file:///a.json"))
         );
         assert_eq!(
-            tracker
-                .check_request(
-                    LspRequestMethod::TextDocumentDiagnostic,
-                    &serde_json::json!(5)
-                )
-                .unwrap(),
+            tracker.check_request(
+                LspRequestMethod::TextDocumentDiagnostic,
+                &serde_json::json!(5)
+            )?,
             None
         );
+
+        Ok(())
     }
 
     fn full_report(result_id: &str, message: &str) -> Value {
@@ -439,32 +444,28 @@ mod tests {
     }
 
     #[test]
-    fn an_unchanged_report_keeps_the_items_of_the_last_full_one() {
+    fn an_unchanged_report_keeps_the_items_of_the_last_full_one() -> TestResult {
         let mut tracker = DocumentTracker::default();
         let a = uri("file:///a.json");
         tracker.mark_open(a.clone(), 1, "{}".to_owned());
 
         tracker.record_pulled(&a, &full_report("r1", "boom"));
-        assert_eq!(
-            tracker.previous_result_id(&a).unwrap().as_deref(),
-            Some("r1")
-        );
+        assert_eq!(tracker.previous_result_id(&a)?.as_deref(), Some("r1"));
 
         tracker.record_pulled(
             &a,
             &serde_json::json!({ "kind": "unchanged", "resultId": "r2" }),
         );
-        assert_eq!(
-            tracker.previous_result_id(&a).unwrap().as_deref(),
-            Some("r2")
-        );
-        let items = tracker.pulled_items(&a).unwrap();
+        assert_eq!(tracker.previous_result_id(&a)?.as_deref(), Some("r2"));
+        let items = tracker.pulled_items(&a)?;
         assert_eq!(items.len(), 1);
         assert_eq!(items[0].message, "boom".into());
+
+        Ok(())
     }
 
     #[test]
-    fn a_report_for_a_uri_that_is_not_open_is_dropped() {
+    fn a_report_for_a_uri_that_is_not_open_is_dropped() -> TestResult {
         let mut tracker = DocumentTracker::default();
         let a = uri("file:///a.json");
 
@@ -473,6 +474,8 @@ mod tests {
 
         tracker.mark_open(a.clone(), 1, "{}".to_owned());
         tracker.record_pulled(&a, &serde_json::json!(5));
-        assert_eq!(tracker.previous_result_id(&a).unwrap(), None);
+        assert_eq!(tracker.previous_result_id(&a)?, None);
+
+        Ok(())
     }
 }

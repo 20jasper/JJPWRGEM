@@ -183,6 +183,7 @@ pub(crate) fn apply_changes(
 
 #[cfg(test)]
 mod tests {
+    type TestResult<T = ()> = core::result::Result<T, Box<dyn std::error::Error>>;
     use super::*;
 
     fn at(line: u32, character: u32) -> Position {
@@ -269,13 +270,12 @@ mod tests {
     }
 
     #[test]
-    fn edits_apply_against_the_original_text() {
+    fn edits_apply_against_the_original_text() -> TestResult {
         let applied = apply(
             "ab\ncd",
             &[edit((1, 0), (1, 2), "x"), edit((0, 0), (0, 1), "yy")],
             &PositionEncodingKind::UTF16,
-        )
-        .unwrap();
+        )?;
         assert_eq!(applied, "yyb\nx");
 
         let applied = apply(
@@ -286,30 +286,32 @@ mod tests {
                 edit((0, 1), (0, 1), "2"),
             ],
             &PositionEncodingKind::UTF16,
-        )
-        .unwrap();
+        )?;
         assert_eq!(applied, "a12Rc");
+
+        Ok(())
     }
 
     #[test]
-    fn edits_around_a_line_break_apply() {
+    fn edits_around_a_line_break_apply() -> TestResult {
         let applied = apply(
             "\ra",
             &[edit((1, 0), (1, 0), "x"), edit((1, 0), (1, 0), "\n")],
             &PositionEncodingKind::UTF16,
-        )
-        .unwrap();
+        )?;
         assert_eq!(applied, "\rx\na");
         let edits = [edit((1, 0), (1, 0), "x"), edit((1, 0), (1, 0), "\n")];
-        let changes = changes("\ra", &edits, &PositionEncodingKind::UTF16).unwrap();
+        let changes = changes("\ra", &edits, &PositionEncodingKind::UTF16)?;
         assert_eq!(
-            apply_changes("\ra", &changes, &PositionEncodingKind::UTF16).unwrap(),
+            apply_changes("\ra", &changes, &PositionEncodingKind::UTF16)?,
             applied
         );
+
+        Ok(())
     }
 
     #[test]
-    fn overlapping_or_invalid_edits_are_rejected() {
+    fn overlapping_or_invalid_edits_are_rejected() -> TestResult {
         let overlapping = [
             vec![edit((0, 0), (0, 2), ""), edit((0, 1), (0, 3), "")],
             vec![edit((0, 0), (0, 2), ""), edit((0, 1), (0, 1), "x")],
@@ -321,7 +323,7 @@ mod tests {
         }
         let touching = [edit((0, 0), (0, 1), "x"), edit((0, 1), (0, 2), "y")];
         assert_eq!(
-            apply("abc", &touching, &PositionEncodingKind::UTF16).unwrap(),
+            apply("abc", &touching, &PositionEncodingKind::UTF16)?,
             "xyc"
         );
 
@@ -337,23 +339,27 @@ mod tests {
                 "{err}"
             );
         }
+
+        Ok(())
     }
 
     #[test]
-    fn applied_changes_replay_to_the_same_text() {
+    fn applied_changes_replay_to_the_same_text() -> TestResult {
         let edits = [edit((0, 9), (0, 10), "10"), edit((1, 7), (1, 7), " ")];
         let text = "{\"😀\": 1,\n \"b\": 2}";
-        let changes = changes(text, &edits, &PositionEncodingKind::UTF8).unwrap();
+        let changes = changes(text, &edits, &PositionEncodingKind::UTF8)?;
         assert_eq!(
-            apply_changes(text, &changes, &PositionEncodingKind::UTF8).unwrap(),
-            apply(text, &edits, &PositionEncodingKind::UTF8).unwrap()
+            apply_changes(text, &changes, &PositionEncodingKind::UTF8)?,
+            apply(text, &edits, &PositionEncodingKind::UTF8)?
         );
+
+        Ok(())
     }
 
     #[test]
-    fn whole_and_partial_content_changes_apply_in_order() {
+    fn whole_and_partial_content_changes_apply_in_order() -> TestResult {
         assert_eq!(
-            apply_changes("abc", &[whole("xyz")], &PositionEncodingKind::UTF16).unwrap(),
+            apply_changes("abc", &[whole("xyz")], &PositionEncodingKind::UTF16)?,
             "xyz"
         );
         assert_eq!(
@@ -361,8 +367,7 @@ mod tests {
                 "abc",
                 &[partial((0, 1), (0, 2), "X"), partial((0, 1), (0, 1), "Y")],
                 &PositionEncodingKind::UTF16,
-            )
-            .unwrap(),
+            )?,
             "aYXc"
         );
         assert_eq!(
@@ -370,9 +375,10 @@ mod tests {
                 "abc",
                 &[whole("xyz"), partial((0, 0), (0, 1), "A")],
                 &PositionEncodingKind::UTF16,
-            )
-            .unwrap(),
+            )?,
             "Ayz"
         );
+
+        Ok(())
     }
 }

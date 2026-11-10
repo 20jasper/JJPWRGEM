@@ -341,6 +341,7 @@ impl Utf8Decoder {
 
 #[cfg(test)]
 mod tests {
+    type TestResult<T = ()> = std::result::Result<T, std::boxed::Box<dyn std::error::Error>>;
     extern crate alloc;
 
     use alloc::vec::Vec;
@@ -517,8 +518,10 @@ mod tests {
     }
 
     #[test]
-    fn chars_collect() {
-        assert_eq!(collect_string(b"\xF0\x9F\xA6\x80 rust").unwrap(), "🦀 rust");
+    fn chars_collect() -> TestResult {
+        assert_eq!(collect_string(b"\xF0\x9F\xA6\x80 rust")?, "🦀 rust");
+
+        Ok(())
     }
 
     #[test]

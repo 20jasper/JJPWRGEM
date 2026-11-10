@@ -1,3 +1,5 @@
+type TestResult<T = ()> = core::result::Result<T, Box<dyn std::error::Error>>;
+
 use gen_lsp_types::*;
 use lspresso::{ErrorKind, Protocol};
 
@@ -119,49 +121,47 @@ fn edits_go_out_as_the_whole_text_when_the_server_syncs_fully() {
 }
 
 #[test]
-fn document_text_tracks_full_changes_and_is_forgotten_on_close() {
+fn document_text_tracks_full_changes_and_is_forgotten_on_close() -> TestResult {
     let mut client = initialized_with(capabilities(TextDocumentSyncKind::Full.into()));
     let uri = a_json();
-    client
-        .did_open(uri.clone(), OPEN_TEXT, LanguageKind::JSON)
-        .unwrap();
-    client.did_change_full(&uri, CHANGED_TEXT).unwrap();
+    client.did_open(uri.clone(), OPEN_TEXT, LanguageKind::JSON)?;
+    client.did_change_full(&uri, CHANGED_TEXT)?;
     assert_eq!(client.document_text(&uri), Some(CHANGED_TEXT));
-    client.did_close(&uri).unwrap();
+    client.did_close(&uri)?;
     assert_eq!(client.document_text(&uri), None);
+
+    Ok(())
 }
 
 #[test]
-fn overlapping_edits_are_rejected_without_sending() {
+fn overlapping_edits_are_rejected_without_sending() -> TestResult {
     let mut client = initialized_with(incremental_capabilities());
     let uri = a_json();
-    client
-        .did_open(uri.clone(), "abc", LanguageKind::JSON)
-        .unwrap();
+    client.did_open(uri.clone(), "abc", LanguageKind::JSON)?;
 
     assert_err_kind!(
         client.did_change(&uri, &[edit((0, 0), (0, 2), ""), edit((0, 1), (0, 3), "")]),
         ErrorKind::OverlappingEdits
     );
     assert_eq!(client.document_text(&uri), Some("abc"));
+
+    Ok(())
 }
 
 #[test]
-fn raw_incremental_changes_update_the_tracked_text() {
+fn raw_incremental_changes_update_the_tracked_text() -> TestResult {
     let mut client = initialized_with(incremental_capabilities());
     let uri = a_json();
-    client
-        .did_open(uri.clone(), "abc", LanguageKind::JSON)
-        .unwrap();
+    client.did_open(uri.clone(), "abc", LanguageKind::JSON)?;
 
-    client
-        .protocol_did_change(DidChangeTextDocumentParams {
-            text_document: VersionedTextDocumentIdentifier {
-                version: 2,
-                text_document_identifier: TextDocumentIdentifier { uri: uri.clone() },
-            },
-            content_changes: vec![partial((0, 1), (0, 2), "X")],
-        })
-        .unwrap();
+    client.protocol_did_change(DidChangeTextDocumentParams {
+        text_document: VersionedTextDocumentIdentifier {
+            version: 2,
+            text_document_identifier: TextDocumentIdentifier { uri: uri.clone() },
+        },
+        content_changes: vec![partial((0, 1), (0, 2), "X")],
+    })?;
     assert_eq!(client.document_text(&uri), Some("aXc"));
+
+    Ok(())
 }

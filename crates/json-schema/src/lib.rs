@@ -145,6 +145,7 @@ pub enum Schema {
 
 #[cfg(test)]
 mod tests {
+    type TestResult<T = ()> = core::result::Result<T, Box<dyn std::error::Error>>;
     use super::*;
     use crate::primitive::PrimitiveType;
 
@@ -174,8 +175,8 @@ mod tests {
     }
 
     #[test]
-    fn number_is_not_subset_of_integer() {
-        let doc = Document::parse("123.5").unwrap();
+    fn number_is_not_subset_of_integer() -> TestResult {
+        let doc = Document::parse("123.5")?;
         assert_eq!(
             validate(&doc, &Schema::Integer),
             Err(Error::MismatchedTypes {
@@ -184,6 +185,8 @@ mod tests {
                 actual: PrimitiveType::Number
             })
         );
+
+        Ok(())
     }
 
     #[rstest::rstest]

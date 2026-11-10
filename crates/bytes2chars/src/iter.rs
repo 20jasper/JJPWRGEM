@@ -205,6 +205,7 @@ impl<I> core::iter::FusedIterator for Utf8Chars<I> where I: core::iter::FusedIte
 
 #[cfg(test)]
 mod tests {
+    type TestResult<T = ()> = std::result::Result<T, std::boxed::Box<dyn std::error::Error>>;
     extern crate alloc;
     use super::*;
 
@@ -225,32 +226,40 @@ mod tests {
     }
 
     #[test]
-    fn indices_into_chars() {
+    fn indices_into_chars() -> TestResult {
         let indices = Utf8CharIndices::new(CRAB.iter().copied(), 0);
         let chars: Utf8Chars<_> = indices.into();
         let s: crate::Result<alloc::string::String> = chars.collect();
-        assert_eq!(s.unwrap(), "🦀");
+        assert_eq!(s?, "🦀");
+
+        Ok(())
     }
 
     #[test]
-    fn chars_into_indices() {
+    fn chars_into_indices() -> TestResult {
         let chars = Utf8Chars::new(CRAB.iter().copied(), 0);
         let indices: Utf8CharIndices<_> = chars.into();
         let v: crate::Result<alloc::vec::Vec<(usize, char)>> = indices.collect();
-        assert_eq!(v.unwrap(), [(0, '🦀')]);
+        assert_eq!(v?, [(0, '🦀')]);
+
+        Ok(())
     }
 
     #[test]
-    fn chars_dot_into_char_indices() {
+    fn chars_dot_into_char_indices() -> TestResult {
         let chars = Utf8Chars::new(CRAB.iter().copied(), 0);
         let v: crate::Result<alloc::vec::Vec<(usize, char)>> = chars.into_char_indices().collect();
-        assert_eq!(v.unwrap(), [(0, '🦀')]);
+        assert_eq!(v?, [(0, '🦀')]);
+
+        Ok(())
     }
 
     #[test]
-    fn indices_dot_into_chars() {
+    fn indices_dot_into_chars() -> TestResult {
         let chars: Utf8Chars<_> = Utf8CharIndices::new(CRAB.iter().copied(), 0).into_chars();
         let s: crate::Result<alloc::string::String> = chars.collect();
-        assert_eq!(s.unwrap(), "🦀");
+        assert_eq!(s?, "🦀");
+
+        Ok(())
     }
 }

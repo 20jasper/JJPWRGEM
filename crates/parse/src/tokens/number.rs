@@ -309,6 +309,7 @@ pub fn parse_exponent(
 
 #[cfg(test)]
 mod tests {
+    type TestResult<T = ()> = core::result::Result<T, Box<dyn std::error::Error>>;
     use rstest::rstest;
 
     use super::*;
@@ -331,8 +332,12 @@ mod tests {
     #[case("1e00015", "1", Some("00015"))]
     #[case("1e-000015", "1", Some("-000015"))]
     #[case("1e-15", "1", Some("-15"))]
-    fn number_tokens(#[case] input: &str, #[case] mantissa: &str, #[case] exponent: Option<&str>) {
-        let tokens = str_to_tokens(input).unwrap();
+    fn number_tokens(
+        #[case] input: &str,
+        #[case] mantissa: &str,
+        #[case] exponent: Option<&str>,
+    ) -> TestResult {
+        let tokens = str_to_tokens(input)?;
         let result = match tokens.as_slice() {
             [m] => {
                 let mr = m.range;
@@ -345,20 +350,26 @@ mod tests {
             _ => panic!("unexpected token count: {}", tokens.len()),
         };
         assert_eq!(result, (mantissa, exponent));
+
+        Ok(())
     }
 
     #[test]
-    fn mantissa_stops_at_the_first_byte_that_is_not_part_of_it() {
-        let token = parse_mantissa("-12.34x", 0).unwrap();
+    fn mantissa_stops_at_the_first_byte_that_is_not_part_of_it() -> TestResult {
+        let token = parse_mantissa("-12.34x", 0)?;
 
         assert_eq!(token.range, 0..6);
+
+        Ok(())
     }
 
     #[test]
-    fn mantissa_keeps_utf8_boundary() {
-        let token = parse_mantissa("1é", 0).unwrap();
+    fn mantissa_keeps_utf8_boundary() -> TestResult {
+        let token = parse_mantissa("1é", 0)?;
 
         assert_eq!(token.range, 0..1);
+
+        Ok(())
     }
 
     #[test]

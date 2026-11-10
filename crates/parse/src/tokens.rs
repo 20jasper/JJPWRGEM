@@ -253,6 +253,7 @@ impl From<bool> for Token {
 
 #[cfg(test)]
 mod tests {
+    type TestResult<T = ()> = core::result::Result<T, Box<dyn std::error::Error>>;
     use super::*;
     use crate::{Error, ErrorKind, Result};
 
@@ -265,9 +266,9 @@ mod tests {
     }
 
     #[test]
-    fn should_parse_single_key_object() {
+    fn should_parse_single_key_object() -> TestResult {
         assert_eq!(
-            str_to_tokens(r#"{"rust": "is a must"}"#).unwrap(),
+            str_to_tokens(r#"{"rust": "is a must"}"#)?,
             [
                 ctx(Token::OpenCurlyBrace, 0..1),
                 ctx(Token::String, 1..7),
@@ -276,6 +277,8 @@ mod tests {
                 ctx(Token::ClosedCurlyBrace, 20..21),
             ]
         );
+
+        Ok(())
     }
 
     #[rstest_reuse::template]
@@ -346,15 +349,14 @@ mod tests {
     }
 
     #[test]
-    fn multiple_keys() {
+    fn multiple_keys() -> TestResult {
         assert_eq!(
             str_to_tokens(
                 r#"{
                 "rust": "is a must",
                 "name": "ferris"
             }"#
-            )
-            .unwrap(),
+            )?,
             [
                 ctx(Token::OpenCurlyBrace, 0..1),
                 ctx(Token::String, 18..24),
@@ -367,17 +369,21 @@ mod tests {
                 ctx(Token::ClosedCurlyBrace, 84..85),
             ]
         );
+
+        Ok(())
     }
 
     #[test]
-    fn array_brackets() {
+    fn array_brackets() -> TestResult {
         assert_eq!(
-            str_to_tokens("[]").unwrap(),
+            str_to_tokens("[]")?,
             [
                 ctx(Token::OpenSquareBracket, 0..1),
                 ctx(Token::ClosedSquareBracket, 1..2),
             ]
         );
+
+        Ok(())
     }
 
     #[test]

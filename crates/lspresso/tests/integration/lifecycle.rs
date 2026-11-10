@@ -1,3 +1,5 @@
+type TestResult<T = ()> = core::result::Result<T, Box<dyn std::error::Error>>;
+
 use std::{process::Command, time::Duration};
 
 use gen_lsp_types::*;
@@ -18,16 +20,18 @@ fn spawn_real_server() -> Client {
 }
 
 #[test]
-fn initialize_and_shutdown_round_trip() {
+fn initialize_and_shutdown_round_trip() -> TestResult {
     let mut client = ScriptedServer::new().respond_to_all().spawn();
 
-    let result = client.initialize(ClientCapabilities::default()).unwrap();
+    let result = client.initialize(ClientCapabilities::default())?;
     assert_eq!(result.capabilities, ServerCapabilities::default());
 
-    client.shutdown().unwrap();
+    client.shutdown()?;
 
-    let status = client.wait_for_exit().unwrap();
+    let status = client.wait_for_exit()?;
     assert!(status.success());
+
+    Ok(())
 }
 
 #[test]
@@ -74,25 +78,27 @@ fn spawning_a_missing_program_names_it_in_the_error() {
 
 #[test]
 #[cfg(unix)]
-fn wait_for_exit_times_out_when_stdout_closes_but_the_process_keeps_running() {
+fn wait_for_exit_times_out_when_stdout_closes_but_the_process_keeps_running() -> TestResult {
     let mut command = Command::new("sh");
     command.args(["-c", "exec >&-; sleep 30"]);
-    let mut client = Client::spawn(command)
-        .unwrap()
-        .with_exit_timeout(Duration::from_millis(200));
+    let mut client = Client::spawn(command)?.with_exit_timeout(Duration::from_millis(200));
 
     assert_err_kind!(client.wait_for_exit(), ErrorKind::ExitTimeout { .. });
+
+    Ok(())
 }
 
 #[test]
-fn rss_is_reported_only_while_the_server_runs() {
+fn rss_is_reported_only_while_the_server_runs() -> TestResult {
     let mut client = initialized();
     let rss = client.rss_bytes().expect("the server is running");
     assert!(rss > 256 * 1024, "implausibly small RSS: {rss} bytes");
 
-    client.shutdown().unwrap();
-    client.wait_for_exit().unwrap();
+    client.shutdown()?;
+    client.wait_for_exit()?;
     assert_eq!(client.rss_bytes(), None);
+
+    Ok(())
 }
 
 #[test]
@@ -110,7 +116,7 @@ fn the_escape_hatch_rejects_calls_before_initialize() {
 }
 
 #[test]
-fn a_malformed_initialize_result_leaves_the_client_uninitialized() {
+fn a_malformed_initialize_result_leaves_the_client_uninitialized() -> TestResult {
     let mut client = ScriptedServer::new()
         .steps([
             step::respond_with(json!({ "capabilities": 5 })),
@@ -126,19 +132,23 @@ fn a_malformed_initialize_result_leaves_the_client_uninitialized() {
     assert!(client.server_capabilities().is_none());
     assert_not_initialized([workspace_symbol(&mut client).unwrap_err()]);
 
-    client.initialize(ClientCapabilities::default()).unwrap();
-    workspace_symbol(&mut client).unwrap();
+    client.initialize(ClientCapabilities::default())?;
+    workspace_symbol(&mut client)?;
+
+    Ok(())
 }
 
 #[test]
-fn an_endless_timeout_does_not_overflow() {
+fn an_endless_timeout_does_not_overflow() -> TestResult {
     let mut client = ScriptedServer::new()
         .respond_to_all()
         .spawn()
         .with_timeout(Duration::MAX);
 
-    client.initialize(ClientCapabilities::default()).unwrap();
-    workspace_symbol(&mut client).unwrap();
+    client.initialize(ClientCapabilities::default())?;
+    workspace_symbol(&mut client)?;
+
+    Ok(())
 }
 
 #[test]
@@ -154,7 +164,7 @@ fn a_server_crash_while_a_request_is_pending_is_a_disconnect() {
 }
 
 #[test]
-fn a_late_response_is_dropped_silently_and_later_requests_still_work() {
+fn a_late_response_is_dropped_silently_and_later_requests_still_work() -> TestResult {
     let mut client = ScriptedServer::new()
         .steps([step::respond_after(300), step::respond(), step::respond()])
         .spawn_initialized()
@@ -166,12 +176,14 @@ fn a_late_response_is_dropped_silently_and_later_requests_still_work() {
     );
     std::thread::sleep(Duration::from_millis(500));
 
-    workspace_symbol(&mut client).unwrap();
+    workspace_symbol(&mut client)?;
     assert!(client.background_errors().is_empty());
+
+    Ok(())
 }
 
 #[test]
-fn a_failed_shutdown_can_be_retried_and_ends_the_session() {
+fn a_failed_shutdown_can_be_retried_and_ends_the_session() -> TestResult {
     let mut client = ScriptedServer::new()
         .steps([
             step::fail(LspErrorCodes::RequestFailed, ()),
@@ -181,13 +193,15 @@ fn a_failed_shutdown_can_be_retried_and_ends_the_session() {
 
     assert_err_kind!(client.shutdown(), ErrorKind::Response { .. });
 
-    client.shutdown().unwrap();
+    client.shutdown()?;
     assert_not_initialized([workspace_symbol(&mut client).unwrap_err()]);
     assert_err_kind!(client.shutdown(), ErrorKind::AlreadyShutdown);
+
+    Ok(())
 }
 
 #[test]
-fn server_requests_are_answered_while_a_request_is_pending() {
+fn server_requests_are_answered_while_a_request_is_pending() -> TestResult {
     let recording = Recording::new();
     let configuration = lsp_server::Request::new(
         "from-server".to_owned().into(),
@@ -202,9 +216,9 @@ fn server_requests_are_answered_while_a_request_is_pending() {
         .recording_to(&recording)
         .spawn_initialized();
 
-    workspace_symbol(&mut client).unwrap();
-    client.shutdown().unwrap();
-    client.wait_for_exit().unwrap();
+    workspace_symbol(&mut client)?;
+    client.shutdown()?;
+    client.wait_for_exit()?;
 
     let responses = recording.responses();
     let [response] = &responses[..] else {
@@ -216,16 +230,18 @@ fn server_requests_are_answered_while_a_request_is_pending() {
         Some(&json!([null, null])),
         "one null per item asked for"
     );
+
+    Ok(())
 }
 
 #[test]
-fn a_response_nobody_asked_for_is_a_background_error() {
+fn a_response_nobody_asked_for_is_a_background_error() -> TestResult {
     let stray = lsp_server::Response::new_ok(999.into(), ());
     let mut client = ScriptedServer::new()
         .steps([step::send(stray), step::respond()])
         .spawn_initialized();
 
-    workspace_symbol(&mut client).unwrap();
+    workspace_symbol(&mut client)?;
 
     let errors = client.background_errors();
     assert_eq!(errors.len(), 1, "{errors:?}");
@@ -233,6 +249,8 @@ fn a_response_nobody_asked_for_is_a_background_error() {
         matches!(errors[0].kind(), ErrorKind::UnmatchedResponseId { .. }),
         "{errors:?}"
     );
+
+    Ok(())
 }
 
 #[test]
@@ -249,13 +267,15 @@ fn a_malformed_frame_is_reported_as_a_malformed_message() {
 
 #[test]
 #[ignore = "requires a separately built target/dist/jjp or JJP_BIN"]
-fn initialize_against_the_real_server() {
+fn initialize_against_the_real_server() -> TestResult {
     let mut client = spawn_real_server();
 
-    let result = client.initialize(ClientCapabilities::default()).unwrap();
-    assert_eq!(result.server_info.unwrap().name, "jjpwrgem");
+    let result = client.initialize(ClientCapabilities::default())?;
+    assert_eq!(result.server_info.expect("server info").name, "jjpwrgem");
 
-    client.shutdown().unwrap();
-    let status = client.wait_for_exit().unwrap();
+    client.shutdown()?;
+    let status = client.wait_for_exit()?;
     assert!(status.success());
+
+    Ok(())
 }

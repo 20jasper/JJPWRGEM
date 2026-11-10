@@ -301,6 +301,7 @@ mod visitor {
 
 #[cfg(test)]
 mod tests {
+    type TestResult<T = ()> = core::result::Result<T, Box<dyn std::error::Error>>;
     use super::*;
 
     fn range_of(source: &str, needle: &str) -> Range<usize> {
@@ -317,19 +318,23 @@ mod tests {
     }
 
     #[test]
-    fn empty_object() {
-        let doc = Document::parse("{}").unwrap();
+    fn empty_object() -> TestResult {
+        let doc = Document::parse("{}")?;
         assert_eq!(doc.root(), &Value::Object(0..2, ObjectEntries::default()));
+
+        Ok(())
     }
 
     #[test]
-    fn one_key_value_pair() {
+    fn one_key_value_pair() -> TestResult {
         let json = r#"{"hi":"bye"}"#;
-        let doc = Document::parse(json).unwrap();
+        let doc = Document::parse(json)?;
         assert_eq!(
             doc.root(),
             &make_obj(vec![("hi", Value::String(range_of(json, "bye")))], json)
         );
+
+        Ok(())
     }
 
     #[rstest_reuse::template]

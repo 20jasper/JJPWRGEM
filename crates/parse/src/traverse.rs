@@ -190,6 +190,7 @@ pub(crate) fn visit_value<'a>(
 
 #[cfg(test)]
 mod tests {
+    type TestResult<T = ()> = core::result::Result<T, Box<dyn std::error::Error>>;
     use super::*;
     use crate::ast::Document;
 
@@ -265,7 +266,7 @@ mod tests {
     }
 
     #[test]
-    fn visit_document_matches_token_traversal_events() {
+    fn visit_document_matches_token_traversal_events() -> TestResult {
         let json = r#"{"a":["b",{"c":1e5}],"d":true}"#;
         let expected = vec![
             Event::ObjectOpen(0..1),
@@ -289,14 +290,16 @@ mod tests {
         ];
 
         let mut from_tokens: RecordingVisitor = RecordingVisitor::default();
-        parse_tokens(&mut TokenStream::new(json), json, true, &mut from_tokens).unwrap();
+        parse_tokens(&mut TokenStream::new(json), json, true, &mut from_tokens)?;
 
-        let doc = Document::parse(json).unwrap();
+        let doc = Document::parse(json)?;
         let mut from_ast = RecordingVisitor::default();
         visit_document(&doc, &mut from_ast);
 
         assert_eq!(from_tokens.events, expected);
         assert_eq!(from_ast.events, expected);
         assert_eq!(from_tokens.events, from_ast.events);
+
+        Ok(())
     }
 }

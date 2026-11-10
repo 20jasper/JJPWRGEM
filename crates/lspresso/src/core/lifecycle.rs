@@ -262,6 +262,7 @@ impl ClientState {
 
 #[cfg(test)]
 mod tests {
+    type TestResult<T = ()> = core::result::Result<T, Box<dyn std::error::Error>>;
     use std::time::Duration;
 
     use super::*;
@@ -329,7 +330,7 @@ mod tests {
     }
 
     #[test]
-    fn start_initialize_then_response_moves_to_initialized() {
+    fn start_initialize_then_response_moves_to_initialized() -> TestResult {
         let mut state = ClientState::default();
         let now = Instant::now();
         let id = start_initialize_ok(&mut state, now, DEFAULT_TIMEOUT);
@@ -338,10 +339,9 @@ mod tests {
         let effects = state.on_message(&ok_response(id.clone(), serde_json::json!(42)));
 
         assert_eq!(*state.lifecycle(), Lifecycle::Initialized);
-        assert_eq!(
-            resolved_result(effects, &id).unwrap(),
-            serde_json::json!(42)
-        );
+        assert_eq!(resolved_result(effects, &id)?, serde_json::json!(42));
+
+        Ok(())
     }
 
     #[test]
@@ -407,30 +407,28 @@ mod tests {
     }
 
     #[test]
-    fn generic_request_failure_leaves_lifecycle_initialized_and_allows_retry() {
+    fn generic_request_failure_leaves_lifecycle_initialized_and_allows_retry() -> TestResult {
         let mut state = ClientState::default();
         let now = Instant::now();
         initialized(&mut state, now);
 
-        let (id, _) = state
-            .start_generic(
-                LspRequestMethod::TextDocumentFormatting,
-                serde_json::json!({}),
-                now,
-                DEFAULT_TIMEOUT,
-            )
-            .unwrap();
+        let (id, _) = state.start_generic(
+            LspRequestMethod::TextDocumentFormatting,
+            serde_json::json!({}),
+            now,
+            DEFAULT_TIMEOUT,
+        )?;
         state.on_message(&err_response(id, -32603, "boom"));
         assert_eq!(*state.lifecycle(), Lifecycle::Initialized);
 
-        state
-            .start_generic(
-                LspRequestMethod::TextDocumentFormatting,
-                serde_json::json!({}),
-                now,
-                DEFAULT_TIMEOUT,
-            )
-            .unwrap();
+        state.start_generic(
+            LspRequestMethod::TextDocumentFormatting,
+            serde_json::json!({}),
+            now,
+            DEFAULT_TIMEOUT,
+        )?;
+
+        Ok(())
     }
 
     #[test]
@@ -512,7 +510,7 @@ mod tests {
     }
 
     #[test]
-    fn timeouts_name_the_method_that_timed_out() {
+    fn timeouts_name_the_method_that_timed_out() -> TestResult {
         fn timed_out_method(
             state: &mut ClientState,
             id: &RequestId,
@@ -535,14 +533,12 @@ mod tests {
         );
 
         initialized(&mut state, later);
-        let (id, _) = state
-            .start_generic(
-                LspRequestMethod::TextDocumentFormatting,
-                serde_json::json!({}),
-                later,
-                Duration::ZERO,
-            )
-            .unwrap();
+        let (id, _) = state.start_generic(
+            LspRequestMethod::TextDocumentFormatting,
+            serde_json::json!({}),
+            later,
+            Duration::ZERO,
+        )?;
         assert_eq!(
             timed_out_method(&mut state, &id, later),
             LspRequestMethod::TextDocumentFormatting
@@ -553,31 +549,29 @@ mod tests {
             timed_out_method(&mut state, &id, later),
             LspRequestMethod::Shutdown
         );
+
+        Ok(())
     }
 
     #[test]
-    fn the_next_deadline_is_the_earliest_one_not_yet_timed_out() {
+    fn the_next_deadline_is_the_earliest_one_not_yet_timed_out() -> TestResult {
         let mut state = ClientState::default();
         let start = Instant::now();
         assert_eq!(state.next_deadline(), None);
 
         initialized(&mut state, start);
-        let (late, _) = state
-            .start_generic(
-                LspRequestMethod::TextDocumentHover,
-                serde_json::Value::Null,
-                start,
-                Duration::from_millis(30),
-            )
-            .unwrap();
-        state
-            .start_generic(
-                LspRequestMethod::TextDocumentCompletion,
-                serde_json::Value::Null,
-                start,
-                Duration::from_millis(10),
-            )
-            .unwrap();
+        let (late, _) = state.start_generic(
+            LspRequestMethod::TextDocumentHover,
+            serde_json::Value::Null,
+            start,
+            Duration::from_millis(30),
+        )?;
+        state.start_generic(
+            LspRequestMethod::TextDocumentCompletion,
+            serde_json::Value::Null,
+            start,
+            Duration::from_millis(10),
+        )?;
         assert_eq!(
             state.next_deadline(),
             Some(start + Duration::from_millis(10))
@@ -591,6 +585,8 @@ mod tests {
 
         state.cancel_pending_request(&late);
         assert_eq!(state.next_deadline(), None);
+
+        Ok(())
     }
 
     #[test]

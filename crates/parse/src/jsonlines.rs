@@ -70,6 +70,7 @@ pub fn format(source: &str, line_ending: LineEnding) -> Result<String> {
 
 #[cfg(test)]
 mod tests {
+    type TestResult<T = ()> = core::result::Result<T, Box<dyn std::error::Error>>;
     use rstest::rstest;
 
     use super::*;
@@ -78,16 +79,20 @@ mod tests {
     #[rstest]
     #[case(r#"{"a":1}"#, 1)]
     #[case("{\"a\":1}\n{\"b\":2}", 2)]
-    fn lines_split_on_newline(#[case] input: &str, #[case] count: usize) {
-        assert_eq!(parse(input).unwrap().len(), count);
+    fn lines_split_on_newline(#[case] input: &str, #[case] count: usize) -> TestResult {
+        assert_eq!(parse(input)?.len(), count);
+
+        Ok(())
     }
 
     // jsonlines[verify end-of-file]
     #[rstest]
     #[case("{\"a\":1}\n", 1)]
     #[case("{\"a\":1}\n{\"b\":2}\n", 2)]
-    fn trailing_newline_is_allowed(#[case] input: &str, #[case] count: usize) {
-        assert_eq!(parse(input).unwrap().len(), count);
+    fn trailing_newline_is_allowed(#[case] input: &str, #[case] count: usize) -> TestResult {
+        assert_eq!(parse(input)?.len(), count);
+
+        Ok(())
     }
 
     // jsonlines[verify each-line-is-a-valid-json-value]

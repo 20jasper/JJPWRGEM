@@ -193,6 +193,7 @@ protocol_methods! {
 
 #[cfg(test)]
 mod tests {
+    type TestResult<T = ()> = core::result::Result<T, Box<dyn std::error::Error>>;
     use super::*;
 
     /// Records what each call sends instead of talking to a server.
@@ -216,19 +217,15 @@ mod tests {
     }
 
     #[test]
-    fn defaults_send_their_method_with_the_params_given() {
+    fn defaults_send_their_method_with_the_params_given() -> TestResult {
         let mut recorder = Recorder::default();
-        recorder
-            .protocol_workspace_symbol(WorkspaceSymbolParams {
-                query: "widget".to_owned(),
-                ..Default::default()
-            })
-            .unwrap();
-        recorder
-            .protocol_set_trace(SetTraceParams {
-                value: TraceValue::Verbose,
-            })
-            .unwrap();
+        recorder.protocol_workspace_symbol(WorkspaceSymbolParams {
+            query: "widget".to_owned(),
+            ..Default::default()
+        })?;
+        recorder.protocol_set_trace(SetTraceParams {
+            value: TraceValue::Verbose,
+        })?;
 
         assert_eq!(
             recorder.sent,
@@ -237,5 +234,7 @@ mod tests {
                 ("$/setTrace", serde_json::json!({ "value": "verbose" })),
             ]
         );
+
+        Ok(())
     }
 }
