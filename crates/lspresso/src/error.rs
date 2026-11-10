@@ -8,9 +8,15 @@ use gen_lsp_types::*;
 use lsp_server::RequestId;
 
 /// {0}
-#[derive(Debug, thiserror::Error)]
+#[derive(thiserror::Error)]
 #[error(transparent)]
 pub struct Error(Box<ErrorKind>);
+
+impl std::fmt::Debug for Error {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        std::fmt::Display::fmt(self, f)
+    }
+}
 
 impl From<ErrorKind> for Error {
     fn from(value: ErrorKind) -> Self {
@@ -132,6 +138,15 @@ pub type Result<T> = std::result::Result<T, Error>;
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn debug_prints_the_message() {
+        let err: Error = ErrorKind::ExitTimeout { after_ms: 7 }.into();
+        assert_eq!(
+            format!("{err:?}"),
+            "timed out after 7ms waiting for the server process to exit"
+        );
+    }
 
     #[test]
     fn deadlines_cap_instead_of_overflowing() {
