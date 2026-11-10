@@ -68,17 +68,13 @@ fn position(text: &str, offset: usize, encoding: &PositionEncodingKind) -> Posit
     Position::new(line, character)
 }
 
-#[derive(Debug)]
-pub(crate) struct Applied {
-    pub(crate) text: String,
-    pub(crate) changes: Vec<TextDocumentContentChangeEvent>,
-}
-
-pub(crate) fn apply(
+/// Byte ranges of `edits` in `text`, in document order. Edits all refer to the
+/// original text, so ones at the same spot keep the order they were given in
+fn spans(
     text: &str,
     edits: &[TextEdit],
     encoding: &PositionEncodingKind,
-) -> crate::Result<Applied> {
+) -> crate::Result<Vec<(std::ops::Range<usize>, usize)>> {
     let mut spans = edits
         .iter()
         .enumerate()
@@ -102,39 +98,61 @@ pub(crate) fn apply(
     }) {
         return Err(ErrorKind::OverlappingEdits.into());
     }
+    Ok(spans)
+}
 
-    let mut result = String::with_capacity(text.len());
-    let mut last = 0;
-    for (range, index) in &spans {
+/// `text[from..to]` with the edits inside it applied
+fn splice(
+    text: &str,
+    edits: &[TextEdit],
+    spans: &[(std::ops::Range<usize>, usize)],
+    from: usize,
+    to: usize,
+) -> String {
+    let mut result = String::with_capacity(to - from);
+    let mut last = from;
+    for (range, index) in spans {
         result.push_str(&text[last..range.start]);
         result.push_str(&edits[*index].new_text);
         last = range.end;
     }
-    result.push_str(&text[last..]);
+    result.push_str(&text[last..to]);
+    result
+}
 
-    let changes = match spans.first() {
-        Some((first, _)) => {
-            let start = first.start;
-            let end = spans.last().map_or(start, |(range, _)| range.end);
-            let replaced = result[start..result.len() - (text.len() - end)].to_owned();
-            vec![
-                TextDocumentContentChangePartial::new(
-                    Range::new(
-                        position(text, start, encoding),
-                        position(text, end, encoding),
-                    ),
-                    None,
-                    replaced,
-                )
-                .into(),
-            ]
-        }
-        None => Vec::new(),
+pub(crate) fn apply(
+    text: &str,
+    edits: &[TextEdit],
+    encoding: &PositionEncodingKind,
+) -> crate::Result<String> {
+    let spans = spans(text, edits, encoding)?;
+    Ok(splice(text, edits, &spans, 0, text.len()))
+}
+
+/// One incremental change that covers all of `edits`, without building the
+/// edited text
+pub(crate) fn changes(
+    text: &str,
+    edits: &[TextEdit],
+    encoding: &PositionEncodingKind,
+) -> crate::Result<Vec<TextDocumentContentChangeEvent>> {
+    let spans = spans(text, edits, encoding)?;
+    let (Some((first, _)), Some((last, _))) = (spans.first(), spans.last()) else {
+        return Ok(Vec::new());
     };
-    Ok(Applied {
-        text: result,
-        changes,
-    })
+    let (start, end) = (first.start, last.end);
+    let replaced = splice(text, edits, &spans, start, end);
+    Ok(vec![
+        TextDocumentContentChangePartial::new(
+            Range::new(
+                position(text, start, encoding),
+                position(text, end, encoding),
+            ),
+            None,
+            replaced,
+        )
+        .into(),
+    ])
 }
 
 pub(crate) fn apply_changes(
@@ -258,7 +276,7 @@ mod tests {
             &PositionEncodingKind::UTF16,
         )
         .unwrap();
-        assert_eq!(applied.text, "yyb\nx");
+        assert_eq!(applied, "yyb\nx");
 
         let applied = apply(
             "abc",
@@ -270,7 +288,7 @@ mod tests {
             &PositionEncodingKind::UTF16,
         )
         .unwrap();
-        assert_eq!(applied.text, "a12Rc");
+        assert_eq!(applied, "a12Rc");
     }
 
     #[test]
@@ -281,10 +299,12 @@ mod tests {
             &PositionEncodingKind::UTF16,
         )
         .unwrap();
-        assert_eq!(applied.text, "\rx\na");
+        assert_eq!(applied, "\rx\na");
+        let edits = [edit((1, 0), (1, 0), "x"), edit((1, 0), (1, 0), "\n")];
+        let changes = changes("\ra", &edits, &PositionEncodingKind::UTF16).unwrap();
         assert_eq!(
-            apply_changes("\ra", &applied.changes, &PositionEncodingKind::UTF16).unwrap(),
-            applied.text
+            apply_changes("\ra", &changes, &PositionEncodingKind::UTF16).unwrap(),
+            applied
         );
     }
 
@@ -301,9 +321,7 @@ mod tests {
         }
         let touching = [edit((0, 0), (0, 1), "x"), edit((0, 1), (0, 2), "y")];
         assert_eq!(
-            apply("abc", &touching, &PositionEncodingKind::UTF16)
-                .unwrap()
-                .text,
+            apply("abc", &touching, &PositionEncodingKind::UTF16).unwrap(),
             "xyc"
         );
 
@@ -325,10 +343,10 @@ mod tests {
     fn applied_changes_replay_to_the_same_text() {
         let edits = [edit((0, 9), (0, 10), "10"), edit((1, 7), (1, 7), " ")];
         let text = "{\"😀\": 1,\n \"b\": 2}";
-        let applied = apply(text, &edits, &PositionEncodingKind::UTF8).unwrap();
+        let changes = changes(text, &edits, &PositionEncodingKind::UTF8).unwrap();
         assert_eq!(
-            apply_changes(text, &applied.changes, &PositionEncodingKind::UTF8).unwrap(),
-            applied.text
+            apply_changes(text, &changes, &PositionEncodingKind::UTF8).unwrap(),
+            apply(text, &edits, &PositionEncodingKind::UTF8).unwrap()
         );
     }
 

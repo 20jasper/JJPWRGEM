@@ -193,28 +193,25 @@ impl Client {
         }
     }
 
-    pub(crate) fn apply_edits(&self, text: &str, edits: &[TextEdit]) -> Result<text::Applied> {
-        text::apply(text, edits, &self.position_encoding())
-    }
-
-    fn apply_changes(
+    pub(crate) fn content_changes(
         &self,
-        uri: &Uri,
-        changes: &[TextDocumentContentChangeEvent],
-    ) -> Result<String> {
-        text::apply_changes(self.tracked_text(uri)?, changes, &self.position_encoding())
+        text: &str,
+        edits: &[TextEdit],
+    ) -> Result<Vec<TextDocumentContentChangeEvent>> {
+        if self.supports_incremental_sync() {
+            text::changes(text, edits, &self.position_encoding())
+        } else {
+            let text = text::apply(text, edits, &self.position_encoding())?;
+            Ok(vec![TextDocumentContentChangeWholeDocument { text }.into()])
+        }
     }
 
     pub(crate) fn previous_result_id(&self, uri: &Uri) -> Result<Option<String>> {
         self.docs.previous_result_id(uri)
     }
 
-    pub(crate) fn apply_pulled_report(
-        &mut self,
-        uri: &Uri,
-        report: DocumentDiagnosticReport,
-    ) -> Result<Vec<Diagnostic>> {
-        self.docs.apply_pulled_report(uri, report)
+    pub(crate) fn pulled_items(&self, uri: &Uri) -> Result<Vec<Diagnostic>> {
+        self.docs.pulled_items(uri)
     }
 
     /// Waits up to the client timeout, see [`Client::with_timeout`]
@@ -266,25 +263,6 @@ impl Client {
         self.docs.next_version_and_text(uri)
     }
 
-    pub(crate) fn send_validated_change(
-        &mut self,
-        uri: &Uri,
-        version: i32,
-        content_changes: Vec<TextDocumentContentChangeEvent>,
-        text: String,
-    ) -> Result<()> {
-        self.notify::<DidChangeTextDocumentNotification>(DidChangeTextDocumentParams {
-            text_document: VersionedTextDocumentIdentifier {
-                version,
-                text_document_identifier: TextDocumentIdentifier { uri: uri.clone() },
-            },
-            content_changes,
-        })?;
-        self.docs.commit_change(uri, version, text);
-        self.forget_diagnostics(uri);
-        Ok(())
-    }
-
     fn send_request(&mut self, id: &RequestId, message: &Message) -> Result<()> {
         self.transport.send(message).inspect_err(|_| {
             self.state.cancel_pending_request(id);
@@ -305,8 +283,19 @@ impl Client {
     }
 
     fn send_notification<N: Notification>(&mut self, params: N::Params) -> Result<()> {
-        self.transport
-            .send(&Message::Notification(notification::<N>(params)))
+        let notification = notification::<N>(params);
+        let commit = self.docs.prepare(
+            &notification.method,
+            &notification.params,
+            &self.position_encoding(),
+        )?;
+        self.transport.send(&Message::Notification(notification))?;
+        if let Some(uri) = commit.invalidates() {
+            let uri = uri.clone();
+            self.forget_diagnostics(&uri);
+        }
+        self.docs.commit(commit);
+        Ok(())
     }
 
     fn wait_for_resolution(
@@ -406,9 +395,14 @@ impl Protocol for Client {
         let method = R::METHOD.as_str();
         let params =
             serde_json::to_value(params).expect("serializing request params as JSON cannot fail");
+        self.state.require_initialized()?;
+        let pulled = self.docs.check_request(method, &params)?;
         let (id, message) = self.state.start_generic(method, params, now, timeout)?;
         self.send_request(&id, &message)?;
         let result = self.wait_for_resolution(&id, method)?;
+        if let Some(uri) = pulled {
+            self.docs.record_pulled(&uri, &result);
+        }
         Self::deserialize_response(result, method)
     }
 
@@ -416,61 +410,6 @@ impl Protocol for Client {
         assert_client_to_server!(N);
         self.state.require_initialized()?;
         self.send_notification::<N>(params)
-    }
-
-    fn protocol_did_open(&mut self, params: DidOpenTextDocumentParams) -> Result<()> {
-        self.state.require_initialized()?;
-        let TextDocumentItem {
-            uri, version, text, ..
-        } = &params.text_document;
-        self.docs.require_not_open(uri)?;
-        let (uri, version, text) = (uri.clone(), *version, text.clone());
-        self.forget_diagnostics(&uri);
-        self.notify::<DidOpenTextDocumentNotification>(params)?;
-        self.docs.mark_open(uri, version, text);
-        Ok(())
-    }
-
-    fn protocol_did_change(&mut self, params: DidChangeTextDocumentParams) -> Result<()> {
-        self.state.require_initialized()?;
-        let DidChangeTextDocumentParams {
-            text_document,
-            content_changes,
-        } = params;
-        let uri = text_document.text_document_identifier.uri.clone();
-        let text = self.apply_changes(&uri, &content_changes)?;
-        self.send_validated_change(&uri, text_document.version, content_changes, text)
-    }
-
-    fn protocol_did_close(&mut self, params: DidCloseTextDocumentParams) -> Result<()> {
-        self.state.require_initialized()?;
-        let uri = params.text_document.uri.clone();
-        self.docs.require_open(&uri)?;
-        self.notify::<DidCloseTextDocumentNotification>(params)?;
-        self.docs.mark_closed(&uri);
-        self.forget_diagnostics(&uri);
-        Ok(())
-    }
-
-    fn protocol_did_save(&mut self, params: DidSaveTextDocumentParams) -> Result<()> {
-        self.state.require_initialized()?;
-        self.docs.require_open(&params.text_document.uri)?;
-        self.notify::<DidSaveTextDocumentNotification>(params)
-    }
-
-    fn protocol_will_save(&mut self, params: WillSaveTextDocumentParams) -> Result<()> {
-        self.state.require_initialized()?;
-        self.docs.require_open(&params.text_document.uri)?;
-        self.notify::<WillSaveTextDocumentNotification>(params)
-    }
-
-    fn protocol_will_save_wait_until(
-        &mut self,
-        params: WillSaveTextDocumentParams,
-    ) -> Result<Option<Vec<TextEdit>>> {
-        self.state.require_initialized()?;
-        self.docs.require_open(&params.text_document.uri)?;
-        self.request::<WillSaveTextDocumentWaitUntilRequest>(params)
     }
 }
 
