@@ -48,6 +48,10 @@ local check_steps = new Mapping<String, Step> {
     glob = List("**/*.sh", "**/*.bash")
     check = "mise run shellcheck"
   }
+  ["glob-imports"] {
+    glob = List("**/*.rs")
+    check = "mise run glob-imports-check"
+  }
   ["typos"] {
     check = "mise run typos"
   }

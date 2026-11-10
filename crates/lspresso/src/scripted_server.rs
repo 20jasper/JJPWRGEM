@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use gen_lsp_types::{Notification, ServerCapabilities};
+use gen_lsp_types::*;
 use lsp_server::{Message, ResponseError};
 use serde::{Deserialize, Serialize};
 

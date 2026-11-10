@@ -75,6 +75,9 @@ run = "cargo shear --check-test-targets"
 [tasks.shellcheck]
 run = "shellcheck --shell=bash $(git ls-files '*.sh' '*.bash')"
 
+[tasks.glob-imports-check]
+run = "./scripts/check-glob-imports.sh"
+
 [tasks.shellcheck.tools]
 shellcheck = "0.11.0"
 

@@ -1,13 +1,6 @@
 use std::{error::Error, process::Command, time::Duration};
 
-use lspresso::{
-    Client, capabilities,
-    gen_lsp_types::{
-        ClientCapabilities, CodeAction, CodeActionKind, CodeActionResponse, Diagnostic,
-        DiagnosticSeverity, FormattingOptions, LanguageKind, Position, PositionEncodingKind, Range,
-        TextEdit, Uri, WorkspaceEdit,
-    },
-};
+use lspresso::{Client, capabilities, gen_lsp_types::*};
 
 const TIMEOUT: Duration = Duration::from_secs(5);
 type TestResult<T = ()> = Result<T, Box<dyn Error>>;

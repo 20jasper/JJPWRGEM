@@ -11,11 +11,7 @@ use criterion::{
     BatchSize, BenchmarkGroup, BenchmarkId, Criterion, SamplingMode, criterion_group,
     criterion_main, measurement::WallTime,
 };
-use lspresso::{
-    Client, capabilities,
-    gen_lsp_types::{Diagnostic, FormattingOptions, LanguageKind, Position, Range, Uri},
-    server_command,
-};
+use lspresso::{Client, capabilities, gen_lsp_types::*, server_command};
 
 const TIMEOUT: Duration = Duration::from_secs(5);
 const FIXTURES: [&str; 4] = ["small", "twitter", "citm_catalog", "canada"];
