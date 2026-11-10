@@ -285,10 +285,11 @@ fn fill_the_pipe(client: &mut Client) {
 fn sending_does_not_block_when_the_server_stops_reading() {
     let mut client = a_server_that_stopped_reading();
 
-    let _client = assert_completes_within(Duration::from_secs(2), move || {
+    let client = assert_completes_within(Duration::from_secs(2), move || {
         fill_the_pipe(&mut client);
         client
     });
+    std::thread::spawn(move || drop(client));
 }
 
 #[test]
