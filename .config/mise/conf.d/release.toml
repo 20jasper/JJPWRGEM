@@ -12,3 +12,10 @@ run = "sampo release --dry-run"
 
 [tasks.release-plan.tools]
 "github:bruits/sampo" = { version = "0.24.0", version_prefix = "cargo-sampo-v" }
+
+[tasks.semver-check]
+description = "Check every library crate's API against its last published version"
+run = "cargo semver-checks check-release --workspace"
+
+[tasks.semver-check.tools]
+"cargo:cargo-semver-checks" = "0.51.0"
