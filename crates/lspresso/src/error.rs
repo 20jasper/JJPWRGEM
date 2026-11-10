@@ -4,7 +4,7 @@ use std::{
 };
 
 use displaydoc::Display;
-use gen_lsp_types::{LspNotificationMethod, LspRequestMethod, Range, Uri};
+use gen_lsp_types::*;
 use lsp_server::RequestId;
 
 /// {0}

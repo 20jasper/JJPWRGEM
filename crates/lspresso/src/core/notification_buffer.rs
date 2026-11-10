@@ -72,10 +72,7 @@ pub(crate) fn parse<N: Notification>(notification: &LspNotification) -> Option<N
 
 #[cfg(test)]
 mod tests {
-    use gen_lsp_types::{
-        Diagnostic, LogMessageNotification, LogMessageParams, MessageType,
-        PublishDiagnosticsNotification, PublishDiagnosticsParams, Uri,
-    };
+    use gen_lsp_types::*;
 
     use super::*;
 

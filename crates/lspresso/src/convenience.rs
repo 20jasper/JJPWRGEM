@@ -10,7 +10,7 @@ mod navigation;
 mod symbols;
 mod workspace;
 
-use gen_lsp_types::{Position, TextDocumentIdentifier, TextDocumentPositionParams, Uri};
+use gen_lsp_types::*;
 
 fn document(uri: &Uri) -> TextDocumentIdentifier {
     TextDocumentIdentifier { uri: uri.clone() }

@@ -1229,6 +1229,7 @@ dependencies = [
  "jjpwrgem-lsp",
  "jjpwrgem-parse",
  "jjpwrgem-ui",
+ "lspresso",
  "proptest",
  "rstest",
  "rstest_reuse",
