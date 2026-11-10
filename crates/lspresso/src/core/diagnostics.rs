@@ -57,7 +57,7 @@ mod tests {
         ErrorKind::Response {
             code: code.into(),
             message: String::new(),
-            method: "textDocument/diagnostic",
+            method: LspRequestMethod::TextDocumentDiagnostic,
             id: 1.into(),
             data,
         }

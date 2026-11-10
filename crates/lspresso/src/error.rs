@@ -4,7 +4,7 @@ use std::{
 };
 
 use displaydoc::Display;
-use gen_lsp_types::{Range, Uri};
+use gen_lsp_types::{LspNotificationMethod, LspRequestMethod, Range, Uri};
 use lsp_server::RequestId;
 
 /// {0}
@@ -54,11 +54,11 @@ pub enum ErrorKind {
         #[source]
         source: io::Error,
     },
-    /// server disconnected while waiting for response to {method}
-    Disconnected { method: &'static str },
-    /// server sent a malformed message while waiting for response to {method}: {source}
+    /// server disconnected while waiting for {awaited}
+    Disconnected { awaited: Awaited },
+    /// server sent a malformed message while waiting for {awaited}: {source}
     MalformedMessage {
-        method: &'static str,
+        awaited: Awaited,
         #[source]
         source: io::Error,
     },
@@ -66,18 +66,21 @@ pub enum ErrorKind {
     Response {
         code: i32,
         message: String,
-        method: &'static str,
+        method: LspRequestMethod<'static>,
         id: RequestId,
         data: Option<serde_json::Value>,
     },
     /// timed out after {after_ms}ms waiting for response to {method} (id={id})
     ResponseTimeout {
-        method: &'static str,
+        method: LspRequestMethod<'static>,
         id: RequestId,
         after_ms: u64,
     },
     /// timed out after {after_ms}ms waiting for notification {method}
-    NotificationTimeout { method: &'static str, after_ms: u64 },
+    NotificationTimeout {
+        method: LspNotificationMethod<'static>,
+        after_ms: u64,
+    },
     /// client already shut down: spawn a new Client for another session
     AlreadyShutdown,
     /// timed out after {after_ms}ms waiting for the server process to exit
@@ -98,9 +101,18 @@ pub enum ErrorKind {
     OverlappingEdits,
     /// {method} response was malformed: {message}
     MalformedResponse {
-        method: &'static str,
+        method: LspRequestMethod<'static>,
         message: String,
     },
+}
+
+/// What the client was waiting for when the connection broke
+#[derive(Display, Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Awaited {
+    /// response to {0}
+    Response(LspRequestMethod<'static>),
+    /// notification {0}
+    Notification(LspNotificationMethod<'static>),
 }
 
 pub(crate) fn deadline_after(start: Instant, timeout: Duration) -> Instant {

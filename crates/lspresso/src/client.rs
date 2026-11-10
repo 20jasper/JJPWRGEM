@@ -11,7 +11,7 @@ use lsp_server::{Message, RequestId};
 
 use self::transport::{Incoming, Transport};
 use crate::{
-    Error, Protocol, Result,
+    Awaited, Error, Protocol, Result,
     core::{
         self, ClientState, DocumentTracker, Effect,
         notification_buffer::{NotificationBuffer, notification},
@@ -105,9 +105,9 @@ impl Client {
         let params = serde_json::to_value(params).expect("serializing as JSON cannot fail");
         let (id, message) = self.state.start_initialize(params, now, self.timeout)?;
         self.send_request(&id, &message)?;
-        let result = self.wait_for_resolution(&id, InitializeRequest::METHOD.as_str())?;
+        let result = self.wait_for_resolution(&id, InitializeRequest::METHOD)?;
         let result: InitializeResult =
-            Self::deserialize_response(result, InitializeRequest::METHOD.as_str())
+            Self::deserialize_response(result, InitializeRequest::METHOD)
                 .inspect_err(|_| self.state.rollback_initialize())?;
         self.send_notification::<InitializedNotification>(InitializedParams::default())
             .inspect_err(|_| self.state.rollback_initialize())?;
@@ -121,7 +121,7 @@ impl Client {
         let now = Instant::now();
         let (id, message) = self.state.start_shutdown(now, self.timeout)?;
         self.send_request(&id, &message)?;
-        self.wait_for_resolution(&id, ShutdownRequest::METHOD.as_str())?;
+        self.wait_for_resolution(&id, ShutdownRequest::METHOD)?;
 
         self.send_notification::<ExitNotification>(())?;
 
@@ -233,7 +233,7 @@ impl Client {
                 return Ok(params);
             }
             if let RecvOutcome::Closed(closed) = self.recv_and_dispatch(Some(deadline), None) {
-                return Err(closed.into_error(N::METHOD.as_str()));
+                return Err(closed.into_error(Awaited::Notification(N::METHOD)));
             }
             if let Some(params) = self.notifications.take::<N>(&mut matches) {
                 return Ok(params);
@@ -241,7 +241,7 @@ impl Client {
             let now = Instant::now();
             if now >= deadline {
                 return Err(ErrorKind::NotificationTimeout {
-                    method: N::METHOD.as_str(),
+                    method: N::METHOD,
                     after_ms: elapsed_ms(start, now),
                 }
                 .into());
@@ -269,7 +269,10 @@ impl Client {
         })
     }
 
-    fn deserialize_response<T>(value: serde_json::Value, method: &'static str) -> Result<T>
+    fn deserialize_response<T>(
+        value: serde_json::Value,
+        method: LspRequestMethod<'static>,
+    ) -> Result<T>
     where
         T: serde::de::DeserializeOwned,
     {
@@ -299,14 +302,14 @@ impl Client {
     fn wait_for_resolution(
         &mut self,
         id: &RequestId,
-        method: &'static str,
+        method: LspRequestMethod<'static>,
     ) -> Result<serde_json::Value> {
         loop {
             match self.recv_and_dispatch(None, Some(id)) {
                 RecvOutcome::Resolved(result) => return result,
                 RecvOutcome::Closed(closed) => {
                     self.state.cancel_pending_request(id);
-                    return Err(closed.into_error(method));
+                    return Err(closed.into_error(Awaited::Response(method)));
                 }
                 RecvOutcome::Handled | RecvOutcome::TimedOut => {}
             }
@@ -390,11 +393,11 @@ impl Protocol for Client {
         assert_client_to_server!(R);
         let now = Instant::now();
         let timeout = self.timeout;
-        let method = R::METHOD.as_str();
+        let method = R::METHOD;
         let params =
             serde_json::to_value(params).expect("serializing request params as JSON cannot fail");
         self.state.require_initialized()?;
-        let pulled = self.docs.check_request(R::METHOD, &params)?;
+        let pulled = self.docs.check_request(method, &params)?;
         let (id, message) = self.state.start_generic(method, params, now, timeout)?;
         self.send_request(&id, &message)?;
         let result = self.wait_for_resolution(&id, method)?;
@@ -426,10 +429,10 @@ enum CloseReason {
 }
 
 impl CloseReason {
-    fn into_error(self, method: &'static str) -> Error {
+    fn into_error(self, awaited: Awaited) -> Error {
         match self {
-            Self::Malformed(source) => ErrorKind::MalformedMessage { method, source }.into(),
-            Self::Disconnected => ErrorKind::Disconnected { method }.into(),
+            Self::Malformed(source) => ErrorKind::MalformedMessage { awaited, source }.into(),
+            Self::Disconnected => ErrorKind::Disconnected { awaited }.into(),
         }
     }
 }
