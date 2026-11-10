@@ -284,11 +284,9 @@ impl Client {
 
     fn send_notification<N: Notification>(&mut self, params: N::Params) -> Result<()> {
         let notification = notification::<N>(params);
-        let commit = self.docs.prepare(
-            &notification.method,
-            &notification.params,
-            &self.position_encoding(),
-        )?;
+        let commit =
+            self.docs
+                .prepare(N::METHOD, &notification.params, &self.position_encoding())?;
         self.transport.send(&Message::Notification(notification))?;
         if let Some(uri) = commit.invalidates() {
             let uri = uri.clone();
@@ -396,7 +394,7 @@ impl Protocol for Client {
         let params =
             serde_json::to_value(params).expect("serializing request params as JSON cannot fail");
         self.state.require_initialized()?;
-        let pulled = self.docs.check_request(method, &params)?;
+        let pulled = self.docs.check_request(R::METHOD, &params)?;
         let (id, message) = self.state.start_generic(method, params, now, timeout)?;
         self.send_request(&id, &message)?;
         let result = self.wait_for_resolution(&id, method)?;
