@@ -37,7 +37,7 @@ impl Client {
             let previous_result_id = self.previous_result_id(uri)?;
             let result = self.protocol_diagnostic(diagnostic_params(uri, previous_result_id));
             match result {
-                Ok(report) => return self.apply_pulled_report(uri, report),
+                Ok(_) => return self.pulled_items(uri),
                 Err(err)
                     if attempt < core::diagnostics::MAX_PULL_ATTEMPTS
                         && core::diagnostics::should_retry_pull(err.kind()) =>

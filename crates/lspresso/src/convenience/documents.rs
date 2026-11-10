@@ -7,6 +7,20 @@ fn whole_document(text: String) -> TextDocumentContentChangeEvent {
     TextDocumentContentChangeWholeDocument { text }.into()
 }
 
+fn change(
+    uri: &Uri,
+    version: i32,
+    content_changes: Vec<TextDocumentContentChangeEvent>,
+) -> DidChangeTextDocumentParams {
+    DidChangeTextDocumentParams {
+        text_document: VersionedTextDocumentIdentifier {
+            version,
+            text_document_identifier: document(uri),
+        },
+        content_changes,
+    }
+}
+
 impl Client {
     pub fn did_open(
         &mut self,
@@ -27,9 +41,7 @@ impl Client {
 
     pub fn did_change_full(&mut self, uri: &Uri, text: impl Into<String>) -> Result<()> {
         let (version, _) = self.next_document_version_and_text(uri)?;
-        let text = text.into();
-        let content_changes = vec![whole_document(text.clone())];
-        self.send_validated_change(uri, version, content_changes, text)
+        self.protocol_did_change(change(uri, version, vec![whole_document(text.into())]))
     }
 
     /// Sends edits as incremental or whole-document changes.
@@ -39,13 +51,8 @@ impl Client {
             return Ok(());
         }
         let (version, text) = self.next_document_version_and_text(uri)?;
-        let applied = self.apply_edits(text, edits)?;
-        let content_changes = if self.supports_incremental_sync() {
-            applied.changes
-        } else {
-            vec![whole_document(applied.text.clone())]
-        };
-        self.send_validated_change(uri, version, content_changes, applied.text)
+        let content_changes = self.content_changes(text, edits)?;
+        self.protocol_did_change(change(uri, version, content_changes))
     }
 
     pub fn did_close(&mut self, uri: &Uri) -> Result<()> {
