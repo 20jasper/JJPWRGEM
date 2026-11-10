@@ -166,6 +166,8 @@ jobs:
     uses: ./.github/workflows/host-npm.yml
     with:
       tag: ${{ needs.plan.outputs.tag }}
+    permissions:
+      contents: read
 
   publish-npm:
     needs: [plan, host-npm]
