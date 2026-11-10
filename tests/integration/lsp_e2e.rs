@@ -3,8 +3,8 @@ use std::{process::Command, time::Duration};
 use lspresso::{
     Client, capabilities,
     gen_lsp_types::{
-        ClientCapabilities, DiagnosticSeverity, FormattingOptions, LanguageKind,
-        PositionEncodingKind, Uri,
+        ClientCapabilities, CodeActionKind, CodeActionResponse, DiagnosticSeverity,
+        FormattingOptions, LanguageKind, Position, PositionEncodingKind, Range, Uri,
     },
 };
 
@@ -118,4 +118,35 @@ fn formatting_is_none_for_invalid_json() {
             .unwrap(),
         None
     );
+}
+
+#[test]
+fn code_action_fixes_a_trailing_comma() {
+    let mut client = client(capabilities::vscode::latest);
+    let uri = open(&mut client, r#"{"a": 1,"#);
+    let diagnostics = client.diagnostics(&uri).unwrap();
+    let range = Range::new(Position::new(0, 0), Position::new(u32::MAX, u32::MAX));
+
+    let actions = client
+        .code_action(&uri, range, diagnostics)
+        .unwrap()
+        .unwrap();
+    assert_eq!(actions.len(), 1);
+    let CodeActionResponse::CodeAction(action) = &actions[0] else {
+        panic!("expected a code action");
+    };
+    assert_eq!(action.kind, Some(CodeActionKind::QuickFix));
+
+    let edits = action
+        .edit
+        .as_ref()
+        .unwrap()
+        .changes
+        .as_ref()
+        .unwrap()
+        .get(&uri)
+        .unwrap();
+    client.did_change(&uri, edits).unwrap();
+    assert_eq!(client.document_text(&uri), Some(r#"{"a": 1}"#));
+    assert_eq!(client.diagnostics(&uri).unwrap(), []);
 }
