@@ -6,7 +6,7 @@
     "lint": "oxlint --tsconfig npm-packages/jjpwrgem-vscode/tsconfig.json npm-packages/"
   },
   "devDependencies": {
-    "oxlint-tsgolint": "7.0.2005"
+    "oxlint-tsgolint": "7.0.2006"
   },
   "engines": {
     "node": ">=22.22.3",
