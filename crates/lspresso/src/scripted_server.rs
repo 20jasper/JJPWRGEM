@@ -28,6 +28,7 @@ pub enum Step {
     Send(Message),
     WriteRaw(String),
     Ignore,
+    Stall,
     Exit,
 }
 

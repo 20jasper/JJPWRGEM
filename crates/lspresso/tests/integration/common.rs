@@ -1,7 +1,11 @@
 use std::{
     path::PathBuf,
     process::Command,
-    sync::atomic::{AtomicUsize, Ordering},
+    sync::{
+        atomic::{AtomicUsize, Ordering},
+        mpsc,
+    },
+    time::Duration,
 };
 
 use gen_lsp_types::*;
@@ -60,6 +64,10 @@ pub mod step {
 
     pub fn write_raw(text: &str) -> Step {
         Step::WriteRaw(text.to_owned())
+    }
+
+    pub fn stall() -> Step {
+        Step::Stall
     }
 
     pub fn exit() -> Step {
@@ -239,4 +247,32 @@ pub fn workspace_symbol(client: &mut Client) -> lspresso::Result<()> {
     })?;
     assert_eq!(symbols, None, "the scripted server answers null");
     Ok(())
+}
+
+pub fn assert_completes_within<T: Send + 'static>(
+    limit: Duration,
+    work: impl FnOnce() -> T + Send + 'static,
+) -> T {
+    let (tx, rx) = mpsc::channel();
+    std::thread::spawn(move || {
+        drop(tx.send(std::panic::catch_unwind(std::panic::AssertUnwindSafe(work))));
+    });
+    let outcome = rx
+        .recv_timeout(limit)
+        .unwrap_or_else(|_| panic!("still running after {limit:?}"));
+    outcome.unwrap_or_else(|panic| std::panic::resume_unwind(panic))
+}
+
+#[test]
+#[should_panic(expected = "injected")]
+fn assert_completes_within_propagates_panics() {
+    assert_completes_within(Duration::from_secs(1), || panic!("injected"));
+}
+
+#[test]
+#[should_panic(expected = "still running")]
+fn assert_completes_within_fails_on_work_that_hangs() {
+    assert_completes_within(Duration::from_millis(50), || {
+        std::thread::sleep(Duration::from_secs(5));
+    });
 }

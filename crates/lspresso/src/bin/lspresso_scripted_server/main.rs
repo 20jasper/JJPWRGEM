@@ -156,6 +156,10 @@ fn main() {
             }
             Step::Send(_) | Step::WriteRaw(_) => unreachable!("handled above"),
             Step::Ignore => {}
+            #[expect(clippy::infinite_loop, reason = "never reads stdin again")]
+            Step::Stall => loop {
+                std::thread::park();
+            },
             Step::Exit => std::process::exit(0),
         }
     }

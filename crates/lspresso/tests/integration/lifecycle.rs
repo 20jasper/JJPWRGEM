@@ -259,3 +259,44 @@ fn initialize_against_the_real_server() {
     let status = client.wait_for_exit().unwrap();
     assert!(status.success());
 }
+
+fn a_server_that_stopped_reading() -> Client {
+    let mut client = ScriptedServer::new()
+        .steps([step::stall()])
+        .spawn_initialized()
+        .with_timeout(Duration::from_millis(100));
+    assert_err_kind!(
+        workspace_symbol(&mut client),
+        ErrorKind::ResponseTimeout { .. }
+    );
+    client
+}
+
+fn fill_the_pipe(client: &mut Client) {
+    for name in ["a", "b"] {
+        let uri = format!("file:///{name}.json").parse().unwrap();
+        client
+            .did_open(uri, "x".repeat(1_000_000), LanguageKind::JSON)
+            .unwrap();
+    }
+}
+
+#[test]
+fn sending_does_not_block_when_the_server_stops_reading() {
+    let mut client = a_server_that_stopped_reading();
+
+    let _client = assert_completes_within(Duration::from_secs(2), move || {
+        fill_the_pipe(&mut client);
+        client
+    });
+}
+
+#[test]
+fn dropping_the_client_does_not_hang_when_the_server_stops_reading() {
+    let mut client = a_server_that_stopped_reading();
+
+    assert_completes_within(Duration::from_secs(3), move || {
+        fill_the_pipe(&mut client);
+        std::thread::sleep(Duration::from_millis(100));
+    });
+}
