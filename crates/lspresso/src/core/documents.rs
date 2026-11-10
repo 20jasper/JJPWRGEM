@@ -97,7 +97,6 @@ impl DocumentTracker {
     }
 }
 
-/// State change to apply once the message is sent.
 #[derive(Debug, PartialEq, Eq)]
 #[must_use]
 pub(crate) enum Commit {
@@ -118,7 +117,6 @@ pub(crate) enum Commit {
 }
 
 impl Commit {
-    /// The URI whose pushed diagnostics go stale.
     pub(crate) const fn invalidates(&self) -> Option<&Uri> {
         match self {
             Self::Open { uri, .. } | Self::Change { uri, .. } | Self::Close { uri } => Some(uri),
@@ -133,14 +131,11 @@ struct ParamsWithUri {
     text_document: TextDocumentIdentifier,
 }
 
-/// `None` if `params` has the wrong shape. Those go out untracked, so tests
-/// can send malformed messages on purpose.
 fn decode<'a, T: Deserialize<'a>>(params: &'a Value) -> Option<T> {
     T::deserialize(params).ok()
 }
 
 impl DocumentTracker {
-    /// Validates an outgoing notification. Changes nothing until [`Self::commit`].
     pub(crate) fn prepare(
         &self,
         method: &str,
@@ -191,8 +186,6 @@ impl DocumentTracker {
         }
     }
 
-    /// Validates an outgoing request. Returns the URI to pass to
-    /// [`Self::record_pulled`] for pull diagnostics.
     pub(crate) fn check_request(&self, method: &str, params: &Value) -> crate::Result<Option<Uri>> {
         match LspRequestMethod::from(method) {
             LspRequestMethod::TextDocumentWillSaveWaitUntil => {
@@ -205,7 +198,6 @@ impl DocumentTracker {
         }
     }
 
-    /// Stores a pull response so an "unchanged" report can reuse the last items.
     pub(crate) fn record_pulled(&mut self, uri: &Uri, result: &Value) {
         let Some(report) = decode::<DocumentDiagnosticReport>(result) else {
             return;
