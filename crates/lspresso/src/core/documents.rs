@@ -138,12 +138,12 @@ fn decode<'a, T: Deserialize<'a>>(params: &'a Value) -> Option<T> {
 impl DocumentTracker {
     pub(crate) fn prepare(
         &self,
-        method: &str,
+        method: LspNotificationMethod<'_>,
         params: &Value,
         encoding: &PositionEncodingKind,
     ) -> crate::Result<Commit> {
         use LspNotificationMethod as M;
-        match M::from(method) {
+        match method {
             M::TextDocumentDidOpen => {
                 let Some(DidOpenTextDocumentParams { text_document }) = decode(params) else {
                     return Ok(Commit::Nothing);
@@ -186,8 +186,12 @@ impl DocumentTracker {
         }
     }
 
-    pub(crate) fn check_request(&self, method: &str, params: &Value) -> crate::Result<Option<Uri>> {
-        match LspRequestMethod::from(method) {
+    pub(crate) fn check_request(
+        &self,
+        method: LspRequestMethod<'_>,
+        params: &Value,
+    ) -> crate::Result<Option<Uri>> {
+        match method {
             LspRequestMethod::TextDocumentWillSaveWaitUntil => {
                 self.require_open_params(params).map(|()| None)
             }
@@ -294,14 +298,14 @@ mod tests {
         let params = open_params("file:///a.json", "{}");
 
         let commit = tracker
-            .prepare("textDocument/didOpen", &params, &utf16)
+            .prepare(LspNotificationMethod::TextDocumentDidOpen, &params, &utf16)
             .unwrap();
         assert_eq!(tracker.text(&uri("file:///a.json")).ok(), None);
 
         tracker.commit(commit);
         assert_eq!(tracker.text(&uri("file:///a.json")).unwrap(), "{}");
         assert!(matches!(
-            tracker.prepare("textDocument/didOpen", &params, &utf16),
+            tracker.prepare(LspNotificationMethod::TextDocumentDidOpen, &params, &utf16),
             Err(err) if matches!(err.kind(), ErrorKind::AlreadyOpen { .. })
         ));
     }
@@ -318,14 +322,18 @@ mod tests {
             "contentChanges": [{ "text": "xyz" }]
         });
         let commit = tracker
-            .prepare("textDocument/didChange", &change, &utf16)
+            .prepare(
+                LspNotificationMethod::TextDocumentDidChange,
+                &change,
+                &utf16,
+            )
             .unwrap();
         tracker.commit(commit);
         assert_eq!(tracker.text(&a).unwrap(), "xyz");
 
         let close = serde_json::json!({ "textDocument": { "uri": "file:///a.json" } });
         let commit = tracker
-            .prepare("textDocument/didClose", &close, &utf16)
+            .prepare(LspNotificationMethod::TextDocumentDidClose, &close, &utf16)
             .unwrap();
         tracker.commit(commit);
         assert!(tracker.text(&a).is_err());
@@ -339,17 +347,17 @@ mod tests {
 
         assert!(
             tracker
-                .prepare("textDocument/didSave", &params, &utf16)
+                .prepare(LspNotificationMethod::TextDocumentDidSave, &params, &utf16)
                 .is_err()
         );
         assert!(
             tracker
-                .check_request("textDocument/willSaveWaitUntil", &params)
+                .check_request(LspRequestMethod::TextDocumentWillSaveWaitUntil, &params)
                 .is_err()
         );
         assert!(
             tracker
-                .check_request("textDocument/formatting", &params)
+                .check_request(LspRequestMethod::TextDocumentFormatting, &params)
                 .is_ok()
         );
     }
@@ -360,11 +368,11 @@ mod tests {
         let junk = serde_json::json!(5);
 
         for method in [
-            "textDocument/didOpen",
-            "textDocument/didChange",
-            "textDocument/didClose",
-            "textDocument/didSave",
-            "textDocument/willSave",
+            LspNotificationMethod::TextDocumentDidOpen,
+            LspNotificationMethod::TextDocumentDidChange,
+            LspNotificationMethod::TextDocumentDidClose,
+            LspNotificationMethod::TextDocumentDidSave,
+            LspNotificationMethod::TextDocumentWillSave,
         ] {
             let commit = tracker
                 .prepare(method, &junk, &PositionEncodingKind::UTF16)
@@ -384,8 +392,8 @@ mod tests {
         let close = serde_json::json!({ "textDocument": { "uri": "file:///a.json" } });
 
         for (method, params) in [
-            ("textDocument/didChange", &change),
-            ("textDocument/didClose", &close),
+            (LspNotificationMethod::TextDocumentDidChange, &change),
+            (LspNotificationMethod::TextDocumentDidClose, &close),
         ] {
             assert!(matches!(
                 tracker.prepare(method, params, &utf16),
@@ -401,13 +409,16 @@ mod tests {
 
         assert_eq!(
             tracker
-                .check_request("textDocument/diagnostic", &params)
+                .check_request(LspRequestMethod::TextDocumentDiagnostic, &params)
                 .unwrap(),
             Some(uri("file:///a.json"))
         );
         assert_eq!(
             tracker
-                .check_request("textDocument/diagnostic", &serde_json::json!(5))
+                .check_request(
+                    LspRequestMethod::TextDocumentDiagnostic,
+                    &serde_json::json!(5)
+                )
                 .unwrap(),
             None
         );

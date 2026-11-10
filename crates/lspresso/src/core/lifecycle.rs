@@ -21,14 +21,14 @@ enum Lifecycle {
 enum RequestKind {
     Initialize,
     Shutdown,
-    Generic { method: &'static str },
+    Generic { method: LspRequestMethod<'static> },
 }
 
 impl RequestKind {
-    const fn method_name(self) -> &'static str {
+    const fn method(self) -> LspRequestMethod<'static> {
         match self {
-            Self::Initialize => InitializeRequest::METHOD.as_str(),
-            Self::Shutdown => ShutdownRequest::METHOD.as_str(),
+            Self::Initialize => InitializeRequest::METHOD,
+            Self::Shutdown => ShutdownRequest::METHOD,
             Self::Generic { method } => method,
         }
     }
@@ -113,7 +113,7 @@ impl ClientState {
             .insert(request_id.clone(), Pending::new(kind, now, timeout));
         let message = Message::Request(lsp_server::Request::new(
             request_id.clone(),
-            kind.method_name().to_owned(),
+            kind.method().as_str().to_owned(),
             params,
         ));
         (request_id, message)
@@ -135,7 +135,7 @@ impl ClientState {
 
     pub fn start_generic(
         &mut self,
-        method: &'static str,
+        method: LspRequestMethod<'static>,
         params: serde_json::Value,
         now: Instant,
         timeout: Duration,
@@ -213,7 +213,7 @@ impl ClientState {
                 Err(ErrorKind::Response {
                     code: error.code,
                     message: error.message.clone(),
-                    method: pending.kind.method_name(),
+                    method: pending.kind.method(),
                     id: response.id.clone(),
                     data: error.data.clone(),
                 }
@@ -249,7 +249,7 @@ impl ClientState {
                 Some(Effect::Resolved(
                     id.clone(),
                     Err(ErrorKind::ResponseTimeout {
-                        method: pending.kind.method_name(),
+                        method: pending.kind.method(),
                         id: id.clone(),
                         after_ms: elapsed_ms(pending.started_at, now),
                     }
@@ -397,7 +397,7 @@ mod tests {
         let mut state = ClientState::default();
         let err = state
             .start_generic(
-                "textDocument/formatting",
+                LspRequestMethod::TextDocumentFormatting,
                 serde_json::json!({}),
                 Instant::now(),
                 DEFAULT_TIMEOUT,
@@ -414,7 +414,7 @@ mod tests {
 
         let (id, _) = state
             .start_generic(
-                "textDocument/formatting",
+                LspRequestMethod::TextDocumentFormatting,
                 serde_json::json!({}),
                 now,
                 DEFAULT_TIMEOUT,
@@ -425,7 +425,7 @@ mod tests {
 
         state
             .start_generic(
-                "textDocument/formatting",
+                LspRequestMethod::TextDocumentFormatting,
                 serde_json::json!({}),
                 now,
                 DEFAULT_TIMEOUT,
@@ -513,24 +513,31 @@ mod tests {
 
     #[test]
     fn timeouts_name_the_method_that_timed_out() {
-        fn timed_out_method(state: &mut ClientState, id: &RequestId, now: Instant) -> &'static str {
+        fn timed_out_method(
+            state: &mut ClientState,
+            id: &RequestId,
+            now: Instant,
+        ) -> LspRequestMethod<'static> {
             let err = resolved_result(state.expire_timed_out_requests(now), id).unwrap_err();
             let ErrorKind::ResponseTimeout { method, .. } = err.kind() else {
                 panic!("expected a timeout: {err:?}");
             };
-            method
+            *method
         }
         let mut state = ClientState::default();
         let start = Instant::now();
         let later = start + Duration::from_millis(1);
 
         let id = start_initialize_ok(&mut state, start, Duration::ZERO);
-        assert_eq!(timed_out_method(&mut state, &id, later), "initialize");
+        assert_eq!(
+            timed_out_method(&mut state, &id, later),
+            LspRequestMethod::Initialize
+        );
 
         initialized(&mut state, later);
         let (id, _) = state
             .start_generic(
-                "textDocument/formatting",
+                LspRequestMethod::TextDocumentFormatting,
                 serde_json::json!({}),
                 later,
                 Duration::ZERO,
@@ -538,11 +545,14 @@ mod tests {
             .unwrap();
         assert_eq!(
             timed_out_method(&mut state, &id, later),
-            "textDocument/formatting"
+            LspRequestMethod::TextDocumentFormatting
         );
 
         let id = start_shutdown_ok(&mut state, later, Duration::ZERO);
-        assert_eq!(timed_out_method(&mut state, &id, later), "shutdown");
+        assert_eq!(
+            timed_out_method(&mut state, &id, later),
+            LspRequestMethod::Shutdown
+        );
     }
 
     #[test]
@@ -554,7 +564,7 @@ mod tests {
         initialized(&mut state, start);
         let (late, _) = state
             .start_generic(
-                "a",
+                LspRequestMethod::TextDocumentHover,
                 serde_json::Value::Null,
                 start,
                 Duration::from_millis(30),
@@ -562,7 +572,7 @@ mod tests {
             .unwrap();
         state
             .start_generic(
-                "b",
+                LspRequestMethod::TextDocumentCompletion,
                 serde_json::Value::Null,
                 start,
                 Duration::from_millis(10),
