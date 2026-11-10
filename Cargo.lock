@@ -1233,8 +1233,6 @@ dependencies = [
  "proptest",
  "rstest",
  "rstest_reuse",
- "serde",
- "serde_json",
  "simdutf8",
 ]
 
