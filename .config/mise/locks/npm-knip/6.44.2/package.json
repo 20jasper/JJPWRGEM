@@ -2,6 +2,6 @@
   "name": "mise-npm-install",
   "private": true,
   "dependencies": {
-    "knip": "6.44.1"
+    "knip": "6.44.2"
   }
 }
