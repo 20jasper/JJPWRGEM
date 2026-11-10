@@ -28,8 +28,8 @@ run = [
 
 [tasks.readmes.tools]
 "github:orium/cargo-rdme" = "2.2"
-"github:bearcove/tracey" = "1.3.0"
-"npm:oxfmt" = "0.75.0"
+"github:bearcove/tracey" = "v1.4.0"
+"npm:oxfmt" = "0.77.0"
 
 [tasks."readmes-check"]
 description = "Verify markdown files match generated templates"
@@ -41,5 +41,5 @@ run = [
 
 [tasks."readmes-check".tools]
 "github:orium/cargo-rdme" = "2.2"
-"github:bearcove/tracey" = "1.3.0"
-"npm:oxfmt" = "0.75.0"
+"github:bearcove/tracey" = "v1.4.0"
+"npm:oxfmt" = "0.77.0"
