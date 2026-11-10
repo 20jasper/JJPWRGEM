@@ -282,7 +282,6 @@ impl Client {
         })
     }
 
-    /// Every notification goes out here. State updates only after the send.
     fn send_notification<N: Notification>(&mut self, params: N::Params) -> Result<()> {
         let notification = notification::<N>(params);
         let commit = self.docs.prepare(
