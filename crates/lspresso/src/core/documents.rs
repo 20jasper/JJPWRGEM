@@ -363,11 +363,105 @@ mod tests {
             "textDocument/didOpen",
             "textDocument/didChange",
             "textDocument/didClose",
+            "textDocument/didSave",
+            "textDocument/willSave",
         ] {
             let commit = tracker
                 .prepare(method, &junk, &PositionEncodingKind::UTF16)
                 .unwrap();
             assert_eq!(commit, Commit::Nothing);
         }
+    }
+
+    #[test]
+    fn change_and_close_need_an_open_document() {
+        let tracker = DocumentTracker::default();
+        let utf16 = PositionEncodingKind::UTF16;
+        let change = serde_json::json!({
+            "textDocument": { "uri": "file:///a.json", "version": 2 },
+            "contentChanges": [{ "text": "x" }]
+        });
+        let close = serde_json::json!({ "textDocument": { "uri": "file:///a.json" } });
+
+        for (method, params) in [
+            ("textDocument/didChange", &change),
+            ("textDocument/didClose", &close),
+        ] {
+            assert!(matches!(
+                tracker.prepare(method, params, &utf16),
+                Err(err) if matches!(err.kind(), ErrorKind::NotOpen { .. })
+            ));
+        }
+    }
+
+    #[test]
+    fn a_diagnostic_request_names_the_uri_to_record_for() {
+        let tracker = DocumentTracker::default();
+        let params = serde_json::json!({ "textDocument": { "uri": "file:///a.json" } });
+
+        assert_eq!(
+            tracker
+                .check_request("textDocument/diagnostic", &params)
+                .unwrap(),
+            Some(uri("file:///a.json"))
+        );
+        assert_eq!(
+            tracker
+                .check_request("textDocument/diagnostic", &serde_json::json!(5))
+                .unwrap(),
+            None
+        );
+    }
+
+    fn full_report(result_id: &str, message: &str) -> Value {
+        serde_json::json!({
+            "kind": "full",
+            "resultId": result_id,
+            "items": [{
+                "range": {
+                    "start": { "line": 0, "character": 0 },
+                    "end": { "line": 0, "character": 1 }
+                },
+                "message": message
+            }]
+        })
+    }
+
+    #[test]
+    fn an_unchanged_report_keeps_the_items_of_the_last_full_one() {
+        let mut tracker = DocumentTracker::default();
+        let a = uri("file:///a.json");
+        tracker.mark_open(a.clone(), 1, "{}".to_owned());
+
+        tracker.record_pulled(&a, &full_report("r1", "boom"));
+        assert_eq!(
+            tracker.previous_result_id(&a).unwrap().as_deref(),
+            Some("r1")
+        );
+
+        tracker.record_pulled(
+            &a,
+            &serde_json::json!({ "kind": "unchanged", "resultId": "r2" }),
+        );
+        assert_eq!(
+            tracker.previous_result_id(&a).unwrap().as_deref(),
+            Some("r2")
+        );
+        let items = tracker.pulled_items(&a).unwrap();
+        assert_eq!(items.len(), 1);
+        assert_eq!(items[0].message, "boom".into());
+    }
+
+    #[test]
+    fn a_report_for_a_uri_that_is_not_open_is_dropped() {
+        let mut tracker = DocumentTracker::default();
+        let a = uri("file:///a.json");
+
+        tracker.record_pulled(&a, &full_report("r1", "boom"));
+        assert!(tracker.pulled_items(&a).is_err());
+
+        tracker.mark_open(a.clone(), 1, "{}".to_owned());
+        tracker.record_pulled(&a, &serde_json::json!(5));
+        assert_eq!(tracker.previous_result_id(&a).unwrap(), None);
     }
 }
