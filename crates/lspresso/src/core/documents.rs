@@ -129,7 +129,7 @@ impl Commit {
 
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
-struct Scoped {
+struct ParamsWithUri {
     text_document: TextDocumentIdentifier,
 }
 
@@ -175,8 +175,8 @@ impl DocumentTracker {
                     text,
                 })
             }
-            M::TextDocumentDidClose => match decode::<Scoped>(params) {
-                Some(Scoped { text_document }) => {
+            M::TextDocumentDidClose => match decode::<ParamsWithUri>(params) {
+                Some(ParamsWithUri { text_document }) => {
                     self.require_open(&text_document.uri)?;
                     Ok(Commit::Close {
                         uri: text_document.uri,
@@ -185,7 +185,7 @@ impl DocumentTracker {
                 None => Ok(Commit::Nothing),
             },
             M::TextDocumentDidSave | M::TextDocumentWillSave => {
-                self.require_open_scoped(params).map(|()| Commit::Nothing)
+                self.require_open_params(params).map(|()| Commit::Nothing)
             }
             _ => Ok(Commit::Nothing),
         }
@@ -196,10 +196,10 @@ impl DocumentTracker {
     pub(crate) fn check_request(&self, method: &str, params: &Value) -> crate::Result<Option<Uri>> {
         match LspRequestMethod::from(method) {
             LspRequestMethod::TextDocumentWillSaveWaitUntil => {
-                self.require_open_scoped(params).map(|()| None)
+                self.require_open_params(params).map(|()| None)
             }
             LspRequestMethod::TextDocumentDiagnostic => {
-                Ok(decode::<Scoped>(params).map(|scoped| scoped.text_document.uri))
+                Ok(decode::<ParamsWithUri>(params).map(|params| params.text_document.uri))
             }
             _ => Ok(None),
         }
@@ -215,8 +215,8 @@ impl DocumentTracker {
         }
     }
 
-    fn require_open_scoped(&self, params: &Value) -> crate::Result<()> {
-        decode::<Scoped>(params).map_or(Ok(()), |s| self.require_open(&s.text_document.uri))
+    fn require_open_params(&self, params: &Value) -> crate::Result<()> {
+        decode::<ParamsWithUri>(params).map_or(Ok(()), |s| self.require_open(&s.text_document.uri))
     }
 
     pub(crate) fn commit(&mut self, commit: Commit) {
@@ -343,21 +343,21 @@ mod tests {
     fn save_and_will_save_wait_until_need_an_open_document() {
         let tracker = DocumentTracker::default();
         let utf16 = PositionEncodingKind::UTF16;
-        let scoped = serde_json::json!({ "textDocument": { "uri": "file:///a.json" } });
+        let params = serde_json::json!({ "textDocument": { "uri": "file:///a.json" } });
 
         assert!(
             tracker
-                .prepare("textDocument/didSave", &scoped, &utf16)
+                .prepare("textDocument/didSave", &params, &utf16)
                 .is_err()
         );
         assert!(
             tracker
-                .check_request("textDocument/willSaveWaitUntil", &scoped)
+                .check_request("textDocument/willSaveWaitUntil", &params)
                 .is_err()
         );
         assert!(
             tracker
-                .check_request("textDocument/formatting", &scoped)
+                .check_request("textDocument/formatting", &params)
                 .is_ok()
         );
     }
