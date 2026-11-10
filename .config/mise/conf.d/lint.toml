@@ -31,6 +31,7 @@ run = [
 [tasks.lint]
 env = { RUSTFLAGS = "-Dwarnings" }
 run = [
+  "! git grep -n 'gen_lsp_types::{' -- '*.rs'",
   "cargo clippy -q --all-targets --all-features --workspace",
   "pnpm --filter jjpwrgem-vscode run check-types",
   "knip --workspace npm-packages/jjpwrgem-vscode",

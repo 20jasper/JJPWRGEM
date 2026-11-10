@@ -79,6 +79,7 @@ bytes2chars = { workspace = true }
 const_format = { workspace = true }
 
 insta = "=1.49.0"
+lspresso = { path = "crates/lspresso", version = "0.2" }
 proptest = { workspace = true }
 rstest = { workspace = true }
 rstest_reuse = { workspace = true }
