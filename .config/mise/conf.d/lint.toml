@@ -2,7 +2,7 @@
 run = "typos"
 
 [tasks.typos.tools]
-"aqua:crate-ci/typos" = "1.51.1"
+"aqua:crate-ci/typos" = "1.52.0"
 
 [tasks.deny]
 run = "cargo deny check"
@@ -17,7 +17,7 @@ run = [
 ]
 
 [tasks.format.tools]
-"npm:oxfmt" = "0.75.0"
+"npm:oxfmt" = "0.77.0"
 
 [tasks.format-check]
 run = [
@@ -26,7 +26,7 @@ run = [
 ]
 
 [tasks.format-check.tools]
-"npm:oxfmt" = "0.75.0"
+"npm:oxfmt" = "0.77.0"
 
 [tasks.lint]
 env = { RUSTFLAGS = "-Dwarnings" }
@@ -42,7 +42,7 @@ run = [
 actionlint = "1.7.12"
 # actionlint checks workflow run blocks with it when on PATH
 shellcheck = "0.11.0"
-"npm:knip" = "6.44.1"
+"npm:knip" = "6.44.2"
 "aqua:oxc-project/oxc/oxlint" = "1.90.0"
 
 [tasks.vsce-pack-check]
@@ -52,7 +52,7 @@ run = "pnpm --filter jjpwrgem-vscode run vsce:pack"
 run = "knip --workspace npm-packages/jjpwrgem-vscode"
 
 [tasks.knip.tools]
-"npm:knip" = "6.44.1"
+"npm:knip" = "6.44.2"
 
 [tasks.oxlint]
 run = "pnpm run lint"
@@ -88,7 +88,7 @@ description = "Verify spec rules have version bumps for any changed rule text"
 run = "tracey pre-commit"
 
 [tasks.tracey-check.tools]
-"github:bearcove/tracey" = "1.3.0"
+"github:bearcove/tracey" = "v1.4.0"
 
 [tasks.renovate-check]
 run = "renovate-config-validator .github/renovate.json"

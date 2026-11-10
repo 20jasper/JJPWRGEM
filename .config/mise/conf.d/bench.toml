@@ -24,8 +24,8 @@ cargo rdme --workspace-project bytes2chars --force
 [tasks.bench.tools]
 "cargo:cargo-criterion" = "1.1.0"
 "github:orium/cargo-rdme" = "2.2"
-"github:bearcove/tracey" = "1.3.0"
-"npm:oxfmt" = "0.75.0"
+"github:bearcove/tracey" = "v1.4.0"
+"npm:oxfmt" = "0.77.0"
 
 [tasks.bench-json]
 description = "Run the four standard json criterion benches and regenerate readmes"
@@ -39,8 +39,8 @@ run = [
 [tasks.bench-json.tools]
 "cargo:cargo-criterion" = "1.1.0"
 "github:orium/cargo-rdme" = "2.2"
-"github:bearcove/tracey" = "1.3.0"
-"npm:oxfmt" = "0.75.0"
+"github:bearcove/tracey" = "v1.4.0"
+"npm:oxfmt" = "0.77.0"
 
 [tasks.bench-codspeed]
 description = "Build and run all criterion benches via codspeed"
@@ -118,9 +118,9 @@ cargo rdme --workspace-project bytes2chars --force
 '''
 
 [tasks.bench-docker.tools]
-"npm:oxfmt" = "0.75.0"
+"npm:oxfmt" = "0.77.0"
 "github:orium/cargo-rdme" = "2.2"
-"github:bearcove/tracey" = "1.3.0"
+"github:bearcove/tracey" = "v1.4.0"
 
 [tasks.bench-lsp]
 description = "Bench jjp's LSP against other JSON LSPs via lspresso and regenerate benches/lsp/lsp.md"
@@ -137,8 +137,8 @@ cargo xtask generate-readmes
 "cargo:cargo-criterion" = "1.1.0"
 "npm:@t1ckbase/vscode-langservers-extracted" = "2.0.5"
 "github:libkakashi/light-json-lsp" = "0.1.0"
-"github:bearcove/tracey" = "1.3.0"
-"npm:oxfmt" = "0.75.0"
+"github:bearcove/tracey" = "v1.4.0"
+"npm:oxfmt" = "0.77.0"
 "github:orium/cargo-rdme" = "2.2"
 
 [tasks.test-lsp-e2e]
