@@ -10,15 +10,15 @@ use lspresso::{
 };
 
 const TIMEOUT: Duration = Duration::from_secs(5);
-type TestResult = Result<(), Box<dyn Error>>;
+type TestResult<T = ()> = Result<T, Box<dyn Error>>;
 
-fn client(preset: fn() -> ClientCapabilities) -> Result<Client, Box<dyn Error>> {
+fn client(preset: fn() -> ClientCapabilities) -> TestResult<Client> {
     let mut command = Command::new(env!("CARGO_BIN_EXE_jjp"));
     command.arg("lsp");
     Ok(Client::spawn_initialized(command, preset())?.with_timeout(TIMEOUT))
 }
 
-fn open(client: &mut Client, text: &str) -> Result<Uri, Box<dyn Error>> {
+fn open(client: &mut Client, text: &str) -> TestResult<Uri> {
     let uri: Uri = "file:///e2e.json".parse()?;
     client.did_open(uri.clone(), text, LanguageKind::JSON)?;
     Ok(uri)
