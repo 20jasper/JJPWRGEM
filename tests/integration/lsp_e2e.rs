@@ -1,6 +1,6 @@
 use std::{error::Error, process::Command, time::Duration};
 
-use lspresso::{Client, capabilities, gen_lsp_types::*};
+use lspresso::{Client, ErrorKind, capabilities, gen_lsp_types::*};
 
 const TIMEOUT: Duration = Duration::from_secs(5);
 type TestResult<T = ()> = Result<T, Box<dyn Error>>;
@@ -15,6 +15,23 @@ fn open(client: &mut Client, text: &str) -> TestResult<Uri> {
     let uri: Uri = "file:///e2e.json".parse()?;
     client.did_open(uri.clone(), text, LanguageKind::JSON)?;
     Ok(uri)
+}
+
+#[test]
+fn initialize_reports_the_server_and_shutdown_exits_cleanly() -> TestResult {
+    let mut command = Command::new(env!("CARGO_BIN_EXE_jjp"));
+    command.arg("lsp");
+    let mut client = Client::spawn(command)?.with_timeout(TIMEOUT);
+
+    let result = client.initialize(capabilities::vscode::latest())?;
+    assert_eq!(
+        result.server_info.map(|info| info.name).as_deref(),
+        Some("jjpwrgem")
+    );
+
+    client.shutdown()?;
+    assert!(client.wait_for_exit()?.success());
+    Ok(())
 }
 
 #[test]
@@ -40,6 +57,31 @@ fn invalid_json_has_an_error_diagnostic() -> TestResult {
             ..
         }] if source == "jjpwrgem"
     ));
+    Ok(())
+}
+
+#[test]
+fn a_pull_client_is_not_pushed_diagnostics() -> TestResult {
+    let mut client = client(capabilities::vscode::latest)?;
+    assert!(client.supports_pull_diagnostics());
+    let uri = open(&mut client, r#"{"a": }"#)?;
+    assert_eq!(client.diagnostics(&uri)?.len(), 1);
+
+    let mut client = client.with_timeout(Duration::from_millis(200));
+    let err = client.next_diagnostics(&uri).unwrap_err();
+    assert!(
+        matches!(err.kind(), ErrorKind::NotificationTimeout { .. }),
+        "{err:?}"
+    );
+    Ok(())
+}
+
+#[test]
+fn a_client_without_pull_support_is_pushed_diagnostics() -> TestResult {
+    let mut client = client(ClientCapabilities::default)?;
+    let uri = open(&mut client, r#"{"a": }"#)?;
+
+    assert_eq!(client.next_diagnostics(&uri)?.len(), 1);
     Ok(())
 }
 
