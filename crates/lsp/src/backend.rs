@@ -9,7 +9,7 @@ use tower_lsp_server::{Client, LanguageServer, jsonrpc::Result, ls_types::*};
 
 use crate::{
     backend::diagnostics::{build_code_actions, diagnostics_from_error},
-    range::{FULL_DOCUMENT_RANGE, PositionEncoding},
+    range::{FULL_DOCUMENT_RANGE, PositionEncoding, position_to_byte_offset},
 };
 
 const SOURCE: &str = "jjpwrgem";
@@ -32,6 +32,23 @@ fn diagnostics_for(
     match document {
         Ok(_) => vec![],
         Err(e) => diagnostics_from_error(uri, e.source_text(), e, encoding),
+    }
+}
+
+fn apply_change(
+    text: &mut String,
+    change: TextDocumentContentChangeEvent,
+    encoding: PositionEncoding,
+) {
+    let Some(range) = change.range else {
+        *text = change.text;
+        return;
+    };
+
+    let start = position_to_byte_offset(text, range.start, encoding);
+    let end = position_to_byte_offset(text, range.end, encoding);
+    if start <= end && end <= text.len() {
+        text.replace_range(start..end, &change.text);
     }
 }
 
@@ -104,7 +121,7 @@ impl LanguageServer for Backend {
                 text_document_sync: Some(TextDocumentSyncCapability::Options(
                     TextDocumentSyncOptions {
                         open_close: Some(true),
-                        change: Some(TextDocumentSyncKind::FULL),
+                        change: Some(TextDocumentSyncKind::INCREMENTAL),
                         ..Default::default()
                     },
                 )),
@@ -129,14 +146,26 @@ impl LanguageServer for Backend {
     }
 
     async fn did_change(&self, params: DidChangeTextDocumentParams) {
-        let [change] = &*params.content_changes else {
+        let uri = params.text_document.uri;
+        let Some((_, document)) = self.documents.remove(&uri) else {
             self.client
-                .log_message(MessageType::WARNING, "expected exactly one content change")
+                .log_message(
+                    MessageType::WARNING,
+                    format!("received change for unopened document: {uri:?}"),
+                )
                 .await;
             return;
         };
-        self.process_document(params.text_document.uri, change.text.clone())
-            .await;
+
+        let mut text = match document {
+            Ok(document) => document.into_source(),
+            Err(error) => error.into_source_text(),
+        };
+        for change in params.content_changes {
+            apply_change(&mut text, change, self.position_encoding());
+        }
+
+        self.process_document(uri, text).await;
     }
 
     async fn did_close(&self, params: DidCloseTextDocumentParams) {
@@ -249,5 +278,55 @@ mod tests {
         let actions =
             build_code_actions(&dummy_uri(), &parse(r#"{"a": 1}"#), PositionEncoding::Utf16);
         assert_eq!(actions, Vec::new());
+    }
+
+    fn change(range: Option<Range>, text: &str) -> TextDocumentContentChangeEvent {
+        TextDocumentContentChangeEvent {
+            range,
+            range_length: None,
+            text: text.into(),
+        }
+    }
+
+    fn range(start: (u32, u32), end: (u32, u32)) -> Range {
+        Range {
+            start: Position {
+                line: start.0,
+                character: start.1,
+            },
+            end: Position {
+                line: end.0,
+                character: end.1,
+            },
+        }
+    }
+
+    #[test]
+    fn applies_full_text_change() {
+        let mut text = r#"{"a":1}"#.to_owned();
+        apply_change(&mut text, change(None, "true"), PositionEncoding::Utf16);
+        assert_eq!(text, "true");
+    }
+
+    #[test]
+    fn applies_incremental_text_change() {
+        let mut text = r#"{"a":1}"#.to_owned();
+        apply_change(
+            &mut text,
+            change(Some(range((0, 5), (0, 6))), "2"),
+            PositionEncoding::Utf16,
+        );
+        assert_eq!(text, r#"{"a":2}"#);
+    }
+
+    #[test]
+    fn applies_incremental_change_with_utf16_surrogate_pair() {
+        let mut text = "\"😀\"".to_owned();
+        apply_change(
+            &mut text,
+            change(Some(range((0, 1), (0, 3))), "x"),
+            PositionEncoding::Utf16,
+        );
+        assert_eq!(text, "\"x\"");
     }
 }

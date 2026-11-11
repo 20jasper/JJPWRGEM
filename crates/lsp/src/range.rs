@@ -52,6 +52,42 @@ pub fn span_to_range(
     }
 }
 
+/// Convert an LSP position to a byte offset.
+///
+/// Positions past the end of the document or line clamp to the nearest
+/// boundary, which is what LSP clients expect for a full-document edit.
+pub fn position_to_byte_offset(
+    text: &str,
+    position: Position,
+    encoding: PositionEncoding,
+) -> usize {
+    let mut line_start = 0;
+    for _ in 0..position.line {
+        let Some(newline) = text[line_start..].find('\n') else {
+            return text.len();
+        };
+        line_start += newline + 1;
+    }
+
+    let line_end = text[line_start..]
+        .find('\n')
+        .map_or(text.len(), |offset| line_start + offset);
+    let line = &text[line_start..line_end];
+
+    let mut units = 0;
+    for (offset, character) in line.char_indices() {
+        if units >= position.character as usize {
+            return line_start + offset;
+        }
+        units += match encoding {
+            PositionEncoding::Utf8 => character.len_utf8(),
+            PositionEncoding::Utf16 => character.len_utf16(),
+        };
+    }
+
+    line_end
+}
+
 #[cfg(test)]
 mod tests {
     use rstest::rstest;
@@ -105,6 +141,56 @@ mod tests {
         assert_eq!(
             byte_offset_to_position(text, offset, PositionEncoding::Utf16),
             Position { line, character }
+        );
+    }
+
+    #[rstest]
+    #[case("hello", Position { line: 0, character: 0 }, 0)]
+    #[case("hello", Position { line: 0, character: 3 }, 3)]
+    #[case("hello\nworld", Position { line: 1, character: 0 }, 6)]
+    #[case("hello\nworld", Position { line: 1, character: 2 }, 8)]
+    #[case("hi", Position { line: 0, character: 100 }, 2)]
+    #[case("hi", Position { line: 100, character: 0 }, 2)]
+    // é = 2 UTF-8 bytes
+    #[case("hé", Position { line: 0, character: 1 }, 1)]
+    #[case("hé", Position { line: 0, character: 2 }, 3)]
+    // 😀 = 4 UTF-8 bytes
+    #[case("a😀b", Position { line: 0, character: 1 }, 1)]
+    #[case("a😀b", Position { line: 0, character: 5 }, 5)]
+    #[case("a😀b", Position { line: 0, character: 6 }, 6)]
+    fn position_to_byte_offset_utf8(
+        #[case] text: &str,
+        #[case] position: Position,
+        #[case] expected: usize,
+    ) {
+        assert_eq!(
+            position_to_byte_offset(text, position, PositionEncoding::Utf8),
+            expected
+        );
+    }
+
+    #[rstest]
+    #[case("hello", Position { line: 0, character: 0 }, 0)]
+    #[case("hello", Position { line: 0, character: 3 }, 3)]
+    #[case("hello\nworld", Position { line: 1, character: 0 }, 6)]
+    #[case("hello\nworld", Position { line: 1, character: 2 }, 8)]
+    #[case("hi", Position { line: 0, character: 100 }, 2)]
+    #[case("hi", Position { line: 100, character: 0 }, 2)]
+    // é = 1 UTF-16 code unit, 2 UTF-8 bytes
+    #[case("hé", Position { line: 0, character: 1 }, 1)]
+    #[case("hé", Position { line: 0, character: 2 }, 3)]
+    // 😀 = 2 UTF-16 code units, 4 UTF-8 bytes
+    #[case("a😀b", Position { line: 0, character: 1 }, 1)]
+    #[case("a😀b", Position { line: 0, character: 3 }, 5)]
+    #[case("a😀b", Position { line: 0, character: 4 }, 6)]
+    fn position_to_byte_offset_utf16(
+        #[case] text: &str,
+        #[case] position: Position,
+        #[case] expected: usize,
+    ) {
+        assert_eq!(
+            position_to_byte_offset(text, position, PositionEncoding::Utf16),
+            expected
         );
     }
 }

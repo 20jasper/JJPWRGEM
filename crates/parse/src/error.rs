@@ -165,6 +165,12 @@ impl Error {
         &self.source_text
     }
 
+    /// Consume the error and return the source text it was built from.
+    #[must_use]
+    pub fn into_source_text(self) -> String {
+        self.0.source_text
+    }
+
     /// byte range
     pub fn range(&self) -> &Range<usize> {
         &self.0.range
