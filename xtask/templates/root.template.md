@@ -14,7 +14,7 @@ An RFC 8259 compliant JSON language server and formatter!
 
 - Rich errors with context, descriptions, and patches
 - {{LSP_PERF_CLAIM}}
-- Parses and pretty prints a 1.7MB file in ~11ms — [benchmarks](./benches/BENCHMARKS.md)
+- Parses and pretty prints a 1.7MB file in ~7ms — [benchmarks](./benches/BENCHMARKS.md)
 
 ![animation of JJPWRGEM's LSP. file changes are made quickly and feedback is shown quickly. code actions fix common issues like missing colons](./crates/lsp/lsp-demo.gif)
 
