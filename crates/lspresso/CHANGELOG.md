@@ -1,5 +1,11 @@
 # lspresso
 
+## 0.2.1 — 2026-11-10
+
+### Changed
+
+- [7ae30cd](https://github.com/20jasper/JJPWRGEM/commit/7ae30cd260b827d14f493cadf55208385317571e) improve test failure ergonomics by display formatting errors instead of debug printing
+
 ## 0.2.0 — 2026-11-10
 
 ### Added
