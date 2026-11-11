@@ -32,12 +32,16 @@ fn document_symbols_limited(
     symbols.children(document.root()).unwrap_or_default()
 }
 
-fn child_values(value: &Value) -> Box<dyn Iterator<Item = &Value> + '_> {
-    match value {
-        Value::Object(_, entries) => Box::new(entries.iter().map(|(_, value)| value)),
-        Value::Array(_, items) => Box::new(items.iter()),
-        _ => Box::new(std::iter::empty()),
-    }
+fn child_values(value: &Value) -> impl Iterator<Item = &Value> {
+    let (entries, items) = match value {
+        Value::Object(_, entries) => (Some(entries.iter().map(|(_, value)| value)), None),
+        Value::Array(_, items) => (None, Some(items.iter())),
+        _ => (None, None),
+    };
+    entries
+        .into_iter()
+        .flatten()
+        .chain(items.into_iter().flatten())
 }
 
 fn kept_children(root: &Value, limit: usize) -> HashMap<*const Value, usize> {
