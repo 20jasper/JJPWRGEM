@@ -1,6 +1,6 @@
 use std::{error::Error, process::Command, time::Duration};
 
-use lspresso::{Client, capabilities, gen_lsp_types::*};
+use lspresso::{Client, ErrorKind, capabilities, gen_lsp_types::*};
 
 const TIMEOUT: Duration = Duration::from_secs(5);
 type TestResult<T = ()> = Result<T, Box<dyn Error>>;
@@ -40,6 +40,31 @@ fn invalid_json_has_an_error_diagnostic() -> TestResult {
             ..
         }] if source == "jjpwrgem"
     ));
+    Ok(())
+}
+
+#[test]
+fn a_pull_client_is_not_pushed_diagnostics() -> TestResult {
+    let mut client = client(capabilities::vscode::latest)?;
+    assert!(client.supports_pull_diagnostics());
+    let uri = open(&mut client, r#"{"a": }"#)?;
+    assert_eq!(client.diagnostics(&uri)?.len(), 1);
+
+    let mut client = client.with_timeout(Duration::from_millis(200));
+    let err = client.next_diagnostics(&uri).unwrap_err();
+    assert!(
+        matches!(err.kind(), ErrorKind::NotificationTimeout { .. }),
+        "{err:?}"
+    );
+    Ok(())
+}
+
+#[test]
+fn a_client_without_pull_support_is_pushed_diagnostics() -> TestResult {
+    let mut client = client(ClientCapabilities::default)?;
+    let uri = open(&mut client, r#"{"a": }"#)?;
+
+    assert_eq!(client.next_diagnostics(&uri)?.len(), 1);
     Ok(())
 }
 
