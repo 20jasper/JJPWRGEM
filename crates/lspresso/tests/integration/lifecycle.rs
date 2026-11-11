@@ -259,3 +259,43 @@ fn initialize_against_the_real_server() {
     let status = client.wait_for_exit().unwrap();
     assert!(status.success());
 }
+
+const INVALID_JSON: &str = r#"{"a": }"#;
+
+#[test]
+#[ignore = "requires a separately built target/dist/jjp or JJP_BIN"]
+fn the_real_server_answers_pulls_and_does_not_push_to_a_pull_client() {
+    let mut client = spawn_real_server();
+    client
+        .initialize(lspresso::capabilities::vscode::latest())
+        .unwrap();
+    assert!(client.supports_pull_diagnostics());
+    let uri = a_json();
+    client
+        .did_open(uri.clone(), INVALID_JSON, LanguageKind::JSON)
+        .unwrap();
+
+    let report = serde_json::to_value(client.diagnostic(&uri).unwrap()).unwrap();
+    assert_eq!(report["kind"], "full", "{report}");
+    assert_eq!(report["items"].as_array().unwrap().len(), 1, "{report}");
+    assert_eq!(report["items"][0]["source"], "jjpwrgem", "{report}");
+
+    let mut client = client.with_timeout(Duration::from_millis(200));
+    assert_err_kind!(
+        client.next_diagnostics(&uri),
+        ErrorKind::NotificationTimeout { .. }
+    );
+}
+
+#[test]
+#[ignore = "requires a separately built target/dist/jjp or JJP_BIN"]
+fn the_real_server_pushes_to_a_client_without_pull_support() {
+    let mut client = spawn_real_server();
+    client.initialize(ClientCapabilities::default()).unwrap();
+    let uri = a_json();
+    client
+        .did_open(uri.clone(), INVALID_JSON, LanguageKind::JSON)
+        .unwrap();
+
+    assert_eq!(client.next_diagnostics(&uri).unwrap().len(), 1);
+}
