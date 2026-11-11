@@ -8,7 +8,10 @@ use jjpwrgem_parse::{
 use tower_lsp_server::{Client, LanguageServer, jsonrpc::Result, ls_types::*};
 
 use crate::{
-    backend::diagnostics::{build_code_actions, diagnostics_from_error},
+    backend::{
+        diagnostics::{build_code_actions, diagnostics_from_error},
+        symbols::document_symbols,
+    },
     range::{FULL_DOCUMENT_RANGE, PositionEncoding, position_to_byte_offset_indexed},
 };
 
@@ -23,6 +26,7 @@ pub struct Backend {
 }
 
 mod diagnostics;
+mod symbols;
 
 fn diagnostics_for(
     uri: &Uri,
@@ -131,6 +135,7 @@ impl LanguageServer for Backend {
                 )),
                 document_formatting_provider: Some(OneOf::Left(true)),
                 code_action_provider: Some(CodeActionProviderCapability::Simple(true)),
+                document_symbol_provider: Some(OneOf::Left(true)),
                 diagnostic_provider: Some(DiagnosticServerCapabilities::Options(
                     DiagnosticOptions {
                         identifier: Some(SOURCE.into()),
@@ -229,6 +234,22 @@ impl LanguageServer for Backend {
             &document,
             self.position_encoding(),
         )))
+    }
+
+    async fn document_symbol(
+        &self,
+        params: DocumentSymbolParams,
+    ) -> Result<Option<DocumentSymbolResponse>> {
+        let Some(document) = self.documents.get(&params.text_document.uri) else {
+            return Ok(None);
+        };
+        let Ok(document) = &*document else {
+            return Ok(None);
+        };
+        Ok(Some(DocumentSymbolResponse::Nested(document_symbols(
+            document,
+            self.position_encoding(),
+        ))))
     }
 
     async fn shutdown(&self) -> Result<()> {

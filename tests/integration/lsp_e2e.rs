@@ -206,3 +206,90 @@ fn code_action_fixes_a_trailing_comma() -> TestResult {
     assert_eq!(client.diagnostics(&uri)?, []);
     Ok(())
 }
+
+fn symbols(client: &mut Client, uri: &Uri) -> TestResult<Vec<DocumentSymbol>> {
+    match client.document_symbol(uri)? {
+        Some(DocumentSymbolResponse::DocumentSymbolList(symbols)) => Ok(symbols),
+        Some(DocumentSymbolResponse::SymbolInformationList(symbols)) if symbols.is_empty() => {
+            Ok(vec![])
+        }
+        other => Err(format!("expected nested document symbols: {other:?}").into()),
+    }
+}
+
+fn range(start: (u32, u32), end: (u32, u32)) -> Range {
+    Range::new(Position::new(start.0, start.1), Position::new(end.0, end.1))
+}
+
+#[test]
+fn document_symbols_mirror_the_document_tree() -> TestResult {
+    let mut client = client(capabilities::vscode::latest)?;
+    let uri = open(&mut client, "{\n  \"a\": [1, \"x\"],\n  \"\": null\n}")?;
+
+    let symbols = symbols(&mut client, &uri)?;
+    let [a, empty] = symbols.as_slice() else {
+        panic!("expected two top level symbols: {symbols:?}");
+    };
+
+    assert_eq!(a.name, "a");
+    assert_eq!(a.kind, SymbolKind::Array);
+    assert_eq!(a.detail, None);
+    assert_eq!(a.selection_range, range((1, 2), (1, 5)));
+    assert_eq!(a.range, range((1, 2), (1, 15)));
+
+    let children = a.children.as_deref().expect("expected array children");
+    let [number, string] = children else {
+        panic!("expected two array children: {children:?}");
+    };
+    assert_eq!(number.name, "0");
+    assert_eq!(number.kind, SymbolKind::Number);
+    assert_eq!(number.detail.as_deref(), Some("1"));
+    assert_eq!(number.range, range((1, 8), (1, 9)));
+    assert_eq!(number.children, None);
+    assert_eq!(string.name, "1");
+    assert_eq!(string.kind, SymbolKind::String);
+    assert_eq!(string.detail.as_deref(), Some("x"));
+    assert_eq!(string.range, range((1, 11), (1, 14)));
+
+    assert_eq!(empty.name, "\"\"");
+    assert_eq!(empty.kind, SymbolKind::Null);
+    assert_eq!(empty.detail.as_deref(), Some("null"));
+    Ok(())
+}
+
+#[test]
+fn document_symbols_use_the_negotiated_encoding() -> TestResult {
+    let text = r#"{"😀": {"a": 1}}"#;
+
+    let mut utf16 = client(capabilities::vscode::latest)?;
+    let utf16_uri = open(&mut utf16, text)?;
+    let utf16 = symbols(&mut utf16, &utf16_uri)?;
+
+    let mut utf8 = client(capabilities::helix::latest)?;
+    let utf8_uri = open(&mut utf8, text)?;
+    let utf8 = symbols(&mut utf8, &utf8_uri)?;
+
+    assert_eq!(utf16[0].selection_range, range((0, 1), (0, 5)));
+    assert_eq!(utf8[0].selection_range, range((0, 1), (0, 7)));
+    assert_eq!(utf16[0].range, range((0, 1), (0, 15)));
+    assert_eq!(utf8[0].range, range((0, 1), (0, 17)));
+    Ok(())
+}
+
+#[test]
+fn document_symbols_are_empty_for_a_scalar_root() -> TestResult {
+    let mut client = client(capabilities::vscode::latest)?;
+    let uri = open(&mut client, "1")?;
+
+    assert_eq!(symbols(&mut client, &uri)?, []);
+    Ok(())
+}
+
+#[test]
+fn document_symbols_are_none_for_invalid_json() -> TestResult {
+    let mut client = client(capabilities::vscode::latest)?;
+    let uri = open(&mut client, r#"{"a": }"#)?;
+
+    assert_eq!(client.document_symbol(&uri)?, None);
+    Ok(())
+}

@@ -1,4 +1,4 @@
-use line_index::LineIndex;
+use line_index::{LineIndex, TextSize, WideEncoding};
 use tower_lsp_server::ls_types::*;
 
 pub(crate) const FULL_DOCUMENT_RANGE: Range = Range {
@@ -50,6 +50,42 @@ pub fn span_to_range(
     Range {
         start: byte_offset_to_position(text, span.start, encoding),
         end: byte_offset_to_position(text, span.end, encoding),
+    }
+}
+
+pub fn span_to_range_indexed(
+    index: &LineIndex,
+    span: std::range::Range<usize>,
+    encoding: PositionEncoding,
+) -> Range {
+    Range {
+        start: byte_offset_to_position_indexed(index, span.start, encoding),
+        end: byte_offset_to_position_indexed(index, span.end, encoding),
+    }
+}
+
+fn byte_offset_to_position_indexed(
+    index: &LineIndex,
+    offset: usize,
+    encoding: PositionEncoding,
+) -> Position {
+    let utf8 = index.line_col(TextSize::new(
+        u32::try_from(offset).expect(FILE_TOO_LARGE_PANIC_MSG),
+    ));
+    match encoding {
+        PositionEncoding::Utf8 => Position {
+            line: utf8.line,
+            character: utf8.col,
+        },
+        PositionEncoding::Utf16 => {
+            let utf16 = index
+                .to_wide(WideEncoding::Utf16, utf8)
+                .expect("offset should be on a character boundary");
+            Position {
+                line: utf16.line,
+                character: utf16.col,
+            }
+        }
     }
 }
 
