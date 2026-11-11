@@ -44,6 +44,20 @@ impl Client {
         self.protocol_did_change(change(uri, version, vec![whole_document(text.into())]))
     }
 
+    pub fn did_change_incremental(
+        &mut self,
+        uri: &Uri,
+        range: Range,
+        text: impl Into<String>,
+    ) -> Result<()> {
+        let (version, _) = self.next_document_version_and_text(uri)?;
+        self.protocol_did_change(change(
+            uri,
+            version,
+            vec![TextDocumentContentChangePartial::new(range, None, text.into()).into()],
+        ))
+    }
+
     /// Sends edits as incremental or whole-document changes.
     pub fn did_change(&mut self, uri: &Uri, edits: &[TextEdit]) -> Result<()> {
         if edits.is_empty() {

@@ -1,3 +1,4 @@
+use line_index::LineIndex;
 use tower_lsp_server::ls_types::*;
 
 pub(crate) const FULL_DOCUMENT_RANGE: Range = Range {
@@ -52,22 +53,28 @@ pub fn span_to_range(
     }
 }
 
-pub fn position_to_byte_offset(
+#[cfg(test)]
+fn position_to_byte_offset(text: &str, position: Position, encoding: PositionEncoding) -> usize {
+    position_to_byte_offset_indexed(text, &LineIndex::new(text), position, encoding)
+}
+
+pub fn position_to_byte_offset_indexed(
     text: &str,
+    index: &LineIndex,
     position: Position,
     encoding: PositionEncoding,
 ) -> usize {
-    let mut line_start = 0;
-    for _ in 0..position.line {
-        let Some(newline) = text[line_start..].find('\n') else {
-            return text.len();
-        };
-        line_start += newline + 1;
+    let Some(line_range) = index.line(position.line) else {
+        return text.len();
+    };
+    let line_start = usize::from(line_range.start());
+    let mut line_end = usize::from(line_range.end());
+    if line_end > line_start && text.as_bytes()[line_end - 1] == b'\n' {
+        line_end -= 1;
+        if line_end > line_start && text.as_bytes()[line_end - 1] == b'\r' {
+            line_end -= 1;
+        }
     }
-
-    let line_end = text[line_start..]
-        .find('\n')
-        .map_or(text.len(), |offset| line_start + offset);
     let line = &text[line_start..line_end];
 
     let mut units = 0;

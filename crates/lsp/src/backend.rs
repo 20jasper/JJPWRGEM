@@ -9,7 +9,7 @@ use tower_lsp_server::{Client, LanguageServer, jsonrpc::Result, ls_types::*};
 
 use crate::{
     backend::diagnostics::{build_code_actions, diagnostics_from_error},
-    range::{FULL_DOCUMENT_RANGE, PositionEncoding, position_to_byte_offset},
+    range::{FULL_DOCUMENT_RANGE, PositionEncoding, position_to_byte_offset_indexed},
 };
 
 const SOURCE: &str = "jjpwrgem";
@@ -39,14 +39,15 @@ fn apply_change(
     text: &mut String,
     change: TextDocumentContentChangeEvent,
     encoding: PositionEncoding,
+    index: &line_index::LineIndex,
 ) -> bool {
     let Some(range) = change.range else {
         *text = change.text;
         return true;
     };
 
-    let start = position_to_byte_offset(text, range.start, encoding);
-    let end = position_to_byte_offset(text, range.end, encoding);
+    let start = position_to_byte_offset_indexed(text, index, range.start, encoding);
+    let end = position_to_byte_offset_indexed(text, index, range.end, encoding);
     if start > end || end > text.len() {
         return false;
     }
@@ -165,7 +166,8 @@ impl LanguageServer for Backend {
             Err(error) => error.into_source_text(),
         };
         for change in params.content_changes {
-            if !apply_change(&mut text, change, self.position_encoding()) {
+            let index = line_index::LineIndex::new(&text);
+            if !apply_change(&mut text, change, self.position_encoding(), &index) {
                 self.client
                     .log_message(MessageType::WARNING, "ignored invalid content change")
                     .await;
@@ -311,17 +313,25 @@ mod tests {
     #[test]
     fn applies_full_text_change() {
         let mut text = r#"{"a":1}"#.to_owned();
-        apply_change(&mut text, change(None, "true"), PositionEncoding::Utf16);
+        let index = line_index::LineIndex::new(&text);
+        apply_change(
+            &mut text,
+            change(None, "true"),
+            PositionEncoding::Utf16,
+            &index,
+        );
         assert_eq!(text, "true");
     }
 
     #[test]
     fn applies_incremental_text_change() {
         let mut text = r#"{"a":1}"#.to_owned();
+        let index = line_index::LineIndex::new(&text);
         apply_change(
             &mut text,
             change(Some(range((0, 5), (0, 6))), "2"),
             PositionEncoding::Utf16,
+            &index,
         );
         assert_eq!(text, r#"{"a":2}"#);
     }
@@ -329,10 +339,12 @@ mod tests {
     #[test]
     fn applies_incremental_change_with_utf16_surrogate_pair() {
         let mut text = "\"😀\"".to_owned();
+        let index = line_index::LineIndex::new(&text);
         apply_change(
             &mut text,
             change(Some(range((0, 1), (0, 3))), "x"),
             PositionEncoding::Utf16,
+            &index,
         );
         assert_eq!(text, "\"x\"");
     }
@@ -340,10 +352,12 @@ mod tests {
     #[test]
     fn applies_insertion_at_end() {
         let mut text = r#"{"a":1}"#.to_owned();
+        let index = line_index::LineIndex::new(&text);
         assert!(apply_change(
             &mut text,
             change(Some(range((0, 7), (0, 7))), ","),
             PositionEncoding::Utf16,
+            &index,
         ));
         assert_eq!(text, r#"{"a":1},"#);
     }
@@ -351,10 +365,12 @@ mod tests {
     #[test]
     fn ignores_reversed_range() {
         let mut text = r#"{"a":1}"#.to_owned();
+        let index = line_index::LineIndex::new(&text);
         assert!(!apply_change(
             &mut text,
             change(Some(range((0, 5), (0, 2))), "x"),
             PositionEncoding::Utf16,
+            &index,
         ));
         assert_eq!(text, r#"{"a":1}"#);
     }
