@@ -39,17 +39,20 @@ fn apply_change(
     text: &mut String,
     change: TextDocumentContentChangeEvent,
     encoding: PositionEncoding,
-) {
+) -> bool {
     let Some(range) = change.range else {
         *text = change.text;
-        return;
+        return true;
     };
 
     let start = position_to_byte_offset(text, range.start, encoding);
     let end = position_to_byte_offset(text, range.end, encoding);
-    if start <= end && end <= text.len() {
-        text.replace_range(start..end, &change.text);
+    if text.get(start..end).is_none() {
+        return false;
     }
+
+    text.replace_range(start..end, &change.text);
+    true
 }
 
 impl Backend {
@@ -162,7 +165,11 @@ impl LanguageServer for Backend {
             Err(error) => error.into_source_text(),
         };
         for change in params.content_changes {
-            apply_change(&mut text, change, self.position_encoding());
+            if !apply_change(&mut text, change, self.position_encoding()) {
+                self.client
+                    .log_message(MessageType::WARNING, "ignored invalid content change")
+                    .await;
+            }
         }
 
         self.process_document(uri, text).await;
@@ -328,5 +335,27 @@ mod tests {
             PositionEncoding::Utf16,
         );
         assert_eq!(text, "\"x\"");
+    }
+
+    #[test]
+    fn applies_insertion_at_end() {
+        let mut text = r#"{"a":1}"#.to_owned();
+        assert!(apply_change(
+            &mut text,
+            change(Some(range((0, 7), (0, 7))), ","),
+            PositionEncoding::Utf16,
+        ));
+        assert_eq!(text, r#"{"a":1},"#);
+    }
+
+    #[test]
+    fn ignores_reversed_range() {
+        let mut text = r#"{"a":1}"#.to_owned();
+        assert!(!apply_change(
+            &mut text,
+            change(Some(range((0, 5), (0, 2))), "x"),
+            PositionEncoding::Utf16,
+        ));
+        assert_eq!(text, r#"{"a":1}"#);
     }
 }
