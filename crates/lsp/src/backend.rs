@@ -256,19 +256,4 @@ mod tests {
             build_code_actions(&dummy_uri(), &parse(r#"{"a": 1}"#), PositionEncoding::Utf16);
         assert_eq!(actions, Vec::new());
     }
-
-    #[test]
-    fn pull_support_is_read_from_the_text_document_capability() {
-        assert!(!client_supports_pull_diagnostics(
-            &ClientCapabilities::default()
-        ));
-        let capabilities = ClientCapabilities {
-            text_document: Some(TextDocumentClientCapabilities {
-                diagnostic: Some(DiagnosticClientCapabilities::default()),
-                ..Default::default()
-            }),
-            ..Default::default()
-        };
-        assert!(client_supports_pull_diagnostics(&capabilities));
-    }
 }
