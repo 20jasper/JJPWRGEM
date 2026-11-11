@@ -179,3 +179,63 @@ fn initialize_against_the_real_server() {
     let status = client.wait_for_exit(TIMEOUT).unwrap();
     assert!(status.success());
 }
+
+fn file_uri() -> gen_lsp_types::Uri {
+    "file:///pull.json".parse().unwrap()
+}
+
+/// Sends `textDocument/diagnostic` and returns the report as JSON.
+fn pull_report(client: &mut Client, uri: &gen_lsp_types::Uri) -> serde_json::Value {
+    let params = serde_json::from_value(json!({ "textDocument": { "uri": uri } })).unwrap();
+    let report = client.diagnostic(params).unwrap();
+    serde_json::to_value(report).unwrap()
+}
+
+#[test]
+#[ignore = "requires a separately built target/dist/jjp or JJP_BIN"]
+fn pull_client_gets_diagnostics_from_the_pull_request_and_no_push() {
+    let mut client = spawn_real_server();
+    client
+        .initialize(lspresso::capabilities::vscode::latest())
+        .unwrap();
+    assert!(client.supports_pull_diagnostics());
+    let uri = file_uri();
+
+    client
+        .did_open(uri.clone(), r#"{"a": }"#, gen_lsp_types::LanguageKind::JSON)
+        .unwrap();
+    let report = pull_report(&mut client, &uri);
+    assert_eq!(report["kind"], "full");
+    assert_eq!(report["items"].as_array().unwrap().len(), 1, "{report}");
+    assert_eq!(report["items"][0]["source"], "jjpwrgem");
+    // a pull client must not also be pushed to
+    let pushed = client.next_diagnostics(&uri, Duration::from_millis(200));
+    assert!(
+        matches!(
+            pushed.unwrap_err().kind(),
+            ErrorKind::DiagnosticsTimeout { .. }
+        ),
+        "no publishDiagnostics expected for a pull client"
+    );
+
+    client.did_change_full(&uri, r#"{"a": 1}"#).unwrap();
+    let report = pull_report(&mut client, &uri);
+    assert_eq!(report["items"].as_array().unwrap().len(), 0, "{report}");
+}
+
+#[test]
+#[ignore = "requires a separately built target/dist/jjp or JJP_BIN"]
+fn client_without_pull_support_is_pushed_diagnostics() {
+    let mut client = spawn_real_server();
+    client.initialize(ClientCapabilities::default()).unwrap();
+    let uri = file_uri();
+
+    client
+        .did_open(uri.clone(), r#"{"a": }"#, gen_lsp_types::LanguageKind::JSON)
+        .unwrap();
+    let pushed = client.next_diagnostics(&uri, TIMEOUT).unwrap();
+    assert_eq!(pushed.len(), 1);
+    // pull is still answered for clients that ask anyway
+    let report = pull_report(&mut client, &uri);
+    assert_eq!(report["items"].as_array().unwrap().len(), 1, "{report}");
+}

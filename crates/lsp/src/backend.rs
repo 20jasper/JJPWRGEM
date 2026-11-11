@@ -1,4 +1,7 @@
-use std::sync::OnceLock;
+use std::sync::{
+    OnceLock,
+    atomic::{AtomicBool, Ordering},
+};
 
 use dashmap::DashMap;
 use jjpwrgem_parse::{
@@ -19,21 +22,22 @@ pub struct Backend {
     client: Client,
     documents: DashMap<Uri, jjpwrgem_parse::Result<Document<String>>>,
     position_encoding: OnceLock<PositionEncoding>,
+    /// Set when the client advertises `textDocument.diagnostic`. Such clients
+    /// ask for diagnostics with `textDocument/diagnostic`, so we do not push
+    /// (LSP 3.17: a server should not do both, or the client sees duplicates).
+    client_pulls_diagnostics: AtomicBool,
 }
 
 mod diagnostics;
 
-fn analyze_document(
+fn diagnostics_for(
     uri: &Uri,
-    text: String,
+    document: &jjpwrgem_parse::Result<Document<String>>,
     encoding: PositionEncoding,
-) -> (jjpwrgem_parse::Result<Document<String>>, Vec<Diagnostic>) {
-    match Document::parse(text) {
-        Ok(doc) => (Ok(doc), vec![]),
-        Err(e) => {
-            let diagnostics = diagnostics_from_error(uri, e.source_text(), &e, encoding);
-            (Err(e), diagnostics)
-        }
+) -> Vec<Diagnostic> {
+    match document {
+        Ok(_) => vec![],
+        Err(e) => diagnostics_from_error(uri, e.source_text(), e, encoding),
     }
 }
 
@@ -43,6 +47,7 @@ impl Backend {
             client,
             documents: DashMap::new(),
             position_encoding: OnceLock::new(),
+            client_pulls_diagnostics: AtomicBool::new(false),
         }
     }
 
@@ -50,12 +55,22 @@ impl Backend {
         self.position_encoding.get().copied().unwrap_or_default()
     }
 
+    fn client_pulls_diagnostics(&self) -> bool {
+        self.client_pulls_diagnostics.load(Ordering::Relaxed)
+    }
+
     async fn process_document(&self, uri: Uri, text: String) {
-        let (document, diagnostics) = analyze_document(&uri, text, self.position_encoding());
+        let document = Document::parse(text);
+        // Pull clients get diagnostics from the cached parse in
+        // `diagnostic`; skip building and sending them here.
+        let diagnostics = (!self.client_pulls_diagnostics())
+            .then(|| diagnostics_for(&uri, &document, self.position_encoding()));
         self.documents.insert(uri.clone(), document);
-        self.client
-            .publish_diagnostics(uri, diagnostics, None)
-            .await;
+        if let Some(diagnostics) = diagnostics {
+            self.client
+                .publish_diagnostics(uri, diagnostics, None)
+                .await;
+        }
     }
 }
 
@@ -75,6 +90,10 @@ impl LanguageServer for Backend {
             PositionEncoding::Utf16
         };
         let _ = self.position_encoding.set(encoding);
+        self.client_pulls_diagnostics.store(
+            client_supports_pull_diagnostics(&params.capabilities),
+            Ordering::Relaxed,
+        );
 
         let position_encoding = client_supports_utf8.then_some(PositionEncodingKind::UTF8);
 
@@ -97,6 +116,14 @@ impl LanguageServer for Backend {
                 )),
                 document_formatting_provider: Some(OneOf::Left(true)),
                 code_action_provider: Some(CodeActionProviderCapability::Simple(true)),
+                diagnostic_provider: Some(DiagnosticServerCapabilities::Options(
+                    DiagnosticOptions {
+                        identifier: Some(SOURCE.into()),
+                        inter_file_dependencies: false,
+                        workspace_diagnostics: false,
+                        work_done_progress_options: WorkDoneProgressOptions::default(),
+                    },
+                )),
                 ..Default::default()
             },
         })
@@ -121,7 +148,28 @@ impl LanguageServer for Backend {
     async fn did_close(&self, params: DidCloseTextDocumentParams) {
         let uri = params.text_document.uri;
         self.documents.remove(&uri);
-        self.client.publish_diagnostics(uri, vec![], None).await;
+        if !self.client_pulls_diagnostics() {
+            self.client.publish_diagnostics(uri, vec![], None).await;
+        }
+    }
+
+    async fn diagnostic(
+        &self,
+        params: DocumentDiagnosticParams,
+    ) -> Result<DocumentDiagnosticReportResult> {
+        let uri = &params.text_document.uri;
+        let items = self.documents.get(uri).map_or_else(Vec::new, |document| {
+            diagnostics_for(uri, &document, self.position_encoding())
+        });
+        Ok(DocumentDiagnosticReportResult::Report(
+            DocumentDiagnosticReport::Full(RelatedFullDocumentDiagnosticReport {
+                related_documents: None,
+                full_document_diagnostic_report: FullDocumentDiagnosticReport {
+                    result_id: None,
+                    items,
+                },
+            }),
+        ))
     }
 
     async fn formatting(&self, params: DocumentFormattingParams) -> Result<Option<Vec<TextEdit>>> {
@@ -156,6 +204,13 @@ impl LanguageServer for Backend {
     }
 }
 
+fn client_supports_pull_diagnostics(capabilities: &ClientCapabilities) -> bool {
+    capabilities
+        .text_document
+        .as_ref()
+        .is_some_and(|t| t.diagnostic.is_some())
+}
+
 #[cfg(test)]
 mod tests {
 
@@ -165,23 +220,21 @@ mod tests {
         Uri::from_file_path("/test.json").expect("valid file path")
     }
 
+    fn parse(text: &str) -> jjpwrgem_parse::Result<Document<String>> {
+        Document::parse(text.to_owned())
+    }
+
     #[test]
     fn valid_json_produces_no_diagnostics() {
-        let (_, diagnostics) = analyze_document(
-            &dummy_uri(),
-            r#"{"a": 1}"#.to_owned(),
-            PositionEncoding::Utf16,
-        );
+        let diagnostics =
+            diagnostics_for(&dummy_uri(), &parse(r#"{"a": 1}"#), PositionEncoding::Utf16);
         assert_eq!(diagnostics, Vec::new());
     }
 
     #[test]
     fn invalid_json_produces_error_diagnostic() {
-        let (_, diagnostics) = analyze_document(
-            &dummy_uri(),
-            r#"{"a": }"#.to_owned(),
-            PositionEncoding::Utf16,
-        );
+        let diagnostics =
+            diagnostics_for(&dummy_uri(), &parse(r#"{"a": }"#), PositionEncoding::Utf16);
         assert_eq!(diagnostics.len(), 1);
         assert_eq!(diagnostics[0].severity, Some(DiagnosticSeverity::ERROR));
         assert_eq!(diagnostics[0].source.as_deref(), Some(SOURCE));
@@ -189,19 +242,33 @@ mod tests {
 
     #[test]
     fn trailing_comma_produces_code_action() {
-        let uri = dummy_uri();
-        let (document, _) =
-            analyze_document(&uri, r#"{"a": 1,}"#.to_owned(), PositionEncoding::Utf16);
-        let actions = build_code_actions(&uri, &document, PositionEncoding::Utf16);
+        let actions = build_code_actions(
+            &dummy_uri(),
+            &parse(r#"{"a": 1,}"#),
+            PositionEncoding::Utf16,
+        );
         assert_ne!(actions, Vec::new());
     }
 
     #[test]
     fn valid_json_produces_no_code_actions() {
-        let uri = dummy_uri();
-        let (document, _) =
-            analyze_document(&uri, r#"{"a": 1}"#.to_owned(), PositionEncoding::Utf16);
-        let actions = build_code_actions(&uri, &document, PositionEncoding::Utf16);
+        let actions =
+            build_code_actions(&dummy_uri(), &parse(r#"{"a": 1}"#), PositionEncoding::Utf16);
         assert_eq!(actions, Vec::new());
+    }
+
+    #[test]
+    fn pull_support_is_read_from_the_text_document_capability() {
+        assert!(!client_supports_pull_diagnostics(
+            &ClientCapabilities::default()
+        ));
+        let capabilities = ClientCapabilities {
+            text_document: Some(TextDocumentClientCapabilities {
+                diagnostic: Some(DiagnosticClientCapabilities::default()),
+                ..Default::default()
+            }),
+            ..Default::default()
+        };
+        assert!(client_supports_pull_diagnostics(&capabilities));
     }
 }
