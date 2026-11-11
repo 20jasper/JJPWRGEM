@@ -277,6 +277,16 @@ fn document_symbols_use_the_negotiated_encoding() -> TestResult {
 }
 
 #[test]
+fn document_symbols_are_capped_at_five_thousand() -> TestResult {
+    let mut client = client(capabilities::vscode::latest)?;
+    let text = format!("[{}]", vec!["0"; 6000].join(","));
+    let uri = open(&mut client, &text)?;
+
+    assert_eq!(symbols(&mut client, &uri)?.len(), 5000);
+    Ok(())
+}
+
+#[test]
 fn document_symbols_are_empty_for_a_scalar_root() -> TestResult {
     let mut client = client(capabilities::vscode::latest)?;
     let uri = open(&mut client, "1")?;
