@@ -165,6 +165,10 @@ impl Error {
         &self.source_text
     }
 
+    pub fn into_source_text(self) -> String {
+        self.0.source_text
+    }
+
     /// byte range
     pub fn range(&self) -> &Range<usize> {
         &self.0.range

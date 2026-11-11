@@ -18,6 +18,7 @@ rstest = { workspace = true }
 [dependencies]
 dashmap = "6.2"
 jjpwrgem-parse = { workspace = true }
+line-index = "0.1.2"
 tokio = { version = "1.52", features = ["macros", "rt", "io-std"] }
 tower-lsp-server = "0.23"
 

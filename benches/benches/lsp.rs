@@ -114,6 +114,20 @@ fn fixture(name: &str) -> (Uri, String) {
     (uri, std::fs::read_to_string(path).unwrap())
 }
 
+fn end_position(text: &str) -> Position {
+    let line = text.bytes().filter(|&byte| byte == b'\n').count();
+    let character: usize = text
+        .rsplit_once('\n')
+        .map_or(text, |(_, after)| after)
+        .chars()
+        .map(char::len_utf16)
+        .sum();
+    Position {
+        line: line.try_into().expect("fixture line count fits u32"),
+        character: character.try_into().expect("fixture line length fits u32"),
+    }
+}
+
 /// vscode-json takes over 100ms to initialize and can take over a second to
 /// format canada; criterion's default linear sampling would run thousands of
 /// iterations of that
@@ -158,13 +172,32 @@ fn bench_diagnostics(c: &mut Criterion) {
         let (uri, valid) = fixture(name);
         let broken = format!("{valid}\nnot json");
         let edited = format!("{broken}\n");
+        let end = end_position(&broken);
         let (mut client, _) = profile.warm(&uri, broken.clone());
-        let mut flip = false;
+        let incremental = client.supports_incremental_sync();
+        let mut insert = false;
         group.bench_function(BenchmarkId::new(profile.label, name), |b| {
             b.iter(|| {
-                flip = !flip;
-                let text = if flip { &edited } else { &broken };
-                client.did_change_full(&uri, text.clone()).unwrap();
+                insert = !insert;
+                if incremental {
+                    let range = if insert {
+                        Range { start: end, end }
+                    } else {
+                        Range {
+                            start: end,
+                            end: Position {
+                                line: end.line,
+                                character: end.character + 1,
+                            },
+                        }
+                    };
+                    client
+                        .did_change_incremental(&uri, range, if insert { "\n" } else { "" })
+                        .unwrap();
+                } else {
+                    let text = if insert { &edited } else { &broken };
+                    client.did_change_full(&uri, text.clone()).unwrap();
+                }
                 client.diagnostics(black_box(&uri)).unwrap();
             });
         });
