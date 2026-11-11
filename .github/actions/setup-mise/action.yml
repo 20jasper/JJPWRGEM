@@ -9,10 +9,10 @@ runs:
       # CI resolves tools only from mise.lock, so it never looks up releases
       # (and hits rate limits) or rewrites the lockfile.
       run: echo "MISE_LOCKED=1" >> "$GITHUB_ENV"
-    - uses: taiki-e/install-action@5488ac5a951645ce95062214902ac4b6bc1a1037 # v2.87.32
+    - uses: taiki-e/install-action@86f7a0ffb25f40114606501a311ebcfaf882ea32 # v2.88.0
       with:
         tool: cargo-binstall
-    - uses: jdx/mise-action@82a612c5ab8bcda7cc5db6b7e81a8e7584c3dc6e # v5.2.3
+    - uses: jdx/mise-action@6be3c7ed4c21d4f76b208d351d95aac273ebb76d # v5.2.4
       with:
         # later steps (hk, mise run) install tools from GitHub and need this to avoid rate limits
         persist_github_token: true
