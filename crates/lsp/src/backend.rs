@@ -1,7 +1,4 @@
-use std::sync::{
-    OnceLock,
-    atomic::{AtomicBool, Ordering},
-};
+use std::sync::OnceLock;
 
 use dashmap::DashMap;
 use jjpwrgem_parse::{
@@ -22,7 +19,7 @@ pub struct Backend {
     client: Client,
     documents: DashMap<Uri, jjpwrgem_parse::Result<Document<String>>>,
     position_encoding: OnceLock<PositionEncoding>,
-    client_pulls_diagnostics: AtomicBool,
+    client_pulls_diagnostics: OnceLock<bool>,
 }
 
 mod diagnostics;
@@ -44,7 +41,7 @@ impl Backend {
             client,
             documents: DashMap::new(),
             position_encoding: OnceLock::new(),
-            client_pulls_diagnostics: AtomicBool::new(false),
+            client_pulls_diagnostics: OnceLock::new(),
         }
     }
 
@@ -53,7 +50,10 @@ impl Backend {
     }
 
     fn client_pulls_diagnostics(&self) -> bool {
-        self.client_pulls_diagnostics.load(Ordering::Relaxed)
+        self.client_pulls_diagnostics
+            .get()
+            .copied()
+            .unwrap_or_default()
     }
 
     async fn process_document(&self, uri: Uri, text: String) {
@@ -85,10 +85,9 @@ impl LanguageServer for Backend {
             PositionEncoding::Utf16
         };
         let _ = self.position_encoding.set(encoding);
-        self.client_pulls_diagnostics.store(
-            client_supports_pull_diagnostics(&params.capabilities),
-            Ordering::Relaxed,
-        );
+        let _ = self
+            .client_pulls_diagnostics
+            .set(client_supports_pull_diagnostics(&params.capabilities));
 
         let position_encoding = client_supports_utf8.then_some(PositionEncodingKind::UTF8);
 
