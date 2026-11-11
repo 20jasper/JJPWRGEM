@@ -210,9 +210,6 @@ fn code_action_fixes_a_trailing_comma() -> TestResult {
 fn symbols(client: &mut Client, uri: &Uri) -> TestResult<Vec<DocumentSymbol>> {
     match client.document_symbol(uri)? {
         Some(DocumentSymbolResponse::DocumentSymbolList(symbols)) => Ok(symbols),
-        Some(DocumentSymbolResponse::SymbolInformationList(symbols)) if symbols.is_empty() => {
-            Ok(vec![])
-        }
         other => Err(format!("expected nested document symbols: {other:?}").into()),
     }
 }
@@ -277,21 +274,17 @@ fn document_symbols_use_the_negotiated_encoding() -> TestResult {
 }
 
 #[test]
-fn document_symbols_are_capped_at_five_thousand() -> TestResult {
+fn document_symbols_past_five_thousand_are_dropped_deepest_first() -> TestResult {
     let mut client = client(capabilities::vscode::latest)?;
-    let text = format!("[{}]", vec!["0"; 6000].join(","));
+    let text = format!(r#"{{"a": [{}], "b": [0]}}"#, vec!["0"; 5000].join(","));
     let uri = open(&mut client, &text)?;
 
-    assert_eq!(symbols(&mut client, &uri)?.len(), 5000);
-    Ok(())
-}
-
-#[test]
-fn document_symbols_are_empty_for_a_scalar_root() -> TestResult {
-    let mut client = client(capabilities::vscode::latest)?;
-    let uri = open(&mut client, "1")?;
-
-    assert_eq!(symbols(&mut client, &uri)?, []);
+    let symbols = symbols(&mut client, &uri)?;
+    let [a, b] = symbols.as_slice() else {
+        panic!("expected two top level symbols: {symbols:?}");
+    };
+    assert_eq!(a.children.as_ref().map(Vec::len), Some(4998));
+    assert_eq!(b.children.as_ref().map(Vec::len), Some(0));
     Ok(())
 }
 
