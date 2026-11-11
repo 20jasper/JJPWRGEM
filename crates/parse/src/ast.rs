@@ -83,7 +83,6 @@ impl<S: AsRef<str>> Document<S> {
         &self.root
     }
 
-    /// Consume the document and return its source text.
     #[inline]
     pub fn into_source(self) -> S {
         self.source

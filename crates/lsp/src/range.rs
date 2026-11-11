@@ -52,10 +52,6 @@ pub fn span_to_range(
     }
 }
 
-/// Convert an LSP position to a byte offset.
-///
-/// Positions past the end of the document or line clamp to the nearest
-/// boundary, which is what LSP clients expect for a range edit.
 pub fn position_to_byte_offset(
     text: &str,
     position: Position,
