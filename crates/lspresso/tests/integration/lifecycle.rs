@@ -6,17 +6,6 @@ use serde_json::json;
 
 use crate::common::*;
 
-fn spawn_real_server() -> Client {
-    let command = lspresso::server_command(
-        "JJP_BIN",
-        concat!(env!("CARGO_MANIFEST_DIR"), "/../../target/dist/jjp"),
-        ["lsp"],
-    );
-    Client::spawn(command).expect(
-        "jjp should spawn; run `cargo build --profile dist -p jjpwrgem` first, or set JJP_BIN",
-    )
-}
-
 #[test]
 fn initialize_and_shutdown_round_trip() {
     let mut client = ScriptedServer::new().respond_to_all().spawn();
@@ -245,17 +234,4 @@ fn a_malformed_frame_is_reported_as_a_malformed_message() {
         workspace_symbol(&mut client),
         ErrorKind::MalformedMessage { .. }
     );
-}
-
-#[test]
-#[ignore = "requires a separately built target/dist/jjp or JJP_BIN"]
-fn initialize_against_the_real_server() {
-    let mut client = spawn_real_server();
-
-    let result = client.initialize(ClientCapabilities::default()).unwrap();
-    assert_eq!(result.server_info.unwrap().name, "jjpwrgem");
-
-    client.shutdown().unwrap();
-    let status = client.wait_for_exit().unwrap();
-    assert!(status.success());
 }

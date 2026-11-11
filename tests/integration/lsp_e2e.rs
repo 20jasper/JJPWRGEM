@@ -18,6 +18,23 @@ fn open(client: &mut Client, text: &str) -> TestResult<Uri> {
 }
 
 #[test]
+fn initialize_reports_the_server_and_shutdown_exits_cleanly() -> TestResult {
+    let mut command = Command::new(env!("CARGO_BIN_EXE_jjp"));
+    command.arg("lsp");
+    let mut client = Client::spawn(command)?.with_timeout(TIMEOUT);
+
+    let result = client.initialize(capabilities::vscode::latest())?;
+    assert_eq!(
+        result.server_info.map(|info| info.name).as_deref(),
+        Some("jjpwrgem")
+    );
+
+    client.shutdown()?;
+    assert!(client.wait_for_exit()?.success());
+    Ok(())
+}
+
+#[test]
 fn valid_json_has_no_diagnostics() -> TestResult {
     let mut client = client(capabilities::vscode::latest)?;
     let uri = open(&mut client, r#"{"a": 1}"#)?;
