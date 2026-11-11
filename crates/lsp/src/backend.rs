@@ -47,7 +47,7 @@ fn apply_change(
 
     let start = position_to_byte_offset(text, range.start, encoding);
     let end = position_to_byte_offset(text, range.end, encoding);
-    if text.get(start..end).is_none() {
+    if start > end || end > text.len() {
         return false;
     }
 
