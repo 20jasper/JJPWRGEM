@@ -39,15 +39,12 @@ impl Stopwatch {
         self.timings
     }
 
-    pub(super) const fn next_sequence(&self) -> u64 {
-        self.sent + 1
-    }
-
-    pub(super) fn sent(&mut self, started_at: Instant, queued_at: Instant) {
+    pub(super) fn sent(&mut self, started_at: Instant, queued_at: Instant) -> u64 {
         self.sent += 1;
         self.written_at = None;
         self.queued_at = Some(queued_at);
         self.waiting_since = Some(started_at);
+        self.sent
     }
 
     pub(super) fn written(&mut self, sequence: u64, at: Instant) {

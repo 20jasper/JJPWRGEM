@@ -82,19 +82,28 @@ impl Transport {
             loop {
                 drop(reader.fill_buf());
                 let first_byte_at = Instant::now();
-                let incoming = match Message::read(&mut reader) {
-                    Ok(Some(message)) => Incoming::Message(message),
+                match Message::read(&mut reader) {
+                    Ok(Some(message)) => {
+                        if incoming_tx
+                            .send(Arrival {
+                                first_byte_at,
+                                parsed_at: Instant::now(),
+                                incoming: Incoming::Message(message),
+                            })
+                            .is_err()
+                        {
+                            return;
+                        }
+                    }
                     Ok(None) => return,
-                    Err(err) => Incoming::Malformed(err),
-                };
-                let malformed = matches!(incoming, Incoming::Malformed(_));
-                let delivered = incoming_tx.send(Arrival {
-                    first_byte_at,
-                    parsed_at: Instant::now(),
-                    incoming,
-                });
-                if malformed || delivered.is_err() {
-                    break;
+                    Err(err) => {
+                        drop(incoming_tx.send(Arrival {
+                            first_byte_at,
+                            parsed_at: Instant::now(),
+                            incoming: Incoming::Malformed(err),
+                        }));
+                        break;
+                    }
                 }
             }
             // Closing the channel lets waits fail fast, but stdout itself
@@ -129,17 +138,13 @@ impl Transport {
             .write(&mut bytes)
             .expect("writing to a Vec cannot fail");
         let queued_at = Instant::now();
-        self.outgoing
-            .send((self.stopwatch.next_sequence(), bytes))
-            .map_err(|_| {
-                crate::Error::from(
-                    self.write_errors
-                        .try_recv()
-                        .unwrap_or_else(|_| io::ErrorKind::BrokenPipe.into()),
-                )
-            })?;
-        self.stopwatch.sent(started_at, queued_at);
-        Ok(())
+        let sequence = self.stopwatch.sent(started_at, queued_at);
+        self.outgoing.send((sequence, bytes)).map_err(|_| {
+            self.write_errors
+                .try_recv()
+                .unwrap_or_else(|_| io::ErrorKind::BrokenPipe.into())
+                .into()
+        })
     }
 
     pub(super) fn recv_until(
