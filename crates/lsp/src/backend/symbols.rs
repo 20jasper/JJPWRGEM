@@ -1,10 +1,9 @@
 use std::range::Range as Span;
 
 use jjpwrgem_parse::ast::{Document, Key, Value};
-use line_index::LineIndex;
 use tower_lsp_server::ls_types::{DocumentSymbol, SymbolKind};
 
-use crate::range::{PositionEncoding, span_to_range_indexed};
+use crate::range::{PositionEncoding, Positions};
 
 const MAX_SYMBOLS: usize = 5000;
 const MAX_DETAIL_CHARS: usize = 100;
@@ -15,8 +14,7 @@ pub(crate) fn document_symbols(
 ) -> Vec<DocumentSymbol> {
     let source = Source {
         document,
-        index: LineIndex::new(document.source()),
-        encoding,
+        positions: Positions::new(document.source(), encoding),
     };
     let mut remaining = MAX_SYMBOLS;
     map_children(&source, document.root(), &mut remaining).unwrap_or_default()
@@ -24,8 +22,7 @@ pub(crate) fn document_symbols(
 
 struct Source<'a> {
     document: &'a Document<String>,
-    index: LineIndex,
-    encoding: PositionEncoding,
+    positions: Positions,
 }
 
 fn map_children(
@@ -71,8 +68,8 @@ impl Source<'_> {
             kind,
             tags: None,
             deprecated: None,
-            range: span_to_range_indexed(&self.index, full, self.encoding),
-            selection_range: span_to_range_indexed(&self.index, selection, self.encoding),
+            range: self.positions.range(full),
+            selection_range: self.positions.range(selection),
             children,
         }
     }
