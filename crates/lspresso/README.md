@@ -54,7 +54,8 @@ assert!(published.diagnostics.is_empty());
 
 ## Benchmarking
 
-Use existing benchmarking tools like criterion to benchmark
+Use existing benchmarking tools like criterion with `Client::timings`.
+`Timings::server` is time spent in the language server. `request` and `response` are worth a look too since large messages take time
 
 ```rust
 fn bench_diagnostics(c: &mut Criterion) {
@@ -67,7 +68,13 @@ fn bench_diagnostics(c: &mut Criterion) {
         .unwrap();
 
     c.bench_function("diagnostics", |b| {
-        b.iter(|| client.diagnostics(&uri).unwrap());
+        b.iter_custom(|iters| {
+            let before = client.timings();
+            for _ in 0..iters {
+                client.diagnostics(&uri).unwrap();
+            }
+            client.timings().since(before).server
+        });
     });
 
     // peak RSS over the session

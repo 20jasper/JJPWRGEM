@@ -4,11 +4,11 @@ use std::{
     path::Path,
     process::Command,
     sync::{LazyLock, Mutex},
-    time::{Duration, Instant},
+    time::Duration,
 };
 
 use criterion::{
-    BatchSize, BenchmarkGroup, BenchmarkId, Criterion, SamplingMode, criterion_group,
+    BatchSize, Bencher, BenchmarkGroup, BenchmarkId, Criterion, SamplingMode, criterion_group,
     criterion_main, measurement::WallTime,
 };
 use lspresso::{Client, capabilities, gen_lsp_types::*, server_command};
@@ -108,6 +108,18 @@ fn record_memory(id: &str, client: &mut Client) {
     std::fs::write(path, serde_json::to_string_pretty(&*memory).unwrap()).unwrap();
 }
 
+static TIMINGS: Mutex<BTreeMap<String, (u128, u128)>> = Mutex::new(BTreeMap::new());
+
+fn record_timings(id: &str, server: Duration, total: Duration) {
+    let mut timings = TIMINGS.lock().unwrap();
+    let entry = timings.entry(id.to_owned()).or_default();
+    entry.0 += server.as_nanos();
+    entry.1 += total.as_nanos();
+    let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("../target/bench/lsp-timings.json");
+    std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+    std::fs::write(path, serde_json::to_string_pretty(&*timings).unwrap()).unwrap();
+}
+
 fn fixture(name: &str) -> (Uri, String) {
     let path = Path::new(env!("CARGO_MANIFEST_DIR")).join(format!("data/{name}.json"));
     let uri = format!("file://{}", path.display()).parse().unwrap();
@@ -135,6 +147,23 @@ fn slow_group<'a>(c: &'a mut Criterion, name: &str) -> BenchmarkGroup<'a, WallTi
     let mut group = c.benchmark_group(name);
     group.sampling_mode(SamplingMode::Flat);
     group
+}
+
+fn iter_server_time<T>(
+    b: &mut Bencher,
+    id: &str,
+    client: &mut Client,
+    mut round_trip: impl FnMut(&mut Client) -> T,
+) {
+    b.iter_custom(|iters| {
+        let before = client.timings();
+        for _ in 0..iters {
+            black_box(round_trip(client));
+        }
+        let delta = client.timings().since(before);
+        record_timings(id, delta.server, delta.total);
+        delta.server
+    });
 }
 
 fn bench_fixtures(
@@ -174,10 +203,11 @@ fn bench_diagnostics(c: &mut Criterion) {
         let edited = format!("{broken}\n");
         let end = end_position(&broken);
         let (mut client, _) = profile.warm(&uri, broken.clone());
+        let id = format!("diagnostics/{}/{name}", profile.label);
         let incremental = client.supports_incremental_sync();
         let mut insert = false;
         group.bench_function(BenchmarkId::new(profile.label, name), |b| {
-            b.iter(|| {
+            iter_server_time(b, &id, &mut client, |client| {
                 insert = !insert;
                 if incremental {
                     let range = if insert {
@@ -201,10 +231,7 @@ fn bench_diagnostics(c: &mut Criterion) {
                 client.diagnostics(black_box(&uri)).unwrap();
             });
         });
-        record_memory(
-            &format!("diagnostics/{}/{name}", profile.label),
-            &mut client,
-        );
+        record_memory(&id, &mut client);
     });
 }
 
@@ -212,14 +239,15 @@ fn bench_formatting(c: &mut Criterion) {
     bench_fixtures(c, "formatting", |group, profile, name| {
         let (uri, text) = fixture(name);
         let (mut client, _) = profile.warm(&uri, text);
+        let id = format!("formatting/{}/{name}", profile.label);
         group.bench_function(BenchmarkId::new(profile.label, name), |b| {
-            b.iter(|| {
+            iter_server_time(b, &id, &mut client, |client| {
                 client
                     .formatting(black_box(&uri), FormattingOptions::default())
                     .unwrap()
             });
         });
-        record_memory(&format!("formatting/{}/{name}", profile.label), &mut client);
+        record_memory(&id, &mut client);
     });
 }
 
@@ -240,15 +268,14 @@ fn bench_open(c: &mut Criterion) {
                     .map(|_| {
                         opened += 1;
                         let uri: Uri = format!("file:///open-{opened}.json").parse().unwrap();
-                        let text = text.clone();
-                        let start = Instant::now();
+                        let before = client.timings();
                         client
-                            .did_open(uri.clone(), text, LanguageKind::JSON)
+                            .did_open(uri.clone(), text.clone(), LanguageKind::JSON)
                             .unwrap();
                         client.diagnostics(black_box(&uri)).unwrap();
-                        let elapsed = start.elapsed();
+                        let waited = client.timings().since(before).server;
                         client.did_close(&uri).unwrap();
-                        elapsed
+                        waited
                     })
                     .sum()
             });
@@ -275,15 +302,16 @@ fn bench_code_action(c: &mut Criterion) {
     };
     // A missing colon
     let (mut client, diagnostics) = profile.warm(&uri, "{\n  \"key\" 1\n}\n");
+    let id = format!("code_action/{}", profile.label);
 
     c.bench_function("code_action", |b| {
-        b.iter(|| {
+        iter_server_time(b, &id, &mut client, |client| {
             client
                 .code_action(black_box(&uri), range, diagnostics.clone())
                 .unwrap()
         });
     });
-    record_memory(&format!("code_action/{}", profile.label), &mut client);
+    record_memory(&id, &mut client);
 }
 
 criterion_group! {

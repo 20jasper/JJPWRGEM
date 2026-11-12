@@ -235,3 +235,27 @@ fn a_malformed_frame_is_reported_as_a_malformed_message() {
         ErrorKind::MalformedMessage { .. }
     );
 }
+
+#[test]
+fn timings_cover_the_wait_for_a_response_and_nothing_between_calls() {
+    let mut client = ScriptedServer::new()
+        .steps([step::respond_after(50), step::respond_after(50)])
+        .spawn_initialized();
+
+    let before = client.timings();
+    let start = std::time::Instant::now();
+    workspace_symbol(&mut client).unwrap();
+    std::thread::sleep(Duration::from_millis(100));
+    workspace_symbol(&mut client).unwrap();
+    let timings = client.timings().since(before);
+
+    assert!(timings.server >= Duration::from_millis(100), "{timings:?}");
+    assert!(
+        timings.total + Duration::from_millis(100) <= start.elapsed(),
+        "{timings:?}"
+    );
+    assert_eq!(
+        timings.total,
+        timings.request + timings.server + timings.response
+    );
+}
