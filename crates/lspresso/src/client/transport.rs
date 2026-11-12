@@ -1,5 +1,5 @@
 use std::{
-    io::{self, BufReader, Write},
+    io::{self, BufRead, BufReader, Write},
     process::{Child, Command, ExitStatus, Stdio},
     time::Instant,
 };
@@ -7,6 +7,8 @@ use std::{
 use crossbeam_channel::{Receiver, RecvTimeoutError, Sender};
 use lsp_server::Message;
 use sysinfo::{Pid, ProcessRefreshKind, ProcessesToUpdate, System};
+
+use super::timings::{Stopwatch, Timings};
 
 #[derive(Debug)]
 pub(super) enum Incoming {
@@ -29,10 +31,19 @@ impl Drop for KillOnDrop {
 #[derive(Debug)]
 pub(super) struct Transport {
     process: KillOnDrop,
-    outgoing: Sender<Vec<u8>>,
+    outgoing: Sender<(u64, Vec<u8>)>,
     write_errors: Receiver<io::Error>,
-    incoming: Receiver<Incoming>,
+    written: Receiver<(u64, Instant)>,
+    incoming: Receiver<Arrival>,
     rss_monitor: Option<System>,
+    stopwatch: Stopwatch,
+}
+
+#[derive(Debug)]
+struct Arrival {
+    first_byte_at: Instant,
+    parsed_at: Instant,
+    incoming: Incoming,
 }
 
 impl Transport {
@@ -50,12 +61,16 @@ impl Transport {
         let mut stdin = child.stdin.take().expect("stdin is piped");
         let stdout = child.stdout.take().expect("stdout is piped");
 
-        let (outgoing, outgoing_rx) = crossbeam_channel::unbounded::<Vec<u8>>();
+        let (outgoing, outgoing_rx) = crossbeam_channel::unbounded::<(u64, Vec<u8>)>();
         let (write_error_tx, write_errors) = crossbeam_channel::bounded(1);
+        let (written_tx, written) = crossbeam_channel::unbounded();
         std::thread::spawn(move || {
-            for bytes in outgoing_rx {
+            for (sequence, bytes) in outgoing_rx {
                 if let Err(err) = stdin.write_all(&bytes).and_then(|()| stdin.flush()) {
                     drop(write_error_tx.send(err));
+                    break;
+                }
+                if written_tx.send((sequence, Instant::now())).is_err() {
                     break;
                 }
             }
@@ -65,15 +80,28 @@ impl Transport {
         std::thread::spawn(move || {
             let mut reader = BufReader::new(stdout);
             loop {
+                drop(reader.fill_buf());
+                let first_byte_at = Instant::now();
                 match Message::read(&mut reader) {
                     Ok(Some(message)) => {
-                        if incoming_tx.send(Incoming::Message(message)).is_err() {
+                        if incoming_tx
+                            .send(Arrival {
+                                first_byte_at,
+                                parsed_at: Instant::now(),
+                                incoming: Incoming::Message(message),
+                            })
+                            .is_err()
+                        {
                             return;
                         }
                     }
                     Ok(None) => return,
                     Err(err) => {
-                        drop(incoming_tx.send(Incoming::Malformed(err)));
+                        drop(incoming_tx.send(Arrival {
+                            first_byte_at,
+                            parsed_at: Instant::now(),
+                            incoming: Incoming::Malformed(err),
+                        }));
                         break;
                     }
                 }
@@ -89,13 +117,19 @@ impl Transport {
             process: KillOnDrop(child),
             outgoing,
             write_errors,
+            written,
             incoming,
             rss_monitor: System::new().ok(),
+            stopwatch: Stopwatch::default(),
         })
     }
 
+    pub(super) const fn timings(&self) -> Timings {
+        self.stopwatch.timings()
+    }
+
     /// Queues `message` or returns existing errors
-    pub(super) fn send(&mut self, message: &Message) -> crate::Result<()> {
+    pub(super) fn send(&mut self, message: &Message, started_at: Instant) -> crate::Result<()> {
         if let Ok(err) = self.write_errors.try_recv() {
             return Err(err.into());
         }
@@ -103,7 +137,9 @@ impl Transport {
         message
             .write(&mut bytes)
             .expect("writing to a Vec cannot fail");
-        self.outgoing.send(bytes).map_err(|_| {
+        let queued_at = Instant::now();
+        let sequence = self.stopwatch.sent(started_at, queued_at);
+        self.outgoing.send((sequence, bytes)).map_err(|_| {
             self.write_errors
                 .try_recv()
                 .unwrap_or_else(|_| io::ErrorKind::BrokenPipe.into())
@@ -112,16 +148,29 @@ impl Transport {
     }
 
     pub(super) fn recv_until(
-        &self,
+        &mut self,
         deadline: Option<Instant>,
     ) -> Result<Incoming, RecvTimeoutError> {
-        match deadline {
+        let Arrival {
+            first_byte_at,
+            parsed_at,
+            incoming,
+        } = match deadline {
             Some(deadline) => self.incoming.recv_deadline(deadline),
             None => self
                 .incoming
                 .recv()
                 .map_err(|_| RecvTimeoutError::Disconnected),
+        }?;
+        for (sequence, at) in self.written.try_iter() {
+            self.stopwatch.written(sequence, at);
         }
+        self.stopwatch.arrived(first_byte_at, parsed_at);
+        Ok(incoming)
+    }
+
+    pub(super) fn settle(&mut self, call_started_at: Instant) {
+        self.stopwatch.settle(call_started_at);
     }
 
     pub(super) fn try_wait(&mut self) -> crate::Result<Option<ExitStatus>> {

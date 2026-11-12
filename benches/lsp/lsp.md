@@ -2,7 +2,11 @@
 
 # LSP benchmarks
 
-Wall-clock timing and memory usage against VSCode's JSON LSP and light-json-lsp, driven by [lspresso](/crates/lspresso) with VSCode's client capabilities. Run locally with `mise run bench-lsp`
+Server processing time and memory usage against VSCode's JSON LSP and light-json-lsp, driven by [lspresso](/crates/lspresso) with VSCode's client capabilities. Run locally with `mise run bench-lsp`
+
+Cells read `server / total (memory)`: server is time spent in the language server and total includes the client request and responses, which vary based on size of messages. Server time is measured by lspresso's `Client::timings`, from the request being fully written to the first byte of the response. The `initialize` bench is wall clock, from process spawn to the initialize response
+
+Note: vscode sends a large amount of range edit responses, which inflates the time quite a lot
 
 These benchmarks are run with `AMD Ryzen 5 5600X 6-Core Processor (3.70 GHz)`
 
@@ -16,11 +20,11 @@ Baseline performance for minimal parsing work
 
 Note: memory values are RSS (resident set size), shown in megabytes.
 
-| method     | jjpwrgem         | light-json-lsp  | vscode-json       |
-| ---------- | ---------------- | --------------- | ----------------- |
-| initialize | 858.1µs (4.1 MB) | 1.1ms (5.4 MB)  | 78.1ms (72.3 MB)  |
-| diagnostic | 65.0µs (4.6 MB)  | 50.1ms (5.6 MB) | 44.5µs (184.5 MB) |
-| formatting | 21.6µs (4.1 MB)  | 17.0µs (5.6 MB) | 54.9µs (107.8 MB) |
+| method     | jjpwrgem                 | light-json-lsp           | vscode-json                |
+| ---------- | ------------------------ | ------------------------ | -------------------------- |
+| initialize | 844.1µs (4.0 MB)         | 1.2ms (5.3 MB)           | 51.1ms (63.7 MB)           |
+| diagnostic | 42.8µs / 57.6µs (5.0 MB) | 49.8ms / 50.4ms (5.5 MB) | 30.3µs / 39.6µs (137.8 MB) |
+| formatting | 8.3µs / 17.3µs (4.2 MB)  | 9.2µs / 15.5µs (5.4 MB)  | 15.5µs / 56.5µs (84.4 MB)  |
 
 ## twitter
 
@@ -28,11 +32,11 @@ Note: memory values are RSS (resident set size), shown in megabytes.
 
 Note: memory values are RSS (resident set size), shown in megabytes.
 
-| method     | jjpwrgem         | light-json-lsp   | vscode-json       |
-| ---------- | ---------------- | ---------------- | ----------------- |
-| initialize | 858.1µs (4.1 MB) | 1.1ms (5.4 MB)   | 78.1ms (72.3 MB)  |
-| diagnostic | 3.7ms (7.8 MB)   | 58.0ms (15.9 MB) | 6.9ms (190.9 MB)  |
-| formatting | 1.3ms (10.5 MB)  | 5.4ms (16.1 MB)  | 68.6ms (180.4 MB) |
+| method     | jjpwrgem                  | light-json-lsp            | vscode-json               |
+| ---------- | ------------------------- | ------------------------- | ------------------------- |
+| initialize | 844.1µs (4.0 MB)          | 1.2ms (5.3 MB)            | 51.1ms (63.7 MB)          |
+| diagnostic | 1.5ms / 1.5ms (8.4 MB)    | 59.8ms / 61.1ms (15.8 MB) | 5.8ms / 5.9ms (175.5 MB)  |
+| formatting | 645.8µs / 1.2ms (10.6 MB) | 3.9ms / 5.1ms (16.0 MB)   | 9.7ms / 64.4ms (177.3 MB) |
 
 ## citm catalog
 
@@ -40,11 +44,11 @@ Note: memory values are RSS (resident set size), shown in megabytes.
 
 Note: memory values are RSS (resident set size), shown in megabytes.
 
-| method     | jjpwrgem         | light-json-lsp   | vscode-json        |
-| ---------- | ---------------- | ---------------- | ------------------ |
-| initialize | 858.1µs (4.1 MB) | 1.1ms (5.4 MB)   | 78.1ms (72.3 MB)   |
-| diagnostic | 4.0ms (11.8 MB)  | 65.9ms (23.5 MB) | 20.5ms (294.9 MB)  |
-| formatting | 1.8ms (13.3 MB)  | 11.8ms (25.2 MB) | 233.0ms (279.8 MB) |
+| method     | jjpwrgem                | light-json-lsp            | vscode-json                 |
+| ---------- | ----------------------- | ------------------------- | --------------------------- |
+| initialize | 844.1µs (4.0 MB)        | 1.2ms (5.3 MB)            | 51.1ms (63.7 MB)            |
+| diagnostic | 2.5ms / 2.6ms (12.1 MB) | 68.7ms / 70.8ms (23.6 MB) | 18.0ms / 18.1ms (310.1 MB)  |
+| formatting | 1.1ms / 1.8ms (13.6 MB) | 9.3ms / 11.6ms (25.4 MB)  | 29.3ms / 214.9ms (302.5 MB) |
 
 ## canada
 
@@ -52,8 +56,8 @@ Note: memory values are RSS (resident set size), shown in megabytes.
 
 Note: memory values are RSS (resident set size), shown in megabytes.
 
-| method     | jjpwrgem         | light-json-lsp   | vscode-json         |
-| ---------- | ---------------- | ---------------- | ------------------- |
-| initialize | 858.1µs (4.1 MB) | 1.1ms (5.4 MB)   | 78.1ms (72.3 MB)    |
-| diagnostic | 10.9ms (22.4 MB) | 92.6ms (51.6 MB) | 42.2ms (486.1 MB)   |
-| formatting | 6.7ms (32.1 MB)  | 48.7ms (64.4 MB) | 1058.5ms (464.1 MB) |
+| method     | jjpwrgem                | light-json-lsp            | vscode-json                  |
+| ---------- | ----------------------- | ------------------------- | ---------------------------- |
+| initialize | 844.1µs (4.0 MB)        | 1.2ms (5.3 MB)            | 51.1ms (63.7 MB)             |
+| diagnostic | 7.5ms / 7.6ms (25.4 MB) | 91.2ms / 96.5ms (51.5 MB) | 40.9ms / 41.0ms (476.3 MB)   |
+| formatting | 2.7ms / 6.5ms (32.1 MB) | 39.2ms / 49.0ms (64.4 MB) | 102.9ms / 950.4ms (495.0 MB) |

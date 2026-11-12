@@ -56,7 +56,8 @@
 //!
 //! ## Benchmarking
 //!
-//! Use existing benchmarking tools like criterion to benchmark
+//! Use existing benchmarking tools like criterion with `Client::timings`.
+//! `Timings::server` is time spent in the language server. `request` and `response` are worth a look too since large messages take time
 //!
 //! ```no_run
 //! # use std::{process::Command, time::Duration};
@@ -72,7 +73,13 @@
 //!         .unwrap();
 //!
 //!     c.bench_function("diagnostics", |b| {
-//!         b.iter(|| client.diagnostics(&uri).unwrap());
+//!         b.iter_custom(|iters| {
+//!             let before = client.timings();
+//!             for _ in 0..iters {
+//!                 client.diagnostics(&uri).unwrap();
+//!             }
+//!             client.timings().since(before).server
+//!         });
 //!     });
 //!
 //!     // peak RSS over the session
@@ -101,7 +108,7 @@ pub mod scripted_server;
 
 pub use core::capabilities;
 
-pub use client::Client;
+pub use client::{Client, Timings};
 pub use command::server_command;
 pub use error::{Awaited, Error, ErrorKind, Result};
 pub use gen_lsp_types;

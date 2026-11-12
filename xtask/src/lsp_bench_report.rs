@@ -23,11 +23,26 @@ enum Message {
     Other,
 }
 
-fn cell(ns: Option<f64>, rss_bytes: Option<u64>) -> String {
-    let timing = match ns {
-        Some(ns) if ns < 1_000_000.0 => format!("{:.1}µs", ns / 1_000.0),
-        Some(ns) => format!("{:.1}ms", ns / 1_000_000.0),
-        None => return "—".to_owned(),
+#[derive(Clone, Copy, Deserialize)]
+struct Sums(f64, f64);
+
+fn duration(ns: f64) -> String {
+    if ns < 1_000_000.0 {
+        format!("{:.1}µs", ns / 1_000.0)
+    } else {
+        format!("{:.1}ms", ns / 1_000_000.0)
+    }
+}
+
+fn cell(ns: Option<f64>, sums: Option<Sums>, rss_bytes: Option<u64>) -> String {
+    let Some(ns) = ns else {
+        return "—".to_owned();
+    };
+    let timing = match sums {
+        Some(Sums(server, total)) if server > 0.0 => {
+            format!("{} / {}", duration(ns), duration(ns * total / server))
+        }
+        _ => duration(ns),
     };
     match rss_bytes {
         Some(bytes) => format!("{timing} ({:.1} MB)", bytes as f64 / (1024.0 * 1024.0)),
@@ -42,11 +57,12 @@ fn row(label: &str, cells: impl IntoIterator<Item = String>) -> String {
     )
 }
 
-/// `times` and `memory` are both keyed by criterion's benchmark id
+/// `times`, `sums` and `memory` are all keyed by criterion's benchmark id
 fn table(
     fixture: &str,
     profiles: &BTreeSet<String>,
     times: &BTreeMap<String, f64>,
+    sums: &BTreeMap<String, Sums>,
     memory: &BTreeMap<String, u64>,
 ) -> String {
     let method = |label: &str, id: &dyn Fn(&str) -> String| {
@@ -54,7 +70,11 @@ fn table(
             label,
             profiles.iter().map(|p| {
                 let id = id(p);
-                cell(times.get(&id).copied(), memory.get(&id).copied())
+                cell(
+                    times.get(&id).copied(),
+                    sums.get(&id).copied(),
+                    memory.get(&id).copied(),
+                )
             }),
         )
     };
@@ -97,6 +117,12 @@ pub fn write_lsp_bench_report() -> anyhow::Result<()> {
     )
     .with_context(|| format!("parsing {sidecar_path}"))?;
 
+    let timings_path = format!("{manifest_dir}/../target/bench/lsp-timings.json");
+    let sums: BTreeMap<String, Sums> = serde_json::from_str(
+        &fs::read_to_string(&timings_path).with_context(|| format!("reading {timings_path}"))?,
+    )
+    .with_context(|| format!("parsing {timings_path}"))?;
+
     let profiles: BTreeSet<String> = times
         .keys()
         .filter_map(|id| match id.split('/').collect::<Vec<_>>()[..] {
@@ -109,7 +135,7 @@ pub fn write_lsp_bench_report() -> anyhow::Result<()> {
     fs::create_dir_all(&results_dir).with_context(|| format!("creating {results_dir}"))?;
     for fixture in FIXTURES {
         let path = format!("{results_dir}/{fixture}.md");
-        fs::write(&path, table(fixture, &profiles, &times, &memory))
+        fs::write(&path, table(fixture, &profiles, &times, &sums, &memory))
             .with_context(|| format!("writing {path}"))?;
         println!("wrote {path}");
     }
@@ -128,13 +154,14 @@ mod tests {
             ("diagnostics/jjpwrgem/small".to_owned(), 200_000.0),
             ("formatting/vscode-json/small".to_owned(), 500_000.0),
         ]);
+        let sums = BTreeMap::from([("formatting/vscode-json/small".to_owned(), Sums(2.0, 6.0))]);
         let memory = BTreeMap::from([("initialize/jjpwrgem".to_owned(), 3 * 1024 * 1024)]);
 
-        let out = table("small", &profiles, &times, &memory);
+        let out = table("small", &profiles, &times, &sums, &memory);
 
         assert!(out.contains("| method | jjpwrgem | vscode-json |"));
         assert!(out.contains("| initialize | 6.6ms (3.0 MB) | — |"));
         assert!(out.contains("| diagnostic | 200.0µs | — |"));
-        assert!(out.contains("| formatting | — | 500.0µs |"));
+        assert!(out.contains("| formatting | — | 500.0µs / 1.5ms |"));
     }
 }
