@@ -53,37 +53,80 @@ pub fn span_to_range(
     }
 }
 
-pub fn span_to_range_indexed(
-    index: &LineIndex,
-    span: std::range::Range<usize>,
+pub struct Positions {
+    index: LineIndex,
     encoding: PositionEncoding,
-) -> Range {
-    Range {
-        start: byte_offset_to_position_indexed(index, span.start, encoding),
-        end: byte_offset_to_position_indexed(index, span.end, encoding),
-    }
 }
 
-fn byte_offset_to_position_indexed(
-    index: &LineIndex,
-    offset: usize,
-    encoding: PositionEncoding,
-) -> Position {
-    let utf8 = index.line_col(TextSize::new(
-        u32::try_from(offset).expect(FILE_TOO_LARGE_PANIC_MSG),
-    ));
-    match encoding {
-        PositionEncoding::Utf8 => Position {
-            line: utf8.line,
-            character: utf8.col,
-        },
-        PositionEncoding::Utf16 => {
-            let utf16 = index
-                .to_wide(WideEncoding::Utf16, utf8)
-                .expect("offset should be on a character boundary");
-            Position {
-                line: utf16.line,
-                character: utf16.col,
+impl Positions {
+    pub fn new(text: &str, encoding: PositionEncoding) -> Self {
+        Self {
+            index: LineIndex::new(text),
+            encoding,
+        }
+    }
+
+    pub fn line(&self, offset: usize) -> u32 {
+        self.line_col(offset).line
+    }
+
+    pub fn range(&self, span: std::range::Range<usize>) -> Range {
+        Range {
+            start: self.position(span.start),
+            end: self.position(span.end),
+        }
+    }
+
+    pub fn offset(&self, text: &str, position: Position) -> usize {
+        let Some(line_range) = self.index.line(position.line) else {
+            return text.len();
+        };
+        let line_start = usize::from(line_range.start());
+        let mut line_end = usize::from(line_range.end());
+        if line_end > line_start && text.as_bytes()[line_end - 1] == b'\n' {
+            line_end -= 1;
+            if line_end > line_start && text.as_bytes()[line_end - 1] == b'\r' {
+                line_end -= 1;
+            }
+        }
+        let line = &text[line_start..line_end];
+
+        let mut units = 0;
+        for (offset, character) in line.char_indices() {
+            if units >= position.character as usize {
+                return line_start + offset;
+            }
+            units += match self.encoding {
+                PositionEncoding::Utf8 => character.len_utf8(),
+                PositionEncoding::Utf16 => character.len_utf16(),
+            };
+        }
+
+        line_end
+    }
+
+    fn line_col(&self, offset: usize) -> line_index::LineCol {
+        self.index.line_col(TextSize::new(
+            u32::try_from(offset).expect(FILE_TOO_LARGE_PANIC_MSG),
+        ))
+    }
+
+    fn position(&self, offset: usize) -> Position {
+        let utf8 = self.line_col(offset);
+        match self.encoding {
+            PositionEncoding::Utf8 => Position {
+                line: utf8.line,
+                character: utf8.col,
+            },
+            PositionEncoding::Utf16 => {
+                let utf16 = self
+                    .index
+                    .to_wide(WideEncoding::Utf16, utf8)
+                    .expect("offset should be on a character boundary");
+                Position {
+                    line: utf16.line,
+                    character: utf16.col,
+                }
             }
         }
     }
@@ -91,40 +134,7 @@ fn byte_offset_to_position_indexed(
 
 #[cfg(test)]
 fn position_to_byte_offset(text: &str, position: Position, encoding: PositionEncoding) -> usize {
-    position_to_byte_offset_indexed(text, &LineIndex::new(text), position, encoding)
-}
-
-pub fn position_to_byte_offset_indexed(
-    text: &str,
-    index: &LineIndex,
-    position: Position,
-    encoding: PositionEncoding,
-) -> usize {
-    let Some(line_range) = index.line(position.line) else {
-        return text.len();
-    };
-    let line_start = usize::from(line_range.start());
-    let mut line_end = usize::from(line_range.end());
-    if line_end > line_start && text.as_bytes()[line_end - 1] == b'\n' {
-        line_end -= 1;
-        if line_end > line_start && text.as_bytes()[line_end - 1] == b'\r' {
-            line_end -= 1;
-        }
-    }
-    let line = &text[line_start..line_end];
-
-    let mut units = 0;
-    for (offset, character) in line.char_indices() {
-        if units >= position.character as usize {
-            return line_start + offset;
-        }
-        units += match encoding {
-            PositionEncoding::Utf8 => character.len_utf8(),
-            PositionEncoding::Utf16 => character.len_utf16(),
-        };
-    }
-
-    line_end
+    Positions::new(text, encoding).offset(text, position)
 }
 
 #[cfg(test)]

@@ -1,20 +1,15 @@
 use jjpwrgem_parse::ast::{Document, Value};
-use line_index::{LineIndex, TextSize};
 use tower_lsp_server::ls_types::FoldingRange;
 
-use crate::range::FILE_TOO_LARGE_PANIC_MSG;
+use crate::range::{PositionEncoding, Positions};
 
 const MAX_FOLDING_RANGES: usize = 5000;
 
-pub(crate) fn folding_ranges(document: &Document<String>) -> Vec<FoldingRange> {
-    let index = LineIndex::new(document.source());
-    let line = |offset: usize| {
-        index
-            .line_col(TextSize::new(
-                u32::try_from(offset).expect(FILE_TOO_LARGE_PANIC_MSG),
-            ))
-            .line
-    };
+pub(crate) fn folding_ranges(
+    document: &Document<String>,
+    encoding: PositionEncoding,
+) -> Vec<FoldingRange> {
+    let positions = Positions::new(document.source(), encoding);
     let mut ranges: Vec<FoldingRange> = Vec::new();
     for value in document.root().traverse() {
         if ranges.len() == MAX_FOLDING_RANGES {
@@ -24,8 +19,8 @@ pub(crate) fn folding_ranges(document: &Document<String>) -> Vec<FoldingRange> {
             continue;
         }
         let range = value.range();
-        let start_line = line(range.start);
-        let close_line = line(range.end - 1);
+        let start_line = positions.line(range.start);
+        let close_line = positions.line(range.end - 1);
         if close_line > start_line + 1
             && ranges
                 .last()
