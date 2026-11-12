@@ -66,7 +66,8 @@ impl Value {
             _ => range,
         }
     }
-
+    
+    /// outputs layer of direct children
     pub fn children(&self) -> impl DoubleEndedIterator<Item = (Key, &Value)> {
         let (entries, items) = match self {
             Value::Object(_, entries) => (Some(entries.0.iter()), None),
@@ -84,7 +85,8 @@ impl Value {
                     .map(|(index, value)| (Key::Index(index), value)),
             )
     }
-
+    
+    /// preorder walk over the value, outputting a flat stream of Values
     pub fn traverse(&self) -> impl Iterator<Item = &Value> {
         let mut stack = vec![self];
         core::iter::from_fn(move || {
