@@ -54,7 +54,8 @@ assert!(published.diagnostics.is_empty());
 
 ## Benchmarking
 
-Use existing benchmarking tools like criterion, and feed it the server's time from `Client::timings` so lspresso's own serialization and parsing stay out of the numbers
+Use existing benchmarking tools like criterion with `Client::timings`.
+`Timings::server` is time spent in the language server. `request` and `response` are worth a look too since large messages take time
 
 ```rust
 fn bench_diagnostics(c: &mut Criterion) {
