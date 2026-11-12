@@ -1,6 +1,6 @@
 use std::range::Range as Span;
 
-use jjpwrgem_parse::ast::{Document, Value};
+use jjpwrgem_parse::ast::{Document, Key, Value};
 use line_index::LineIndex;
 use tower_lsp_server::ls_types::{DocumentSymbol, SymbolKind};
 
@@ -33,31 +33,25 @@ impl Symbols<'_> {
     fn children(&mut self, value: &Value) -> Option<Vec<DocumentSymbol>> {
         let document = self.document;
         match value {
-            Value::Object(_, entries) => {
+            Value::Object(..) | Value::Array(..) => {
                 let mut symbols = Vec::new();
-                for (key, value) in entries.iter() {
+                for (key, value) in value.children() {
                     if self.remaining == 0 {
                         break;
                     }
                     self.remaining -= 1;
-                    let selection = quoted(key);
-                    symbols.push(self.symbol(
-                        name(document.slice(key)),
-                        selection,
-                        Span::from(selection.start..span(value).end),
-                        value,
-                    ));
-                }
-                Some(symbols)
-            }
-            Value::Array(_, items) => {
-                let mut symbols = Vec::new();
-                for (index, value) in items.iter().enumerate() {
-                    if self.remaining == 0 {
-                        break;
-                    }
-                    self.remaining -= 1;
-                    symbols.push(self.symbol(index.to_string(), span(value), span(value), value));
+                    let (name, selection, full) = match key {
+                        Key::Name(key) => {
+                            let selection = quoted(key);
+                            (
+                                name(document.slice(key)),
+                                selection,
+                                Span::from(selection.start..value.span().end),
+                            )
+                        }
+                        Key::Index(index) => (index.to_string(), value.span(), value.span()),
+                    };
+                    symbols.push(self.symbol(name, selection, full, value));
                 }
                 Some(symbols)
             }
@@ -106,13 +100,6 @@ fn truncated(text: &str) -> String {
     match text.char_indices().nth(MAX_DETAIL_CHARS) {
         Some((end, _)) => format!("{}…", &text[..end]),
         None => text.to_owned(),
-    }
-}
-
-fn span(value: &Value) -> Span<usize> {
-    match value {
-        Value::String(range) => quoted(*range),
-        _ => value.range(),
     }
 }
 
