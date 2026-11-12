@@ -1,7 +1,7 @@
 use std::{
-    io::{self, BufReader, Write},
+    io::{self, BufRead, BufReader, Write},
     process::{Child, Command, ExitStatus, Stdio},
-    time::Instant,
+    time::{Duration, Instant},
 };
 
 use crossbeam_channel::{Receiver, RecvTimeoutError, Sender};
@@ -31,8 +31,45 @@ pub(super) struct Transport {
     process: KillOnDrop,
     outgoing: Sender<Vec<u8>>,
     write_errors: Receiver<io::Error>,
-    incoming: Receiver<Incoming>,
+    incoming: Receiver<(Instant, Incoming)>,
     rss_monitor: Option<System>,
+    waiting_since: Option<Instant>,
+    server_time: Duration,
+}
+
+fn invalid_data(message: impl Into<String>) -> io::Error {
+    io::Error::new(io::ErrorKind::InvalidData, message.into())
+}
+
+fn read_body(reader: &mut impl BufRead) -> io::Result<Option<Vec<u8>>> {
+    let mut length = None;
+    let mut line = String::new();
+    loop {
+        line.clear();
+        if reader.read_line(&mut line)? == 0 {
+            return Ok(None);
+        }
+        let Some(header) = line.strip_suffix("\r\n") else {
+            return Err(invalid_data(format!("malformed header: {line:?}")));
+        };
+        if header.is_empty() {
+            break;
+        }
+        let Some((name, value)) = header.split_once(": ") else {
+            return Err(invalid_data(format!("malformed header: {line:?}")));
+        };
+        if name.eq_ignore_ascii_case("Content-Length") {
+            length = Some(
+                value
+                    .parse::<usize>()
+                    .map_err(|err| invalid_data(err.to_string()))?,
+            );
+        }
+    }
+    let length = length.ok_or_else(|| invalid_data("no Content-Length"))?;
+    let mut body = vec![0; length];
+    reader.read_exact(&mut body)?;
+    Ok(Some(body))
 }
 
 impl Transport {
@@ -65,15 +102,30 @@ impl Transport {
         std::thread::spawn(move || {
             let mut reader = BufReader::new(stdout);
             loop {
-                match Message::read(&mut reader) {
-                    Ok(Some(message)) => {
-                        if incoming_tx.send(Incoming::Message(message)).is_err() {
+                let body = match read_body(&mut reader) {
+                    Ok(Some(body)) => body,
+                    Ok(None) => return,
+                    Err(err) => {
+                        drop(incoming_tx.send((Instant::now(), Incoming::Malformed(err))));
+                        break;
+                    }
+                };
+                let arrived_at = Instant::now();
+                match serde_json::from_slice(&body) {
+                    Ok(message) => {
+                        if incoming_tx
+                            .send((arrived_at, Incoming::Message(message)))
+                            .is_err()
+                        {
                             return;
                         }
                     }
-                    Ok(None) => return,
                     Err(err) => {
-                        drop(incoming_tx.send(Incoming::Malformed(err)));
+                        let err = invalid_data(format!(
+                            "malformed LSP payload `{err:?}`: {}",
+                            String::from_utf8_lossy(&body)
+                        ));
+                        drop(incoming_tx.send((arrived_at, Incoming::Malformed(err))));
                         break;
                     }
                 }
@@ -91,7 +143,13 @@ impl Transport {
             write_errors,
             incoming,
             rss_monitor: System::new().ok(),
+            waiting_since: None,
+            server_time: Duration::ZERO,
         })
+    }
+
+    pub(super) const fn server_time(&self) -> Duration {
+        self.server_time
     }
 
     /// Queues `message` or returns existing errors
@@ -103,25 +161,34 @@ impl Transport {
         message
             .write(&mut bytes)
             .expect("writing to a Vec cannot fail");
+        let queued_at = Instant::now();
         self.outgoing.send(bytes).map_err(|_| {
-            self.write_errors
-                .try_recv()
-                .unwrap_or_else(|_| io::ErrorKind::BrokenPipe.into())
-                .into()
-        })
+            crate::Error::from(
+                self.write_errors
+                    .try_recv()
+                    .unwrap_or_else(|_| io::ErrorKind::BrokenPipe.into()),
+            )
+        })?;
+        self.waiting_since = Some(queued_at);
+        Ok(())
     }
 
     pub(super) fn recv_until(
-        &self,
+        &mut self,
         deadline: Option<Instant>,
     ) -> Result<Incoming, RecvTimeoutError> {
-        match deadline {
+        let (arrived_at, incoming) = match deadline {
             Some(deadline) => self.incoming.recv_deadline(deadline),
             None => self
                 .incoming
                 .recv()
                 .map_err(|_| RecvTimeoutError::Disconnected),
+        }?;
+        if let Some(waiting_since) = self.waiting_since {
+            self.server_time += arrived_at.saturating_duration_since(waiting_since);
+            self.waiting_since = Some(waiting_since.max(arrived_at));
         }
+        Ok(incoming)
     }
 
     pub(super) fn try_wait(&mut self) -> crate::Result<Option<ExitStatus>> {

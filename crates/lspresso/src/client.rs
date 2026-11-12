@@ -160,6 +160,15 @@ impl Client {
         self.transport.rss_bytes()
     }
 
+    /// Total time spent waiting on the server: from each message being queued
+    /// for writing to the next message arriving in full, before it is parsed.
+    /// Unlike wrapping a call in [`Instant`], this excludes the client's own
+    /// serialization and deserialization, so the difference across a call is
+    /// what to report when benchmarking servers against each other
+    pub const fn server_time(&self) -> Duration {
+        self.transport.server_time()
+    }
+
     pub const fn server_capabilities(&self) -> Option<&ServerCapabilities> {
         self.server_capabilities.as_ref()
     }
