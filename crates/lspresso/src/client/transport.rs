@@ -1,12 +1,14 @@
 use std::{
     io::{self, BufRead, BufReader, Write},
     process::{Child, Command, ExitStatus, Stdio},
-    time::{Duration, Instant},
+    time::Instant,
 };
 
 use crossbeam_channel::{Receiver, RecvTimeoutError, Sender};
 use lsp_server::Message;
 use sysinfo::{Pid, ProcessRefreshKind, ProcessesToUpdate, System};
+
+use super::timings::Timings;
 
 #[derive(Debug)]
 pub(super) enum Incoming {
@@ -29,12 +31,22 @@ impl Drop for KillOnDrop {
 #[derive(Debug)]
 pub(super) struct Transport {
     process: KillOnDrop,
-    outgoing: Sender<Vec<u8>>,
+    outgoing: Sender<(u64, Vec<u8>)>,
     write_errors: Receiver<io::Error>,
-    incoming: Receiver<(Instant, Incoming)>,
+    written: Receiver<(u64, Instant)>,
+    incoming: Receiver<Arrival>,
     rss_monitor: Option<System>,
+    sent: u64,
     waiting_since: Option<Instant>,
-    server_time: Duration,
+    written_at: Option<Instant>,
+    timings: Timings,
+}
+
+#[derive(Debug)]
+struct Arrival {
+    first_byte_at: Instant,
+    arrived_at: Instant,
+    incoming: Incoming,
 }
 
 fn invalid_data(message: impl Into<String>) -> io::Error {
@@ -87,12 +99,16 @@ impl Transport {
         let mut stdin = child.stdin.take().expect("stdin is piped");
         let stdout = child.stdout.take().expect("stdout is piped");
 
-        let (outgoing, outgoing_rx) = crossbeam_channel::unbounded::<Vec<u8>>();
+        let (outgoing, outgoing_rx) = crossbeam_channel::unbounded::<(u64, Vec<u8>)>();
         let (write_error_tx, write_errors) = crossbeam_channel::bounded(1);
+        let (written_tx, written) = crossbeam_channel::unbounded();
         std::thread::spawn(move || {
-            for bytes in outgoing_rx {
+            for (sequence, bytes) in outgoing_rx {
                 if let Err(err) = stdin.write_all(&bytes).and_then(|()| stdin.flush()) {
                     drop(write_error_tx.send(err));
+                    break;
+                }
+                if written_tx.send((sequence, Instant::now())).is_err() {
                     break;
                 }
             }
@@ -102,32 +118,45 @@ impl Transport {
         std::thread::spawn(move || {
             let mut reader = BufReader::new(stdout);
             loop {
-                let body = match read_body(&mut reader) {
-                    Ok(Some(body)) => body,
-                    Ok(None) => return,
+                let first_byte_at = match reader.fill_buf() {
+                    Ok([]) => return,
+                    Ok(_) => Instant::now(),
                     Err(err) => {
-                        drop(incoming_tx.send((Instant::now(), Incoming::Malformed(err))));
+                        let now = Instant::now();
+                        drop(incoming_tx.send(Arrival {
+                            first_byte_at: now,
+                            arrived_at: now,
+                            incoming: Incoming::Malformed(err),
+                        }));
                         break;
                     }
                 };
+                let body = read_body(&mut reader);
                 let arrived_at = Instant::now();
-                match serde_json::from_slice(&body) {
-                    Ok(message) => {
-                        if incoming_tx
-                            .send((arrived_at, Incoming::Message(message)))
-                            .is_err()
-                        {
-                            return;
-                        }
-                    }
-                    Err(err) => {
-                        let err = invalid_data(format!(
-                            "malformed LSP payload `{err:?}`: {}",
-                            String::from_utf8_lossy(&body)
-                        ));
-                        drop(incoming_tx.send((arrived_at, Incoming::Malformed(err))));
-                        break;
-                    }
+                let incoming = match body {
+                    Ok(Some(body)) => serde_json::from_slice(&body).map_or_else(
+                        |err| {
+                            Incoming::Malformed(invalid_data(format!(
+                                "malformed LSP payload `{err:?}`: {}",
+                                String::from_utf8_lossy(&body)
+                            )))
+                        },
+                        Incoming::Message,
+                    ),
+                    Ok(None) => return,
+                    Err(err) => Incoming::Malformed(err),
+                };
+                let malformed = matches!(incoming, Incoming::Malformed(_));
+                let delivered = incoming_tx.send(Arrival {
+                    first_byte_at,
+                    arrived_at,
+                    incoming,
+                });
+                if malformed {
+                    break;
+                }
+                if delivered.is_err() {
+                    return;
                 }
             }
             // Closing the channel lets waits fail fast, but stdout itself
@@ -141,15 +170,18 @@ impl Transport {
             process: KillOnDrop(child),
             outgoing,
             write_errors,
+            written,
             incoming,
             rss_monitor: System::new().ok(),
+            sent: 0,
             waiting_since: None,
-            server_time: Duration::ZERO,
+            written_at: None,
+            timings: Timings::default(),
         })
     }
 
-    pub(super) const fn server_time(&self) -> Duration {
-        self.server_time
+    pub(super) const fn timings(&self) -> Timings {
+        self.timings
     }
 
     /// Queues `message` or returns existing errors
@@ -162,13 +194,15 @@ impl Transport {
             .write(&mut bytes)
             .expect("writing to a Vec cannot fail");
         let queued_at = Instant::now();
-        self.outgoing.send(bytes).map_err(|_| {
+        self.outgoing.send((self.sent + 1, bytes)).map_err(|_| {
             crate::Error::from(
                 self.write_errors
                     .try_recv()
                     .unwrap_or_else(|_| io::ErrorKind::BrokenPipe.into()),
             )
         })?;
+        self.sent += 1;
+        self.written_at = None;
         self.waiting_since = Some(queued_at);
         Ok(())
     }
@@ -177,15 +211,32 @@ impl Transport {
         &mut self,
         deadline: Option<Instant>,
     ) -> Result<Incoming, RecvTimeoutError> {
-        let (arrived_at, incoming) = match deadline {
+        let Arrival {
+            first_byte_at,
+            arrived_at,
+            incoming,
+        } = match deadline {
             Some(deadline) => self.incoming.recv_deadline(deadline),
             None => self
                 .incoming
                 .recv()
                 .map_err(|_| RecvTimeoutError::Disconnected),
         }?;
+        if let Some((_, at)) = self
+            .written
+            .try_iter()
+            .filter(|(sequence, _)| *sequence == self.sent)
+            .last()
+        {
+            self.written_at = Some(at);
+        }
         if let Some(waiting_since) = self.waiting_since {
-            self.server_time += arrived_at.saturating_duration_since(waiting_since);
+            self.timings.record(
+                waiting_since,
+                self.written_at.take(),
+                first_byte_at,
+                arrived_at,
+            );
             self.waiting_since = Some(waiting_since.max(arrived_at));
         }
         Ok(incoming)

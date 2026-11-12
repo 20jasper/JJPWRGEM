@@ -137,19 +137,19 @@ fn slow_group<'a>(c: &'a mut Criterion, name: &str) -> BenchmarkGroup<'a, WallTi
     group
 }
 
-/// Times only the waits on the server, so lspresso's own serialization and
-/// parsing of large messages stay out of the comparison
+/// Times only the server's own work, so pipe transfer and lspresso's
+/// serialization and parsing of large messages stay out of the comparison
 fn iter_server_time<T>(
     b: &mut Bencher,
     client: &mut Client,
     mut round_trip: impl FnMut(&mut Client) -> T,
 ) {
     b.iter_custom(|iters| {
-        let before = client.server_time();
+        let before = client.timings();
         for _ in 0..iters {
             black_box(round_trip(client));
         }
-        client.server_time().saturating_sub(before)
+        client.timings().since(before).server
     });
 }
 
@@ -256,12 +256,12 @@ fn bench_open(c: &mut Criterion) {
                     .map(|_| {
                         opened += 1;
                         let uri: Uri = format!("file:///open-{opened}.json").parse().unwrap();
-                        let before = client.server_time();
+                        let before = client.timings();
                         client
                             .did_open(uri.clone(), text.clone(), LanguageKind::JSON)
                             .unwrap();
                         client.diagnostics(black_box(&uri)).unwrap();
-                        let waited = client.server_time().saturating_sub(before);
+                        let waited = client.timings().since(before).server;
                         client.did_close(&uri).unwrap();
                         waited
                     })

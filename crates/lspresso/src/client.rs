@@ -1,3 +1,4 @@
+mod timings;
 mod transport;
 
 use std::{
@@ -9,6 +10,7 @@ use crossbeam_channel::RecvTimeoutError;
 use gen_lsp_types::*;
 use lsp_server::{Message, RequestId};
 
+pub use self::timings::Timings;
 use self::transport::{Incoming, Transport};
 use crate::{
     Awaited, Error, Protocol, Result,
@@ -160,13 +162,9 @@ impl Client {
         self.transport.rss_bytes()
     }
 
-    /// Total time spent waiting on the server: from each message being queued
-    /// for writing to the next message arriving in full, before it is parsed.
-    /// Unlike wrapping a call in [`Instant`], this excludes the client's own
-    /// serialization and deserialization, so the difference across a call is
-    /// what to report when benchmarking servers against each other
-    pub const fn server_time(&self) -> Duration {
-        self.transport.server_time()
+    /// Running totals of where waits on the server went, see [`Timings`]
+    pub const fn timings(&self) -> Timings {
+        self.transport.timings()
     }
 
     pub const fn server_capabilities(&self) -> Option<&ServerCapabilities> {
