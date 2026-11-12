@@ -31,48 +31,30 @@ struct Symbols<'a> {
 
 impl Symbols<'_> {
     fn children(&mut self, value: &Value) -> Option<Vec<DocumentSymbol>> {
-        let document = self.document;
-        match value {
-            Value::Object(..) | Value::Array(..) => {
-                let mut symbols = Vec::new();
-                for (key, value) in value.children() {
-                    if self.remaining == 0 {
-                        break;
-                    }
-                    self.remaining -= 1;
-                    let (name, selection, full) = match key {
-                        Key::Name(key) => {
-                            let selection = quoted(key);
-                            (
-                                name(document.slice(key)),
-                                selection,
-                                Span::from(selection.start..value.span().end),
-                            )
-                        }
-                        Key::Index(index) => (index.to_string(), value.span(), value.span()),
-                    };
-                    symbols.push(self.symbol(name, selection, full, value));
-                }
-                Some(symbols)
-            }
-            _ => None,
-        }
+        matches!(value, Value::Object(..) | Value::Array(..)).then(|| {
+            value
+                .children()
+                .map_while(|(key, child)| {
+                    self.remaining = self.remaining.checked_sub(1)?;
+                    Some(self.symbol(key, child))
+                })
+                .collect()
+        })
     }
 
-    fn symbol(
-        &mut self,
-        name: String,
-        selection: Span<usize>,
-        full: Span<usize>,
-        value: &Value,
-    ) -> DocumentSymbol {
+    fn symbol(&mut self, key: Key, value: &Value) -> DocumentSymbol {
+        let (name, selection) = match key {
+            Key::Name(key) => (name(self.document.slice(key)), quoted(key)),
+            Key::Index(index) => (index.to_string(), value.span()),
+        };
+        let full = Span::from(selection.start..value.span().end);
         let (kind, detail) = match value {
             Value::Object(..) => (SymbolKind::OBJECT, None),
             Value::Array(..) => (SymbolKind::ARRAY, None),
-            Value::String(range) => (SymbolKind::STRING, Some(*range)),
+            Value::String(..) => (SymbolKind::STRING, Some(value.range())),
             Value::Number { .. } => (SymbolKind::NUMBER, Some(value.range())),
-            Value::Boolean(range, _) => (SymbolKind::BOOLEAN, Some(*range)),
-            Value::Null(range) => (SymbolKind::NULL, Some(*range)),
+            Value::Boolean(..) => (SymbolKind::BOOLEAN, Some(value.range())),
+            Value::Null(..) => (SymbolKind::NULL, Some(value.range())),
         };
         #[expect(deprecated, reason = "the field is required to build the struct")]
         DocumentSymbol {
