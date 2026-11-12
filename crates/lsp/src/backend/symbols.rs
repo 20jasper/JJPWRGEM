@@ -13,36 +13,44 @@ pub(crate) fn document_symbols(
     document: &Document<String>,
     encoding: PositionEncoding,
 ) -> Vec<DocumentSymbol> {
-    let mut symbols = Symbols {
+    let source = Source {
         document,
         index: LineIndex::new(document.source()),
         encoding,
-        remaining: MAX_SYMBOLS,
     };
-    symbols.children(document.root()).unwrap_or_default()
+    let mut remaining = MAX_SYMBOLS;
+    children(&source, document.root(), &mut remaining).unwrap_or_default()
 }
 
-struct Symbols<'a> {
+struct Source<'a> {
     document: &'a Document<String>,
     index: LineIndex,
     encoding: PositionEncoding,
-    remaining: usize,
 }
 
-impl Symbols<'_> {
-    fn children(&mut self, value: &Value) -> Option<Vec<DocumentSymbol>> {
-        matches!(value, Value::Object(..) | Value::Array(..)).then(|| {
-            value
-                .children()
-                .map_while(|(key, child)| {
-                    self.remaining = self.remaining.checked_sub(1)?;
-                    Some(self.symbol(key, child))
-                })
-                .collect()
-        })
-    }
+fn children(
+    source: &Source<'_>,
+    value: &Value,
+    remaining: &mut usize,
+) -> Option<Vec<DocumentSymbol>> {
+    matches!(value, Value::Object(..) | Value::Array(..)).then(|| {
+        value
+            .children()
+            .map_while(|(key, child)| {
+                *remaining = remaining.checked_sub(1)?;
+                Some(source.symbol(key, child, children(source, child, remaining)))
+            })
+            .collect()
+    })
+}
 
-    fn symbol(&mut self, key: Key, value: &Value) -> DocumentSymbol {
+impl Source<'_> {
+    fn symbol(
+        &self,
+        key: Key,
+        value: &Value,
+        children: Option<Vec<DocumentSymbol>>,
+    ) -> DocumentSymbol {
         let (name, selection) = match key {
             Key::Name(key) => (name(self.document.slice(key)), quoted(key)),
             Key::Index(index) => (index.to_string(), value.span()),
@@ -65,7 +73,7 @@ impl Symbols<'_> {
             deprecated: None,
             range: span_to_range_indexed(&self.index, full, self.encoding),
             selection_range: span_to_range_indexed(&self.index, selection, self.encoding),
-            children: self.children(value),
+            children,
         }
     }
 }
