@@ -274,17 +274,16 @@ fn document_symbols_use_the_negotiated_encoding() -> TestResult {
 }
 
 #[test]
-fn document_symbols_past_five_thousand_are_dropped_deepest_first() -> TestResult {
+fn document_symbols_past_five_thousand_are_dropped_in_preorder() -> TestResult {
     let mut client = client(capabilities::vscode::latest)?;
     let text = format!(r#"{{"a": [{}], "b": [0]}}"#, vec!["0"; 5000].join(","));
     let uri = open(&mut client, &text)?;
 
     let symbols = symbols(&mut client, &uri)?;
-    let [a, b] = symbols.as_slice() else {
-        panic!("expected two top level symbols: {symbols:?}");
+    let [a] = symbols.as_slice() else {
+        panic!("expected one top level symbol: {symbols:?}");
     };
-    assert_eq!(a.children.as_ref().map(Vec::len), Some(4998));
-    assert_eq!(b.children.as_ref().map(Vec::len), Some(0));
+    assert_eq!(a.children.as_ref().map(Vec::len), Some(4999));
     Ok(())
 }
 

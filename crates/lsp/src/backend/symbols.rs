@@ -1,7 +1,4 @@
-use std::{
-    collections::{HashMap, VecDeque},
-    range::Range as Span,
-};
+use std::range::Range as Span;
 
 use jjpwrgem_parse::ast::{Document, Value};
 use line_index::LineIndex;
@@ -15,89 +12,60 @@ pub(crate) fn document_symbols(
     document: &Document<String>,
     encoding: PositionEncoding,
 ) -> Vec<DocumentSymbol> {
-    let symbols = Symbols {
+    let mut symbols = Symbols {
         document,
         index: LineIndex::new(document.source()),
         encoding,
-        kept: kept_children(document.root()),
+        remaining: MAX_SYMBOLS,
     };
     symbols.children(document.root()).unwrap_or_default()
-}
-
-fn child_values(value: &Value) -> impl Iterator<Item = &Value> {
-    let (entries, items) = match value {
-        Value::Object(_, entries) => (Some(entries.iter().map(|(_, value)| value)), None),
-        Value::Array(_, items) => (None, Some(items.iter())),
-        _ => (None, None),
-    };
-    entries
-        .into_iter()
-        .flatten()
-        .chain(items.into_iter().flatten())
-}
-
-fn kept_children(root: &Value) -> HashMap<*const Value, usize> {
-    let mut kept = HashMap::new();
-    let mut budget = MAX_SYMBOLS;
-    let mut queue = VecDeque::from([root]);
-    while let Some(container) = queue.pop_front() {
-        if budget == 0 {
-            break;
-        }
-        let keep = child_values(container).count().min(budget);
-        budget -= keep;
-        kept.insert(std::ptr::from_ref(container), keep);
-        queue.extend(child_values(container).take(keep));
-    }
-    kept
 }
 
 struct Symbols<'a> {
     document: &'a Document<String>,
     index: LineIndex,
     encoding: PositionEncoding,
-    kept: HashMap<*const Value, usize>,
+    remaining: usize,
 }
 
 impl Symbols<'_> {
-    fn children(&self, value: &Value) -> Option<Vec<DocumentSymbol>> {
-        let keep = self
-            .kept
-            .get(&std::ptr::from_ref(value))
-            .copied()
-            .unwrap_or(0);
+    fn children(&mut self, value: &Value) -> Option<Vec<DocumentSymbol>> {
+        let document = self.document;
         match value {
-            Value::Object(_, entries) => Some(
-                entries
-                    .iter()
-                    .take(keep)
-                    .map(|(key, value)| {
-                        let selection = quoted(key);
-                        self.symbol(
-                            name(self.document.slice(key)),
-                            selection,
-                            Span::from(selection.start..span(value).end),
-                            value,
-                        )
-                    })
-                    .collect(),
-            ),
-            Value::Array(_, items) => Some(
-                items
-                    .iter()
-                    .take(keep)
-                    .enumerate()
-                    .map(|(index, value)| {
-                        self.symbol(index.to_string(), span(value), span(value), value)
-                    })
-                    .collect(),
-            ),
+            Value::Object(_, entries) => {
+                let mut symbols = Vec::new();
+                for (key, value) in entries.iter() {
+                    if self.remaining == 0 {
+                        break;
+                    }
+                    self.remaining -= 1;
+                    let selection = quoted(key);
+                    symbols.push(self.symbol(
+                        name(document.slice(key)),
+                        selection,
+                        Span::from(selection.start..span(value).end),
+                        value,
+                    ));
+                }
+                Some(symbols)
+            }
+            Value::Array(_, items) => {
+                let mut symbols = Vec::new();
+                for (index, value) in items.iter().enumerate() {
+                    if self.remaining == 0 {
+                        break;
+                    }
+                    self.remaining -= 1;
+                    symbols.push(self.symbol(index.to_string(), span(value), span(value), value));
+                }
+                Some(symbols)
+            }
             _ => None,
         }
     }
 
     fn symbol(
-        &self,
+        &mut self,
         name: String,
         selection: Span<usize>,
         full: Span<usize>,
