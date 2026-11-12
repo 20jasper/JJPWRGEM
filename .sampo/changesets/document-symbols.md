@@ -1,6 +1,6 @@
 ---
-cargo/jjpwrgem-lsp: minor (Added)
-cargo/jjpwrgem: minor (Added)
+cargo/jjpwrgem-lsp: patch (Added)
+cargo/jjpwrgem: patch (Added)
 ---
 
 add document symbols
