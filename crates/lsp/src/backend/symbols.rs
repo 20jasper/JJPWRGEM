@@ -7,6 +7,7 @@ use tower_lsp_server::ls_types::{DocumentSymbol, SymbolKind};
 use crate::range::{PositionEncoding, span_to_range_indexed};
 
 const MAX_SYMBOLS: usize = 5000;
+const MAX_DETAIL_CHARS: usize = 100;
 
 pub(crate) fn document_symbols(
     document: &Document<String>,
@@ -82,7 +83,7 @@ impl Symbols<'_> {
         #[expect(deprecated, reason = "the field is required to build the struct")]
         DocumentSymbol {
             name,
-            detail: detail.map(|range| self.document.slice(range).to_owned()),
+            detail: detail.map(|range| truncated(self.document.slice(range))),
             kind,
             tags: None,
             deprecated: None,
@@ -98,6 +99,13 @@ fn name(key: &str) -> String {
         format!("\"{key}\"")
     } else {
         key.to_owned()
+    }
+}
+
+fn truncated(text: &str) -> String {
+    match text.char_indices().nth(MAX_DETAIL_CHARS) {
+        Some((end, _)) => format!("{}…", &text[..end]),
+        None => text.to_owned(),
     }
 }
 

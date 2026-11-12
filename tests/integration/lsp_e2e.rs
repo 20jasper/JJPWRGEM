@@ -288,6 +288,23 @@ fn document_symbols_past_five_thousand_are_dropped_in_preorder() -> TestResult {
 }
 
 #[test]
+fn document_symbol_details_are_capped_at_one_hundred_characters() -> TestResult {
+    let mut client = client(capabilities::vscode::latest)?;
+    let long = "é".repeat(101);
+    let short = "é".repeat(100);
+    let text = format!(r#"{{"long": "{long}", "short": "{short}"}}"#);
+    let uri = open(&mut client, &text)?;
+
+    let symbols = symbols(&mut client, &uri)?;
+    let [long_symbol, short_symbol] = symbols.as_slice() else {
+        panic!("expected two top level symbols: {symbols:?}");
+    };
+    assert_eq!(long_symbol.detail, Some(format!("{short}…")));
+    assert_eq!(short_symbol.detail, Some(short));
+    Ok(())
+}
+
+#[test]
 fn document_symbols_are_none_for_invalid_json() -> TestResult {
     let mut client = client(capabilities::vscode::latest)?;
     let uri = open(&mut client, r#"{"a": }"#)?;
