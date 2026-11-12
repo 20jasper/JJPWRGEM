@@ -255,6 +255,28 @@ fn document_symbols_mirror_the_document_tree() -> TestResult {
 }
 
 #[test]
+fn document_symbols_are_not_advertised_without_hierarchical_support() -> TestResult {
+    let client = client(|| {
+        let mut capabilities = capabilities::vscode::latest();
+        if let Some(symbol) = capabilities
+            .text_document
+            .as_mut()
+            .and_then(|text_document| text_document.document_symbol.as_mut())
+        {
+            symbol.hierarchical_document_symbol_support = None;
+        }
+        capabilities
+    })?;
+
+    assert!(
+        client
+            .server_capabilities()
+            .is_some_and(|capabilities| capabilities.document_symbol_provider.is_none())
+    );
+    Ok(())
+}
+
+#[test]
 fn document_symbols_use_the_negotiated_encoding() -> TestResult {
     let text = r#"{"😀": {"a": 1}}"#;
 
