@@ -1,5 +1,6 @@
 use std::{error::Error, process::Command, time::Duration};
 
+use insta::assert_snapshot;
 use lspresso::{Client, ErrorKind, capabilities, gen_lsp_types::*};
 
 const TIMEOUT: Duration = Duration::from_secs(5);
@@ -214,8 +215,33 @@ fn symbols(client: &mut Client, uri: &Uri) -> TestResult<Vec<DocumentSymbol>> {
     }
 }
 
-fn range(start: (u32, u32), end: (u32, u32)) -> Range {
-    Range::new(Position::new(start.0, start.1), Position::new(end.0, end.1))
+fn outline(symbols: &[DocumentSymbol]) -> String {
+    fn span(r: Range) -> String {
+        let (s, e) = (r.start, r.end);
+        format!("{}:{}-{}:{}", s.line, s.character, e.line, e.character)
+    }
+    let mut out = String::new();
+    for s in symbols {
+        let detail = s
+            .detail
+            .as_ref()
+            .map_or(String::new(), |d| format!(" = {d}"));
+        let line = format!(
+            "{} {:?} {} name {}{detail}",
+            s.name,
+            s.kind,
+            span(s.range),
+            span(s.selection_range)
+        );
+        out.push_str(&line);
+        out.push('\n');
+        for child in outline(s.children.as_deref().unwrap_or_default()).lines() {
+            out += "  ";
+            out += child;
+            out.push('\n');
+        }
+    }
+    out
 }
 
 #[test]
@@ -223,34 +249,12 @@ fn document_symbols_mirror_the_document_tree() -> TestResult {
     let mut client = client(capabilities::vscode::latest)?;
     let uri = open(&mut client, "{\n  \"a\": [1, \"x\"],\n  \"\": null\n}")?;
 
-    let symbols = symbols(&mut client, &uri)?;
-    let [a, empty] = symbols.as_slice() else {
-        panic!("expected two top level symbols: {symbols:?}");
-    };
-
-    assert_eq!(a.name, "a");
-    assert_eq!(a.kind, SymbolKind::Array);
-    assert_eq!(a.detail, None);
-    assert_eq!(a.selection_range, range((1, 2), (1, 5)));
-    assert_eq!(a.range, range((1, 2), (1, 15)));
-
-    let children = a.children.as_deref().expect("expected array children");
-    let [number, string] = children else {
-        panic!("expected two array children: {children:?}");
-    };
-    assert_eq!(number.name, "0");
-    assert_eq!(number.kind, SymbolKind::Number);
-    assert_eq!(number.detail.as_deref(), Some("1"));
-    assert_eq!(number.range, range((1, 8), (1, 9)));
-    assert_eq!(number.children, None);
-    assert_eq!(string.name, "1");
-    assert_eq!(string.kind, SymbolKind::String);
-    assert_eq!(string.detail.as_deref(), Some("x"));
-    assert_eq!(string.range, range((1, 11), (1, 14)));
-
-    assert_eq!(empty.name, "\"\"");
-    assert_eq!(empty.kind, SymbolKind::Null);
-    assert_eq!(empty.detail.as_deref(), Some("null"));
+    assert_snapshot!(outline(&symbols(&mut client, &uri)?), @r#"
+    a Array 1:2-1:15 name 1:2-1:5
+      0 Number 1:8-1:9 name 1:8-1:9 = 1
+      1 String 1:11-1:14 name 1:11-1:14 = x
+    "" Null 2:2-2:10 name 2:2-2:4 = null
+    "#);
     Ok(())
 }
 
@@ -266,10 +270,14 @@ fn document_symbols_use_the_negotiated_encoding() -> TestResult {
     let utf8_uri = open(&mut utf8, text)?;
     let utf8 = symbols(&mut utf8, &utf8_uri)?;
 
-    assert_eq!(utf16[0].selection_range, range((0, 1), (0, 5)));
-    assert_eq!(utf8[0].selection_range, range((0, 1), (0, 7)));
-    assert_eq!(utf16[0].range, range((0, 1), (0, 15)));
-    assert_eq!(utf8[0].range, range((0, 1), (0, 17)));
+    assert_snapshot!(outline(&utf16), @"
+    😀 Object 0:1-0:15 name 0:1-0:5
+      a Number 0:8-0:14 name 0:8-0:11 = 1
+    ");
+    assert_snapshot!(outline(&utf8), @"
+    😀 Object 0:1-0:17 name 0:1-0:7
+      a Number 0:10-0:16 name 0:10-0:13 = 1
+    ");
     Ok(())
 }
 
