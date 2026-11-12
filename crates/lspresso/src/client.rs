@@ -106,11 +106,12 @@ impl Client {
         let params = core::capabilities::initialize_params(capabilities);
         let params = serde_json::to_value(params).expect("serializing as JSON cannot fail");
         let (id, message) = self.state.start_initialize(params, now, self.timeout)?;
-        self.send_request(&id, &message)?;
+        self.send_request(&id, &message, now)?;
         let result = self.wait_for_resolution(&id, InitializeRequest::METHOD)?;
         let result: InitializeResult =
             Self::deserialize_response(result, InitializeRequest::METHOD)
                 .inspect_err(|_| self.state.rollback_initialize())?;
+        self.transport.settle(now);
         self.send_notification::<InitializedNotification>(InitializedParams::default())
             .inspect_err(|_| self.state.rollback_initialize())?;
 
@@ -122,7 +123,7 @@ impl Client {
     pub fn shutdown(&mut self) -> Result<()> {
         let now = Instant::now();
         let (id, message) = self.state.start_shutdown(now, self.timeout)?;
-        self.send_request(&id, &message)?;
+        self.send_request(&id, &message, now)?;
         self.wait_for_resolution(&id, ShutdownRequest::METHOD)?;
 
         self.send_notification::<ExitNotification>(())?;
@@ -236,12 +237,14 @@ impl Client {
         let deadline = deadline_after(start, self.timeout);
         loop {
             if let Some(params) = self.notifications.take::<N>(&mut matches) {
+                self.transport.settle(start);
                 return Ok(params);
             }
             if let RecvOutcome::Closed(closed) = self.recv_and_dispatch(Some(deadline), None) {
                 return Err(closed.into_error(Awaited::Notification(N::METHOD)));
             }
             if let Some(params) = self.notifications.take::<N>(&mut matches) {
+                self.transport.settle(start);
                 return Ok(params);
             }
             let now = Instant::now();
@@ -269,8 +272,13 @@ impl Client {
         self.docs.next_version_and_text(uri)
     }
 
-    fn send_request(&mut self, id: &RequestId, message: &Message) -> Result<()> {
-        self.transport.send(message).inspect_err(|_| {
+    fn send_request(
+        &mut self,
+        id: &RequestId,
+        message: &Message,
+        started_at: Instant,
+    ) -> Result<()> {
+        self.transport.send(message, started_at).inspect_err(|_| {
             self.state.cancel_pending_request(id);
         })
     }
@@ -292,11 +300,13 @@ impl Client {
     }
 
     fn send_notification<N: Notification>(&mut self, params: N::Params) -> Result<()> {
+        let started_at = Instant::now();
         let notification = notification::<N>(params);
         let commit =
             self.docs
                 .prepare(N::METHOD, &notification.params, &self.position_encoding())?;
-        self.transport.send(&Message::Notification(notification))?;
+        self.transport
+            .send(&Message::Notification(notification), started_at)?;
         if let Some(uri) = commit.invalidates() {
             let uri = uri.clone();
             self.forget_diagnostics(&uri);
@@ -385,7 +395,7 @@ impl Client {
                 None
             }
             Effect::Reply(message) => {
-                if let Err(err) = self.transport.send(&message) {
+                if let Err(err) = self.transport.send(&message, Instant::now()) {
                     self.background_errors.push(err);
                 }
                 None
@@ -405,12 +415,14 @@ impl Protocol for Client {
         self.state.require_initialized()?;
         let pulled = self.docs.check_request(method, &params)?;
         let (id, message) = self.state.start_generic(method, params, now, timeout)?;
-        self.send_request(&id, &message)?;
+        self.send_request(&id, &message, now)?;
         let result = self.wait_for_resolution(&id, method)?;
         if let Some(uri) = pulled {
             self.docs.record_pulled(&uri, &result);
         }
-        Self::deserialize_response(result, method)
+        let result = Self::deserialize_response(result, method)?;
+        self.transport.settle(now);
+        Ok(result)
     }
 
     fn notify<N: Notification>(&mut self, params: N::Params) -> Result<()> {

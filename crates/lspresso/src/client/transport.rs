@@ -38,6 +38,7 @@ pub(super) struct Transport {
     rss_monitor: Option<System>,
     sent: u64,
     waiting_since: Option<Instant>,
+    queued_at: Option<Instant>,
     written_at: Option<Instant>,
     timings: Timings,
 }
@@ -45,7 +46,7 @@ pub(super) struct Transport {
 #[derive(Debug)]
 struct Arrival {
     first_byte_at: Instant,
-    arrived_at: Instant,
+    parsed_at: Instant,
     incoming: Incoming,
 }
 
@@ -125,14 +126,13 @@ impl Transport {
                         let now = Instant::now();
                         drop(incoming_tx.send(Arrival {
                             first_byte_at: now,
-                            arrived_at: now,
+                            parsed_at: now,
                             incoming: Incoming::Malformed(err),
                         }));
                         break;
                     }
                 };
                 let body = read_body(&mut reader);
-                let arrived_at = Instant::now();
                 let incoming = match body {
                     Ok(Some(body)) => serde_json::from_slice(&body).map_or_else(
                         |err| {
@@ -146,10 +146,11 @@ impl Transport {
                     Ok(None) => return,
                     Err(err) => Incoming::Malformed(err),
                 };
+                let parsed_at = Instant::now();
                 let malformed = matches!(incoming, Incoming::Malformed(_));
                 let delivered = incoming_tx.send(Arrival {
                     first_byte_at,
-                    arrived_at,
+                    parsed_at,
                     incoming,
                 });
                 if malformed {
@@ -175,6 +176,7 @@ impl Transport {
             rss_monitor: System::new().ok(),
             sent: 0,
             waiting_since: None,
+            queued_at: None,
             written_at: None,
             timings: Timings::default(),
         })
@@ -185,7 +187,7 @@ impl Transport {
     }
 
     /// Queues `message` or returns existing errors
-    pub(super) fn send(&mut self, message: &Message) -> crate::Result<()> {
+    pub(super) fn send(&mut self, message: &Message, started_at: Instant) -> crate::Result<()> {
         if let Ok(err) = self.write_errors.try_recv() {
             return Err(err.into());
         }
@@ -203,7 +205,8 @@ impl Transport {
         })?;
         self.sent += 1;
         self.written_at = None;
-        self.waiting_since = Some(queued_at);
+        self.queued_at = Some(queued_at);
+        self.waiting_since = Some(started_at);
         Ok(())
     }
 
@@ -213,7 +216,7 @@ impl Transport {
     ) -> Result<Incoming, RecvTimeoutError> {
         let Arrival {
             first_byte_at,
-            arrived_at,
+            parsed_at,
             incoming,
         } = match deadline {
             Some(deadline) => self.incoming.recv_deadline(deadline),
@@ -233,13 +236,27 @@ impl Transport {
         if let Some(waiting_since) = self.waiting_since {
             self.timings.record(
                 waiting_since,
+                self.queued_at.take(),
                 self.written_at.take(),
                 first_byte_at,
-                arrived_at,
+                parsed_at,
             );
-            self.waiting_since = Some(waiting_since.max(arrived_at));
+            self.waiting_since = Some(waiting_since.max(parsed_at));
         }
         Ok(incoming)
+    }
+
+    pub(super) fn settle(&mut self, call_started_at: Instant) {
+        let now = Instant::now();
+        let from = self.waiting_since.map_or(call_started_at, |waiting_since| {
+            waiting_since.max(call_started_at)
+        });
+        let decode = now.saturating_duration_since(from);
+        self.timings.response += decode;
+        self.timings.total += decode;
+        if self.waiting_since.is_some() {
+            self.waiting_since = Some(now);
+        }
     }
 
     pub(super) fn try_wait(&mut self) -> crate::Result<Option<ExitStatus>> {

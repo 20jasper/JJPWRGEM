@@ -7,11 +7,11 @@ use std::time::{Duration, Instant};
 pub struct Timings {
     pub total: Duration,
     /// client time spent sending and serializing the message until the server has all bytes
-    pub request_io: Duration,
+    pub request: Duration,
     /// server time spent processing request until sending response
     pub server: Duration,
     /// client time spent receiving and deserializing response from the language server
-    pub response_io: Duration,
+    pub response: Duration,
 }
 
 impl Timings {
@@ -19,26 +19,28 @@ impl Timings {
     pub const fn since(self, earlier: Self) -> Self {
         Self {
             total: self.total.saturating_sub(earlier.total),
-            request_io: self.request_io.saturating_sub(earlier.request_io),
+            request: self.request.saturating_sub(earlier.request),
             server: self.server.saturating_sub(earlier.server),
-            response_io: self.response_io.saturating_sub(earlier.response_io),
+            response: self.response.saturating_sub(earlier.response),
         }
     }
 
     pub(super) fn record(
         &mut self,
         waiting_since: Instant,
+        queued_at: Option<Instant>,
         written_at: Option<Instant>,
         first_byte_at: Instant,
-        arrived_at: Instant,
+        parsed_at: Instant,
     ) {
-        let arrived_at = arrived_at.max(waiting_since);
-        let first_byte_at = first_byte_at.clamp(waiting_since, arrived_at);
-        let written_at =
-            written_at.map_or(waiting_since, |at| at.clamp(waiting_since, first_byte_at));
-        self.total += arrived_at - waiting_since;
-        self.request_io += written_at - waiting_since;
+        let parsed_at = parsed_at.max(waiting_since);
+        let first_byte_at = first_byte_at.clamp(waiting_since, parsed_at);
+        let written_at = written_at
+            .or(queued_at)
+            .map_or(waiting_since, |at| at.clamp(waiting_since, first_byte_at));
+        self.total += parsed_at - waiting_since;
+        self.request += written_at - waiting_since;
         self.server += first_byte_at - written_at;
-        self.response_io += arrived_at - first_byte_at;
+        self.response += parsed_at - first_byte_at;
     }
 }

@@ -256,6 +256,6 @@ fn timings_cover_the_wait_for_a_response_and_nothing_between_calls() {
     );
     assert_eq!(
         timings.total,
-        timings.request_io + timings.server + timings.response_io
+        timings.request + timings.server + timings.response
     );
 }
