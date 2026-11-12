@@ -1,5 +1,12 @@
 # lspresso
 
+## 0.2.2 — 2026-11-12
+
+### Added
+
+- [9f2a798](https://github.com/20jasper/JJPWRGEM/commit/9f2a798305ece123ccad6e98a04ca7ed82fe8a98) add a direct incremental document change helper
+- [415b94d](https://github.com/20jasper/JJPWRGEM/commit/415b94d4b704bf5b64dee7220abc5aaf00030b30) add granular timings via Client::timings. Splits up time spent receiving, processing, and responding to requests. Real clients vary in speed so split out the language server's work from IO
+
 ## 0.2.1 — 2026-11-10
 
 ### Changed

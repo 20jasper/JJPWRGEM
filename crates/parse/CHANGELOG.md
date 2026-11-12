@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## 0.14.2 — 2026-11-12
+
+### Added
+
+- [9f2a798](https://github.com/20jasper/JJPWRGEM/commit/9f2a798305ece123ccad6e98a04ca7ed82fe8a98) add methods to access source text
+
 ## [0.14.1](https://github.com/20jasper/JJPWRGEM/compare/jjpwrgem-parse-v0.14.0...jjpwrgem-parse-v0.14.1) - 2026-10-31
 
 ### Performance
