@@ -162,7 +162,6 @@ impl Client {
         self.transport.rss_bytes()
     }
 
-    /// Running totals of where waits on the server went, see [`Timings`]
     pub const fn timings(&self) -> Timings {
         self.transport.timings()
     }

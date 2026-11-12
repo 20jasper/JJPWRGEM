@@ -1,22 +1,16 @@
 use std::time::{Duration, Instant};
 
-/// Where the time between sending a message and holding the server's next
-/// message in full went. None of it is the client's own serialization or
-/// parsing, which is what wrapping a call in [`Instant`] would add.
-///
-/// The counters only grow; measure a call by taking [`Timings::since`] across
-/// it. `total` is the sum of the other three.
+/// measures granular time spent receiving, processing, and responding to requests. Real
+/// clients vary in speed so split out the language server's work from IO
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 #[non_exhaustive]
 pub struct Timings {
     pub total: Duration,
-    /// Writing the message to the server's stdin. A server reads while this
-    /// happens, so for large messages some of its work overlaps
+    /// client time spent sending and serializing the message until the server has all bytes
     pub request_io: Duration,
-    /// From the message being fully written to the first byte of the next
-    /// message from the server
+    /// server time spent processing request until sending response
     pub server: Duration,
-    /// From that first byte to the last
+    /// client time spent receiving and deserializing response from the language server
     pub response_io: Duration,
 }
 

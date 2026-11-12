@@ -137,8 +137,6 @@ fn slow_group<'a>(c: &'a mut Criterion, name: &str) -> BenchmarkGroup<'a, WallTi
     group
 }
 
-/// Times only the server's own work, so pipe transfer and lspresso's
-/// serialization and parsing of large messages stay out of the comparison
 fn iter_server_time<T>(
     b: &mut Bencher,
     client: &mut Client,
