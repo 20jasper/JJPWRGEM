@@ -1,5 +1,5 @@
 ---
-cargo/jjpwrgem-lsp: minor (Performance)
+cargo/jjpwrgem-lsp: patch (Performance)
 cargo/jjpwrgem: patch (Performance)
 ---
 
