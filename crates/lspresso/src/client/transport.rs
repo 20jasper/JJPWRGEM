@@ -8,7 +8,7 @@ use crossbeam_channel::{Receiver, RecvTimeoutError, Sender};
 use lsp_server::Message;
 use sysinfo::{Pid, ProcessRefreshKind, ProcessesToUpdate, System};
 
-use super::timings::Timings;
+use super::timings::{Stopwatch, Timings};
 
 #[derive(Debug)]
 pub(super) enum Incoming {
@@ -36,11 +36,7 @@ pub(super) struct Transport {
     written: Receiver<(u64, Instant)>,
     incoming: Receiver<Arrival>,
     rss_monitor: Option<System>,
-    sent: u64,
-    waiting_since: Option<Instant>,
-    queued_at: Option<Instant>,
-    written_at: Option<Instant>,
-    timings: Timings,
+    stopwatch: Stopwatch,
 }
 
 #[derive(Debug)]
@@ -174,16 +170,12 @@ impl Transport {
             written,
             incoming,
             rss_monitor: System::new().ok(),
-            sent: 0,
-            waiting_since: None,
-            queued_at: None,
-            written_at: None,
-            timings: Timings::default(),
+            stopwatch: Stopwatch::default(),
         })
     }
 
     pub(super) const fn timings(&self) -> Timings {
-        self.timings
+        self.stopwatch.timings()
     }
 
     /// Queues `message` or returns existing errors
@@ -196,17 +188,16 @@ impl Transport {
             .write(&mut bytes)
             .expect("writing to a Vec cannot fail");
         let queued_at = Instant::now();
-        self.outgoing.send((self.sent + 1, bytes)).map_err(|_| {
-            crate::Error::from(
-                self.write_errors
-                    .try_recv()
-                    .unwrap_or_else(|_| io::ErrorKind::BrokenPipe.into()),
-            )
-        })?;
-        self.sent += 1;
-        self.written_at = None;
-        self.queued_at = Some(queued_at);
-        self.waiting_since = Some(started_at);
+        self.outgoing
+            .send((self.stopwatch.next_sequence(), bytes))
+            .map_err(|_| {
+                crate::Error::from(
+                    self.write_errors
+                        .try_recv()
+                        .unwrap_or_else(|_| io::ErrorKind::BrokenPipe.into()),
+                )
+            })?;
+        self.stopwatch.sent(started_at, queued_at);
         Ok(())
     }
 
@@ -225,38 +216,15 @@ impl Transport {
                 .recv()
                 .map_err(|_| RecvTimeoutError::Disconnected),
         }?;
-        if let Some((_, at)) = self
-            .written
-            .try_iter()
-            .filter(|(sequence, _)| *sequence == self.sent)
-            .last()
-        {
-            self.written_at = Some(at);
+        for (sequence, at) in self.written.try_iter() {
+            self.stopwatch.written(sequence, at);
         }
-        if let Some(waiting_since) = self.waiting_since {
-            self.timings.record(
-                waiting_since,
-                self.queued_at.take(),
-                self.written_at.take(),
-                first_byte_at,
-                parsed_at,
-            );
-            self.waiting_since = Some(waiting_since.max(parsed_at));
-        }
+        self.stopwatch.arrived(first_byte_at, parsed_at);
         Ok(incoming)
     }
 
     pub(super) fn settle(&mut self, call_started_at: Instant) {
-        let now = Instant::now();
-        let from = self.waiting_since.map_or(call_started_at, |waiting_since| {
-            waiting_since.max(call_started_at)
-        });
-        let decode = now.saturating_duration_since(from);
-        self.timings.response += decode;
-        self.timings.total += decode;
-        if self.waiting_since.is_some() {
-            self.waiting_since = Some(now);
-        }
+        self.stopwatch.settle(call_started_at);
     }
 
     pub(super) fn try_wait(&mut self) -> crate::Result<Option<ExitStatus>> {
