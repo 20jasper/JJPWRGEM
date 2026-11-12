@@ -46,41 +46,6 @@ struct Arrival {
     incoming: Incoming,
 }
 
-fn invalid_data(message: impl Into<String>) -> io::Error {
-    io::Error::new(io::ErrorKind::InvalidData, message.into())
-}
-
-fn read_body(reader: &mut impl BufRead) -> io::Result<Option<Vec<u8>>> {
-    let mut length = None;
-    let mut line = String::new();
-    loop {
-        line.clear();
-        if reader.read_line(&mut line)? == 0 {
-            return Ok(None);
-        }
-        let Some(header) = line.strip_suffix("\r\n") else {
-            return Err(invalid_data(format!("malformed header: {line:?}")));
-        };
-        if header.is_empty() {
-            break;
-        }
-        let Some((name, value)) = header.split_once(": ") else {
-            return Err(invalid_data(format!("malformed header: {line:?}")));
-        };
-        if name.eq_ignore_ascii_case("Content-Length") {
-            length = Some(
-                value
-                    .parse::<usize>()
-                    .map_err(|err| invalid_data(err.to_string()))?,
-            );
-        }
-    }
-    let length = length.ok_or_else(|| invalid_data("no Content-Length"))?;
-    let mut body = vec![0; length];
-    reader.read_exact(&mut body)?;
-    Ok(Some(body))
-}
-
 impl Transport {
     pub(super) fn spawn(mut command: Command) -> crate::Result<Self> {
         command
@@ -128,32 +93,26 @@ impl Transport {
                         break;
                     }
                 };
-                let body = read_body(&mut reader);
-                let incoming = match body {
-                    Ok(Some(body)) => serde_json::from_slice(&body).map_or_else(
-                        |err| {
-                            Incoming::Malformed(invalid_data(format!(
-                                "malformed LSP payload `{err:?}`: {}",
-                                String::from_utf8_lossy(&body)
-                            )))
-                        },
-                        Incoming::Message,
-                    ),
+                match Message::read(&mut reader) {
+                    Ok(Some(message)) => {
+                        let delivered = incoming_tx.send(Arrival {
+                            first_byte_at,
+                            parsed_at: Instant::now(),
+                            incoming: Incoming::Message(message),
+                        });
+                        if delivered.is_err() {
+                            return;
+                        }
+                    }
                     Ok(None) => return,
-                    Err(err) => Incoming::Malformed(err),
-                };
-                let parsed_at = Instant::now();
-                let malformed = matches!(incoming, Incoming::Malformed(_));
-                let delivered = incoming_tx.send(Arrival {
-                    first_byte_at,
-                    parsed_at,
-                    incoming,
-                });
-                if malformed {
-                    break;
-                }
-                if delivered.is_err() {
-                    return;
+                    Err(err) => {
+                        drop(incoming_tx.send(Arrival {
+                            first_byte_at,
+                            parsed_at: Instant::now(),
+                            incoming: Incoming::Malformed(err),
+                        }));
+                        break;
+                    }
                 }
             }
             // Closing the channel lets waits fail fast, but stdout itself
