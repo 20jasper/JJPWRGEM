@@ -10,6 +10,7 @@ use tower_lsp_server::{Client, LanguageServer, jsonrpc::Result, ls_types::*};
 use crate::{
     backend::{
         diagnostics::{build_code_actions, diagnostics_from_error},
+        folding::folding_ranges,
         symbols::document_symbols,
     },
     range::{FULL_DOCUMENT_RANGE, PositionEncoding, position_to_byte_offset_indexed},
@@ -26,6 +27,7 @@ pub struct Backend {
 }
 
 mod diagnostics;
+mod folding;
 mod symbols;
 
 fn diagnostics_for(
@@ -136,6 +138,7 @@ impl LanguageServer for Backend {
                 document_formatting_provider: Some(OneOf::Left(true)),
                 code_action_provider: Some(CodeActionProviderCapability::Simple(true)),
                 document_symbol_provider: Some(OneOf::Left(true)),
+                folding_range_provider: Some(FoldingRangeProviderCapability::Simple(true)),
                 diagnostic_provider: Some(DiagnosticServerCapabilities::Options(
                     DiagnosticOptions {
                         identifier: Some(SOURCE.into()),
@@ -250,6 +253,16 @@ impl LanguageServer for Backend {
             document,
             self.position_encoding(),
         ))))
+    }
+
+    async fn folding_range(&self, params: FoldingRangeParams) -> Result<Option<Vec<FoldingRange>>> {
+        let Some(document) = self.documents.get(&params.text_document.uri) else {
+            return Ok(None);
+        };
+        let Ok(document) = &*document else {
+            return Ok(None);
+        };
+        Ok(Some(folding_ranges(document)))
     }
 
     async fn shutdown(&self) -> Result<()> {

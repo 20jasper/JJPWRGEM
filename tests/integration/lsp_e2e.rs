@@ -320,3 +320,61 @@ fn document_symbols_are_none_for_invalid_json() -> TestResult {
     assert_eq!(client.document_symbol(&uri)?, None);
     Ok(())
 }
+
+fn fold_lines(client: &mut Client, uri: &Uri) -> TestResult<String> {
+    let ranges = client
+        .folding_range(uri)?
+        .ok_or("expected folding ranges")?;
+    Ok(ranges
+        .iter()
+        .map(|r| format!("{}-{}", r.start_line, r.end_line))
+        .collect::<Vec<_>>()
+        .join(" "))
+}
+
+#[test]
+fn folding_ranges_fold_multi_line_containers_once_per_start_line() -> TestResult {
+    let mut client = client(capabilities::vscode::latest)?;
+    let uri = open(
+        &mut client,
+        r#"{
+  "a": {
+    "b": [
+      1
+    ]
+  },
+  "c": {},
+  "d": [1, 2],
+  "e": {
+  },
+  "f": [{
+    "g": 1
+  }]
+}"#,
+    )?;
+
+    assert_snapshot!(fold_lines(&mut client, &uri)?, @"0-12 1-4 2-3 10-11");
+    Ok(())
+}
+
+#[test]
+fn folding_ranges_past_five_thousand_are_dropped() -> TestResult {
+    let mut client = client(capabilities::vscode::latest)?;
+    let text = format!("[{}]", vec!["[\n0\n]"; 5001].join(",\n"));
+    let uri = open(&mut client, &text)?;
+
+    let ranges = client
+        .folding_range(&uri)?
+        .ok_or("expected folding ranges")?;
+    assert_eq!(ranges.len(), 5000);
+    Ok(())
+}
+
+#[test]
+fn folding_ranges_are_none_for_invalid_json() -> TestResult {
+    let mut client = client(capabilities::vscode::latest)?;
+    let uri = open(&mut client, r#"{"a": }"#)?;
+
+    assert_eq!(client.folding_range(&uri)?, None);
+    Ok(())
+}
