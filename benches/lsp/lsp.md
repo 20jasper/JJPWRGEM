@@ -2,7 +2,7 @@
 
 # LSP benchmarks
 
-Wall-clock timing and memory usage against VSCode's JSON LSP, driven by [lspresso](/crates/lspresso) with VSCode's client capabilities. Run locally with `mise run bench-lsp`
+Wall-clock timing and memory usage against VSCode's JSON LSP and light-json-lsp, driven by [lspresso](/crates/lspresso) with VSCode's client capabilities. Run locally with `mise run bench-lsp`
 
 These benchmarks are run with `AMD Ryzen 5 5600X 6-Core Processor (3.70 GHz)`
 

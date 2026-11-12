@@ -1,6 +1,6 @@
 # LSP benchmarks
 
-Wall-clock timing and memory usage against VSCode's JSON LSP, driven by [lspresso](/crates/lspresso) with VSCode's client capabilities. Run locally with `mise run bench-lsp`
+Wall-clock timing and memory usage against VSCode's JSON LSP and light-json-lsp, driven by [lspresso](/crates/lspresso) with VSCode's client capabilities. Run locally with `mise run bench-lsp`
 
 {{BENCH_HARDWARE}}
 

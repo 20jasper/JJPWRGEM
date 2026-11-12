@@ -28,8 +28,8 @@ help: insert colon and placeholder value
 ## Why JJP?
 
 - Rich errors with context, descriptions, and patches
-- [Diagnostics are calculated 2–3x faster and use 5–19x less RAM than VSCode's LSP](https://github.com/20jasper/JJPWRGEM/blob/main/benches/lsp/lsp.md)
-- Parses and pretty prints a 1.7MB file in ~11ms — [benchmarks](./benches/BENCHMARKS.md)
+- [On large JSON files, diagnostics are up to ~5x faster and use ~20–25x less RAM than VSCode's LSP](https://github.com/20jasper/JJPWRGEM/blob/main/benches/lsp/lsp.md)
+- Parses and pretty prints a 1.7MB file in ~7ms — [benchmarks](./benches/BENCHMARKS.md)
 
 ![animation of JJPWRGEM's LSP. file changes are made quickly and feedback is shown quickly. code actions fix common issues like missing colons](./crates/lsp/lsp-demo.gif)
 
