@@ -1218,7 +1218,7 @@ checksum = "3bd1574e617a9a6c1f8f8181bd7e841e1f20e4277607ef28945765188d6284d4"
 
 [[package]]
 name = "jjpwrgem"
-version = "0.7.4"
+version = "0.7.5"
 dependencies = [
  "anstream",
  "bytes2chars",
@@ -1238,7 +1238,7 @@ dependencies = [
 
 [[package]]
 name = "jjpwrgem-lsp"
-version = "0.1.3"
+version = "0.1.4"
 dependencies = [
  "dashmap",
  "jjpwrgem-parse",
@@ -1250,7 +1250,7 @@ dependencies = [
 
 [[package]]
 name = "jjpwrgem-parse"
-version = "0.14.1"
+version = "0.14.2"
 dependencies = [
  "bon",
  "bytes2chars",
@@ -1377,7 +1377,7 @@ dependencies = [
 
 [[package]]
 name = "lspresso"
-version = "0.2.1"
+version = "0.2.2"
 dependencies = [
  "codspeed-criterion-compat",
  "crossbeam-channel",
