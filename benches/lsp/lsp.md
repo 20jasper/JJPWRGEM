@@ -2,7 +2,9 @@
 
 # LSP benchmarks
 
-Wall-clock timing and memory usage against VSCode's JSON LSP, driven by [lspresso](/crates/lspresso) with VSCode's client capabilities. Run locally with `mise run bench-lsp`
+Server processing time and memory usage against VSCode's JSON LSP, driven by [lspresso](/crates/lspresso) with VSCode's client capabilities. Run locally with `mise run bench-lsp`
+
+Timings are the server's processing time as measured by lspresso's `Client::timings`: from the request being fully written to the first byte of the response, excluding pipe IO and client serialization and parsing. The `initialize` bench is wall clock, from process spawn to the initialize response
 
 These benchmarks are run with `AMD Ryzen 5 5600X 6-Core Processor (3.70 GHz)`
 
@@ -18,9 +20,9 @@ Note: memory values are RSS (resident set size), shown in megabytes.
 
 | method     | jjpwrgem         | light-json-lsp  | vscode-json       |
 | ---------- | ---------------- | --------------- | ----------------- |
-| initialize | 858.1µs (4.1 MB) | 1.1ms (5.4 MB)  | 78.1ms (72.3 MB)  |
-| diagnostic | 65.0µs (4.6 MB)  | 50.1ms (5.6 MB) | 44.5µs (184.5 MB) |
-| formatting | 21.6µs (4.1 MB)  | 17.0µs (5.6 MB) | 54.9µs (107.8 MB) |
+| initialize | 856.1µs (4.0 MB) | 1.2ms (5.3 MB)  | 49.0ms (63.5 MB)  |
+| diagnostic | 42.7µs (5.0 MB)  | 50.0ms (5.6 MB) | 31.0µs (140.9 MB) |
+| formatting | 8.2µs (4.2 MB)   | 9.5µs (5.6 MB)  | 16.2µs (83.1 MB)  |
 
 ## twitter
 
@@ -28,11 +30,11 @@ Note: memory values are RSS (resident set size), shown in megabytes.
 
 Note: memory values are RSS (resident set size), shown in megabytes.
 
-| method     | jjpwrgem         | light-json-lsp   | vscode-json       |
-| ---------- | ---------------- | ---------------- | ----------------- |
-| initialize | 858.1µs (4.1 MB) | 1.1ms (5.4 MB)   | 78.1ms (72.3 MB)  |
-| diagnostic | 3.7ms (7.8 MB)   | 58.0ms (15.9 MB) | 6.9ms (190.9 MB)  |
-| formatting | 1.3ms (10.5 MB)  | 5.4ms (16.1 MB)  | 68.6ms (180.4 MB) |
+| method     | jjpwrgem          | light-json-lsp   | vscode-json      |
+| ---------- | ----------------- | ---------------- | ---------------- |
+| initialize | 856.1µs (4.0 MB)  | 1.2ms (5.3 MB)   | 49.0ms (63.5 MB) |
+| diagnostic | 1.7ms (8.5 MB)    | 59.6ms (15.9 MB) | 5.7ms (214.0 MB) |
+| formatting | 595.8µs (10.7 MB) | 3.4ms (16.1 MB)  | 9.3ms (176.4 MB) |
 
 ## citm catalog
 
@@ -40,11 +42,11 @@ Note: memory values are RSS (resident set size), shown in megabytes.
 
 Note: memory values are RSS (resident set size), shown in megabytes.
 
-| method     | jjpwrgem         | light-json-lsp   | vscode-json        |
-| ---------- | ---------------- | ---------------- | ------------------ |
-| initialize | 858.1µs (4.1 MB) | 1.1ms (5.4 MB)   | 78.1ms (72.3 MB)   |
-| diagnostic | 4.0ms (11.8 MB)  | 65.9ms (23.5 MB) | 20.5ms (294.9 MB)  |
-| formatting | 1.8ms (13.3 MB)  | 11.8ms (25.2 MB) | 233.0ms (279.8 MB) |
+| method     | jjpwrgem         | light-json-lsp   | vscode-json       |
+| ---------- | ---------------- | ---------------- | ----------------- |
+| initialize | 856.1µs (4.0 MB) | 1.2ms (5.3 MB)   | 49.0ms (63.5 MB)  |
+| diagnostic | 3.1ms (12.3 MB)  | 68.5ms (23.6 MB) | 18.8ms (302.6 MB) |
+| formatting | 1.1ms (13.5 MB)  | 8.4ms (25.3 MB)  | 30.0ms (311.6 MB) |
 
 ## canada
 
@@ -52,8 +54,8 @@ Note: memory values are RSS (resident set size), shown in megabytes.
 
 Note: memory values are RSS (resident set size), shown in megabytes.
 
-| method     | jjpwrgem         | light-json-lsp   | vscode-json         |
-| ---------- | ---------------- | ---------------- | ------------------- |
-| initialize | 858.1µs (4.1 MB) | 1.1ms (5.4 MB)   | 78.1ms (72.3 MB)    |
-| diagnostic | 10.9ms (22.4 MB) | 92.6ms (51.6 MB) | 42.2ms (486.1 MB)   |
-| formatting | 6.7ms (32.1 MB)  | 48.7ms (64.4 MB) | 1058.5ms (464.1 MB) |
+| method     | jjpwrgem         | light-json-lsp   | vscode-json        |
+| ---------- | ---------------- | ---------------- | ------------------ |
+| initialize | 856.1µs (4.0 MB) | 1.2ms (5.3 MB)   | 49.0ms (63.5 MB)   |
+| diagnostic | 7.6ms (25.5 MB)  | 91.7ms (51.6 MB) | 40.8ms (476.9 MB)  |
+| formatting | 2.7ms (32.0 MB)  | 39.5ms (64.5 MB) | 108.2ms (559.3 MB) |

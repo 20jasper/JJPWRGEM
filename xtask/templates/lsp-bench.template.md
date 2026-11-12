@@ -1,6 +1,8 @@
 # LSP benchmarks
 
-Wall-clock timing and memory usage against VSCode's JSON LSP, driven by [lspresso](/crates/lspresso) with VSCode's client capabilities. Run locally with `mise run bench-lsp`
+Server processing time and memory usage against VSCode's JSON LSP, driven by [lspresso](/crates/lspresso) with VSCode's client capabilities. Run locally with `mise run bench-lsp`
+
+Timings are the server's processing time as measured by lspresso's `Client::timings`: from the request being fully written to the first byte of the response, excluding pipe IO and client serialization and parsing. The `initialize` bench is wall clock, from process spawn to the initialize response
 
 {{BENCH_HARDWARE}}
 

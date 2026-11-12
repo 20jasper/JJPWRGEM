@@ -54,7 +54,7 @@ assert!(published.diagnostics.is_empty());
 
 ## Benchmarking
 
-Use existing benchmarking tools like criterion to benchmark
+Use existing benchmarking tools like criterion, and feed it the server's time from `Client::timings` so lspresso's own serialization and parsing stay out of the numbers
 
 ```rust
 fn bench_diagnostics(c: &mut Criterion) {
@@ -67,7 +67,13 @@ fn bench_diagnostics(c: &mut Criterion) {
         .unwrap();
 
     c.bench_function("diagnostics", |b| {
-        b.iter(|| client.diagnostics(&uri).unwrap());
+        b.iter_custom(|iters| {
+            let before = client.timings();
+            for _ in 0..iters {
+                client.diagnostics(&uri).unwrap();
+            }
+            client.timings().since(before).server
+        });
     });
 
     // peak RSS over the session
