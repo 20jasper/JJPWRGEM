@@ -4,11 +4,11 @@ use std::{
     path::Path,
     process::Command,
     sync::{LazyLock, Mutex},
-    time::{Duration, Instant},
+    time::Duration,
 };
 
 use criterion::{
-    BatchSize, BenchmarkGroup, BenchmarkId, Criterion, SamplingMode, criterion_group,
+    BatchSize, Bencher, BenchmarkGroup, BenchmarkId, Criterion, SamplingMode, criterion_group,
     criterion_main, measurement::WallTime,
 };
 use lspresso::{Client, capabilities, gen_lsp_types::*, server_command};
@@ -137,6 +137,22 @@ fn slow_group<'a>(c: &'a mut Criterion, name: &str) -> BenchmarkGroup<'a, WallTi
     group
 }
 
+/// Times only the waits on the server, so lspresso's own serialization and
+/// parsing of large messages stay out of the comparison
+fn iter_server_time<T>(
+    b: &mut Bencher,
+    client: &mut Client,
+    mut round_trip: impl FnMut(&mut Client) -> T,
+) {
+    b.iter_custom(|iters| {
+        let before = client.server_time();
+        for _ in 0..iters {
+            black_box(round_trip(client));
+        }
+        client.server_time().saturating_sub(before)
+    });
+}
+
 fn bench_fixtures(
     c: &mut Criterion,
     name: &str,
@@ -177,7 +193,7 @@ fn bench_diagnostics(c: &mut Criterion) {
         let incremental = client.supports_incremental_sync();
         let mut insert = false;
         group.bench_function(BenchmarkId::new(profile.label, name), |b| {
-            b.iter(|| {
+            iter_server_time(b, &mut client, |client| {
                 insert = !insert;
                 if incremental {
                     let range = if insert {
@@ -213,7 +229,7 @@ fn bench_formatting(c: &mut Criterion) {
         let (uri, text) = fixture(name);
         let (mut client, _) = profile.warm(&uri, text);
         group.bench_function(BenchmarkId::new(profile.label, name), |b| {
-            b.iter(|| {
+            iter_server_time(b, &mut client, |client| {
                 client
                     .formatting(black_box(&uri), FormattingOptions::default())
                     .unwrap()
@@ -240,15 +256,14 @@ fn bench_open(c: &mut Criterion) {
                     .map(|_| {
                         opened += 1;
                         let uri: Uri = format!("file:///open-{opened}.json").parse().unwrap();
-                        let text = text.clone();
-                        let start = Instant::now();
+                        let before = client.server_time();
                         client
-                            .did_open(uri.clone(), text, LanguageKind::JSON)
+                            .did_open(uri.clone(), text.clone(), LanguageKind::JSON)
                             .unwrap();
                         client.diagnostics(black_box(&uri)).unwrap();
-                        let elapsed = start.elapsed();
+                        let waited = client.server_time().saturating_sub(before);
                         client.did_close(&uri).unwrap();
-                        elapsed
+                        waited
                     })
                     .sum()
             });
@@ -277,7 +292,7 @@ fn bench_code_action(c: &mut Criterion) {
     let (mut client, diagnostics) = profile.warm(&uri, "{\n  \"key\" 1\n}\n");
 
     c.bench_function("code_action", |b| {
-        b.iter(|| {
+        iter_server_time(b, &mut client, |client| {
             client
                 .code_action(black_box(&uri), range, diagnostics.clone())
                 .unwrap()
