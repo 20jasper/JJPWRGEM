@@ -135,10 +135,7 @@ impl LanguageServer for Backend {
                 )),
                 document_formatting_provider: Some(OneOf::Left(true)),
                 code_action_provider: Some(CodeActionProviderCapability::Simple(true)),
-                document_symbol_provider: client_supports_hierarchical_symbols(
-                    &params.capabilities,
-                )
-                .then_some(OneOf::Left(true)),
+                document_symbol_provider: Some(OneOf::Left(true)),
                 diagnostic_provider: Some(DiagnosticServerCapabilities::Options(
                     DiagnosticOptions {
                         identifier: Some(SOURCE.into()),
@@ -265,15 +262,6 @@ fn client_supports_pull_diagnostics(capabilities: &ClientCapabilities) -> bool {
         .text_document
         .as_ref()
         .is_some_and(|t| t.diagnostic.is_some())
-}
-
-fn client_supports_hierarchical_symbols(capabilities: &ClientCapabilities) -> bool {
-    capabilities
-        .text_document
-        .as_ref()
-        .and_then(|t| t.document_symbol.as_ref())
-        .and_then(|s| s.hierarchical_document_symbol_support)
-        == Some(true)
 }
 
 #[cfg(test)]
