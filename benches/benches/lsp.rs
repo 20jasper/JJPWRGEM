@@ -203,42 +203,35 @@ fn bench_diagnostics(c: &mut Criterion) {
         let edited = format!("{broken}\n");
         let end = end_position(&broken);
         let (mut client, _) = profile.warm(&uri, broken.clone());
+        let id = format!("diagnostics/{}/{name}", profile.label);
         let incremental = client.supports_incremental_sync();
         let mut insert = false;
         group.bench_function(BenchmarkId::new(profile.label, name), |b| {
-            iter_server_time(
-                b,
-                &format!("diagnostics/{}/{name}", profile.label),
-                &mut client,
-                |client| {
-                    insert = !insert;
-                    if incremental {
-                        let range = if insert {
-                            Range { start: end, end }
-                        } else {
-                            Range {
-                                start: end,
-                                end: Position {
-                                    line: end.line,
-                                    character: end.character + 1,
-                                },
-                            }
-                        };
-                        client
-                            .did_change_incremental(&uri, range, if insert { "\n" } else { "" })
-                            .unwrap();
+            iter_server_time(b, &id, &mut client, |client| {
+                insert = !insert;
+                if incremental {
+                    let range = if insert {
+                        Range { start: end, end }
                     } else {
-                        let text = if insert { &edited } else { &broken };
-                        client.did_change_full(&uri, text.clone()).unwrap();
-                    }
-                    client.diagnostics(black_box(&uri)).unwrap();
-                },
-            );
+                        Range {
+                            start: end,
+                            end: Position {
+                                line: end.line,
+                                character: end.character + 1,
+                            },
+                        }
+                    };
+                    client
+                        .did_change_incremental(&uri, range, if insert { "\n" } else { "" })
+                        .unwrap();
+                } else {
+                    let text = if insert { &edited } else { &broken };
+                    client.did_change_full(&uri, text.clone()).unwrap();
+                }
+                client.diagnostics(black_box(&uri)).unwrap();
+            });
         });
-        record_memory(
-            &format!("diagnostics/{}/{name}", profile.label),
-            &mut client,
-        );
+        record_memory(&id, &mut client);
     });
 }
 
@@ -246,19 +239,15 @@ fn bench_formatting(c: &mut Criterion) {
     bench_fixtures(c, "formatting", |group, profile, name| {
         let (uri, text) = fixture(name);
         let (mut client, _) = profile.warm(&uri, text);
+        let id = format!("formatting/{}/{name}", profile.label);
         group.bench_function(BenchmarkId::new(profile.label, name), |b| {
-            iter_server_time(
-                b,
-                &format!("formatting/{}/{name}", profile.label),
-                &mut client,
-                |client| {
-                    client
-                        .formatting(black_box(&uri), FormattingOptions::default())
-                        .unwrap()
-                },
-            );
+            iter_server_time(b, &id, &mut client, |client| {
+                client
+                    .formatting(black_box(&uri), FormattingOptions::default())
+                    .unwrap()
+            });
         });
-        record_memory(&format!("formatting/{}/{name}", profile.label), &mut client);
+        record_memory(&id, &mut client);
     });
 }
 
@@ -313,20 +302,16 @@ fn bench_code_action(c: &mut Criterion) {
     };
     // A missing colon
     let (mut client, diagnostics) = profile.warm(&uri, "{\n  \"key\" 1\n}\n");
+    let id = format!("code_action/{}", profile.label);
 
     c.bench_function("code_action", |b| {
-        iter_server_time(
-            b,
-            &format!("code_action/{}", profile.label),
-            &mut client,
-            |client| {
-                client
-                    .code_action(black_box(&uri), range, diagnostics.clone())
-                    .unwrap()
-            },
-        );
+        iter_server_time(b, &id, &mut client, |client| {
+            client
+                .code_action(black_box(&uri), range, diagnostics.clone())
+                .unwrap()
+        });
     });
-    record_memory(&format!("code_action/{}", profile.label), &mut client);
+    record_memory(&id, &mut client);
 }
 
 criterion_group! {
