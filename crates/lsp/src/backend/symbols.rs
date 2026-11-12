@@ -19,7 +19,7 @@ pub(crate) fn document_symbols(
         encoding,
     };
     let mut remaining = MAX_SYMBOLS;
-    children(&source, document.root(), &mut remaining).unwrap_or_default()
+    map_children(&source, document.root(), &mut remaining).unwrap_or_default()
 }
 
 struct Source<'a> {
@@ -28,7 +28,7 @@ struct Source<'a> {
     encoding: PositionEncoding,
 }
 
-fn children(
+fn map_children(
     source: &Source<'_>,
     value: &Value,
     remaining: &mut usize,
@@ -38,7 +38,7 @@ fn children(
             .children()
             .map_while(|(key, child)| {
                 *remaining = remaining.checked_sub(1)?;
-                Some(source.symbol(key, child, children(source, child, remaining)))
+                Some(source.symbol(key, child, map_children(source, child, remaining)))
             })
             .collect()
     })
