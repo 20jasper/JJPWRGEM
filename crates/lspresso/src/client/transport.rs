@@ -80,39 +80,21 @@ impl Transport {
         std::thread::spawn(move || {
             let mut reader = BufReader::new(stdout);
             loop {
-                let first_byte_at = match reader.fill_buf() {
-                    Ok([]) => return,
-                    Ok(_) => Instant::now(),
-                    Err(err) => {
-                        let now = Instant::now();
-                        drop(incoming_tx.send(Arrival {
-                            first_byte_at: now,
-                            parsed_at: now,
-                            incoming: Incoming::Malformed(err),
-                        }));
-                        break;
-                    }
-                };
-                match Message::read(&mut reader) {
-                    Ok(Some(message)) => {
-                        let delivered = incoming_tx.send(Arrival {
-                            first_byte_at,
-                            parsed_at: Instant::now(),
-                            incoming: Incoming::Message(message),
-                        });
-                        if delivered.is_err() {
-                            return;
-                        }
-                    }
+                drop(reader.fill_buf());
+                let first_byte_at = Instant::now();
+                let incoming = match Message::read(&mut reader) {
+                    Ok(Some(message)) => Incoming::Message(message),
                     Ok(None) => return,
-                    Err(err) => {
-                        drop(incoming_tx.send(Arrival {
-                            first_byte_at,
-                            parsed_at: Instant::now(),
-                            incoming: Incoming::Malformed(err),
-                        }));
-                        break;
-                    }
+                    Err(err) => Incoming::Malformed(err),
+                };
+                let malformed = matches!(incoming, Incoming::Malformed(_));
+                let delivered = incoming_tx.send(Arrival {
+                    first_byte_at,
+                    parsed_at: Instant::now(),
+                    incoming,
+                });
+                if malformed || delivered.is_err() {
+                    break;
                 }
             }
             // Closing the channel lets waits fail fast, but stdout itself
