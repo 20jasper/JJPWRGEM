@@ -5,15 +5,14 @@
 test_flags = "--all-features --workspace -q"
 
 [tasks.test]
-description = "Run tests excluding benchmarks and slow property tests"
+description = "Run tests excluding benchmarks, prettier conformance, and slow property tests"
 run = [
-  'cargo test {{vars.test_flags}} --tests --lib --bins --examples "$@" -- --skip prop_ --skip matches_prettier > {{get_env(name="TEST_OUTPUT", default="/dev/null")}}',
+  'cargo test {{vars.test_flags}} --tests --lib --bins --examples "$@" -- --skip prop_ --skip matches_prettier --skip prettier_conformance > {{get_env(name="TEST_OUTPUT", default="/dev/null")}}',
   "echo 'tests passed!'",
 ]
 
 [tasks.test.tools]
 "aqua:mitsuhiko/insta" = "1.49"
-"npm:prettier" = "3.9.10"
 
 [tasks.test-all]
 description = "Run full test suite including snapshots and large prettier props"
