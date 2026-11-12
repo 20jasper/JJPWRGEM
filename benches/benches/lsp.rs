@@ -262,13 +262,13 @@ fn bench_document_symbols(c: &mut Criterion) {
         {
             return;
         }
+        let id = format!("document_symbols/{}/{name}", profile.label);
         group.bench_function(BenchmarkId::new(profile.label, name), |b| {
-            b.iter(|| client.document_symbol(black_box(&uri)).unwrap());
+            iter_server_time(b, &id, &mut client, |client| {
+                client.document_symbol(black_box(&uri)).unwrap()
+            });
         });
-        record_memory(
-            &format!("document_symbols/{}/{name}", profile.label),
-            &mut client,
-        );
+        record_memory(&id, &mut client);
     });
 }
 
