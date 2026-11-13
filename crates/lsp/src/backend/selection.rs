@@ -1,6 +1,6 @@
 use std::range::Range as Span;
 
-use itertools::Itertools;
+use itertools::{Either, Itertools};
 use jjpwrgem_parse::ast::{Document, Key, Value, quoted};
 use tower_lsp_server::ls_types::{Position, Range, SelectionRange};
 
@@ -51,19 +51,15 @@ fn value_steps(value: &Value, offset: usize) -> impl Iterator<Item = Span<usize>
         .chain(interior(value, offset))
 }
 
-fn member_steps(
-    offset: usize,
-    key: Key,
-    value: &Value,
-) -> Box<dyn Iterator<Item = Span<usize>> + '_> {
+fn member_steps(offset: usize, key: Key, value: &Value) -> impl Iterator<Item = Span<usize>> + '_ {
     let member = std::iter::once(value.member_span(key));
     match key {
-        Key::Name(name) if contains(quoted(name), offset) => Box::new(
+        Key::Name(name) if contains(quoted(name), offset) => Either::Left(
             member
                 .chain([quoted(name)])
                 .chain(Some(name).filter(|name| contains(*name, offset))),
         ),
-        _ => Box::new(member.chain(value_steps(value, offset))),
+        _ => Either::Right(member.chain(value_steps(value, offset))),
     }
 }
 
