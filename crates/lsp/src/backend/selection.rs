@@ -1,3 +1,5 @@
+//! selection ranges go from the current position to its container, to its container until the cursor hits the document
+
 use std::range::Range as Span;
 
 use jjpwrgem_parse::ast::{Document, Key, Value, quoted};
@@ -18,6 +20,7 @@ pub(crate) fn selection_ranges(
         .collect()
 }
 
+/// get a single selection range 
 fn selection_range(
     document: &Document<String>,
     positions: &Positions,
@@ -25,9 +28,12 @@ fn selection_range(
 ) -> SelectionRange {
     let offset = positions.offset(document.source(), position);
     let mut chain = None;
+    /// iterate outer to inner to track selection chain
     for span in steps(document.root(), offset) {
         chain = Some(SelectionRange {
             range: positions.range(span),
+            // linked list of selection ranges
+            // track parents
             parent: chain.map(Box::new),
         });
     }
@@ -61,14 +67,17 @@ fn push_value_steps(spans: &mut Vec<Span<usize>>, value: &Value, offset: usize) 
     push_interior(spans, value, offset);
 }
 
+/// values from outer to inner
 fn steps(root: &Value, offset: usize) -> Vec<Span<usize>> {
     let mut spans = Vec::new();
     let root_span = root.span();
+    // add whole document if offset is inside
     if contains(root_span, offset) {
         spans.push(root_span);
     }
     push_interior(&mut spans, root, offset);
 
+    // iterate outer to inner
     for (key, value) in root.path_at(offset) {
         match key {
             Key::Name(name) if contains(quoted(name), offset) => {
