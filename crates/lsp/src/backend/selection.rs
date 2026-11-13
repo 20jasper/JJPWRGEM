@@ -14,21 +14,27 @@ pub(crate) fn selection_ranges(
 ) -> Vec<SelectionRange> {
     let positions = Positions::new(document.source(), encoding);
     at.iter()
-        .map(|&position| {
-            let offset = positions.offset(document.source(), position);
-            let mut chain = None;
-            for span in steps(document.root(), offset) {
-                chain = Some(SelectionRange {
-                    range: positions.range(span),
-                    parent: chain.map(Box::new),
-                });
-            }
-            chain.unwrap_or(SelectionRange {
-                range: Range::new(position, position),
-                parent: None,
-            })
-        })
+        .map(|&position| selection_range(document, &positions, position))
         .collect()
+}
+
+fn selection_range(
+    document: &Document<String>,
+    positions: &Positions,
+    position: Position,
+) -> SelectionRange {
+    let offset = positions.offset(document.source(), position);
+    let mut chain = None;
+    for span in steps(document.root(), offset) {
+        chain = Some(SelectionRange {
+            range: positions.range(span),
+            parent: chain.map(Box::new),
+        });
+    }
+    chain.unwrap_or(SelectionRange {
+        range: Range::new(position, position),
+        parent: None,
+    })
 }
 
 fn contains(span: Span<usize>, offset: usize) -> bool {
