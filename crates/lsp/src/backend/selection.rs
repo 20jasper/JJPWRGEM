@@ -1,5 +1,5 @@
-//! Selection ranges go from the current position to its container, then to that container's
-//! parent, until the cursor reaches the document.
+//! selection ranges go from the current position to its container, to its container
+//! until the cursor hits the document
 
 use std::range::Range as Span;
 
@@ -21,14 +21,14 @@ pub(crate) fn selection_ranges(
         .collect()
 }
 
-/// Gets a single selection range.
+/// get a single selection range
 fn selection_range(
     document: &Document<String>,
     positions: &Positions,
     position: Position,
 ) -> SelectionRange {
     let offset = positions.offset(document.source(), position);
-    // Spans are outer-to-inner; each inner range links back to the previous outer range.
+    // iterate outer to inner to track selection chain
     let chain = steps(document.root(), offset)
         .into_iter()
         .map(|span| SelectionRange {
@@ -37,7 +37,8 @@ fn selection_range(
         })
         .reduce(|parent, inner| SelectionRange {
             range: inner.range,
-            // Linked list of selection ranges, tracking parents.
+            // linked list of selection ranges
+            // track parents
             parent: Some(Box::new(parent)),
         });
     chain.unwrap_or(SelectionRange {
@@ -67,17 +68,17 @@ fn push_value_steps(spans: &mut Vec<Span<usize>>, value: &Value, offset: usize) 
     spans.extend(interior(value, offset));
 }
 
-/// Returns selection spans from outer to inner.
+/// values from outer to inner
 fn steps(root: &Value, offset: usize) -> Vec<Span<usize>> {
     let mut spans = Vec::new();
     let root_span = root.span();
-    // Add the whole document if the offset is inside it.
+    // add whole document if offset is inside
     if contains(root_span, offset) {
         spans.push(root_span);
     }
     spans.extend(interior(root, offset));
 
-    // Iterate from the outermost matching child to the innermost value.
+    // iterate outer to inner
     for (key, value) in root.path_at(offset) {
         match key {
             Key::Name(name) if contains(quoted(name), offset) => {
