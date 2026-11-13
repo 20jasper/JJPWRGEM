@@ -1,6 +1,6 @@
 use std::range::Range as Span;
 
-use jjpwrgem_parse::ast::{Document, Key, Value};
+use jjpwrgem_parse::ast::{Document, Key, QUOTE_LEN, Value};
 use tower_lsp_server::ls_types::{DocumentSymbol, SymbolKind};
 
 use crate::range::{PositionEncoding, Positions};
@@ -91,5 +91,5 @@ fn truncated(text: &str) -> String {
 }
 
 fn quoted(range: Span<usize>) -> Span<usize> {
-    Span::from(range.start - 1..range.end + 1)
+    Span::from(range.start - QUOTE_LEN..range.end + QUOTE_LEN)
 }

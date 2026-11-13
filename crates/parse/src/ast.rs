@@ -4,6 +4,8 @@ use visitor::AstVisitor;
 
 use crate::{Result, tokens::TokenStream, traverse::parse_tokens};
 
+pub const QUOTE_LEN: usize = 1;
+
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct ObjectEntries(pub(crate) Vec<(Range<usize>, Value)>);
 
@@ -62,7 +64,7 @@ impl Value {
     pub fn span(&self) -> Range<usize> {
         let range = self.range();
         match self {
-            Value::String(_) => range.start - 1..range.end + 1,
+            Value::String(_) => range.start - QUOTE_LEN..range.end + QUOTE_LEN,
             _ => range,
         }
     }

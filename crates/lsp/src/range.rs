@@ -66,6 +66,10 @@ impl Positions {
         }
     }
 
+    pub fn line(&self, offset: usize) -> u32 {
+        self.line_col(offset).line
+    }
+
     pub fn range(&self, span: std::range::Range<usize>) -> Range {
         Range {
             start: self.position(span.start),
