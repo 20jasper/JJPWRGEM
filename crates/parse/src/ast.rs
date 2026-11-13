@@ -4,7 +4,11 @@ use visitor::AstVisitor;
 
 use crate::{Result, tokens::TokenStream, traverse::parse_tokens};
 
-pub const QUOTE_LEN: usize = 1;
+pub(crate) const QUOTE_LEN: usize = 1;
+
+pub fn quoted(range: Range<usize>) -> Range<usize> {
+    range.start - QUOTE_LEN..range.end + QUOTE_LEN
+}
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct ObjectEntries(pub(crate) Vec<(Range<usize>, Value)>);
@@ -13,10 +17,6 @@ impl ObjectEntries {
     #[inline]
     pub(crate) fn is_empty(&self) -> bool {
         self.0.is_empty()
-    }
-
-    pub fn iter(&self) -> impl Iterator<Item = (Range<usize>, &Value)> {
-        self.0.iter().map(|(key, value)| (*key, value))
     }
 
     pub(crate) fn find<'a>(&'a self, source: &str, key: &str) -> Option<&'a Value> {
@@ -64,7 +64,7 @@ impl Value {
     pub fn span(&self) -> Range<usize> {
         let range = self.range();
         match self {
-            Value::String(_) => range.start - QUOTE_LEN..range.end + QUOTE_LEN,
+            Value::String(_) => quoted(range),
             _ => range,
         }
     }

@@ -82,6 +82,11 @@ impl Backend {
             .unwrap_or_default()
     }
 
+    fn with_document<T>(&self, uri: &Uri, f: impl FnOnce(&Document<String>) -> T) -> Option<T> {
+        let document = self.documents.get(uri)?;
+        document.as_ref().ok().map(f)
+    }
+
     async fn process_document(&self, uri: Uri, text: String) {
         let document = Document::parse(text);
         let diagnostics = (!self.client_pulls_diagnostics())
@@ -212,18 +217,12 @@ impl LanguageServer for Backend {
     }
 
     async fn formatting(&self, params: DocumentFormattingParams) -> Result<Option<Vec<TextEdit>>> {
-        let Some(document) = self.documents.get(&params.text_document.uri) else {
-            return Ok(None);
-        };
-        let Ok(document) = &*document else {
-            return Ok(None);
-        };
-
-        let formatted = format_document(document, &JsonMode::default());
-        Ok(Some(vec![TextEdit {
-            range: FULL_DOCUMENT_RANGE,
-            new_text: formatted,
-        }]))
+        Ok(self.with_document(&params.text_document.uri, |document| {
+            vec![TextEdit {
+                range: FULL_DOCUMENT_RANGE,
+                new_text: format_document(document, &JsonMode::default()),
+            }]
+        }))
     }
 
     async fn code_action(&self, params: CodeActionParams) -> Result<Option<CodeActionResponse>> {
@@ -242,26 +241,15 @@ impl LanguageServer for Backend {
         &self,
         params: DocumentSymbolParams,
     ) -> Result<Option<DocumentSymbolResponse>> {
-        let Some(document) = self.documents.get(&params.text_document.uri) else {
-            return Ok(None);
-        };
-        let Ok(document) = &*document else {
-            return Ok(None);
-        };
-        Ok(Some(DocumentSymbolResponse::Nested(document_symbols(
-            document,
-            self.position_encoding(),
-        ))))
+        Ok(self.with_document(&params.text_document.uri, |document| {
+            DocumentSymbolResponse::Nested(document_symbols(document, self.position_encoding()))
+        }))
     }
 
     async fn folding_range(&self, params: FoldingRangeParams) -> Result<Option<Vec<FoldingRange>>> {
-        let Some(document) = self.documents.get(&params.text_document.uri) else {
-            return Ok(None);
-        };
-        let Ok(document) = &*document else {
-            return Ok(None);
-        };
-        Ok(Some(folding_ranges(document, self.position_encoding())))
+        Ok(self.with_document(&params.text_document.uri, |document| {
+            folding_ranges(document, self.position_encoding())
+        }))
     }
 
     async fn shutdown(&self) -> Result<()> {
