@@ -252,16 +252,6 @@ impl LanguageServer for Backend {
         }))
     }
 
-    async fn folding_range(&self, params: FoldingRangeParams) -> Result<Option<Vec<FoldingRange>>> {
-        let Some(document) = self.documents.get(&params.text_document.uri) else {
-            return Ok(None);
-        };
-        let Ok(document) = &*document else {
-            return Ok(None);
-        };
-        Ok(Some(folding_ranges(document, self.position_encoding())))
-    }
-
     async fn shutdown(&self) -> Result<()> {
         Ok(())
     }
