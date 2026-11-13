@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## 0.7.6 — 2026-11-13
+
+### Added
+
+- [e290179](https://github.com/20jasper/JJPWRGEM/commit/e290179a9384994623b0e60a50aa42e25135fc9a) add folding ranges
+- [515dd1f](https://github.com/20jasper/JJPWRGEM/commit/515dd1f455756ba196192aadf51a484f9581ef3b) add document symbols
+
 ## 0.7.5 — 2026-11-12
 
 ### Added
