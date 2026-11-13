@@ -13,12 +13,22 @@ impl ObjectEntries {
         self.0.is_empty()
     }
 
+    pub fn iter(&self) -> impl Iterator<Item = (Range<usize>, &Value)> {
+        self.0.iter().map(|(key, value)| (*key, value))
+    }
+
     pub(crate) fn find<'a>(&'a self, source: &str, key: &str) -> Option<&'a Value> {
         self.0
             .iter()
             .find(|(kr, _)| &source[*kr] == key)
             .map(|(_, v)| v)
     }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Key {
+    Name(Range<usize>),
+    Index(usize),
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -47,6 +57,43 @@ impl Value {
                 mantissa.start..exponent.map_or(mantissa.end, |e| e.end)
             }
         }
+    }
+
+    pub fn span(&self) -> Range<usize> {
+        let range = self.range();
+        match self {
+            Value::String(_) => range.start - 1..range.end + 1,
+            _ => range,
+        }
+    }
+
+    /// outputs layer of direct children
+    pub fn children(&self) -> impl DoubleEndedIterator<Item = (Key, &Value)> {
+        let (entries, items) = match self {
+            Value::Object(_, entries) => (Some(entries.0.iter()), None),
+            Value::Array(_, items) => (None, Some(items.iter().enumerate())),
+            _ => (None, None),
+        };
+        entries
+            .into_iter()
+            .flatten()
+            .map(|(name, value)| (Key::Name(*name), value))
+            .chain(
+                items
+                    .into_iter()
+                    .flatten()
+                    .map(|(index, value)| (Key::Index(index), value)),
+            )
+    }
+
+    /// preorder walk over the value, outputting a flat stream of Values
+    pub fn traverse(&self) -> impl Iterator<Item = &Value> {
+        let mut stack = vec![self];
+        core::iter::from_fn(move || {
+            let value = stack.pop()?;
+            stack.extend(value.children().rev().map(|(_, child)| child));
+            Some(value)
+        })
     }
 
     pub(crate) fn to_f64(&self, source: &str) -> Option<f64> {
@@ -86,6 +133,11 @@ impl<S: AsRef<str>> Document<S> {
     #[inline]
     pub fn into_source(self) -> S {
         self.source
+    }
+
+    #[inline]
+    pub fn source(&self) -> &str {
+        self.source.as_ref()
     }
 
     #[inline]
@@ -334,6 +386,27 @@ mod tests {
         assert_eq!(
             doc.root(),
             &make_obj(vec![("hi", Value::String(range_of(json, "bye")))], json)
+        );
+    }
+
+    #[test]
+    fn traverse_is_preorder() {
+        let doc = Document::parse(r#"{"a": [1, {"b": 2}], "c": 3}"#).unwrap();
+        let slices = doc
+            .root()
+            .traverse()
+            .map(|value| doc.slice(value.span()))
+            .collect::<Vec<_>>();
+        assert_eq!(
+            slices,
+            [
+                r#"{"a": [1, {"b": 2}], "c": 3}"#,
+                r#"[1, {"b": 2}]"#,
+                "1",
+                r#"{"b": 2}"#,
+                "2",
+                "3"
+            ]
         );
     }
 

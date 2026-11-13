@@ -251,6 +251,27 @@ fn bench_formatting(c: &mut Criterion) {
     });
 }
 
+/// Servers that don't advertise document symbols are skipped
+fn bench_document_symbols(c: &mut Criterion) {
+    bench_fixtures(c, "document_symbols", |group, profile, name| {
+        let (uri, text) = fixture(name);
+        let (mut client, _) = profile.warm(&uri, text);
+        if client
+            .server_capabilities()
+            .is_none_or(|capabilities| capabilities.document_symbol_provider.is_none())
+        {
+            return;
+        }
+        let id = format!("document_symbols/{}/{name}", profile.label);
+        group.bench_function(BenchmarkId::new(profile.label, name), |b| {
+            iter_server_time(b, &id, &mut client, |client| {
+                client.document_symbol(black_box(&uri)).unwrap()
+            });
+        });
+        record_memory(&id, &mut client);
+    });
+}
+
 /// jjp only: open, then wait for the first diagnostics of a document the server
 /// hasn't seen. Each iteration opens a fresh URI and closes it untimed
 fn bench_open(c: &mut Criterion) {
@@ -320,6 +341,7 @@ criterion_group! {
         .sample_size(10)
         .warm_up_time(Duration::from_secs(1))
         .measurement_time(Duration::from_secs(3));
-    targets = bench_initialize, bench_diagnostics, bench_formatting, bench_open, bench_code_action
+    targets = bench_initialize, bench_diagnostics, bench_formatting, bench_document_symbols, bench_open,
+        bench_code_action
 }
 criterion_main!(benches);

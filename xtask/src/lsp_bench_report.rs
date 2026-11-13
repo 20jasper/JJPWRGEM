@@ -90,6 +90,9 @@ fn table(
     out.push_str(&method("formatting", &|p| {
         format!("formatting/{p}/{fixture}")
     }));
+    out.push_str(&method("document symbols", &|p| {
+        format!("document_symbols/{p}/{fixture}")
+    }));
     out
 }
 
@@ -126,7 +129,11 @@ pub fn write_lsp_bench_report() -> anyhow::Result<()> {
     let profiles: BTreeSet<String> = times
         .keys()
         .filter_map(|id| match id.split('/').collect::<Vec<_>>()[..] {
-            ["initialize" | "diagnostics" | "formatting", profile, ..] => Some(profile.to_owned()),
+            [
+                "initialize" | "diagnostics" | "formatting" | "document_symbols",
+                profile,
+                ..,
+            ] => Some(profile.to_owned()),
             _ => None,
         })
         .collect();

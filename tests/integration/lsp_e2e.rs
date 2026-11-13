@@ -1,5 +1,6 @@
 use std::{error::Error, process::Command, time::Duration};
 
+use insta::assert_snapshot;
 use lspresso::{Client, ErrorKind, capabilities, gen_lsp_types::*};
 
 const TIMEOUT: Duration = Duration::from_secs(5);
@@ -204,5 +205,118 @@ fn code_action_fixes_a_trailing_comma() -> TestResult {
     client.did_change(&uri, edits)?;
     assert_eq!(client.document_text(&uri), Some(r#"{"a": 1}"#));
     assert_eq!(client.diagnostics(&uri)?, []);
+    Ok(())
+}
+
+fn symbols(client: &mut Client, uri: &Uri) -> TestResult<Vec<DocumentSymbol>> {
+    match client.document_symbol(uri)? {
+        Some(DocumentSymbolResponse::DocumentSymbolList(symbols)) => Ok(symbols),
+        other => Err(format!("expected nested document symbols: {other:?}").into()),
+    }
+}
+
+fn outline(symbols: &[DocumentSymbol]) -> String {
+    fn span(r: Range) -> String {
+        let (s, e) = (r.start, r.end);
+        format!("{}:{}-{}:{}", s.line, s.character, e.line, e.character)
+    }
+    let mut out = String::new();
+    for s in symbols {
+        let detail = s
+            .detail
+            .as_ref()
+            .map_or(String::new(), |d| format!(" = {d}"));
+        let line = format!(
+            "{} {:?} {} name {}{detail}",
+            s.name,
+            s.kind,
+            span(s.range),
+            span(s.selection_range)
+        );
+        out.push_str(&line);
+        out.push('\n');
+        for child in outline(s.children.as_deref().unwrap_or_default()).lines() {
+            out += "  ";
+            out += child;
+            out.push('\n');
+        }
+    }
+    out
+}
+
+#[test]
+fn document_symbols_mirror_the_document_tree() -> TestResult {
+    let mut client = client(capabilities::vscode::latest)?;
+    let uri = open(&mut client, "{\n  \"a\": [1, \"x\"],\n  \"\": null\n}")?;
+
+    assert_snapshot!(outline(&symbols(&mut client, &uri)?), @r#"
+    a Array 1:2-1:15 name 1:2-1:5
+      0 Number 1:8-1:9 name 1:8-1:9 = 1
+      1 String 1:11-1:14 name 1:11-1:14 = x
+    "" Null 2:2-2:10 name 2:2-2:4 = null
+    "#);
+    Ok(())
+}
+
+#[test]
+fn document_symbols_use_the_negotiated_encoding() -> TestResult {
+    let text = r#"{"😀": {"a": 1}}"#;
+
+    let mut utf16 = client(capabilities::vscode::latest)?;
+    let utf16_uri = open(&mut utf16, text)?;
+    let utf16 = symbols(&mut utf16, &utf16_uri)?;
+
+    let mut utf8 = client(capabilities::helix::latest)?;
+    let utf8_uri = open(&mut utf8, text)?;
+    let utf8 = symbols(&mut utf8, &utf8_uri)?;
+
+    assert_snapshot!(outline(&utf16), @"
+    😀 Object 0:1-0:15 name 0:1-0:5
+      a Number 0:8-0:14 name 0:8-0:11 = 1
+    ");
+    assert_snapshot!(outline(&utf8), @"
+    😀 Object 0:1-0:17 name 0:1-0:7
+      a Number 0:10-0:16 name 0:10-0:13 = 1
+    ");
+    Ok(())
+}
+
+#[test]
+fn document_symbols_past_five_thousand_are_dropped_in_preorder() -> TestResult {
+    let mut client = client(capabilities::vscode::latest)?;
+    let text = format!(r#"{{"a": [{}], "b": [0]}}"#, vec!["0"; 5000].join(","));
+    let uri = open(&mut client, &text)?;
+
+    let symbols = symbols(&mut client, &uri)?;
+    let [a] = symbols.as_slice() else {
+        panic!("expected one top level symbol: {symbols:?}");
+    };
+    assert_eq!(a.children.as_ref().map(Vec::len), Some(4999));
+    Ok(())
+}
+
+#[test]
+fn document_symbol_details_are_capped_at_one_hundred_characters() -> TestResult {
+    let mut client = client(capabilities::vscode::latest)?;
+    let long = "é".repeat(101);
+    let short = "é".repeat(100);
+    let text = format!(r#"{{"long": "{long}", "short": "{short}"}}"#);
+    let uri = open(&mut client, &text)?;
+
+    let symbols = symbols(&mut client, &uri)?;
+    let [long_symbol, short_symbol] = symbols.as_slice() else {
+        panic!("expected two top level symbols: {symbols:?}");
+    };
+    assert_eq!(long_symbol.detail, Some(format!("{short}…")));
+    assert_eq!(short_symbol.detail, Some(short));
+    Ok(())
+}
+
+#[test]
+fn document_symbols_are_none_for_invalid_json() -> TestResult {
+    let mut client = client(capabilities::vscode::latest)?;
+    let uri = open(&mut client, r#"{"a": }"#)?;
+
+    assert_eq!(client.document_symbol(&uri)?, None);
     Ok(())
 }

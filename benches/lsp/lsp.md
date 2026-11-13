@@ -20,11 +20,12 @@ Baseline performance for minimal parsing work
 
 Note: memory values are RSS (resident set size), shown in megabytes.
 
-| method     | jjpwrgem                 | light-json-lsp           | vscode-json                |
-| ---------- | ------------------------ | ------------------------ | -------------------------- |
-| initialize | 844.1µs (4.0 MB)         | 1.2ms (5.3 MB)           | 51.1ms (63.7 MB)           |
-| diagnostic | 42.8µs / 57.6µs (5.0 MB) | 49.8ms / 50.4ms (5.5 MB) | 30.3µs / 39.6µs (137.8 MB) |
-| formatting | 8.3µs / 17.3µs (4.2 MB)  | 9.2µs / 15.5µs (5.4 MB)  | 15.5µs / 56.5µs (84.4 MB)  |
+| method           | jjpwrgem                 | light-json-lsp           | vscode-json                |
+| ---------------- | ------------------------ | ------------------------ | -------------------------- |
+| initialize       | 861.1µs (3.9 MB)         | 1.1ms (5.4 MB)           | 51.4ms (63.7 MB)           |
+| diagnostic       | 46.0µs / 60.1µs (4.6 MB) | 50.2ms / 50.5ms (5.5 MB) | 30.2µs / 39.8µs (137.3 MB) |
+| formatting       | 7.7µs / 16.1µs (3.9 MB)  | 18.6µs / 33.4µs (5.5 MB) | 14.9µs / 54.5µs (89.7 MB)  |
+| document symbols | 27.5µs / 89.0µs (4.0 MB) | 19.9µs / 89.6µs (5.6 MB) | 17.2µs / 82.1µs (82.2 MB)  |
 
 ## twitter
 
@@ -32,11 +33,12 @@ Note: memory values are RSS (resident set size), shown in megabytes.
 
 Note: memory values are RSS (resident set size), shown in megabytes.
 
-| method     | jjpwrgem                  | light-json-lsp            | vscode-json               |
-| ---------- | ------------------------- | ------------------------- | ------------------------- |
-| initialize | 844.1µs (4.0 MB)          | 1.2ms (5.3 MB)            | 51.1ms (63.7 MB)          |
-| diagnostic | 1.5ms / 1.5ms (8.4 MB)    | 59.8ms / 61.1ms (15.8 MB) | 5.8ms / 5.9ms (175.5 MB)  |
-| formatting | 645.8µs / 1.2ms (10.6 MB) | 3.9ms / 5.1ms (16.0 MB)   | 9.7ms / 64.4ms (177.3 MB) |
+| method           | jjpwrgem                  | light-json-lsp            | vscode-json                 |
+| ---------------- | ------------------------- | ------------------------- | --------------------------- |
+| initialize       | 861.1µs (3.9 MB)          | 1.1ms (5.4 MB)            | 51.4ms (63.7 MB)            |
+| diagnostic       | 1.9ms / 1.9ms (7.8 MB)    | 59.9ms / 61.4ms (16.0 MB) | 7.8ms / 8.1ms (185.8 MB)    |
+| formatting       | 705.7µs / 1.3ms (10.4 MB) | 4.1ms / 5.3ms (16.1 MB)   | 13.2ms / 82.9ms (177.2 MB)  |
+| document symbols | 14.3ms / 61.0ms (33.0 MB) | 6.9ms / 154.7ms (17.5 MB) | 21.0ms / 186.4ms (199.6 MB) |
 
 ## citm catalog
 
@@ -44,11 +46,12 @@ Note: memory values are RSS (resident set size), shown in megabytes.
 
 Note: memory values are RSS (resident set size), shown in megabytes.
 
-| method     | jjpwrgem                | light-json-lsp            | vscode-json                 |
-| ---------- | ----------------------- | ------------------------- | --------------------------- |
-| initialize | 844.1µs (4.0 MB)        | 1.2ms (5.3 MB)            | 51.1ms (63.7 MB)            |
-| diagnostic | 2.5ms / 2.6ms (12.1 MB) | 68.7ms / 70.8ms (23.6 MB) | 18.0ms / 18.1ms (310.1 MB)  |
-| formatting | 1.1ms / 1.8ms (13.6 MB) | 9.3ms / 11.6ms (25.4 MB)  | 29.3ms / 214.9ms (302.5 MB) |
+| method           | jjpwrgem                  | light-json-lsp             | vscode-json                 |
+| ---------------- | ------------------------- | -------------------------- | --------------------------- |
+| initialize       | 861.1µs (3.9 MB)          | 1.1ms (5.4 MB)             | 51.4ms (63.7 MB)            |
+| diagnostic       | 2.5ms / 2.6ms (12.1 MB)   | 68.7ms / 71.1ms (23.6 MB)  | 18.3ms / 18.4ms (300.5 MB)  |
+| formatting       | 1.1ms / 1.8ms (13.6 MB)   | 8.2ms / 10.6ms (25.4 MB)   | 29.3ms / 213.2ms (313.3 MB) |
+| document symbols | 13.4ms / 51.8ms (38.2 MB) | 15.3ms / 359.0ms (30.5 MB) | 52.3ms / 413.9ms (306.8 MB) |
 
 ## canada
 
@@ -56,8 +59,9 @@ Note: memory values are RSS (resident set size), shown in megabytes.
 
 Note: memory values are RSS (resident set size), shown in megabytes.
 
-| method     | jjpwrgem                | light-json-lsp            | vscode-json                  |
-| ---------- | ----------------------- | ------------------------- | ---------------------------- |
-| initialize | 844.1µs (4.0 MB)        | 1.2ms (5.3 MB)            | 51.1ms (63.7 MB)             |
-| diagnostic | 7.5ms / 7.6ms (25.4 MB) | 91.2ms / 96.5ms (51.5 MB) | 40.9ms / 41.0ms (476.3 MB)   |
-| formatting | 2.7ms / 6.5ms (32.1 MB) | 39.2ms / 49.0ms (64.4 MB) | 102.9ms / 950.4ms (495.0 MB) |
+| method           | jjpwrgem                 | light-json-lsp              | vscode-json                   |
+| ---------------- | ------------------------ | --------------------------- | ----------------------------- |
+| initialize       | 861.1µs (3.9 MB)         | 1.1ms (5.4 MB)              | 51.4ms (63.7 MB)              |
+| diagnostic       | 7.4ms / 7.4ms (25.3 MB)  | 87.7ms / 91.5ms (51.6 MB)   | 38.4ms / 38.6ms (488.8 MB)    |
+| formatting       | 2.8ms / 6.7ms (32.0 MB)  | 39.7ms / 49.9ms (64.4 MB)   | 105.3ms / 933.5ms (490.2 MB)  |
+| document symbols | 9.8ms / 43.0ms (47.7 MB) | 57.5ms / 1721.2ms (52.7 MB) | 148.4ms / 1763.7ms (419.4 MB) |
