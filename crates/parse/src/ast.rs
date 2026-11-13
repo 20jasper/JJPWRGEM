@@ -19,10 +19,6 @@ impl ObjectEntries {
         self.0.is_empty()
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = (Range<usize>, &Value)> {
-        self.0.iter().map(|(key, value)| (*key, value))
-    }
-
     pub(crate) fn find<'a>(&'a self, source: &str, key: &str) -> Option<&'a Value> {
         self.0
             .iter()
