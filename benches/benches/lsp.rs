@@ -270,7 +270,6 @@ fn bench_formatting(c: &mut Criterion) {
     );
 }
 
-/// Servers that don't advertise document symbols are skipped
 fn bench_document_symbols(c: &mut Criterion) {
     bench_request(
         c,
@@ -280,7 +279,6 @@ fn bench_document_symbols(c: &mut Criterion) {
     );
 }
 
-/// Servers that don't advertise folding ranges are skipped
 fn bench_folding_ranges(c: &mut Criterion) {
     bench_request(
         c,
