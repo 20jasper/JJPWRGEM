@@ -4,12 +4,11 @@ use const_format::str_repeat;
 
 use crate::{
     Result,
-    ast::{Document, Value},
+    ast::{Document, QUOTE_LEN, Value},
     format::LineEnding,
     tokens::{FALSE, NULL, TRUE},
 };
 
-const QUOTE_LEN: usize = 1;
 const QUOTE_PAIR_LEN: usize = QUOTE_LEN * 2;
 const COMMA_LEN: usize = 1;
 const COLON_LEN: usize = 1;
