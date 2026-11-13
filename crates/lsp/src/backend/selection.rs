@@ -58,14 +58,12 @@ fn interior(value: &Value, offset: usize) -> Option<Span<usize>> {
         .filter(|inner| contains(*inner, offset))
 }
 
-fn push_value_steps(spans: &mut Vec<Span<usize>>, value: &Value, offset: usize) {
-    spans.push(value.span());
-    if let Value::String(range) = value
-        && contains(*range, offset)
-    {
-        spans.push(*range);
-    }
-    spans.extend(interior(value, offset));
+fn value_steps(value: &Value, offset: usize) -> impl Iterator<Item = Span<usize>> {
+    let span = value.span();
+    let text = matches!(value, Value::String(..)).then(|| value.range());
+    std::iter::once(span)
+        .chain(text.filter(move |range| contains(*range, offset)))
+        .chain(interior(value, offset))
 }
 
 /// values from outer to inner
@@ -90,9 +88,9 @@ fn steps(root: &Value, offset: usize) -> Vec<Span<usize>> {
             }
             Key::Name(_) => {
                 spans.push(value.member_span(key));
-                push_value_steps(&mut spans, value, offset);
+                spans.extend(value_steps(value, offset));
             }
-            Key::Index(_) => push_value_steps(&mut spans, value, offset),
+            Key::Index(_) => spans.extend(value_steps(value, offset)),
         }
     }
 
