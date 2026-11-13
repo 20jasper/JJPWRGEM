@@ -235,41 +235,59 @@ fn bench_diagnostics(c: &mut Criterion) {
     });
 }
 
-fn bench_formatting(c: &mut Criterion) {
-    bench_fixtures(c, "formatting", |group, profile, name| {
-        let (uri, text) = fixture(name);
+fn bench_request<T>(
+    c: &mut Criterion,
+    name: &str,
+    supported: impl Fn(&ServerCapabilities) -> bool,
+    request: impl Fn(&mut Client, &Uri) -> T,
+) {
+    bench_fixtures(c, name, |group, profile, fixture_name| {
+        let (uri, text) = fixture(fixture_name);
         let (mut client, _) = profile.warm(&uri, text);
-        let id = format!("formatting/{}/{name}", profile.label);
-        group.bench_function(BenchmarkId::new(profile.label, name), |b| {
+        if !client.server_capabilities().is_some_and(&supported) {
+            return;
+        }
+        let id = format!("{name}/{}/{fixture_name}", profile.label);
+        group.bench_function(BenchmarkId::new(profile.label, fixture_name), |b| {
             iter_server_time(b, &id, &mut client, |client| {
-                client
-                    .formatting(black_box(&uri), FormattingOptions::default())
-                    .unwrap()
+                request(client, black_box(&uri))
             });
         });
         record_memory(&id, &mut client);
     });
 }
 
+fn bench_formatting(c: &mut Criterion) {
+    bench_request(
+        c,
+        "formatting",
+        |_| true,
+        |client, uri| {
+            client
+                .formatting(uri, FormattingOptions::default())
+                .unwrap()
+        },
+    );
+}
+
 /// Servers that don't advertise document symbols are skipped
 fn bench_document_symbols(c: &mut Criterion) {
-    bench_fixtures(c, "document_symbols", |group, profile, name| {
-        let (uri, text) = fixture(name);
-        let (mut client, _) = profile.warm(&uri, text);
-        if client
-            .server_capabilities()
-            .is_none_or(|capabilities| capabilities.document_symbol_provider.is_none())
-        {
-            return;
-        }
-        let id = format!("document_symbols/{}/{name}", profile.label);
-        group.bench_function(BenchmarkId::new(profile.label, name), |b| {
-            iter_server_time(b, &id, &mut client, |client| {
-                client.document_symbol(black_box(&uri)).unwrap()
-            });
-        });
-        record_memory(&id, &mut client);
-    });
+    bench_request(
+        c,
+        "document_symbols",
+        |capabilities| capabilities.document_symbol_provider.is_some(),
+        |client, uri| client.document_symbol(uri).unwrap(),
+    );
+}
+
+/// Servers that don't advertise folding ranges are skipped
+fn bench_folding_ranges(c: &mut Criterion) {
+    bench_request(
+        c,
+        "folding_ranges",
+        |capabilities| capabilities.folding_range_provider.is_some(),
+        |client, uri| client.folding_range(uri).unwrap(),
+    );
 }
 
 /// jjp only: open, then wait for the first diagnostics of a document the server
@@ -341,7 +359,8 @@ criterion_group! {
         .sample_size(10)
         .warm_up_time(Duration::from_secs(1))
         .measurement_time(Duration::from_secs(3));
-    targets = bench_initialize, bench_diagnostics, bench_formatting, bench_document_symbols, bench_open,
+    targets = bench_initialize, bench_diagnostics, bench_formatting, bench_document_symbols,
+        bench_folding_ranges, bench_open,
         bench_code_action
 }
 criterion_main!(benches);
