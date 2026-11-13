@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## 0.14.3 — 2026-11-13
+
+### Added
+
+- [515dd1f](https://github.com/20jasper/JJPWRGEM/commit/515dd1f455756ba196192aadf51a484f9581ef3b) add `Value::span`, `Value::children` and `Value::traverse`
+- [515dd1f](https://github.com/20jasper/JJPWRGEM/commit/515dd1f455756ba196192aadf51a484f9581ef3b) add `Document::source`
+- [a6ca17f](https://github.com/20jasper/JJPWRGEM/commit/a6ca17f7e9018291f5336e22e92ce128d323052c) add `ast::quoted`
+
 ## 0.14.2 — 2026-11-12
 
 ### Added
