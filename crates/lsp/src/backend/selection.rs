@@ -24,13 +24,16 @@ fn selection_range(
     position: Position,
 ) -> SelectionRange {
     let offset = positions.offset(document.source(), position);
-    let mut chain = None;
-    for span in steps(document.root(), offset) {
-        chain = Some(SelectionRange {
+    let chain = steps(document.root(), offset)
+        .into_iter()
+        .map(|span| SelectionRange {
             range: positions.range(span),
-            parent: chain.map(Box::new),
+            parent: None,
+        })
+        .reduce(|parent, inner| SelectionRange {
+            range: inner.range,
+            parent: Some(Box::new(parent)),
         });
-    }
     chain.unwrap_or(SelectionRange {
         range: Range::new(position, position),
         parent: None,
