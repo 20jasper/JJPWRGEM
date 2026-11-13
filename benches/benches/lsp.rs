@@ -288,6 +288,39 @@ fn bench_folding_ranges(c: &mut Criterion) {
     );
 }
 
+static DEEP_POSITIONS: LazyLock<BTreeMap<String, Position>> = LazyLock::new(|| {
+    FIXTURES
+        .into_iter()
+        .map(|name| {
+            let (uri, text) = fixture(name);
+            (uri.to_string(), deep_position(&text))
+        })
+        .collect()
+});
+
+fn deep_position(text: &str) -> Position {
+    let lines = text.lines().collect::<Vec<_>>();
+    let line = lines.len() / 2;
+    let character = lines[line].len() - lines[line].trim_start().len();
+    Position {
+        line: line.try_into().expect("fixture line count fits u32"),
+        character: character.try_into().expect("fixture indentation fits u32"),
+    }
+}
+
+fn bench_selection_ranges(c: &mut Criterion) {
+    bench_request(
+        c,
+        "selection_ranges",
+        |capabilities| capabilities.selection_range_provider.is_some(),
+        |client, uri| {
+            client
+                .selection_range(uri, vec![DEEP_POSITIONS[uri.as_str()]])
+                .unwrap()
+        },
+    );
+}
+
 /// jjp only: open, then wait for the first diagnostics of a document the server
 /// hasn't seen. Each iteration opens a fresh URI and closes it untimed
 fn bench_open(c: &mut Criterion) {
@@ -358,7 +391,7 @@ criterion_group! {
         .warm_up_time(Duration::from_secs(1))
         .measurement_time(Duration::from_secs(3));
     targets = bench_initialize, bench_diagnostics, bench_formatting, bench_document_symbols,
-        bench_folding_ranges, bench_open,
+        bench_folding_ranges, bench_selection_ranges, bench_open,
         bench_code_action
 }
 criterion_main!(benches);
