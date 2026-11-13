@@ -1241,6 +1241,7 @@ name = "jjpwrgem-lsp"
 version = "0.1.4"
 dependencies = [
  "dashmap",
+ "itertools 0.15.0",
  "jjpwrgem-parse",
  "line-index",
  "rstest",
