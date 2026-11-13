@@ -378,3 +378,92 @@ fn folding_ranges_are_none_for_invalid_json() -> TestResult {
     assert_eq!(client.folding_range(&uri)?, None);
     Ok(())
 }
+
+fn select(client: &mut Client, uri: &Uri, at: &[(u32, u32)]) -> TestResult<String> {
+    let positions = at.iter().map(|&(line, col)| Position::new(line, col));
+    let chains = client
+        .selection_range(uri, positions.collect())?
+        .ok_or("expected selection ranges")?;
+    Ok(chains
+        .iter()
+        .map(|chain| {
+            std::iter::successors(Some(chain), |step| step.parent.as_deref())
+                .map(|step| {
+                    let (s, e) = (step.range.start, step.range.end);
+                    format!("{}:{}-{}:{}", s.line, s.character, e.line, e.character)
+                })
+                .collect::<Vec<_>>()
+                .join(" < ")
+        })
+        .collect::<Vec<_>>()
+        .join("\n"))
+}
+
+#[test]
+fn selection_ranges_expand_from_a_string_to_the_document() -> TestResult {
+    let mut client = client(capabilities::vscode::latest)?;
+    let uri = open(&mut client, r#"[{"k": "ab", "z": 1}]"#)?;
+
+    assert_snapshot!(select(&mut client, &uri, &[(0, 9)])?, @"0:8-0:10 < 0:7-0:11 < 0:2-0:11 < 0:2-0:19 < 0:1-0:20 < 0:0-0:21");
+    Ok(())
+}
+
+#[test]
+fn selection_ranges_on_a_key_select_the_key_text_then_the_member() -> TestResult {
+    let mut client = client(capabilities::vscode::latest)?;
+    let uri = open(&mut client, r#"[{"k": "ab", "z": 1}]"#)?;
+
+    assert_snapshot!(select(&mut client, &uri, &[(0, 3)])?, @"0:3-0:4 < 0:2-0:5 < 0:2-0:11 < 0:2-0:19 < 0:1-0:20 < 0:0-0:21");
+    Ok(())
+}
+
+#[test]
+fn selection_ranges_in_whitespace_stop_at_the_container_contents() -> TestResult {
+    let mut client = client(capabilities::vscode::latest)?;
+    let uri = open(&mut client, "{\n  \"a\": [1, 2],\n  \"b\": 3\n}")?;
+
+    assert_snapshot!(select(&mut client, &uri, &[(1, 10)])?, @"1:8-1:12 < 1:7-1:13 < 1:2-1:13 < 0:1-3:0 < 0:0-3:1");
+    Ok(())
+}
+
+#[test]
+fn selection_ranges_return_one_chain_per_position_in_order() -> TestResult {
+    let mut client = client(capabilities::vscode::latest)?;
+    let uri = open(&mut client, r#"[10, "x"]"#)?;
+
+    assert_snapshot!(select(&mut client, &uri, &[(0, 6), (0, 1), (0, 4)])?, @"
+    0:6-0:7 < 0:5-0:8 < 0:1-0:8 < 0:0-0:9
+    0:1-0:3 < 0:1-0:8 < 0:0-0:9
+    0:1-0:8 < 0:0-0:9
+    ");
+    Ok(())
+}
+
+#[test]
+fn selection_ranges_use_the_negotiated_encoding() -> TestResult {
+    let text = r#"{"😀": 1}"#;
+
+    let mut utf16 = client(capabilities::vscode::latest)?;
+    let utf16_uri = open(&mut utf16, text)?;
+    let utf16 = select(&mut utf16, &utf16_uri, &[(0, 7)])?;
+
+    let mut utf8 = client(capabilities::helix::latest)?;
+    let utf8_uri = open(&mut utf8, text)?;
+    let utf8 = select(&mut utf8, &utf8_uri, &[(0, 9)])?;
+
+    assert_snapshot!(utf16, @"0:7-0:8 < 0:1-0:8 < 0:0-0:9");
+    assert_snapshot!(utf8, @"0:9-0:10 < 0:1-0:10 < 0:0-0:11");
+    Ok(())
+}
+
+#[test]
+fn selection_ranges_are_none_for_invalid_json() -> TestResult {
+    let mut client = client(capabilities::vscode::latest)?;
+    let uri = open(&mut client, r#"{"a": }"#)?;
+
+    assert_eq!(
+        client.selection_range(&uri, vec![Position::new(0, 1)])?,
+        None
+    );
+    Ok(())
+}

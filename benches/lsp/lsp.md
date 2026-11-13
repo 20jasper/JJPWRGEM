@@ -22,11 +22,12 @@ Note: memory values are RSS (resident set size), shown in megabytes.
 
 | method           | jjpwrgem                 | light-json-lsp           | vscode-json                |
 | ---------------- | ------------------------ | ------------------------ | -------------------------- |
-| initialize       | 861.1µs (4.0 MB)         | 1.1ms (5.3 MB)           | 50.3ms (63.6 MB)           |
-| diagnostic       | 42.1µs / 56.5µs (4.8 MB) | 50.0ms / 50.3ms (5.7 MB) | 29.6µs / 38.9µs (137.1 MB) |
-| formatting       | 8.3µs / 17.4µs (4.0 MB)  | 12.3µs / 19.6µs (5.8 MB) | 16.3µs / 57.8µs (83.3 MB)  |
-| document symbols | 26.5µs / 89.9µs (4.3 MB) | 12.2µs / 76.1µs (5.6 MB) | 18.2µs / 88.7µs (81.4 MB)  |
-| folding ranges   | 8.1µs / 17.5µs (4.2 MB)  | 17.0µs / 30.8µs (5.8 MB) | 9.8µs / 17.7µs (103.1 MB)  |
+| initialize       | 853.0µs (4.1 MB)         | 1.1ms (5.4 MB)           | 82.5ms (72.5 MB)           |
+| diagnostic       | 45.5µs / 60.1µs (4.7 MB) | 50.0ms / 50.2ms (5.7 MB) | 33.4µs / 42.5µs (182.6 MB) |
+| formatting       | 8.3µs / 17.4µs (4.1 MB)  | 9.8µs / 16.9µs (5.8 MB)  | 15.7µs / 55.8µs (106.8 MB) |
+| document symbols | 27.0µs / 89.9µs (4.2 MB) | 18.6µs / 87.9µs (5.7 MB) | 20.4µs / 94.8µs (98.5 MB)  |
+| folding ranges   | 8.4µs / 18.2µs (4.2 MB)  | 12.9µs / 22.9µs (5.7 MB) | 10.4µs / 18.7µs (117.3 MB) |
+| selection ranges | 15.4µs / 37.2µs (4.2 MB) | 10.2µs / 22.0µs (5.8 MB) | 11.5µs / 29.1µs (116.0 MB) |
 
 ## twitter
 
@@ -34,13 +35,14 @@ Note: memory values are RSS (resident set size), shown in megabytes.
 
 Note: memory values are RSS (resident set size), shown in megabytes.
 
-| method           | jjpwrgem                  | light-json-lsp            | vscode-json                 |
-| ---------------- | ------------------------- | ------------------------- | --------------------------- |
-| initialize       | 861.1µs (4.0 MB)          | 1.1ms (5.3 MB)            | 50.3ms (63.6 MB)            |
-| diagnostic       | 1.5ms / 1.5ms (8.6 MB)    | 59.2ms / 61.3ms (16.1 MB) | 5.9ms / 6.3ms (202.2 MB)    |
-| formatting       | 677.7µs / 1.3ms (10.5 MB) | 3.1ms / 4.3ms (16.3 MB)   | 9.6ms / 62.1ms (175.6 MB)   |
-| document symbols | 14.4ms / 58.4ms (33.5 MB) | 6.8ms / 159.4ms (17.6 MB) | 16.0ms / 170.8ms (190.2 MB) |
-| folding ranges   | 959.8µs / 1.7ms (8.5 MB)  | 6.4ms / 8.0ms (15.8 MB)   | 3.7ms / 5.7ms (109.2 MB)    |
+| method           | jjpwrgem                   | light-json-lsp            | vscode-json                 |
+| ---------------- | -------------------------- | ------------------------- | --------------------------- |
+| initialize       | 853.0µs (4.1 MB)           | 1.1ms (5.4 MB)            | 82.5ms (72.5 MB)            |
+| diagnostic       | 1.5ms / 1.6ms (8.5 MB)     | 59.5ms / 61.2ms (16.2 MB) | 6.2ms / 6.3ms (188.3 MB)    |
+| formatting       | 669.0µs / 1.3ms (10.5 MB)  | 3.6ms / 5.1ms (16.2 MB)   | 8.9ms / 60.3ms (181.1 MB)   |
+| document symbols | 15.5ms / 62.5ms (33.6 MB)  | 8.2ms / 174.7ms (17.5 MB) | 16.9ms / 172.8ms (200.2 MB) |
+| folding ranges   | 980.2µs / 1.6ms (8.3 MB)   | 6.6ms / 8.1ms (15.7 MB)   | 3.0ms / 4.6ms (111.6 MB)    |
+| selection ranges | 448.4µs / 483.4µs (7.7 MB) | 19.6µs / 41.9µs (14.6 MB) | 17.2µs / 55.5µs (117.6 MB)  |
 
 ## citm catalog
 
@@ -48,13 +50,14 @@ Note: memory values are RSS (resident set size), shown in megabytes.
 
 Note: memory values are RSS (resident set size), shown in megabytes.
 
-| method           | jjpwrgem                  | light-json-lsp             | vscode-json                 |
-| ---------------- | ------------------------- | -------------------------- | --------------------------- |
-| initialize       | 861.1µs (4.0 MB)          | 1.1ms (5.3 MB)             | 50.3ms (63.6 MB)            |
-| diagnostic       | 2.5ms / 2.6ms (12.3 MB)   | 68.3ms / 70.7ms (23.7 MB)  | 17.7ms / 17.9ms (286.4 MB)  |
-| formatting       | 1.0ms / 1.8ms (13.5 MB)   | 9.2ms / 11.5ms (25.3 MB)   | 28.8ms / 206.5ms (310.9 MB) |
-| document symbols | 13.4ms / 50.6ms (38.7 MB) | 15.9ms / 366.8ms (30.6 MB) | 51.1ms / 407.6ms (306.5 MB) |
-| folding ranges   | 2.0ms / 4.2ms (13.5 MB)   | 27.0ms / 40.2ms (24.8 MB)  | 11.0ms / 19.1ms (167.1 MB)  |
+| method           | jjpwrgem                    | light-json-lsp             | vscode-json                 |
+| ---------------- | --------------------------- | -------------------------- | --------------------------- |
+| initialize       | 853.0µs (4.1 MB)            | 1.1ms (5.4 MB)             | 82.5ms (72.5 MB)            |
+| diagnostic       | 2.5ms / 2.5ms (12.1 MB)     | 68.6ms / 70.8ms (23.7 MB)  | 18.2ms / 18.3ms (294.7 MB)  |
+| formatting       | 1.1ms / 1.8ms (13.5 MB)     | 8.3ms / 10.7ms (25.6 MB)   | 26.2ms / 206.8ms (280.3 MB) |
+| document symbols | 13.1ms / 49.8ms (38.6 MB)   | 15.0ms / 360.9ms (30.5 MB) | 47.1ms / 413.2ms (297.0 MB) |
+| folding ranges   | 2.2ms / 4.8ms (13.4 MB)     | 26.1ms / 37.8ms (24.8 MB)  | 11.1ms / 19.4ms (156.4 MB)  |
+| selection ranges | 111.6µs / 142.1µs (10.1 MB) | 17.3µs / 37.2µs (22.7 MB)  | 17.5µs / 50.8µs (124.3 MB)  |
 
 ## canada
 
@@ -62,10 +65,11 @@ Note: memory values are RSS (resident set size), shown in megabytes.
 
 Note: memory values are RSS (resident set size), shown in megabytes.
 
-| method           | jjpwrgem                  | light-json-lsp              | vscode-json                   |
-| ---------------- | ------------------------- | --------------------------- | ----------------------------- |
-| initialize       | 861.1µs (4.0 MB)          | 1.1ms (5.3 MB)              | 50.3ms (63.6 MB)              |
-| diagnostic       | 7.2ms / 7.3ms (25.4 MB)   | 88.1ms / 91.9ms (51.7 MB)   | 38.4ms / 38.6ms (474.4 MB)    |
-| formatting       | 3.3ms / 7.2ms (32.1 MB)   | 38.9ms / 48.6ms (64.5 MB)   | 100.0ms / 930.4ms (541.2 MB)  |
-| document symbols | 12.0ms / 50.3ms (48.9 MB) | 64.0ms / 1816.3ms (52.9 MB) | 152.0ms / 1831.0ms (316.1 MB) |
-| folding ranges   | 2.2ms / 2.6ms (19.7 MB)   | 39.1ms / 40.4ms (49.3 MB)   | 20.3ms / 21.4ms (170.0 MB)    |
+| method           | jjpwrgem                    | light-json-lsp              | vscode-json                   |
+| ---------------- | --------------------------- | --------------------------- | ----------------------------- |
+| initialize       | 853.0µs (4.1 MB)            | 1.1ms (5.4 MB)              | 82.5ms (72.5 MB)              |
+| diagnostic       | 8.4ms / 8.6ms (25.5 MB)     | 87.5ms / 91.7ms (51.8 MB)   | 39.3ms / 39.5ms (488.5 MB)    |
+| formatting       | 3.3ms / 7.6ms (32.0 MB)     | 40.5ms / 50.7ms (64.5 MB)   | 110.7ms / 934.6ms (530.2 MB)  |
+| document symbols | 11.0ms / 45.8ms (48.7 MB)   | 58.9ms / 1750.6ms (52.7 MB) | 186.5ms / 1895.5ms (313.3 MB) |
+| folding ranges   | 2.4ms / 2.8ms (19.6 MB)     | 39.4ms / 40.6ms (49.3 MB)   | 17.6ms / 18.2ms (185.4 MB)    |
+| selection ranges | 233.3µs / 273.7µs (20.4 MB) | 42.4µs / 75.5µs (48.8 MB)   | 103.3µs / 142.4µs (169.7 MB)  |
