@@ -11,6 +11,7 @@ use crate::{
     backend::{
         diagnostics::{build_code_actions, diagnostics_from_error},
         folding::folding_ranges,
+        selection::selection_ranges,
         symbols::document_symbols,
     },
     range::{FULL_DOCUMENT_RANGE, PositionEncoding, Positions},
@@ -28,6 +29,7 @@ pub struct Backend {
 
 mod diagnostics;
 mod folding;
+mod selection;
 mod symbols;
 
 fn diagnostics_for(
@@ -143,6 +145,7 @@ impl LanguageServer for Backend {
                 code_action_provider: Some(CodeActionProviderCapability::Simple(true)),
                 document_symbol_provider: Some(OneOf::Left(true)),
                 folding_range_provider: Some(FoldingRangeProviderCapability::Simple(true)),
+                selection_range_provider: Some(SelectionRangeProviderCapability::Simple(true)),
                 diagnostic_provider: Some(DiagnosticServerCapabilities::Options(
                     DiagnosticOptions {
                         identifier: Some(SOURCE.into()),
@@ -249,6 +252,15 @@ impl LanguageServer for Backend {
     async fn folding_range(&self, params: FoldingRangeParams) -> Result<Option<Vec<FoldingRange>>> {
         Ok(self.with_document(&params.text_document.uri, |document| {
             folding_ranges(document, self.position_encoding())
+        }))
+    }
+
+    async fn selection_range(
+        &self,
+        params: SelectionRangeParams,
+    ) -> Result<Option<Vec<SelectionRange>>> {
+        Ok(self.with_document(&params.text_document.uri, |document| {
+            selection_ranges(document, self.position_encoding(), &params.positions)
         }))
     }
 
