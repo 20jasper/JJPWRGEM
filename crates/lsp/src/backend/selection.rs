@@ -1,6 +1,5 @@
 use std::range::Range as Span;
 
-use itertools::{Either, Itertools};
 use jjpwrgem_parse::ast::{Document, Key, Value, quoted};
 use tower_lsp_server::ls_types::{Position, Range, SelectionRange};
 
@@ -17,18 +16,17 @@ pub(crate) fn selection_ranges(
     at.iter()
         .map(|&position| {
             let offset = positions.offset(document.source(), position);
-            steps(document.root(), offset)
-                .dedup()
-                .fold(None, |parent, span| {
-                    Some(SelectionRange {
-                        range: positions.range(span),
-                        parent: parent.map(Box::new),
-                    })
-                })
-                .unwrap_or(SelectionRange {
-                    range: Range::new(position, position),
-                    parent: None,
-                })
+            let mut chain = None;
+            for span in steps(document.root(), offset) {
+                chain = Some(SelectionRange {
+                    range: positions.range(span),
+                    parent: chain.map(Box::new),
+                });
+            }
+            chain.unwrap_or(SelectionRange {
+                range: Range::new(position, position),
+                parent: None,
+            })
         })
         .collect()
 }
@@ -44,31 +42,40 @@ fn interior(value: &Value, offset: usize) -> Option<Span<usize>> {
         .filter(|inner| contains(*inner, offset))
 }
 
-fn value_steps(value: &Value, offset: usize) -> impl Iterator<Item = Span<usize>> {
-    let text = matches!(value, Value::String(..)).then(|| value.range());
-    std::iter::once(value.span())
-        .chain(text.filter(|text| contains(*text, offset)))
-        .chain(interior(value, offset))
-}
-
-fn member_steps(offset: usize, key: Key, value: &Value) -> impl Iterator<Item = Span<usize>> + '_ {
-    let member = std::iter::once(value.member_span(key));
-    match key {
-        Key::Name(name) if contains(quoted(name), offset) => Either::Left(
-            member
-                .chain([quoted(name)])
-                .chain(Some(name).filter(|name| contains(*name, offset))),
-        ),
-        _ => Either::Right(member.chain(value_steps(value, offset))),
+fn push_value_steps(spans: &mut Vec<Span<usize>>, value: &Value, offset: usize) {
+    spans.push(value.span());
+    if let Value::String(range) = value
+        && contains(*range, offset)
+    {
+        spans.push(*range);
     }
+    spans.extend(interior(value, offset));
 }
 
-fn steps(root: &Value, offset: usize) -> impl Iterator<Item = Span<usize>> {
-    std::iter::once(root.span())
-        .filter(move |span| contains(*span, offset))
-        .chain(interior(root, offset))
-        .chain(
-            root.path_at(offset)
-                .flat_map(move |(key, value)| member_steps(offset, key, value)),
-        )
+fn steps(root: &Value, offset: usize) -> Vec<Span<usize>> {
+    let mut spans = Vec::new();
+    if contains(root.span(), offset) {
+        spans.push(root.span());
+    }
+    spans.extend(interior(root, offset));
+
+    for (key, value) in root.path_at(offset) {
+        match key {
+            Key::Name(name) if contains(quoted(name), offset) => {
+                spans.push(value.member_span(key));
+                spans.push(quoted(name));
+                if contains(name, offset) {
+                    spans.push(name);
+                }
+            }
+            Key::Name(_) => {
+                spans.push(value.member_span(key));
+                push_value_steps(&mut spans, value, offset);
+            }
+            Key::Index(_) => push_value_steps(&mut spans, value, offset),
+        }
+    }
+
+    spans.dedup();
+    spans
 }
