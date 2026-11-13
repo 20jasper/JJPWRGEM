@@ -41,20 +41,24 @@ fn contains(span: Span<usize>, offset: usize) -> bool {
     span.start <= offset && offset <= span.end
 }
 
-fn push_value_steps(spans: &mut Vec<Span<usize>>, value: &Value, offset: usize) {
-    let span = value.span();
-    spans.push(span);
-    if let Value::String(range) = value
-        && contains(*range, offset)
-    {
-        spans.push(*range);
-    }
+fn push_interior(spans: &mut Vec<Span<usize>>, value: &Value, offset: usize) {
     if matches!(value, Value::Object(..) | Value::Array(..)) {
+        let span = value.span();
         let inner = Span::from(span.start + BRACKET_LEN..span.end - BRACKET_LEN);
         if contains(inner, offset) {
             spans.push(inner);
         }
     }
+}
+
+fn push_value_steps(spans: &mut Vec<Span<usize>>, value: &Value, offset: usize) {
+    spans.push(value.span());
+    if let Value::String(range) = value
+        && contains(*range, offset)
+    {
+        spans.push(*range);
+    }
+    push_interior(spans, value, offset);
 }
 
 fn steps(root: &Value, offset: usize) -> Vec<Span<usize>> {
@@ -63,12 +67,7 @@ fn steps(root: &Value, offset: usize) -> Vec<Span<usize>> {
     if contains(root_span, offset) {
         spans.push(root_span);
     }
-    if matches!(root, Value::Object(..) | Value::Array(..)) {
-        let inner = Span::from(root_span.start + BRACKET_LEN..root_span.end - BRACKET_LEN);
-        if contains(inner, offset) {
-            spans.push(inner);
-        }
-    }
+    push_interior(&mut spans, root, offset);
 
     for (key, value) in root.path_at(offset) {
         match key {
