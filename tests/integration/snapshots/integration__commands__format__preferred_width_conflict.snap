@@ -10,8 +10,8 @@ stdin ---
 stdout ---
 
 stderr ---
-error: the argument '--uglify' cannot be used with '--preferred-width <PREFERRED_WIDTH>'
+error: uglify cannot be combined with a preferred width
 
-Usage: jjp format --uglify
+Usage: jjp format [OPTIONS]
 
 For more information, try '--help'.

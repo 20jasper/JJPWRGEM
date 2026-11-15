@@ -1,5 +1,5 @@
-use clap::{Parser, Subcommand, ValueEnum};
-use jjpwrgem_parse::format::LineEnding;
+use clap::{Command, Parser, Subcommand, ValueEnum, error::ErrorKind};
+use jjpwrgem_parse::format::{ConfigError, LineEnding, Parser as ParseParser};
 
 use crate::{
     docs::{indent, strip_front_matter},
@@ -38,11 +38,11 @@ pub enum Commands {
     Format {
         /// Removes all insignificant whitespace instead of pretty printing,
         /// also known as minifying. Cannot be combined with --preferred-width or --parser jsonlines
-        #[arg(short, long, conflicts_with = "preferred_width")]
+        #[arg(short, long)]
         uglify: bool,
 
         /// Preferred maximum line width. Note this is not a hard maximum width [default: 80]
-        #[arg(long, conflicts_with = "uglify")]
+        #[arg(long)]
         preferred_width: Option<usize>,
 
         /// Line ending to use when formatting output
@@ -86,11 +86,30 @@ pub enum ParserArg {
     Jsonlines,
 }
 
-impl LineEndingArg {
-    pub const fn into_parse(self) -> LineEnding {
-        match self {
-            Self::Lf => LineEnding::Lf,
-            Self::CrLf => LineEnding::CrLf,
+impl From<LineEndingArg> for LineEnding {
+    fn from(arg: LineEndingArg) -> Self {
+        match arg {
+            LineEndingArg::Lf => Self::Lf,
+            LineEndingArg::CrLf => Self::CrLf,
         }
     }
+}
+
+impl From<ParserArg> for ParseParser {
+    fn from(arg: ParserArg) -> Self {
+        match arg {
+            ParserArg::Json => Self::Json,
+            ParserArg::Jsonlines => Self::Jsonlines,
+        }
+    }
+}
+
+const FORMAT_COMMAND: &str = "format";
+
+pub fn rule_error(command: &Command, error: ConfigError) -> clap::Error {
+    command
+        .find_subcommand(FORMAT_COMMAND)
+        .unwrap_or(command)
+        .clone()
+        .error(ErrorKind::ArgumentConflict, error)
 }

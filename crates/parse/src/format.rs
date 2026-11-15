@@ -1,8 +1,10 @@
+mod config;
 mod prettify;
 #[cfg(feature = "serde")]
 pub mod serde;
 pub(crate) mod uglify;
 
+pub use config::{ConfigError, FormatConfig, Parser};
 pub use prettify::{prettify_document, prettify_document_into, prettify_str};
 pub use uglify::{uglify_document, uglify_document_into, uglify_str, uglify_str_into};
 
@@ -32,9 +34,11 @@ impl Default for JsonMode {
     }
 }
 
+pub const DEFAULT_PREFERRED_WIDTH: usize = 80;
+
 #[derive(bon::Builder, Debug, Clone, PartialEq, Eq)]
 pub struct PrettifyOptions {
-    #[builder(default = 80)]
+    #[builder(default = DEFAULT_PREFERRED_WIDTH)]
     pub preferred_width: usize,
     #[builder(default)]
     pub line_ending: LineEnding,
