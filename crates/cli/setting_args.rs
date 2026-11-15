@@ -19,11 +19,11 @@ pub trait Settings: DeserializeOwned {
 #[derive(Clone, Debug)]
 pub struct FromSettings<T>(pub T);
 
-fn flag_name(name: &str) -> String {
+fn snake_to_kebab(name: &str) -> String {
     name.replace('_', "-")
 }
 
-fn camel_case(name: &str) -> String {
+fn snake_to_camel(name: &str) -> String {
     name.split('_')
         .enumerate()
         .map(|(index, word)| match (index, word.split_at_checked(1)) {
@@ -33,20 +33,19 @@ fn camel_case(name: &str) -> String {
         .collect()
 }
 
-pub fn flag_spelling(name: &str) -> String {
-    format!("--{}", flag_name(name))
+pub fn long_flag(name: &str) -> String {
+    format!("--{}", snake_to_kebab(name))
 }
 
-fn invalid(message: impl Display) -> clap::Error {
+fn invalid_value(message: impl Display) -> clap::Error {
     clap::Error::raw(ErrorKind::InvalidValue, message)
 }
 
 fn setting_arg(setting: &Setting) -> Arg {
-    let flag = flag_name(setting.name);
     let arg = Arg::new(setting.name)
-        .long(flag.clone())
+        .long(snake_to_kebab(setting.name))
         .help(setting.description)
-        .value_name(flag.to_uppercase().replace('-', "_"));
+        .value_name(setting.name.to_uppercase());
     match setting.kind {
         SettingKind::Integer { default } => arg
             .default_value(default.to_string())
@@ -57,32 +56,28 @@ fn setting_arg(setting: &Setting) -> Arg {
     }
 }
 
-fn given(matches: &ArgMatches, setting: &Setting) -> Result<Option<Value>, clap::Error> {
+fn command_line_value(matches: &ArgMatches, setting: &Setting) -> Option<Value> {
     if matches.value_source(setting.name) != Some(ValueSource::CommandLine) {
-        return Ok(None);
+        return None;
     }
     match setting.kind {
         SettingKind::Integer { .. } => matches
-            .try_get_one::<usize>(setting.name)
-            .map_err(invalid)
-            .map(|value| value.map(|value| Value::from(*value))),
+            .get_one::<usize>(setting.name)
+            .map(|value| Value::from(*value)),
         SettingKind::Choice { .. } => matches
-            .try_get_one::<String>(setting.name)
-            .map_err(invalid)
-            .map(|value| value.map(|value| Value::from(value.as_str()))),
+            .get_one::<String>(setting.name)
+            .map(|value| Value::from(value.as_str())),
     }
 }
 
-fn given_values(
-    matches: &ArgMatches,
-    table: &[Setting],
-) -> Result<Map<String, Value>, clap::Error> {
+fn command_line_values(matches: &ArgMatches, table: &[Setting]) -> Map<String, Value> {
     table
         .iter()
         .filter_map(|setting| {
-            given(matches, setting)
-                .map(|value| value.map(|value| (camel_case(setting.name), value)))
-                .transpose()
+            Some((
+                snake_to_camel(setting.name),
+                command_line_value(matches, setting)?,
+            ))
         })
         .collect()
 }
@@ -103,9 +98,9 @@ impl<T: Settings> Args for FromSettings<T> {
 
 impl<T: Settings> FromArgMatches for FromSettings<T> {
     fn from_arg_matches(matches: &ArgMatches) -> Result<Self, clap::Error> {
-        serde_json::from_value(Value::Object(given_values(matches, T::TABLE)?))
+        serde_json::from_value(Value::Object(command_line_values(matches, T::TABLE)))
             .map(Self)
-            .map_err(invalid)
+            .map_err(invalid_value)
     }
 
     fn update_from_arg_matches(&mut self, matches: &ArgMatches) -> Result<(), clap::Error> {

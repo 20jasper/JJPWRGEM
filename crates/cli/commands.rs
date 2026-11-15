@@ -82,11 +82,11 @@ pub struct FormatArgs {
 }
 
 impl FormatArgs {
-    fn config(&self) -> FormatConfig {
+    fn config(self) -> FormatConfig {
         FormatConfig {
             parser: self.parser.into(),
             uglify: self.uglify,
-            settings: self.settings.0.clone(),
+            settings: self.settings.0,
         }
     }
 }
@@ -123,7 +123,7 @@ pub fn parse() -> Action {
         Commands::Format(args) => match args.config().validate() {
             Ok(request) => Action::Format(request),
             Err(ConfigError(rule)) => {
-                usage_error(&command, name.as_deref(), rule.describe(flag_spelling)).exit()
+                usage_error(&command, name.as_deref(), rule.describe(option_flag)).exit()
             }
         },
     }
@@ -147,20 +147,20 @@ impl From<ParserArg> for ParseParser {
     }
 }
 
-fn flag_spelling(option: FormatOption) -> String {
+fn option_flag(option: FormatOption) -> String {
     match option {
         FormatOption::Uglify => "--uglify".to_owned(),
         FormatOption::Jsonlines => "--parser jsonlines".to_owned(),
         FormatOption::PreferredWidth => option
             .setting_name()
-            .map_or_default(setting_args::flag_spelling),
+            .map_or_default(setting_args::long_flag),
     }
 }
 
 fn with_rules(help: &str, option: FormatOption) -> String {
-    rule_clause(option, flag_spelling).map_or_else(
+    rule_clause(option, option_flag).map_or_else(
         || help.to_owned(),
-        |clause| format!("{help}. {} {clause}", flag_spelling(option)),
+        |clause| format!("{help}. {} {clause}", option_flag(option)),
     )
 }
 

@@ -25,7 +25,7 @@ macro_rules! settings {
         #[derive(Debug, Default, Clone, PartialEq, Eq)]
         #[cfg_attr(
             feature = "serde",
-            derive(serde::Deserialize),
+            derive(::serde::Deserialize),
             serde(rename_all = "camelCase", default)
         )]
         $vis struct $name {

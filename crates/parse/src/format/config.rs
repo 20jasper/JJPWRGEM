@@ -47,8 +47,10 @@ pub const FORMAT_RULES: &[Rule] = &[
 ];
 
 impl FormatOption {
+    pub const ALL: [Self; 3] = [Self::Uglify, Self::Jsonlines, Self::PreferredWidth];
+
     pub fn for_setting(name: &str) -> Option<Self> {
-        [Self::PreferredWidth]
+        Self::ALL
             .into_iter()
             .find(|option| option.setting_name() == Some(name))
     }
