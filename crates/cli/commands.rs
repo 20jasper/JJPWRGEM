@@ -3,7 +3,7 @@ use clap::{
 };
 use jjpwrgem_parse::format::{
     ConfigError, DEFAULT_PREFERRED_WIDTH, FormatConfig, FormatOption, FormatRequest, LineEnding,
-    Parser as ParseParser,
+    Parser as ParseParser, rule_clause,
 };
 
 use crate::{
@@ -58,21 +58,29 @@ pub enum Commands {
 
 #[derive(Args)]
 pub struct FormatArgs {
-    /// Removes all insignificant whitespace instead of pretty printing,
-    /// also known as minifying. Cannot be combined with --preferred-width or --parser jsonlines
-    #[arg(short, long)]
+    #[arg(short, long, help = with_rules(
+        "Removes all insignificant whitespace instead of pretty printing, also known as minifying",
+        FormatOption::Uglify,
+    ))]
     uglify: bool,
 
-    /// Preferred maximum line width. Note this is not a hard maximum width [default: 80]
-    #[arg(long)]
+    #[arg(long, help = format!(
+        "{} [default: {DEFAULT_PREFERRED_WIDTH}]",
+        with_rules(
+            "Preferred maximum line width. Note this is not a hard maximum width",
+            FormatOption::PreferredWidth,
+        ),
+    ))]
     preferred_width: Option<usize>,
 
     /// Line ending to use when formatting output
     #[arg(value_enum, long, visible_alias = "eol", default_value_t)]
     end_of_line: LineEndingArg,
 
-    /// Parser to use for input. jsonlines cannot be combined with --uglify
-    #[arg(value_enum, long, default_value_t)]
+    #[arg(value_enum, long, default_value_t, help = with_rules(
+        "Parser to use for input",
+        FormatOption::Jsonlines,
+    ))]
     parser: ParserArg,
 }
 
@@ -153,6 +161,26 @@ fn flag_spelling(option: FormatOption) -> String {
         FormatOption::PreferredWidth => "--preferred-width",
     }
     .to_owned()
+}
+
+fn sentence(option: FormatOption, clause: &str) -> String {
+    if let Some((_, value)) = flag_spelling(option).split_once(' ') {
+        return format!("{value} {clause}");
+    }
+    let mut chars = clause.chars();
+    chars
+        .next()
+        .into_iter()
+        .flat_map(char::to_uppercase)
+        .chain(chars)
+        .collect()
+}
+
+fn with_rules(help: &str, option: FormatOption) -> String {
+    rule_clause(option, flag_spelling).map_or_else(
+        || help.to_owned(),
+        |clause| format!("{help}. {}", sentence(option, &clause)),
+    )
 }
 
 fn usage_error(

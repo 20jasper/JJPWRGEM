@@ -80,6 +80,26 @@ impl Rule {
     }
 }
 
+fn join(items: &[String]) -> String {
+    match items {
+        [rest @ .., tail] if !rest.is_empty() => format!("{} or {tail}", rest.join(", ")),
+        _ => items.join(""),
+    }
+}
+
+pub fn rule_clause(option: FormatOption, name: impl Fn(FormatOption) -> String) -> Option<String> {
+    let others: Vec<String> = FORMAT_RULES
+        .iter()
+        .filter_map(|rule| match *rule {
+            Rule::Conflicts(a, b) if a == option => Some(b),
+            Rule::Conflicts(a, b) if b == option => Some(a),
+            Rule::Conflicts(..) => None,
+        })
+        .map(name)
+        .collect();
+    (!others.is_empty()).then(|| format!("cannot be combined with {}", join(&others)))
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ConfigError(pub Rule);
 
