@@ -3,6 +3,9 @@ description = "Generate markdown files from templates"
 sources = [
   "xtask/templates/**",
   "xtask/src/template.rs",
+  "xtask/src/vscode_settings.rs",
+  "crates/parse/src/settings.rs",
+  "crates/parse/src/format/config.rs",
   "benches/docker/output/*.md",
   "benches/output/*.md",
 ]
@@ -18,9 +21,11 @@ outputs = [
   "crates/lsp/readme.md",
   "crates/bytes2chars/README.md",
   "crates/lspresso/README.md",
+  "npm-packages/jjpwrgem-vscode/package.json",
 ]
 run = [
   "cargo xtask generate-readmes",
+  "cargo xtask generate-vscode-settings",
   "cargo +nightly fmt -p bytes2chars",
   "cargo rdme --workspace-project bytes2chars --force",
   "cargo rdme --workspace-project lspresso --force",
@@ -35,6 +40,7 @@ run = [
 description = "Verify markdown files match generated templates"
 run = [
   "cargo xtask verify-readmes",
+  "cargo xtask verify-vscode-settings",
   "cargo rdme --workspace-project bytes2chars --check",
   "cargo rdme --workspace-project lspresso --check",
 ]

@@ -65,6 +65,29 @@
           "default": "jjp",
           "scope": "machine",
           "markdownDescription": "Path to the `jjp` executable used to run the language server. Defaults to `jjp` on your `PATH`. Reload the window after changing."
+        },
+        "jjpwrgem.format.uglify": {
+          "type": "boolean",
+          "default": false,
+          "description": "Removes all insignificant whitespace instead of pretty printing, also known as minifying"
+        },
+        "jjpwrgem.format.preferredWidth": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "default": null,
+          "description": "Preferred maximum line width. Note this is not a hard maximum width. Defaults to 80 when unset"
+        },
+        "jjpwrgem.format.endOfLine": {
+          "type": "string",
+          "enum": [
+            "lf",
+            "crlf"
+          ],
+          "default": "lf",
+          "description": "Line ending to use when formatting output"
         }
       }
     }
