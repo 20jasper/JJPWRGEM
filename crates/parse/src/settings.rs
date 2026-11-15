@@ -32,8 +32,8 @@ macro_rules! settings {
             $(#[doc = $doc] $field_vis $field: $ty,)*
         }
 
-        $vis const $table: &[$crate::format::Setting] = &[
-            $($crate::format::Setting {
+        $vis const $table: &[$crate::settings::Setting] = &[
+            $($crate::settings::Setting {
                 name: stringify!($field),
                 description: $doc.trim_ascii(),
                 kind: $kind,
@@ -42,4 +42,4 @@ macro_rules! settings {
     };
 }
 
-pub(super) use settings;
+pub(crate) use settings;

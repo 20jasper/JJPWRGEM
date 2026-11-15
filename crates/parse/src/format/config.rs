@@ -1,9 +1,9 @@
 use std::fmt;
 
 use super::{
-    DEFAULT_PREFERRED_WIDTH, FormatRequest, JsonMode, JsonlinesOptions, LineEnding,
-    PrettifyOptions, SettingKind, settings::settings,
+    DEFAULT_PREFERRED_WIDTH, FormatRequest, JsonMode, JsonlinesOptions, LineEnding, PrettifyOptions,
 };
+use crate::settings::{SettingKind, settings};
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 pub enum Parser {

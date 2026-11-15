@@ -4,7 +4,7 @@ use clap::{
     Arg, ArgMatches, Args, Command, FromArgMatches, builder::PossibleValuesParser,
     error::ErrorKind, parser::ValueSource, value_parser,
 };
-use jjpwrgem_parse::format::{Setting, SettingKind};
+use jjpwrgem_parse::settings::{Setting, SettingKind};
 use serde::de::DeserializeOwned;
 use serde_json::{Map, Value};
 

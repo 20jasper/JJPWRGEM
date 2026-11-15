@@ -2,9 +2,12 @@ use clap::{
     Arg, Args, Command, CommandFactory, FromArgMatches, Parser, Subcommand, ValueEnum,
     error::ErrorKind,
 };
-use jjpwrgem_parse::format::{
-    ConfigError, FORMAT_SETTINGS, FormatConfig, FormatOption, FormatRequest, FormatSettings,
-    Parser as ParseParser, Setting, rule_clause,
+use jjpwrgem_parse::{
+    format::{
+        ConfigError, FORMAT_SETTINGS, FormatConfig, FormatOption, FormatRequest, FormatSettings,
+        Parser as ParseParser, rule_clause,
+    },
+    settings::Setting,
 };
 
 use crate::{

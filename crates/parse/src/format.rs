@@ -1,10 +1,7 @@
 mod config;
-#[cfg(feature = "serde")]
-mod config_serde;
 mod prettify;
 #[cfg(feature = "serde")]
 pub mod serde;
-mod settings;
 pub(crate) mod uglify;
 
 pub use config::{
@@ -12,7 +9,6 @@ pub use config::{
     Rule, rule_clause,
 };
 pub use prettify::{prettify_document, prettify_document_into, prettify_str};
-pub use settings::{Setting, SettingKind};
 pub use uglify::{uglify_document, uglify_document_into, uglify_str, uglify_str_into};
 
 use crate::ast::Document;
@@ -89,6 +85,11 @@ pub(crate) fn join_into<T, B>(
 }
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(::serde::Deserialize),
+    serde(rename_all = "lowercase")
+)]
 pub enum LineEnding {
     #[default]
     Lf,
