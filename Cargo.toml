@@ -81,6 +81,7 @@ displaydoc = { workspace = true }
 jjpwrgem-parse = { workspace = true, features = ["serde"] }
 jjpwrgem-ui = { workspace = true }
 lsp = { workspace = true }
+serde = { workspace = true }
 serde_json = { workspace = true }
 simdutf8 = "0.1.5"
 

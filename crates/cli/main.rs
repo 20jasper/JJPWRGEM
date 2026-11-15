@@ -9,8 +9,8 @@
 )]
 mod commands;
 mod error;
-mod format_settings;
 mod output;
+mod setting_args;
 
 use std::{
     io::{IsTerminal, Read, Write},

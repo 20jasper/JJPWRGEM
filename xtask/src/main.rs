@@ -5,7 +5,6 @@ mod bench_table;
 mod lsp_bench_report;
 mod npm;
 mod plot;
-mod settings;
 mod spec_badges;
 mod template;
 
@@ -22,10 +21,6 @@ enum Commands {
     GenerateReadmes,
     /// Verify generated READMEs match what's committed
     VerifyReadmes,
-    /// Write the CLI settings table generated from the format config
-    GenerateSettings,
-    /// Verify the CLI settings table is up to date with the format config
-    VerifySettings,
     /// Generate candlestick charts for all benchmark datasets
     PlotBenchmarks,
     /// Generate npm package.json
@@ -47,8 +42,6 @@ fn main() -> anyhow::Result<()> {
             Ok(())
         }
         Commands::VerifyReadmes => template::are_readmes_updated(),
-        Commands::GenerateSettings => settings::write_settings(),
-        Commands::VerifySettings => settings::are_settings_updated(),
         Commands::PlotBenchmarks => plot::plot_all_benchmarks(),
         Commands::GenerateNpmPackage => npm::write_package_json(),
         Commands::BenchTable => bench_table::write_bench_table(),

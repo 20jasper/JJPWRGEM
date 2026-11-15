@@ -1,6 +1,8 @@
 use std::fmt;
 
-use super::{FormatRequest, JsonMode, JsonlinesOptions, LineEnding, PrettifyOptions};
+use super::{
+    DEFAULT_PREFERRED_WIDTH, FormatRequest, JsonMode, JsonlinesOptions, LineEnding, PrettifyOptions,
+};
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 pub enum Parser {
@@ -9,25 +11,14 @@ pub enum Parser {
     Jsonlines,
 }
 
-const PREFERRED_WIDTH_SETTING: &str = "preferredWidth";
+pub const PREFERRED_WIDTH_SETTING: &str = "preferredWidth";
+pub const END_OF_LINE_SETTING: &str = "endOfLine";
 
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
-#[cfg_attr(feature = "serde", derive(::serde::Deserialize))]
-#[cfg_attr(feature = "serde", serde(rename_all = "camelCase", default))]
-#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct FormatConfig {
-    #[cfg_attr(feature = "serde", serde(skip))]
     pub parser: Parser,
-    #[cfg_attr(feature = "serde", serde(skip))]
     pub uglify: bool,
-    /// Preferred maximum line width. Note this is not a hard maximum width
-    #[cfg_attr(
-        feature = "schema",
-        schemars(extend("type" = "integer", "default" = super::DEFAULT_PREFERRED_WIDTH))
-    )]
     pub preferred_width: Option<usize>,
-    #[cfg_attr(feature = "serde", serde(rename = "endOfLine"))]
-    /// Line ending to use when formatting output
     pub line_ending: LineEnding,
 }
 
@@ -45,10 +36,27 @@ pub enum SettingKind {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Setting {
     pub name: &'static str,
-    pub flag: &'static str,
     pub description: &'static str,
     pub kind: SettingKind,
 }
+
+pub const FORMAT_SETTINGS: &[Setting] = &[
+    Setting {
+        name: PREFERRED_WIDTH_SETTING,
+        description: "Preferred maximum line width. Note this is not a hard maximum width",
+        kind: SettingKind::Integer {
+            default: DEFAULT_PREFERRED_WIDTH,
+        },
+    },
+    Setting {
+        name: END_OF_LINE_SETTING,
+        description: "Line ending to use when formatting output",
+        kind: SettingKind::Choice {
+            values: &["lf", "crlf"],
+            default: "lf",
+        },
+    },
+];
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum FormatOption {
@@ -69,13 +77,8 @@ pub const FORMAT_RULES: &[Rule] = &[
 ];
 
 impl FormatOption {
-    pub const ALL: [Self; 3] = [Self::Uglify, Self::Jsonlines, Self::PreferredWidth];
-
-    pub fn setting(self) -> Option<&'static str> {
-        match self {
-            Self::PreferredWidth => Some(PREFERRED_WIDTH_SETTING),
-            Self::Uglify | Self::Jsonlines => None,
-        }
+    pub fn for_setting(name: &str) -> Option<Self> {
+        (name == PREFERRED_WIDTH_SETTING).then_some(Self::PreferredWidth)
     }
 
     fn is_active(self, config: &FormatConfig) -> bool {
@@ -175,7 +178,6 @@ mod tests {
     use rstest::rstest;
 
     use super::*;
-    use crate::format::DEFAULT_PREFERRED_WIDTH;
 
     const WIDTH: usize = 40;
 
