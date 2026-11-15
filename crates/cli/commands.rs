@@ -163,23 +163,10 @@ fn flag_spelling(option: FormatOption) -> String {
     .to_owned()
 }
 
-fn sentence(option: FormatOption, clause: &str) -> String {
-    if let Some((_, value)) = flag_spelling(option).split_once(' ') {
-        return format!("{value} {clause}");
-    }
-    let mut chars = clause.chars();
-    chars
-        .next()
-        .into_iter()
-        .flat_map(char::to_uppercase)
-        .chain(chars)
-        .collect()
-}
-
 fn with_rules(help: &str, option: FormatOption) -> String {
     rule_clause(option, flag_spelling).map_or_else(
         || help.to_owned(),
-        |clause| format!("{help}. {}", sentence(option, &clause)),
+        |clause| format!("{help}. {} {clause}", flag_spelling(option)),
     )
 }
 

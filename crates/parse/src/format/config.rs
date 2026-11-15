@@ -9,23 +9,12 @@ pub enum Parser {
     Jsonlines,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct FormatConfig {
     pub parser: Parser,
     pub uglify: bool,
     pub preferred_width: Option<usize>,
     pub line_ending: LineEnding,
-}
-
-impl Default for FormatConfig {
-    fn default() -> Self {
-        Self {
-            parser: Parser::default(),
-            uglify: false,
-            preferred_width: None,
-            line_ending: LineEnding::default(),
-        }
-    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
