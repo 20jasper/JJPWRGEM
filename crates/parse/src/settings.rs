@@ -40,10 +40,11 @@ fn snake_to_camel(name: &str) -> String {
         .collect()
 }
 
+// Rust-like syntax for defining Settings for conflicts, defaults, descriptions
 macro_rules! settings {
     (
-        $vis:vis struct $name:ident, table $table:ident {
-            $(#[doc = $doc:literal] $field_vis:vis $field:ident: $ty:ty = $kind:expr),* $(,)?
+        struct $struct_name:ident, table $table_name:ident {
+            $(#[doc = $field_doc:literal] $field_name:ident: $field_type:ty = $field_kind:expr),* $(,)?
         }
     ) => {
         #[derive(Debug, Default, Clone, PartialEq, Eq)]
@@ -52,15 +53,15 @@ macro_rules! settings {
             derive(::serde::Deserialize),
             serde(rename_all = "camelCase", default)
         )]
-        $vis struct $name {
-            $(#[doc = $doc] $field_vis $field: $ty,)*
+        pub struct $struct_name {
+            $(#[doc = $field_doc] pub $field_name: $field_type,)*
         }
 
-        $vis const $table: &[$crate::settings::Setting] = &[
+        pub const $table_name: &[$crate::settings::Setting] = &[
             $($crate::settings::Setting {
-                name: stringify!($field),
-                description: $doc.trim_ascii(),
-                kind: $kind,
+                name: stringify!($field_name),
+                description: $field_doc.trim_ascii(),
+                kind: $field_kind,
             },)*
         ];
     };

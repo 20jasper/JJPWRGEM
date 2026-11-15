@@ -13,11 +13,11 @@ pub enum Parser {
 }
 
 settings! {
-    pub struct FormatSettings, table FORMAT_SETTINGS {
+    struct FormatSettings, table FORMAT_SETTINGS {
         /// Preferred maximum line width. Note this is not a hard maximum width
-        pub preferred_width: Option<usize> = SettingKind::Integer { default: DEFAULT_PREFERRED_WIDTH },
+        preferred_width: Option<usize> = SettingKind::Integer { default: DEFAULT_PREFERRED_WIDTH },
         /// Line ending to use when formatting output
-        pub end_of_line: LineEnding = SettingKind::Choice { values: &["lf", "crlf"], default: "lf" },
+        end_of_line: LineEnding = SettingKind::Choice { values: &["lf", "crlf"], default: "lf" },
     }
 }
 
