@@ -1,8 +1,6 @@
 use std::fmt;
 
-use super::{
-    DEFAULT_PREFERRED_WIDTH, FormatRequest, JsonMode, JsonlinesOptions, LineEnding, PrettifyOptions,
-};
+use super::{FormatRequest, JsonMode, JsonlinesOptions, LineEnding, PrettifyOptions};
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 pub enum Parser {
@@ -15,7 +13,7 @@ pub enum Parser {
 pub struct FormatConfig {
     pub parser: Parser,
     pub uglify: bool,
-    pub preferred_width: usize,
+    pub preferred_width: Option<usize>,
     pub line_ending: LineEnding,
 }
 
@@ -24,7 +22,7 @@ impl Default for FormatConfig {
         Self {
             parser: Parser::default(),
             uglify: false,
-            preferred_width: DEFAULT_PREFERRED_WIDTH,
+            preferred_width: None,
             line_ending: LineEnding::default(),
         }
     }
@@ -53,7 +51,7 @@ impl FormatOption {
         match self {
             Self::Uglify => config.uglify,
             Self::Jsonlines => config.parser == Parser::Jsonlines,
-            Self::PreferredWidth => config.preferred_width != DEFAULT_PREFERRED_WIDTH,
+            Self::PreferredWidth => config.preferred_width.is_some(),
         }
     }
 
@@ -125,7 +123,7 @@ impl FormatConfig {
         } else {
             JsonMode::Prettify(
                 PrettifyOptions::builder()
-                    .preferred_width(self.preferred_width)
+                    .maybe_preferred_width(self.preferred_width)
                     .line_ending(self.line_ending)
                     .build(),
             )
@@ -146,6 +144,7 @@ mod tests {
     use rstest::rstest;
 
     use super::*;
+    use crate::format::DEFAULT_PREFERRED_WIDTH;
 
     const WIDTH: usize = 40;
 
@@ -162,20 +161,20 @@ mod tests {
     #[case(
         Parser::Json,
         false,
-        DEFAULT_PREFERRED_WIDTH,
+        None,
         Ok(FormatRequest::Json(prettify(DEFAULT_PREFERRED_WIDTH)))
     )]
-    #[case(Parser::Json, false, WIDTH, Ok(FormatRequest::Json(prettify(WIDTH))))]
     #[case(
         Parser::Json,
-        true,
-        DEFAULT_PREFERRED_WIDTH,
-        Ok(FormatRequest::Json(JsonMode::Uglify))
+        false,
+        Some(WIDTH),
+        Ok(FormatRequest::Json(prettify(WIDTH)))
     )]
+    #[case(Parser::Json, true, None, Ok(FormatRequest::Json(JsonMode::Uglify)))]
     #[case(
         Parser::Jsonlines,
         false,
-        DEFAULT_PREFERRED_WIDTH,
+        None,
         Ok(FormatRequest::Jsonlines(
             JsonlinesOptions::builder()
                 .line_ending(LineEnding::CrLf)
@@ -185,25 +184,25 @@ mod tests {
     #[case(
         Parser::Jsonlines,
         true,
-        DEFAULT_PREFERRED_WIDTH,
+        None,
         Err(ConfigError(Rule::Conflicts(FormatOption::Uglify, FormatOption::Jsonlines)))
     )]
     #[case(
         Parser::Jsonlines,
         false,
-        WIDTH,
+        Some(WIDTH),
         Err(ConfigError(Rule::Conflicts(FormatOption::PreferredWidth, FormatOption::Jsonlines)))
     )]
     #[case(
         Parser::Json,
         true,
-        WIDTH,
+        Some(WIDTH),
         Err(ConfigError(Rule::Conflicts(FormatOption::Uglify, FormatOption::PreferredWidth)))
     )]
     fn validate(
         #[case] parser: Parser,
         #[case] uglify: bool,
-        #[case] preferred_width: usize,
+        #[case] preferred_width: Option<usize>,
         #[case] expected: Result<FormatRequest, ConfigError>,
     ) {
         let config = FormatConfig {

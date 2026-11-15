@@ -61,3 +61,15 @@ fn json_lines_conflicts_with_preferred_width() {
     });
     assert!(!output.status.success());
 }
+
+#[test]
+fn json_lines_conflicts_with_default_preferred_width() {
+    let output = exec_cmd(
+        cli().args(["format", "--parser", "jsonlines", "--preferred-width", "80"]),
+        Some(b"{}".to_vec()),
+    );
+    insta::with_settings!({snapshot_path => "../snapshots"}, {
+        assert_snapshot!(output.snapshot_display());
+    });
+    assert!(!output.status.success());
+}

@@ -89,7 +89,7 @@ impl FormatArgs {
         FormatConfig {
             parser: self.parser.into(),
             uglify: self.uglify,
-            preferred_width: self.preferred_width.unwrap_or(DEFAULT_PREFERRED_WIDTH),
+            preferred_width: self.preferred_width,
             line_ending: self.end_of_line.into(),
         }
     }

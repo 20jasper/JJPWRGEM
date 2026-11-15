@@ -118,6 +118,7 @@ fn preferred_width_conflicts_with_uglify() {
 #[rstest::rstest]
 #[case(&["--uglify", "--preferred-width", "24"], "uglify_then_width")]
 #[case(&["--preferred-width", "24", "--uglify"], "width_then_uglify")]
+#[case(&["--uglify", "--preferred-width", "80"], "uglify_then_default_width")]
 fn preferred_width_conflict_cases(#[case] args: &[&str], #[case] label: &str) {
     let mut cmd = cli();
     cmd.args(std::iter::once("format").chain(args.iter().copied()));
