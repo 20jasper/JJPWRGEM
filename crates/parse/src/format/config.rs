@@ -3,7 +3,7 @@ use std::fmt;
 use super::{
     DEFAULT_PREFERRED_WIDTH, FormatRequest, JsonMode, JsonlinesOptions, LineEnding, PrettifyOptions,
 };
-use crate::settings::{SettingKind, settings};
+use crate::settings::{Setting, SettingKind, settings};
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 pub enum Parser {
@@ -52,14 +52,15 @@ impl FormatOption {
     pub fn for_setting(name: &str) -> Option<Self> {
         Self::ALL
             .into_iter()
-            .find(|option| option.setting_name() == Some(name))
+            .find(|option| option.setting().map(|setting| setting.name) == Some(name))
     }
 
-    pub fn setting_name(self) -> Option<&'static str> {
-        match self {
-            Self::PreferredWidth => Some("preferred_width"),
-            Self::Uglify | Self::Jsonlines => None,
-        }
+    pub fn setting(self) -> Option<&'static Setting> {
+        let name = match self {
+            Self::PreferredWidth => "preferred_width",
+            Self::Uglify | Self::Jsonlines => return None,
+        };
+        FORMAT_SETTINGS.iter().find(|setting| setting.name == name)
     }
 
     fn is_active(self, config: &FormatConfig) -> bool {

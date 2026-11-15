@@ -10,6 +10,7 @@ use serde_json::{Map, Value};
 
 pub trait Settings: DeserializeOwned {
     const TABLE: &'static [Setting];
+    const ALIASES: &'static [(&'static str, &'static str)] = &[];
 
     fn customize(_setting: &Setting, arg: Arg) -> Arg {
         arg
@@ -19,31 +20,13 @@ pub trait Settings: DeserializeOwned {
 #[derive(Clone, Debug)]
 pub struct FromSettings<T>(pub T);
 
-fn snake_to_kebab(name: &str) -> String {
-    name.replace('_', "-")
-}
-
-fn snake_to_camel(name: &str) -> String {
-    name.split('_')
-        .enumerate()
-        .map(|(index, word)| match (index, word.split_at_checked(1)) {
-            (1.., Some((head, tail))) => head.to_uppercase() + tail,
-            _ => word.to_owned(),
-        })
-        .collect()
-}
-
-pub fn long_flag(name: &str) -> String {
-    format!("--{}", snake_to_kebab(name))
-}
-
 fn invalid_value(message: impl Display) -> clap::Error {
     clap::Error::raw(ErrorKind::InvalidValue, message)
 }
 
 fn setting_arg(setting: &Setting) -> Arg {
     let arg = Arg::new(setting.name)
-        .long(snake_to_kebab(setting.name))
+        .long(setting.flag())
         .help(setting.description)
         .value_name(setting.name.to_uppercase());
     match setting.kind {
@@ -73,22 +56,21 @@ fn command_line_value(matches: &ArgMatches, setting: &Setting) -> Option<Value> 
 fn command_line_values(matches: &ArgMatches, table: &[Setting]) -> Map<String, Value> {
     table
         .iter()
-        .filter_map(|setting| {
-            Some((
-                snake_to_camel(setting.name),
-                command_line_value(matches, setting)?,
-            ))
-        })
+        .filter_map(|setting| Some((setting.key(), command_line_value(matches, setting)?)))
         .collect()
 }
 
 impl<T: Settings> Args for FromSettings<T> {
     fn augment_args(cmd: Command) -> Command {
-        cmd.args(
-            T::TABLE
+        cmd.args(T::TABLE.iter().map(|setting| {
+            let arg = T::ALIASES
                 .iter()
-                .map(|setting| T::customize(setting, setting_arg(setting))),
-        )
+                .filter(|(name, _)| *name == setting.name)
+                .fold(setting_arg(setting), |arg, (_, alias)| {
+                    arg.visible_alias(*alias)
+                });
+            T::customize(setting, arg)
+        }))
     }
 
     fn augment_args_for_update(cmd: Command) -> Command {

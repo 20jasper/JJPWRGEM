@@ -16,6 +16,30 @@ pub struct Setting {
     pub kind: SettingKind,
 }
 
+impl Setting {
+    pub fn key(&self) -> String {
+        snake_to_camel(self.name)
+    }
+
+    pub fn flag(&self) -> String {
+        snake_to_kebab(self.name)
+    }
+}
+
+fn snake_to_kebab(name: &str) -> String {
+    name.replace('_', "-")
+}
+
+fn snake_to_camel(name: &str) -> String {
+    name.split('_')
+        .enumerate()
+        .map(|(index, word)| match (index, word.split_at_checked(1)) {
+            (1.., Some((head, tail))) => head.to_uppercase() + tail,
+            _ => word.to_owned(),
+        })
+        .collect()
+}
+
 macro_rules! settings {
     (
         $vis:vis struct $name:ident, table $table:ident {

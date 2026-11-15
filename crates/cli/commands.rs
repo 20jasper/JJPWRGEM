@@ -12,11 +12,9 @@ use jjpwrgem_parse::{
 
 use crate::{
     docs::{indent, strip_front_matter},
-    get_docs_snapshot, setting_args,
+    get_docs_snapshot,
     setting_args::{FromSettings, Settings},
 };
-
-const FLAG_ALIASES: &[(&str, &str)] = &[("end_of_line", "eol")];
 
 #[derive(Parser)]
 #[command(
@@ -93,12 +91,9 @@ impl FormatArgs {
 
 impl Settings for FormatSettings {
     const TABLE: &'static [Setting] = FORMAT_SETTINGS;
+    const ALIASES: &'static [(&'static str, &'static str)] = &[("end_of_line", "eol")];
 
     fn customize(setting: &Setting, arg: Arg) -> Arg {
-        let arg = FLAG_ALIASES
-            .iter()
-            .filter(|(name, _)| *name == setting.name)
-            .fold(arg, |arg, (_, alias)| arg.visible_alias(*alias));
         match FormatOption::for_setting(setting.name) {
             Some(option) => arg.help(with_rules(setting.description, option)),
             None => arg,
@@ -152,8 +147,8 @@ fn option_flag(option: FormatOption) -> String {
         FormatOption::Uglify => "--uglify".to_owned(),
         FormatOption::Jsonlines => "--parser jsonlines".to_owned(),
         FormatOption::PreferredWidth => option
-            .setting_name()
-            .map_or_default(setting_args::long_flag),
+            .setting()
+            .map_or_default(|setting| format!("--{}", setting.flag())),
     }
 }
 
