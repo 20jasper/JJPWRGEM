@@ -12,8 +12,8 @@ pub trait Settings: DeserializeOwned {
     const TABLE: &'static [Setting];
     const ALIASES: &'static [(&'static str, &'static str)] = &[];
 
-    fn customize(_setting: &Setting, arg: Arg) -> Arg {
-        arg
+    fn help(setting: &Setting) -> String {
+        setting.description.to_owned()
     }
 }
 
@@ -24,10 +24,10 @@ fn invalid_value(message: impl Display) -> clap::Error {
     clap::Error::raw(ErrorKind::InvalidValue, message)
 }
 
-fn setting_arg(setting: &Setting) -> Arg {
+fn setting_arg(setting: &Setting, help: String) -> Arg {
     let arg = Arg::new(setting.name)
         .long(setting.flag())
-        .help(setting.description)
+        .help(help)
         .value_name(setting.name.to_uppercase());
     match setting.kind {
         SettingKind::Integer { default } => arg
@@ -63,13 +63,12 @@ fn command_line_values(matches: &ArgMatches, table: &[Setting]) -> Map<String, V
 impl<T: Settings> Args for FromSettings<T> {
     fn augment_args(cmd: Command) -> Command {
         cmd.args(T::TABLE.iter().map(|setting| {
-            let arg = T::ALIASES
+            T::ALIASES
                 .iter()
                 .filter(|(name, _)| *name == setting.name)
-                .fold(setting_arg(setting), |arg, (_, alias)| {
+                .fold(setting_arg(setting, T::help(setting)), |arg, (_, alias)| {
                     arg.visible_alias(*alias)
-                });
-            T::customize(setting, arg)
+                })
         }))
     }
 

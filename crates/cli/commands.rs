@@ -1,6 +1,5 @@
 use clap::{
-    Arg, Args, Command, CommandFactory, FromArgMatches, Parser, Subcommand, ValueEnum,
-    error::ErrorKind,
+    Args, Command, CommandFactory, FromArgMatches, Parser, Subcommand, ValueEnum, error::ErrorKind,
 };
 use jjpwrgem_parse::{
     format::{
@@ -93,10 +92,10 @@ impl Settings for FormatSettings {
     const TABLE: &'static [Setting] = FORMAT_SETTINGS;
     const ALIASES: &'static [(&'static str, &'static str)] = &[("end_of_line", "eol")];
 
-    fn customize(setting: &Setting, arg: Arg) -> Arg {
+    fn help(setting: &Setting) -> String {
         match FormatOption::for_setting(setting.name) {
-            Some(option) => arg.help(with_rules(setting.description, option)),
-            None => arg,
+            Some(option) => with_rules(setting.description, option),
+            None => setting.description.to_owned(),
         }
     }
 }
