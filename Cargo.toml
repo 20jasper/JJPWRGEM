@@ -93,10 +93,12 @@ inherits = "release"
 lto = "fat"
 codegen-units = 1
 panic = "abort"
+strip = true
 
 # benches measure the binary we ship
 [profile.bench]
 inherits = "dist"
+strip = false
 
 [lints]
 workspace = true
