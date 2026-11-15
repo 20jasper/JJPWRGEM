@@ -1,5 +1,9 @@
-use clap::{Command, Parser, Subcommand, ValueEnum, error::ErrorKind};
-use jjpwrgem_parse::format::{ConfigError, LineEnding, Parser as ParseParser};
+use clap::{
+    Args, Command, CommandFactory, FromArgMatches, Parser, Subcommand, ValueEnum, error::ErrorKind,
+};
+use jjpwrgem_parse::format::{
+    DEFAULT_PREFERRED_WIDTH, FormatConfig, FormatRequest, LineEnding, Parser as ParseParser,
+};
 
 use crate::{
     docs::{indent, strip_front_matter},
@@ -35,24 +39,7 @@ pub enum Commands {
         indent(strip_front_matter(get_docs_snapshot!("format_pretty"))),
         indent(strip_front_matter(get_docs_snapshot!("format_uglify"))),
     ))]
-    Format {
-        /// Removes all insignificant whitespace instead of pretty printing,
-        /// also known as minifying. Cannot be combined with --preferred-width or --parser jsonlines
-        #[arg(short, long)]
-        uglify: bool,
-
-        /// Preferred maximum line width. Note this is not a hard maximum width [default: 80]
-        #[arg(long)]
-        preferred_width: Option<usize>,
-
-        /// Line ending to use when formatting output
-        #[arg(value_enum, long, visible_alias = "eol", default_value_t)]
-        end_of_line: LineEndingArg,
-
-        /// Parser to use for input. jsonlines cannot be combined with --uglify
-        #[arg(value_enum, long, default_value_t)]
-        parser: ParserArg,
-    },
+    Format(FormatArgs),
     #[command(after_help = format!(
         "Examples:\n{}\n\n{}",
         indent(strip_front_matter(get_docs_snapshot!("check_success"))),
@@ -66,6 +53,58 @@ pub enum Commands {
     },
     /// Start a language server over stdio
     Lsp,
+}
+
+#[derive(Args)]
+pub struct FormatArgs {
+    /// Removes all insignificant whitespace instead of pretty printing,
+    /// also known as minifying. Cannot be combined with --preferred-width or --parser jsonlines
+    #[arg(short, long)]
+    uglify: bool,
+
+    /// Preferred maximum line width. Note this is not a hard maximum width [default: 80]
+    #[arg(long)]
+    preferred_width: Option<usize>,
+
+    /// Line ending to use when formatting output
+    #[arg(value_enum, long, visible_alias = "eol", default_value_t)]
+    end_of_line: LineEndingArg,
+
+    /// Parser to use for input. jsonlines cannot be combined with --uglify
+    #[arg(value_enum, long, default_value_t)]
+    parser: ParserArg,
+}
+
+impl FormatArgs {
+    fn config(&self) -> FormatConfig {
+        FormatConfig {
+            parser: self.parser.into(),
+            uglify: self.uglify,
+            preferred_width: self.preferred_width.unwrap_or(DEFAULT_PREFERRED_WIDTH),
+            line_ending: self.end_of_line.into(),
+        }
+    }
+}
+
+pub enum Action {
+    Lsp,
+    Check(ParserArg),
+    Format(FormatRequest),
+}
+
+pub fn parse() -> Action {
+    let mut command = Cli::command();
+    let mut matches = command.get_matches_mut();
+    let name = matches.subcommand_name().map(str::to_owned);
+    let cli = Cli::from_arg_matches_mut(&mut matches).unwrap_or_else(|error| error.exit());
+    match cli.command {
+        Commands::Lsp => Action::Lsp,
+        Commands::Check { parser } => Action::Check(parser),
+        Commands::Format(args) => match args.config().validate() {
+            Ok(request) => Action::Format(request),
+            Err(error) => usage_error(&command, name.as_deref(), error).exit(),
+        },
+    }
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, ValueEnum, Default)]
@@ -104,12 +143,14 @@ impl From<ParserArg> for ParseParser {
     }
 }
 
-const FORMAT_COMMAND: &str = "format";
-
-pub fn rule_error(command: &Command, error: ConfigError) -> clap::Error {
-    command
-        .find_subcommand(FORMAT_COMMAND)
+fn usage_error(
+    command: &Command,
+    subcommand: Option<&str>,
+    message: impl std::fmt::Display,
+) -> clap::Error {
+    subcommand
+        .and_then(|name| command.find_subcommand(name))
         .unwrap_or(command)
         .clone()
-        .error(ErrorKind::ArgumentConflict, error)
+        .error(ErrorKind::ArgumentConflict, message)
 }

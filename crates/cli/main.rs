@@ -16,53 +16,32 @@ use std::{
     process::ExitCode,
 };
 
-use clap::{CommandFactory, FromArgMatches};
 pub use error::{Error, Result};
-use jjpwrgem_parse::{
-    diagnostics::Diagnostic,
-    format::{DEFAULT_PREFERRED_WIDTH, FormatConfig, FormatRequest},
-    format_str, validate_str,
-};
+use jjpwrgem_parse::{diagnostics::Diagnostic, format::FormatRequest, format_str, validate_str};
 use jjpwrgem_ui::{Color, Style};
 
 use crate::{
-    commands::{Commands, ParserArg},
+    commands::{Action, ParserArg},
     output::Output,
 };
 
 fn main() -> ExitCode {
-    let mut command = commands::Cli::command();
-    let cli = commands::Cli::from_arg_matches_mut(&mut command.get_matches_mut())
-        .unwrap_or_else(|error| error.exit());
-
     let style = Style::Pretty(Color::Plain);
 
-    if matches!(cli.command, Commands::Lsp) {
-        lsp::run_blocking();
-        return ExitCode::SUCCESS;
-    }
-
-    let request = match &cli.command {
-        Commands::Format {
-            uglify,
-            preferred_width,
-            end_of_line,
-            parser,
-        } => {
-            let config = FormatConfig {
-                parser: (*parser).into(),
-                uglify: *uglify,
-                preferred_width: preferred_width.unwrap_or(DEFAULT_PREFERRED_WIDTH),
-                line_ending: (*end_of_line).into(),
-            };
-            match config.validate() {
-                Ok(request) => Some(request),
-                Err(error) => commands::rule_error(&command, error).exit(),
-            }
+    match commands::parse() {
+        Action::Lsp => {
+            lsp::run_blocking();
+            ExitCode::SUCCESS
         }
-        _ => None,
-    };
+        Action::Check(ParserArg::Jsonlines) => run_on_stdin(style, check_jsonlines),
+        Action::Check(ParserArg::Json) => run_on_stdin(style, check),
+        Action::Format(request) => {
+            run_on_stdin(style, |json, style| format_input(json, style, &request))
+        }
+    }
+}
 
+fn run_on_stdin(style: Style, run: impl FnOnce(&str, Style) -> Output) -> ExitCode {
     let Some(input) = read_stdin(style) else {
         return ExitCode::FAILURE;
     };
@@ -70,14 +49,7 @@ fn main() -> ExitCode {
         return ExitCode::FAILURE;
     };
 
-    let mut output = match (&cli.command, request) {
-        (Commands::Format { .. }, Some(request)) => format_input(json, style, &request),
-        (Commands::Check { parser }, _) => match parser {
-            ParserArg::Jsonlines => check_jsonlines(json, style),
-            ParserArg::Json => check(json, style),
-        },
-        _ => unreachable!("LSP handled above and format always has a request"),
-    };
+    let mut output = run(json, style);
 
     print_output(&mut output);
     output.exit_code
