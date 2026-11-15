@@ -4,13 +4,15 @@ mod config_serde;
 mod prettify;
 #[cfg(feature = "serde")]
 pub mod serde;
+mod settings;
 pub(crate) mod uglify;
 
 pub use config::{
-    ConfigError, END_OF_LINE_SETTING, FORMAT_RULES, FORMAT_SETTINGS, FormatConfig, FormatOption,
-    PREFERRED_WIDTH_SETTING, Parser, Rule, Setting, SettingKind, rule_clause,
+    ConfigError, FORMAT_RULES, FORMAT_SETTINGS, FormatConfig, FormatOption, FormatSettings, Parser,
+    Rule, rule_clause,
 };
 pub use prettify::{prettify_document, prettify_document_into, prettify_str};
+pub use settings::{Setting, SettingKind};
 pub use uglify::{uglify_document, uglify_document_into, uglify_str, uglify_str_into};
 
 use crate::ast::Document;

@@ -3,8 +3,8 @@ use clap::{
     error::ErrorKind,
 };
 use jjpwrgem_parse::format::{
-    ConfigError, END_OF_LINE_SETTING, FORMAT_SETTINGS, FormatConfig, FormatOption, FormatRequest,
-    PREFERRED_WIDTH_SETTING, Parser as ParseParser, Setting, rule_clause,
+    ConfigError, FORMAT_SETTINGS, FormatConfig, FormatOption, FormatRequest, FormatSettings,
+    Parser as ParseParser, Setting, rule_clause,
 };
 
 use crate::{
@@ -13,7 +13,7 @@ use crate::{
     setting_args::{FromSettings, Settings},
 };
 
-const FLAG_ALIASES: &[(&str, &str)] = &[(END_OF_LINE_SETTING, "eol")];
+const FLAG_ALIASES: &[(&str, &str)] = &[("end_of_line", "eol")];
 
 #[derive(Parser)]
 #[command(
@@ -69,7 +69,7 @@ pub struct FormatArgs {
     uglify: bool,
 
     #[command(flatten)]
-    settings: FromSettings<FormatConfig>,
+    settings: FromSettings<FormatSettings>,
 
     #[arg(value_enum, long, default_value_t, help = with_rules(
         "Parser to use for input",
@@ -83,12 +83,12 @@ impl FormatArgs {
         FormatConfig {
             parser: self.parser.into(),
             uglify: self.uglify,
-            ..self.settings.0.clone()
+            settings: self.settings.0.clone(),
         }
     }
 }
 
-impl Settings for FormatConfig {
+impl Settings for FormatSettings {
     const TABLE: &'static [Setting] = FORMAT_SETTINGS;
 
     fn customize(setting: &Setting, arg: Arg) -> Arg {
@@ -148,7 +148,9 @@ fn flag_spelling(option: FormatOption) -> String {
     match option {
         FormatOption::Uglify => "--uglify".to_owned(),
         FormatOption::Jsonlines => "--parser jsonlines".to_owned(),
-        FormatOption::PreferredWidth => setting_args::flag_spelling(PREFERRED_WIDTH_SETTING),
+        FormatOption::PreferredWidth => option
+            .setting_name()
+            .map_or_default(setting_args::flag_spelling),
     }
 }
 

@@ -1,7 +1,8 @@
 use std::fmt;
 
 use super::{
-    DEFAULT_PREFERRED_WIDTH, FormatRequest, JsonMode, JsonlinesOptions, LineEnding, PrettifyOptions,
+    DEFAULT_PREFERRED_WIDTH, FormatRequest, JsonMode, JsonlinesOptions, LineEnding,
+    PrettifyOptions, SettingKind, settings::settings,
 };
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
@@ -11,52 +12,21 @@ pub enum Parser {
     Jsonlines,
 }
 
-pub const PREFERRED_WIDTH_SETTING: &str = "preferredWidth";
-pub const END_OF_LINE_SETTING: &str = "endOfLine";
+settings! {
+    pub struct FormatSettings, table FORMAT_SETTINGS {
+        /// Preferred maximum line width. Note this is not a hard maximum width
+        pub preferred_width: Option<usize> = SettingKind::Integer { default: DEFAULT_PREFERRED_WIDTH },
+        /// Line ending to use when formatting output
+        pub end_of_line: LineEnding = SettingKind::Choice { values: &["lf", "crlf"], default: "lf" },
+    }
+}
 
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct FormatConfig {
     pub parser: Parser,
     pub uglify: bool,
-    pub preferred_width: Option<usize>,
-    pub line_ending: LineEnding,
+    pub settings: FormatSettings,
 }
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum SettingKind {
-    Integer {
-        default: usize,
-    },
-    Choice {
-        values: &'static [&'static str],
-        default: &'static str,
-    },
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Setting {
-    pub name: &'static str,
-    pub description: &'static str,
-    pub kind: SettingKind,
-}
-
-pub const FORMAT_SETTINGS: &[Setting] = &[
-    Setting {
-        name: PREFERRED_WIDTH_SETTING,
-        description: "Preferred maximum line width. Note this is not a hard maximum width",
-        kind: SettingKind::Integer {
-            default: DEFAULT_PREFERRED_WIDTH,
-        },
-    },
-    Setting {
-        name: END_OF_LINE_SETTING,
-        description: "Line ending to use when formatting output",
-        kind: SettingKind::Choice {
-            values: &["lf", "crlf"],
-            default: "lf",
-        },
-    },
-];
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum FormatOption {
@@ -78,14 +48,23 @@ pub const FORMAT_RULES: &[Rule] = &[
 
 impl FormatOption {
     pub fn for_setting(name: &str) -> Option<Self> {
-        (name == PREFERRED_WIDTH_SETTING).then_some(Self::PreferredWidth)
+        [Self::PreferredWidth]
+            .into_iter()
+            .find(|option| option.setting_name() == Some(name))
+    }
+
+    pub fn setting_name(self) -> Option<&'static str> {
+        match self {
+            Self::PreferredWidth => Some("preferred_width"),
+            Self::Uglify | Self::Jsonlines => None,
+        }
     }
 
     fn is_active(self, config: &FormatConfig) -> bool {
         match self {
             Self::Uglify => config.uglify,
             Self::Jsonlines => config.parser == Parser::Jsonlines,
-            Self::PreferredWidth => config.preferred_width.is_some(),
+            Self::PreferredWidth => config.settings.preferred_width.is_some(),
         }
     }
 
@@ -157,8 +136,8 @@ impl FormatConfig {
         } else {
             JsonMode::Prettify(
                 PrettifyOptions::builder()
-                    .maybe_preferred_width(self.preferred_width)
-                    .line_ending(self.line_ending)
+                    .maybe_preferred_width(self.settings.preferred_width)
+                    .line_ending(self.settings.end_of_line)
                     .build(),
             )
         };
@@ -166,7 +145,7 @@ impl FormatConfig {
             Parser::Json => FormatRequest::Json(mode),
             Parser::Jsonlines => FormatRequest::Jsonlines(
                 JsonlinesOptions::builder()
-                    .line_ending(self.line_ending)
+                    .line_ending(self.settings.end_of_line)
                     .build(),
             ),
         })

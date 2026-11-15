@@ -1,4 +1,4 @@
-use std::{fmt::Display, iter};
+use std::fmt::Display;
 
 use clap::{
     Arg, ArgMatches, Args, Command, FromArgMatches, builder::PossibleValuesParser,
@@ -19,13 +19,16 @@ pub trait Settings: DeserializeOwned {
 #[derive(Clone, Debug)]
 pub struct FromSettings<T>(pub T);
 
-pub fn flag_name(name: &str) -> String {
-    name.chars()
-        .flat_map(|c| {
-            c.is_ascii_uppercase()
-                .then_some('-')
-                .into_iter()
-                .chain(iter::once(c.to_ascii_lowercase()))
+fn flag_name(name: &str) -> String {
+    name.replace('_', "-")
+}
+
+fn camel_case(name: &str) -> String {
+    name.split('_')
+        .enumerate()
+        .map(|(index, word)| match (index, word.split_at_checked(1)) {
+            (1.., Some((head, tail))) => head.to_uppercase() + tail,
+            _ => word.to_owned(),
         })
         .collect()
 }
@@ -78,7 +81,7 @@ fn given_values(
         .iter()
         .filter_map(|setting| {
             given(matches, setting)
-                .map(|value| value.map(|value| (setting.name.to_owned(), value)))
+                .map(|value| value.map(|value| (camel_case(setting.name), value)))
                 .transpose()
         })
         .collect()
