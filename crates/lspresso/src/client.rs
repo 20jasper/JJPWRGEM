@@ -57,6 +57,7 @@ pub struct Client {
     exit_timeout: Duration,
     server_capabilities: Option<ServerCapabilities>,
     notifications: NotificationBuffer,
+    initialization_options: Option<LspAny>,
 }
 
 impl Client {
@@ -70,6 +71,7 @@ impl Client {
             exit_timeout: DEFAULT_TIMEOUT,
             server_capabilities: None,
             notifications: NotificationBuffer::default(),
+            initialization_options: None,
         })
     }
 
@@ -101,9 +103,18 @@ impl Client {
         self
     }
 
+    #[must_use]
+    pub fn with_initialization_options(mut self, options: LspAny) -> Self {
+        self.initialization_options = Some(options);
+        self
+    }
+
     pub fn initialize(&mut self, capabilities: ClientCapabilities) -> Result<InitializeResult> {
         let now = Instant::now();
-        let params = core::capabilities::initialize_params(capabilities);
+        let mut params = core::capabilities::initialize_params(capabilities);
+        params
+            .initialization_options
+            .clone_from(&self.initialization_options);
         let params = serde_json::to_value(params).expect("serializing as JSON cannot fail");
         let (id, message) = self.state.start_initialize(params, now, self.timeout)?;
         self.send_request(&id, &message, now)?;

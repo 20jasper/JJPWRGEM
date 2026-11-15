@@ -378,3 +378,99 @@ fn folding_ranges_are_none_for_invalid_json() -> TestResult {
     assert_eq!(client.folding_range(&uri)?, None);
     Ok(())
 }
+
+const SETTINGS_INPUT: &str = r#"{"a":[1,2]}"#;
+
+fn configured_client(options: Option<serde_json::Value>) -> TestResult<Client> {
+    let mut command = Command::new(env!("CARGO_BIN_EXE_jjp"));
+    command.arg("lsp");
+    let mut client = Client::spawn(command)?.with_timeout(TIMEOUT);
+    if let Some(options) = options {
+        client = client.with_initialization_options(options);
+    }
+    client.initialize(capabilities::vscode::latest())?;
+    Ok(client)
+}
+
+fn formatted(client: &mut Client) -> TestResult<String> {
+    let uri = open(client, SETTINGS_INPUT)?;
+    let edits = client
+        .formatting(&uri, FormattingOptions::default())?
+        .expect("expected formatting edits");
+    client.did_close(&uri)?;
+    let [TextEdit { new_text, .. }] = edits.as_slice() else {
+        panic!("expected one formatting edit: {edits:?}");
+    };
+    Ok(new_text.clone())
+}
+
+#[test]
+fn initialization_options_change_formatting() -> TestResult {
+    let options = serde_json::json!({ "format": { "preferredWidth": 0, "endOfLine": "crlf" } });
+    let mut client = configured_client(Some(options))?;
+
+    assert_eq!(
+        formatted(&mut client)?,
+        "{\r\n  \"a\": [\r\n    1,\r\n    2\r\n  ]\r\n}"
+    );
+    Ok(())
+}
+
+#[test]
+fn initialization_options_can_uglify() -> TestResult {
+    let options = serde_json::json!({ "format": { "uglify": true } });
+    let mut client = configured_client(Some(options))?;
+
+    assert_eq!(formatted(&mut client)?, SETTINGS_INPUT);
+    Ok(())
+}
+
+#[test]
+fn did_change_configuration_updates_formatting() -> TestResult {
+    let mut client = configured_client(None)?;
+    assert_eq!(formatted(&mut client)?, "{ \"a\": [1, 2] }");
+
+    let settings = serde_json::json!({ "jjpwrgem": { "format": { "preferredWidth": 0 } } });
+    client.workspace_did_change_configuration(settings)?;
+    assert_eq!(
+        formatted(&mut client)?,
+        "{\n  \"a\": [\n    1,\n    2\n  ]\n}"
+    );
+    Ok(())
+}
+
+#[test]
+fn conflicting_settings_are_an_error_without_edits() -> TestResult {
+    let options = serde_json::json!({ "format": { "uglify": true, "preferredWidth": 40 } });
+    let mut client = configured_client(Some(options))?;
+    let uri = open(&mut client, SETTINGS_INPUT)?;
+
+    let err = client
+        .formatting(&uri, FormattingOptions::default())
+        .unwrap_err();
+    assert!(
+        matches!(
+            err.kind(),
+            ErrorKind::Response { message, .. }
+                if message == "uglify cannot be combined with preferred width"
+        ),
+        "{err:?}"
+    );
+    Ok(())
+}
+
+#[test]
+fn invalid_settings_warn_and_fall_back_to_defaults() -> TestResult {
+    let options = serde_json::json!({ "format": { "endOfLine": "cr" } });
+    let mut client = configured_client(Some(options))?;
+
+    let warning = client.wait_for_notification::<ShowMessageNotification>()?;
+    assert_eq!(warning.kind, MessageType::Warning);
+    assert!(
+        warning.message.contains("unknown variant `cr`"),
+        "{}",
+        warning.message
+    );
+    assert_eq!(formatted(&mut client)?, "{ \"a\": [1, 2] }");
+    Ok(())
+}

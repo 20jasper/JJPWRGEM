@@ -1247,6 +1247,8 @@ dependencies = [
  "jjpwrgem-parse",
  "line-index",
  "rstest",
+ "serde",
+ "serde_json",
  "tokio",
  "tower-lsp-server",
 ]

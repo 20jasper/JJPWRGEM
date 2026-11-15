@@ -1,16 +1,22 @@
-use std::sync::OnceLock;
+use std::sync::{OnceLock, PoisonError, RwLock};
 
 use dashmap::DashMap;
 use jjpwrgem_parse::{
     ast::Document,
-    format::{JsonMode, format_document},
+    format::{FormatConfig, FormatRequest, FormatSettings, InputSettings, format_document},
 };
-use tower_lsp_server::{Client, LanguageServer, jsonrpc::Result, ls_types::*};
+use serde_json::Value;
+use tower_lsp_server::{
+    Client, LanguageServer,
+    jsonrpc::{Error, Result},
+    ls_types::*,
+};
 
 use crate::{
     backend::{
         diagnostics::{build_code_actions, diagnostics_from_error},
         folding::folding_ranges,
+        settings::format_settings,
         symbols::document_symbols,
     },
     range::{FULL_DOCUMENT_RANGE, PositionEncoding, Positions},
@@ -24,10 +30,12 @@ pub struct Backend {
     documents: DashMap<Uri, jjpwrgem_parse::Result<Document<String>>>,
     position_encoding: OnceLock<PositionEncoding>,
     client_pulls_diagnostics: OnceLock<bool>,
+    format: RwLock<FormatSettings>,
 }
 
 mod diagnostics;
 mod folding;
+mod settings;
 mod symbols;
 
 fn diagnostics_for(
@@ -68,6 +76,7 @@ impl Backend {
             documents: DashMap::new(),
             position_encoding: OnceLock::new(),
             client_pulls_diagnostics: OnceLock::new(),
+            format: RwLock::default(),
         }
     }
 
@@ -85,6 +94,22 @@ impl Backend {
     fn with_document<T>(&self, uri: &Uri, f: impl FnOnce(&Document<String>) -> T) -> Option<T> {
         let document = self.documents.get(uri)?;
         document.as_ref().ok().map(f)
+    }
+
+    async fn update_format_settings(&self, value: Value) {
+        let settings = match format_settings(value) {
+            Ok(settings) => settings,
+            Err(error) => {
+                self.client
+                    .show_message(
+                        MessageType::WARNING,
+                        format!("{SOURCE}: invalid format settings, using defaults: {error}"),
+                    )
+                    .await;
+                FormatSettings::default()
+            }
+        };
+        *self.format.write().unwrap_or_else(PoisonError::into_inner) = settings;
     }
 
     async fn process_document(&self, uri: Uri, text: String) {
@@ -115,6 +140,9 @@ impl LanguageServer for Backend {
         } else {
             PositionEncoding::Utf16
         };
+        if let Some(options) = params.initialization_options {
+            self.update_format_settings(options).await;
+        }
         let _ = self.position_encoding.set(encoding);
         let _ = self
             .client_pulls_diagnostics
@@ -159,6 +187,10 @@ impl LanguageServer for Backend {
     async fn did_open(&self, params: DidOpenTextDocumentParams) {
         self.process_document(params.text_document.uri, params.text_document.text)
             .await;
+    }
+
+    async fn did_change_configuration(&self, params: DidChangeConfigurationParams) {
+        self.update_format_settings(params.settings).await;
     }
 
     async fn did_change(&self, params: DidChangeTextDocumentParams) {
@@ -217,10 +249,23 @@ impl LanguageServer for Backend {
     }
 
     async fn formatting(&self, params: DocumentFormattingParams) -> Result<Option<Vec<TextEdit>>> {
+        let config = FormatConfig {
+            input: InputSettings::default(),
+            settings: self
+                .format
+                .read()
+                .unwrap_or_else(PoisonError::into_inner)
+                .clone(),
+        };
+        let mode = match FormatRequest::try_from(config) {
+            Ok(FormatRequest::Json(mode)) => mode,
+            Ok(FormatRequest::Jsonlines(_)) => return Ok(None),
+            Err(error) => return Err(Error::invalid_params(error.to_string())),
+        };
         Ok(self.with_document(&params.text_document.uri, |document| {
             vec![TextEdit {
                 range: FULL_DOCUMENT_RANGE,
-                new_text: format_document(document, &JsonMode::default()),
+                new_text: format_document(document, &mode),
             }]
         }))
     }

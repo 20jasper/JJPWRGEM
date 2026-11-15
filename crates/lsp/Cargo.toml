@@ -18,8 +18,10 @@ rstest = { workspace = true }
 [dependencies]
 dashmap = "6.2"
 itertools = "0.15"
-jjpwrgem-parse = { workspace = true }
+jjpwrgem-parse = { workspace = true, features = ["serde"] }
 line-index = "0.1.2"
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
 tokio = { version = "1.52", features = ["macros", "rt", "io-std"] }
 tower-lsp-server = "0.23"
 
