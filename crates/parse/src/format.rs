@@ -4,7 +4,7 @@ mod prettify;
 pub mod serde;
 pub(crate) mod uglify;
 
-pub use config::{ConfigError, FormatConfig, Parser};
+pub use config::{ConfigError, FORMAT_RULES, FormatConfig, FormatOption, Parser, Rule};
 pub use prettify::{prettify_document, prettify_document_into, prettify_str};
 pub use uglify::{uglify_document, uglify_document_into, uglify_str, uglify_str_into};
 

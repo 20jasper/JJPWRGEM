@@ -10,7 +10,7 @@ stdin ---
 stdout ---
 
 stderr ---
-error: a preferred width cannot be combined with jsonlines
+error: --preferred-width cannot be combined with --parser jsonlines
 
 Usage: jjp format [OPTIONS]
 

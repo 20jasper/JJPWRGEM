@@ -1,4 +1,4 @@
-use displaydoc::Display;
+use std::fmt;
 
 use super::{
     DEFAULT_PREFERRED_WIDTH, FormatRequest, JsonMode, JsonlinesOptions, LineEnding, PrettifyOptions,
@@ -30,30 +30,75 @@ impl Default for FormatConfig {
     }
 }
 
-#[derive(Display, Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ConfigError {
-    /// uglify cannot be combined with jsonlines
-    UglifyWithJsonlines,
-    /// a preferred width cannot be combined with jsonlines
-    PreferredWidthWithJsonlines,
-    /// uglify cannot be combined with a preferred width
-    PreferredWidthWithUglify,
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum FormatOption {
+    Uglify,
+    Jsonlines,
+    PreferredWidth,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Rule {
+    Conflicts(FormatOption, FormatOption),
+}
+
+pub const FORMAT_RULES: &[Rule] = &[
+    Rule::Conflicts(FormatOption::Uglify, FormatOption::Jsonlines),
+    Rule::Conflicts(FormatOption::PreferredWidth, FormatOption::Jsonlines),
+    Rule::Conflicts(FormatOption::Uglify, FormatOption::PreferredWidth),
+];
+
+impl FormatOption {
+    fn is_active(self, config: &FormatConfig) -> bool {
+        match self {
+            Self::Uglify => config.uglify,
+            Self::Jsonlines => config.parser == Parser::Jsonlines,
+            Self::PreferredWidth => config.preferred_width != DEFAULT_PREFERRED_WIDTH,
+        }
+    }
+
+    pub fn name(self) -> &'static str {
+        match self {
+            Self::Uglify => "uglify",
+            Self::Jsonlines => "jsonlines",
+            Self::PreferredWidth => "a preferred width",
+        }
+    }
+}
+
+impl Rule {
+    fn is_broken(self, config: &FormatConfig) -> bool {
+        match self {
+            Self::Conflicts(a, b) => a.is_active(config) && b.is_active(config),
+        }
+    }
+
+    pub fn describe(self, name: impl Fn(FormatOption) -> String) -> String {
+        match self {
+            Self::Conflicts(a, b) => format!("{} cannot be combined with {}", name(a), name(b)),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ConfigError(pub Rule);
+
+impl fmt::Display for ConfigError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(&self.0.describe(|option| option.name().to_owned()))
+    }
 }
 
 impl std::error::Error for ConfigError {}
 
 impl FormatConfig {
     pub fn validate(self) -> Result<FormatRequest, ConfigError> {
-        if self.parser == Parser::Jsonlines {
-            if self.uglify {
-                return Err(ConfigError::UglifyWithJsonlines);
-            }
-            if self.preferred_width != DEFAULT_PREFERRED_WIDTH {
-                return Err(ConfigError::PreferredWidthWithJsonlines);
-            }
-        }
-        if self.uglify && self.preferred_width != DEFAULT_PREFERRED_WIDTH {
-            return Err(ConfigError::PreferredWidthWithUglify);
+        if let Some(rule) = FORMAT_RULES
+            .iter()
+            .copied()
+            .find(|rule| rule.is_broken(&self))
+        {
+            return Err(ConfigError(rule));
         }
         let mode = if self.uglify {
             JsonMode::Uglify
@@ -121,15 +166,20 @@ mod tests {
         Parser::Jsonlines,
         true,
         DEFAULT_PREFERRED_WIDTH,
-        Err(ConfigError::UglifyWithJsonlines)
+        Err(ConfigError(Rule::Conflicts(FormatOption::Uglify, FormatOption::Jsonlines)))
     )]
     #[case(
         Parser::Jsonlines,
         false,
         WIDTH,
-        Err(ConfigError::PreferredWidthWithJsonlines)
+        Err(ConfigError(Rule::Conflicts(FormatOption::PreferredWidth, FormatOption::Jsonlines)))
     )]
-    #[case(Parser::Json, true, WIDTH, Err(ConfigError::PreferredWidthWithUglify))]
+    #[case(
+        Parser::Json,
+        true,
+        WIDTH,
+        Err(ConfigError(Rule::Conflicts(FormatOption::Uglify, FormatOption::PreferredWidth)))
+    )]
     fn validate(
         #[case] parser: Parser,
         #[case] uglify: bool,

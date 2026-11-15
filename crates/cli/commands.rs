@@ -2,7 +2,8 @@ use clap::{
     Args, Command, CommandFactory, FromArgMatches, Parser, Subcommand, ValueEnum, error::ErrorKind,
 };
 use jjpwrgem_parse::format::{
-    DEFAULT_PREFERRED_WIDTH, FormatConfig, FormatRequest, LineEnding, Parser as ParseParser,
+    ConfigError, DEFAULT_PREFERRED_WIDTH, FormatConfig, FormatOption, FormatRequest, LineEnding,
+    Parser as ParseParser,
 };
 
 use crate::{
@@ -102,7 +103,9 @@ pub fn parse() -> Action {
         Commands::Check { parser } => Action::Check(parser),
         Commands::Format(args) => match args.config().validate() {
             Ok(request) => Action::Format(request),
-            Err(error) => usage_error(&command, name.as_deref(), error).exit(),
+            Err(ConfigError(rule)) => {
+                usage_error(&command, name.as_deref(), rule.describe(flag_spelling)).exit()
+            }
         },
     }
 }
@@ -141,6 +144,15 @@ impl From<ParserArg> for ParseParser {
             ParserArg::Jsonlines => Self::Jsonlines,
         }
     }
+}
+
+fn flag_spelling(option: FormatOption) -> String {
+    match option {
+        FormatOption::Uglify => "--uglify",
+        FormatOption::Jsonlines => "--parser jsonlines",
+        FormatOption::PreferredWidth => "--preferred-width",
+    }
+    .to_owned()
 }
 
 fn usage_error(
