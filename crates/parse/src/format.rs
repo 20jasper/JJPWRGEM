@@ -11,7 +11,7 @@ pub use config::{
 pub use prettify::{prettify_document, prettify_document_into, prettify_str};
 pub use uglify::{uglify_document, uglify_document_into, uglify_str, uglify_str_into};
 
-use crate::ast::Document;
+use crate::{ast::Document, settings::choice};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum FormatRequest {
@@ -84,16 +84,11 @@ pub(crate) fn join_into<T, B>(
     }
 }
 
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
-#[cfg_attr(
-    feature = "serde",
-    derive(::serde::Deserialize),
-    serde(rename_all = "lowercase")
-)]
-pub enum LineEnding {
-    #[default]
-    Lf,
-    CrLf,
+choice! {
+    pub enum LineEnding default Lf {
+        Lf = "lf",
+        CrLf = "crlf",
+    }
 }
 
 impl LineEnding {

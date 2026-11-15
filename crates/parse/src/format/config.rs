@@ -6,35 +6,30 @@ use FormatSetting::{PreferredWidth, Uglify};
 use super::{
     DEFAULT_PREFERRED_WIDTH, FormatRequest, JsonMode, JsonlinesOptions, LineEnding, PrettifyOptions,
 };
-use crate::settings::settings;
+use crate::settings::{choice, flag, integer, settings};
 
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
-#[cfg_attr(
-    feature = "serde",
-    derive(::serde::Deserialize),
-    serde(rename_all = "lowercase")
-)]
-pub enum Parser {
-    #[default]
-    Json,
-    Jsonlines,
+choice! {
+    pub enum Parser default Json {
+        Json = "json",
+        Jsonlines = "jsonlines",
+    }
 }
 
 settings! {
     struct InputSettings, table INPUT_SETTINGS, id InputSetting {
         /// Parser to use for input
-        Parser parser: Parser = Choice { values: &["json", "jsonlines"], default: "json" },
+        Parser parser: Parser = choice::<Parser>(),
     }
 }
 
 settings! {
     struct FormatSettings, table FORMAT_SETTINGS, id FormatSetting {
         /// Removes all insignificant whitespace instead of pretty printing, also known as minifying
-        Uglify uglify: bool = Flag, short 'u',
+        Uglify uglify: bool = flag().short('u'),
         /// Preferred maximum line width. Note this is not a hard maximum width
-        PreferredWidth preferred_width: Option<usize> = Integer { default: DEFAULT_PREFERRED_WIDTH },
+        PreferredWidth preferred_width: Option<usize> = integer(DEFAULT_PREFERRED_WIDTH),
         /// Line ending to use when formatting output
-        EndOfLine end_of_line: LineEnding = Choice { values: &["lf", "crlf"], default: "lf" }, alias "eol",
+        EndOfLine end_of_line: LineEnding = choice::<LineEnding>().aliases(&["eol"]),
     }
 }
 
