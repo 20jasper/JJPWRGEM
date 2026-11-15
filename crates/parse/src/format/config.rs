@@ -9,10 +9,22 @@ use super::{
 use crate::settings::settings;
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(::serde::Deserialize),
+    serde(rename_all = "lowercase")
+)]
 pub enum Parser {
     #[default]
     Json,
     Jsonlines,
+}
+
+settings! {
+    struct InputSettings, table INPUT_SETTINGS, id InputSetting {
+        /// Parser to use for input
+        Parser parser: Parser = Choice { values: &["json", "jsonlines"], default: "json" },
+    }
 }
 
 settings! {
@@ -28,7 +40,7 @@ settings! {
 
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct FormatConfig {
-    pub parser: Parser,
+    pub input: InputSettings,
     pub settings: FormatSettings,
 }
 
@@ -52,7 +64,7 @@ pub const FORMAT_RULES: &[Rule] = &[
 impl FormatOption {
     fn is_active(self, config: &FormatConfig) -> bool {
         match self {
-            Self::Jsonlines => config.parser == Parser::Jsonlines,
+            Self::Jsonlines => config.input.parser == Parser::Jsonlines,
             Self::Setting(id) => config.settings.is_set(id),
         }
     }
@@ -135,7 +147,7 @@ impl TryFrom<FormatConfig> for FormatRequest {
                     .build(),
             )
         };
-        Ok(match config.parser {
+        Ok(match config.input.parser {
             Parser::Json => FormatRequest::Json(mode),
             Parser::Jsonlines => FormatRequest::Jsonlines(
                 JsonlinesOptions::builder()

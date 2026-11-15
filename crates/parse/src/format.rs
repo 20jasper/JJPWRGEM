@@ -6,7 +6,7 @@ pub(crate) mod uglify;
 
 pub use config::{
     ConfigError, FORMAT_RULES, FORMAT_SETTINGS, FormatConfig, FormatOption, FormatSetting,
-    FormatSettings, Parser, Rule, rule_clause,
+    FormatSettings, INPUT_SETTINGS, InputSetting, InputSettings, Parser, Rule, rule_clause,
 };
 pub use prettify::{prettify_document, prettify_document_into, prettify_str};
 pub use uglify::{uglify_document, uglify_document_into, uglify_str, uglify_str_into};

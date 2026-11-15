@@ -1,10 +1,9 @@
-use clap::{
-    Args, Command, CommandFactory, FromArgMatches, Parser, Subcommand, ValueEnum, error::ErrorKind,
-};
+use clap::{Args, Command, CommandFactory, FromArgMatches, Parser, Subcommand, error::ErrorKind};
 use jjpwrgem_parse::{
     format::{
         ConfigError, FORMAT_SETTINGS, FormatConfig, FormatOption, FormatRequest, FormatSetting,
-        FormatSettings, Parser as ParseParser, rule_clause,
+        FormatSettings, INPUT_SETTINGS, InputSetting, InputSettings, Parser as ParseParser,
+        rule_clause,
     },
     settings::Setting,
 };
@@ -12,7 +11,7 @@ use jjpwrgem_parse::{
 use crate::{
     docs::{indent, strip_front_matter},
     get_docs_snapshot,
-    setting_args::{FromSettings, Settings},
+    setting_args::{FromSettings, Help, Settings},
 };
 
 #[derive(Parser)]
@@ -51,11 +50,7 @@ pub enum Commands {
         indent(strip_front_matter(get_docs_snapshot!("check_failure"))),
     ))]
     /// Validates json syntax
-    Check {
-        /// Parser to use for input
-        #[arg(value_enum, long, default_value_t)]
-        parser: ParserArg,
-    },
+    Check(CheckArgs),
     /// Start a language server over stdio
     Lsp,
 }
@@ -63,42 +58,59 @@ pub enum Commands {
 #[derive(Args, Debug)]
 pub struct FormatArgs {
     #[command(flatten)]
-    settings: FromSettings<FormatSettings>,
+    settings: FromSettings<FormatSettings, FormatHelp>,
 
-    #[arg(value_enum, long, default_value_t, help = with_rules(
-        "Parser to use for input",
-        FormatOption::Jsonlines,
-    ))]
-    parser: ParserArg,
+    #[command(flatten)]
+    input: FromSettings<InputSettings, FormatHelp>,
+}
+
+#[derive(Args, Debug)]
+pub struct CheckArgs {
+    #[command(flatten)]
+    input: FromSettings<InputSettings>,
 }
 
 impl From<FormatArgs> for FormatConfig {
     fn from(args: FormatArgs) -> Self {
         Self {
-            parser: args.parser.into(),
+            input: args.input.0,
             settings: args.settings.0,
         }
     }
 }
 
+impl Settings for InputSettings {
+    const TABLE: &'static [Setting] = INPUT_SETTINGS;
+}
+
 impl Settings for FormatSettings {
     const TABLE: &'static [Setting] = FORMAT_SETTINGS;
+}
 
+#[derive(Debug, Clone)]
+struct FormatHelp;
+
+impl Help for FormatHelp {
     fn help(setting: &Setting) -> String {
         FormatSetting::ALL
             .iter()
             .copied()
             .find(|id| id.setting().name == setting.name)
+            .map(FormatOption::Setting)
+            .or_else(|| {
+                (InputSetting::Parser.setting().name == setting.name)
+                    .then_some(FormatOption::Jsonlines)
+            })
             .map_or_else(
                 || setting.description.to_owned(),
-                |id| with_rules(setting.description, FormatOption::Setting(id)),
+                |option| with_rules(setting.description, option),
             )
     }
 }
 
 pub enum Action {
     Lsp,
-    Check(ParserArg),
+    Check(ParseParser),
     Format(FormatRequest),
 }
 
@@ -110,31 +122,13 @@ pub fn parse() -> Action {
         .unwrap_or_else(|error| error.format(&mut command).exit());
     match cli.command {
         Commands::Lsp => Action::Lsp,
-        Commands::Check { parser } => Action::Check(parser),
+        Commands::Check(args) => Action::Check(args.input.0.parser),
         Commands::Format(args) => match FormatRequest::try_from(FormatConfig::from(args)) {
             Ok(request) => Action::Format(request),
             Err(ConfigError(rule)) => {
                 usage_error(&command, name.as_deref(), rule.describe(option_flag)).exit()
             }
         },
-    }
-}
-
-#[derive(Clone, Copy, Debug, Default, Eq, PartialEq, ValueEnum)]
-pub enum ParserArg {
-    #[default]
-    #[value(name = "json")]
-    Json,
-    #[value(name = "jsonlines")]
-    Jsonlines,
-}
-
-impl From<ParserArg> for ParseParser {
-    fn from(arg: ParserArg) -> Self {
-        match arg {
-            ParserArg::Json => Self::Json,
-            ParserArg::Jsonlines => Self::Jsonlines,
-        }
     }
 }
 

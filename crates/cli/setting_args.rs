@@ -1,4 +1,4 @@
-use std::fmt::Display;
+use std::{fmt::Display, marker::PhantomData};
 
 use clap::{
     Arg, ArgAction, ArgMatches, Args, Command, FromArgMatches, builder::PossibleValuesParser,
@@ -10,14 +10,23 @@ use serde_json::{Map, Value};
 
 pub trait Settings: DeserializeOwned {
     const TABLE: &'static [Setting];
+}
 
+pub trait Help {
+    fn help(setting: &Setting) -> String;
+}
+
+#[derive(Debug, Clone)]
+pub struct Plain;
+
+impl Help for Plain {
     fn help(setting: &Setting) -> String {
         setting.description.to_owned()
     }
 }
 
 #[derive(Clone, Debug)]
-pub struct FromSettings<T>(pub T);
+pub struct FromSettings<T, H = Plain>(pub T, PhantomData<H>);
 
 fn invalid_value(message: impl Display) -> clap::Error {
     clap::Error::raw(ErrorKind::InvalidValue, message)
@@ -64,12 +73,12 @@ fn command_line_values(matches: &ArgMatches, table: &[Setting]) -> Map<String, V
         .collect()
 }
 
-impl<T: Settings> Args for FromSettings<T> {
+impl<T: Settings, H: Help> Args for FromSettings<T, H> {
     fn augment_args(cmd: Command) -> Command {
         cmd.args(
             T::TABLE
                 .iter()
-                .map(|setting| setting_arg(setting, T::help(setting))),
+                .map(|setting| setting_arg(setting, H::help(setting))),
         )
     }
 
@@ -78,10 +87,10 @@ impl<T: Settings> Args for FromSettings<T> {
     }
 }
 
-impl<T: Settings> FromArgMatches for FromSettings<T> {
+impl<T: Settings, H: Help> FromArgMatches for FromSettings<T, H> {
     fn from_arg_matches(matches: &ArgMatches) -> Result<Self, clap::Error> {
         serde_json::from_value(Value::Object(command_line_values(matches, T::TABLE)))
-            .map(Self)
+            .map(|settings| Self(settings, PhantomData))
             .map_err(invalid_value)
     }
 
