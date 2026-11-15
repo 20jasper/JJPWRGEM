@@ -1,7 +1,7 @@
 [package]
 name = "jjpwrgem"
 description = "jjpwrgem json parser with really good error messages"
-version = "0.7.5"
+version = "0.7.6"
 edition.workspace = true
 authors.workspace = true
 keywords = ["parser", "formatter", "json", "linter"]
@@ -67,7 +67,15 @@ criterion = { package = "codspeed-criterion-compat", version = "=6.0.0" }
 
 [dependencies]
 anstream = "1"
-clap = { version = "4.6.7", features = ["derive"] }
+clap = { version = "4.6.7", default-features = false, features = [
+  "std",
+  "color",
+  "help",
+  "usage",
+  "error-context",
+  "suggestions",
+  "derive",
+] }
 displaydoc = { workspace = true }
 jjpwrgem-parse = { workspace = true }
 jjpwrgem-ui = { workspace = true }
