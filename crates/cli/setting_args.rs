@@ -1,7 +1,7 @@
 use std::fmt::Display;
 
 use clap::{
-    Arg, ArgMatches, Args, Command, FromArgMatches, builder::PossibleValuesParser,
+    Arg, ArgAction, ArgMatches, Args, Command, FromArgMatches, builder::PossibleValuesParser,
     error::ErrorKind, parser::ValueSource, value_parser,
 };
 use jjpwrgem_parse::settings::{Setting, SettingKind};
@@ -10,7 +10,6 @@ use serde_json::{Map, Value};
 
 pub trait Settings: DeserializeOwned {
     const TABLE: &'static [Setting];
-    const ALIASES: &'static [(&'static str, &'static str)] = &[];
 
     fn help(setting: &Setting) -> String {
         setting.description.to_owned()
@@ -28,12 +27,16 @@ fn setting_arg(setting: &Setting, help: String) -> Arg {
     let arg = Arg::new(setting.name)
         .long(setting.flag())
         .help(help)
-        .value_name(setting.name.to_uppercase());
+        .visible_aliases(setting.aliases.iter().copied());
+    let arg = setting.short.into_iter().fold(arg, Arg::short);
     match setting.kind {
+        SettingKind::Flag => arg.action(ArgAction::SetTrue),
         SettingKind::Integer { default } => arg
+            .value_name(setting.name.to_uppercase())
             .default_value(default.to_string())
             .value_parser(value_parser!(usize)),
         SettingKind::Choice { values, default } => arg
+            .value_name(setting.name.to_uppercase())
             .default_value(default)
             .value_parser(PossibleValuesParser::new(values)),
     }
@@ -44,6 +47,7 @@ fn command_line_value(matches: &ArgMatches, setting: &Setting) -> Option<Value> 
         return None;
     }
     match setting.kind {
+        SettingKind::Flag => matches.get_flag(setting.name).then_some(Value::Bool(true)),
         SettingKind::Integer { .. } => matches
             .get_one::<usize>(setting.name)
             .map(|value| Value::from(*value)),
@@ -62,14 +66,11 @@ fn command_line_values(matches: &ArgMatches, table: &[Setting]) -> Map<String, V
 
 impl<T: Settings> Args for FromSettings<T> {
     fn augment_args(cmd: Command) -> Command {
-        cmd.args(T::TABLE.iter().map(|setting| {
-            T::ALIASES
+        cmd.args(
+            T::TABLE
                 .iter()
-                .filter(|(name, _)| *name == setting.name)
-                .fold(setting_arg(setting, T::help(setting)), |arg, (_, alias)| {
-                    arg.visible_alias(*alias)
-                })
-        }))
+                .map(|setting| setting_arg(setting, T::help(setting))),
+        )
     }
 
     fn augment_args_for_update(cmd: Command) -> Command {

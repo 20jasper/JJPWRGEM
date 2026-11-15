@@ -1,5 +1,10 @@
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[expect(
+    variant_size_differences,
+    reason = "settings are static table rows, never moved around"
+)]
 pub enum SettingKind {
+    Flag,
     Integer {
         default: usize,
     },
@@ -14,6 +19,8 @@ pub struct Setting {
     pub name: &'static str,
     pub description: &'static str,
     pub kind: SettingKind,
+    pub short: Option<char>,
+    pub aliases: &'static [&'static str],
 }
 
 impl Setting {
@@ -43,8 +50,14 @@ fn snake_to_camel(name: &str) -> String {
 // Rust-like syntax for defining Settings for conflicts, defaults, descriptions
 macro_rules! settings {
     (
-        struct $struct_name:ident, table $table_name:ident {
-            $(#[doc = $field_doc:literal] $field_name:ident: $field_type:ty = $field_kind:expr),* $(,)?
+        struct $struct_name:ident, table $table_name:ident, id $id_name:ident {
+            $(
+                #[doc = $field_doc:literal]
+                $variant:ident $field_name:ident: $field_type:ty =
+                    $kind:ident $({ $($kind_body:tt)* })?
+                    $(, short $short:literal)?
+                    $(, alias $alias:literal)?,
+            )*
         }
     ) => {
         #[derive(Debug, Default, Clone, PartialEq, Eq)]
@@ -57,13 +70,36 @@ macro_rules! settings {
             $(#[doc = $field_doc] pub $field_name: $field_type,)*
         }
 
+        #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+        pub enum $id_name {
+            $($variant,)*
+        }
+
         pub const $table_name: &[$crate::settings::Setting] = &[
             $($crate::settings::Setting {
                 name: stringify!($field_name),
                 description: $field_doc.trim_ascii(),
-                kind: $field_kind,
+                kind: $crate::settings::SettingKind::$kind $({ $($kind_body)* })?,
+                short: [$(Some($short),)* None][0],
+                aliases: &[$($alias),*],
             },)*
         ];
+
+        impl $id_name {
+            pub const ALL: &[Self] = &[$(Self::$variant),*];
+
+            pub fn setting(self) -> &'static $crate::settings::Setting {
+                &$table_name[self as usize]
+            }
+        }
+
+        impl $struct_name {
+            pub fn is_set(&self, id: $id_name) -> bool {
+                match id {
+                    $($id_name::$variant => self.$field_name != <$field_type as Default>::default(),)*
+                }
+            }
+        }
     };
 }
 

@@ -3,8 +3,8 @@ use clap::{
 };
 use jjpwrgem_parse::{
     format::{
-        ConfigError, FORMAT_SETTINGS, FormatConfig, FormatOption, FormatRequest, FormatSettings,
-        Parser as ParseParser, rule_clause,
+        ConfigError, FORMAT_SETTINGS, FormatConfig, FormatOption, FormatRequest, FormatSetting,
+        FormatSettings, Parser as ParseParser, rule_clause,
     },
     settings::Setting,
 };
@@ -60,14 +60,8 @@ pub enum Commands {
     Lsp,
 }
 
-#[derive(Args)]
+#[derive(Args, Debug)]
 pub struct FormatArgs {
-    #[arg(short, long, help = with_rules(
-        "Removes all insignificant whitespace instead of pretty printing, also known as minifying",
-        FormatOption::Uglify,
-    ))]
-    uglify: bool,
-
     #[command(flatten)]
     settings: FromSettings<FormatSettings>,
 
@@ -78,25 +72,27 @@ pub struct FormatArgs {
     parser: ParserArg,
 }
 
-impl FormatArgs {
-    fn config(self) -> FormatConfig {
-        FormatConfig {
-            parser: self.parser.into(),
-            uglify: self.uglify,
-            settings: self.settings.0,
+impl From<FormatArgs> for FormatConfig {
+    fn from(args: FormatArgs) -> Self {
+        Self {
+            parser: args.parser.into(),
+            settings: args.settings.0,
         }
     }
 }
 
 impl Settings for FormatSettings {
     const TABLE: &'static [Setting] = FORMAT_SETTINGS;
-    const ALIASES: &'static [(&'static str, &'static str)] = &[("end_of_line", "eol")];
 
     fn help(setting: &Setting) -> String {
-        match FormatOption::for_setting(setting.name) {
-            Some(option) => with_rules(setting.description, option),
-            None => setting.description.to_owned(),
-        }
+        FormatSetting::ALL
+            .iter()
+            .copied()
+            .find(|id| id.setting().name == setting.name)
+            .map_or_else(
+                || setting.description.to_owned(),
+                |id| with_rules(setting.description, FormatOption::Setting(id)),
+            )
     }
 }
 
@@ -110,11 +106,12 @@ pub fn parse() -> Action {
     let mut command = Cli::command();
     let mut matches = command.get_matches_mut();
     let name = matches.subcommand_name().map(str::to_owned);
-    let cli = Cli::from_arg_matches_mut(&mut matches).unwrap_or_else(|error| error.exit());
+    let cli = Cli::from_arg_matches_mut(&mut matches)
+        .unwrap_or_else(|error| error.format(&mut command).exit());
     match cli.command {
         Commands::Lsp => Action::Lsp,
         Commands::Check { parser } => Action::Check(parser),
-        Commands::Format(args) => match args.config().validate() {
+        Commands::Format(args) => match FormatRequest::try_from(FormatConfig::from(args)) {
             Ok(request) => Action::Format(request),
             Err(ConfigError(rule)) => {
                 usage_error(&command, name.as_deref(), rule.describe(option_flag)).exit()
@@ -143,11 +140,8 @@ impl From<ParserArg> for ParseParser {
 
 fn option_flag(option: FormatOption) -> String {
     match option {
-        FormatOption::Uglify => "--uglify".to_owned(),
         FormatOption::Jsonlines => "--parser jsonlines".to_owned(),
-        FormatOption::PreferredWidth => option
-            .setting()
-            .map_or_default(|setting| format!("--{}", setting.flag())),
+        FormatOption::Setting(id) => format!("--{}", id.setting().flag()),
     }
 }
 

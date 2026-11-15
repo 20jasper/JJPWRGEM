@@ -1,9 +1,12 @@
 use std::fmt;
 
+use FormatOption::{Jsonlines, Setting};
+use FormatSetting::{PreferredWidth, Uglify};
+
 use super::{
     DEFAULT_PREFERRED_WIDTH, FormatRequest, JsonMode, JsonlinesOptions, LineEnding, PrettifyOptions,
 };
-use crate::settings::{Setting, SettingKind, settings};
+use crate::settings::settings;
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 pub enum Parser {
@@ -13,26 +16,26 @@ pub enum Parser {
 }
 
 settings! {
-    struct FormatSettings, table FORMAT_SETTINGS {
+    struct FormatSettings, table FORMAT_SETTINGS, id FormatSetting {
+        /// Removes all insignificant whitespace instead of pretty printing, also known as minifying
+        Uglify uglify: bool = Flag, short 'u',
         /// Preferred maximum line width. Note this is not a hard maximum width
-        preferred_width: Option<usize> = SettingKind::Integer { default: DEFAULT_PREFERRED_WIDTH },
+        PreferredWidth preferred_width: Option<usize> = Integer { default: DEFAULT_PREFERRED_WIDTH },
         /// Line ending to use when formatting output
-        end_of_line: LineEnding = SettingKind::Choice { values: &["lf", "crlf"], default: "lf" },
+        EndOfLine end_of_line: LineEnding = Choice { values: &["lf", "crlf"], default: "lf" }, alias "eol",
     }
 }
 
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct FormatConfig {
     pub parser: Parser,
-    pub uglify: bool,
     pub settings: FormatSettings,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum FormatOption {
-    Uglify,
     Jsonlines,
-    PreferredWidth,
+    Setting(FormatSetting),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -41,43 +44,29 @@ pub enum Rule {
 }
 
 pub const FORMAT_RULES: &[Rule] = &[
-    Rule::Conflicts(FormatOption::Uglify, FormatOption::Jsonlines),
-    Rule::Conflicts(FormatOption::PreferredWidth, FormatOption::Jsonlines),
-    Rule::Conflicts(FormatOption::Uglify, FormatOption::PreferredWidth),
+    Rule::Conflicts(Setting(Uglify), Jsonlines),
+    Rule::Conflicts(Setting(PreferredWidth), Jsonlines),
+    Rule::Conflicts(Setting(Uglify), Setting(PreferredWidth)),
 ];
 
 impl FormatOption {
-    pub const ALL: [Self; 3] = [Self::Uglify, Self::Jsonlines, Self::PreferredWidth];
-
-    pub fn for_setting(name: &str) -> Option<Self> {
-        Self::ALL
-            .into_iter()
-            .find(|option| option.setting().map(|setting| setting.name) == Some(name))
-    }
-
-    pub fn setting(self) -> Option<&'static Setting> {
-        let name = match self {
-            Self::PreferredWidth => "preferred_width",
-            Self::Uglify | Self::Jsonlines => return None,
-        };
-        FORMAT_SETTINGS.iter().find(|setting| setting.name == name)
-    }
-
     fn is_active(self, config: &FormatConfig) -> bool {
         match self {
-            Self::Uglify => config.uglify,
             Self::Jsonlines => config.parser == Parser::Jsonlines,
-            Self::PreferredWidth => config.settings.preferred_width.is_some(),
+            Self::Setting(id) => config.settings.is_set(id),
         }
     }
 
-    pub fn name(self) -> &'static str {
+    pub fn name(self) -> String {
         match self {
-            Self::Uglify => "uglify",
-            Self::Jsonlines => "jsonlines",
-            Self::PreferredWidth => "a preferred width",
+            Self::Jsonlines => "jsonlines".to_owned(),
+            Self::Setting(id) => id.setting().name.replace('_', " "),
         }
     }
+}
+
+fn cannot_be_combined_with(others: &str) -> String {
+    format!("cannot be combined with {others}")
 }
 
 impl Rule {
@@ -89,7 +78,7 @@ impl Rule {
 
     pub fn describe(self, name: impl Fn(FormatOption) -> String) -> String {
         match self {
-            Self::Conflicts(a, b) => format!("{} cannot be combined with {}", name(a), name(b)),
+            Self::Conflicts(a, b) => format!("{} {}", name(a), cannot_be_combined_with(&name(b))),
         }
     }
 }
@@ -111,7 +100,7 @@ pub fn rule_clause(option: FormatOption, name: impl Fn(FormatOption) -> String) 
         })
         .map(name)
         .collect();
-    (!others.is_empty()).then(|| format!("cannot be combined with {}", join(&others)))
+    (!others.is_empty()).then(|| cannot_be_combined_with(&join(&others)))
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -119,36 +108,38 @@ pub struct ConfigError(pub Rule);
 
 impl fmt::Display for ConfigError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(&self.0.describe(|option| option.name().to_owned()))
+        f.write_str(&self.0.describe(|option| option.name()))
     }
 }
 
 impl std::error::Error for ConfigError {}
 
-impl FormatConfig {
-    pub fn validate(self) -> Result<FormatRequest, ConfigError> {
+impl TryFrom<FormatConfig> for FormatRequest {
+    type Error = ConfigError;
+
+    fn try_from(config: FormatConfig) -> Result<Self, ConfigError> {
         if let Some(rule) = FORMAT_RULES
             .iter()
             .copied()
-            .find(|rule| rule.is_broken(&self))
+            .find(|rule| rule.is_broken(&config))
         {
             return Err(ConfigError(rule));
         }
-        let mode = if self.uglify {
+        let mode = if config.settings.uglify {
             JsonMode::Uglify
         } else {
             JsonMode::Prettify(
                 PrettifyOptions::builder()
-                    .maybe_preferred_width(self.settings.preferred_width)
-                    .line_ending(self.settings.end_of_line)
+                    .maybe_preferred_width(config.settings.preferred_width)
+                    .line_ending(config.settings.end_of_line)
                     .build(),
             )
         };
-        Ok(match self.parser {
+        Ok(match config.parser {
             Parser::Json => FormatRequest::Json(mode),
             Parser::Jsonlines => FormatRequest::Jsonlines(
                 JsonlinesOptions::builder()
-                    .line_ending(self.settings.end_of_line)
+                    .line_ending(config.settings.end_of_line)
                     .build(),
             ),
         })
