@@ -1,15 +1,22 @@
+use std::fmt::Display;
+
 use clap::{
-    Args, Command, CommandFactory, FromArgMatches, Parser, Subcommand, ValueEnum, error::ErrorKind,
+    Arg, ArgMatches, Args, Command, CommandFactory, FromArgMatches, Parser, Subcommand, ValueEnum,
+    builder::PossibleValuesParser, error::ErrorKind, parser::ValueSource, value_parser,
 };
 use jjpwrgem_parse::format::{
-    ConfigError, DEFAULT_PREFERRED_WIDTH, FormatConfig, FormatOption, FormatRequest, LineEnding,
-    Parser as ParseParser, rule_clause,
+    ConfigError, FormatConfig, FormatOption, FormatRequest, Parser as ParseParser, Setting,
+    SettingKind, rule_clause,
 };
+use serde_json::Value;
 
 use crate::{
     docs::{indent, strip_front_matter},
+    format_settings::FORMAT_SETTINGS,
     get_docs_snapshot,
 };
+
+const FLAG_ALIASES: &[(&str, &str)] = &[("end-of-line", "eol")];
 
 #[derive(Parser)]
 #[command(
@@ -64,18 +71,8 @@ pub struct FormatArgs {
     ))]
     uglify: bool,
 
-    #[arg(long, help = format!(
-        "{} [default: {DEFAULT_PREFERRED_WIDTH}]",
-        with_rules(
-            "Preferred maximum line width. Note this is not a hard maximum width",
-            FormatOption::PreferredWidth,
-        ),
-    ))]
-    preferred_width: Option<usize>,
-
-    /// Line ending to use when formatting output
-    #[arg(value_enum, long, visible_alias = "eol", default_value_t)]
-    end_of_line: LineEndingArg,
+    #[command(flatten)]
+    settings: FormatSettings,
 
     #[arg(value_enum, long, default_value_t, help = with_rules(
         "Parser to use for input",
@@ -89,9 +86,86 @@ impl FormatArgs {
         FormatConfig {
             parser: self.parser.into(),
             uglify: self.uglify,
-            preferred_width: self.preferred_width,
-            line_ending: self.end_of_line.into(),
+            ..self.settings.0.clone()
         }
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct FormatSettings(FormatConfig);
+
+fn invalid(message: impl Display) -> clap::Error {
+    clap::Error::raw(ErrorKind::InvalidValue, message)
+}
+
+fn setting_option(setting: &Setting) -> Option<FormatOption> {
+    FormatOption::ALL
+        .into_iter()
+        .find(|option| option.setting() == Some(setting.name))
+}
+
+fn setting_arg(setting: &Setting) -> Arg {
+    let help = setting_option(setting).map_or_else(
+        || setting.description.to_owned(),
+        |option| with_rules(setting.description, option),
+    );
+    let arg = Arg::new(setting.name)
+        .long(setting.flag)
+        .help(help)
+        .value_name(setting.flag.to_uppercase().replace('-', "_"));
+    let arg = match setting.kind {
+        SettingKind::Integer { default } => arg
+            .default_value(default.to_string())
+            .value_parser(value_parser!(usize)),
+        SettingKind::Choice { values, default } => arg
+            .default_value(default)
+            .value_parser(PossibleValuesParser::new(values)),
+    };
+    FLAG_ALIASES
+        .iter()
+        .filter(|(flag, _)| *flag == setting.flag)
+        .fold(arg, |arg, (_, alias)| arg.visible_alias(*alias))
+}
+
+impl Args for FormatSettings {
+    fn augment_args(cmd: Command) -> Command {
+        cmd.args(FORMAT_SETTINGS.iter().map(setting_arg))
+    }
+
+    fn augment_args_for_update(cmd: Command) -> Command {
+        Self::augment_args(cmd)
+    }
+}
+
+impl FromArgMatches for FormatSettings {
+    fn from_arg_matches(matches: &ArgMatches) -> Result<Self, clap::Error> {
+        let mut config = serde_json::Map::new();
+        for setting in FORMAT_SETTINGS {
+            if matches.value_source(setting.name) != Some(ValueSource::CommandLine) {
+                continue;
+            }
+            let value = match setting.kind {
+                SettingKind::Integer { .. } => matches
+                    .try_get_one::<usize>(setting.name)
+                    .map_err(invalid)?
+                    .map(|value| Value::from(*value)),
+                SettingKind::Choice { .. } => matches
+                    .try_get_one::<String>(setting.name)
+                    .map_err(invalid)?
+                    .map(|value| Value::from(value.as_str())),
+            };
+            if let Some(value) = value {
+                config.insert(setting.name.to_owned(), value);
+            }
+        }
+        serde_json::from_value(Value::Object(config))
+            .map(Self)
+            .map_err(invalid)
+    }
+
+    fn update_from_arg_matches(&mut self, matches: &ArgMatches) -> Result<(), clap::Error> {
+        *self = Self::from_arg_matches(matches)?;
+        Ok(())
     }
 }
 
@@ -118,15 +192,6 @@ pub fn parse() -> Action {
     }
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq, ValueEnum, Default)]
-pub enum LineEndingArg {
-    #[default]
-    #[value(name = "lf")]
-    Lf,
-    #[value(name = "crlf")]
-    CrLf,
-}
-
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq, ValueEnum)]
 pub enum ParserArg {
     #[default]
@@ -134,15 +199,6 @@ pub enum ParserArg {
     Json,
     #[value(name = "jsonlines")]
     Jsonlines,
-}
-
-impl From<LineEndingArg> for LineEnding {
-    fn from(arg: LineEndingArg) -> Self {
-        match arg {
-            LineEndingArg::Lf => Self::Lf,
-            LineEndingArg::CrLf => Self::CrLf,
-        }
-    }
 }
 
 impl From<ParserArg> for ParseParser {
@@ -155,12 +211,17 @@ impl From<ParserArg> for ParseParser {
 }
 
 fn flag_spelling(option: FormatOption) -> String {
-    match option {
-        FormatOption::Uglify => "--uglify",
-        FormatOption::Jsonlines => "--parser jsonlines",
-        FormatOption::PreferredWidth => "--preferred-width",
-    }
-    .to_owned()
+    FORMAT_SETTINGS
+        .iter()
+        .find(|setting| option.setting() == Some(setting.name))
+        .map_or_else(
+            || match option {
+                FormatOption::Uglify => "--uglify".to_owned(),
+                FormatOption::Jsonlines => "--parser jsonlines".to_owned(),
+                other @ FormatOption::PreferredWidth => other.name().to_owned(),
+            },
+            |setting| format!("--{}", setting.flag),
+        )
 }
 
 fn with_rules(help: &str, option: FormatOption) -> String {
@@ -180,4 +241,18 @@ fn usage_error(
         .unwrap_or(command)
         .clone()
         .error(ErrorKind::ArgumentConflict, message)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn rule_options_with_settings_are_in_the_table() {
+        for option in FormatOption::ALL {
+            if let Some(name) = option.setting() {
+                assert!(FORMAT_SETTINGS.iter().any(|setting| setting.name == name));
+            }
+        }
+    }
 }

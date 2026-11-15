@@ -5,7 +5,8 @@ pub mod serde;
 pub(crate) mod uglify;
 
 pub use config::{
-    ConfigError, FORMAT_RULES, FormatConfig, FormatOption, Parser, Rule, rule_clause,
+    ConfigError, FORMAT_RULES, FormatConfig, FormatOption, Parser, Rule, Setting, SettingKind,
+    rule_clause,
 };
 pub use prettify::{prettify_document, prettify_document_into, prettify_str};
 pub use uglify::{uglify_document, uglify_document_into, uglify_str, uglify_str_into};
@@ -84,6 +85,9 @@ pub(crate) fn join_into<T, B>(
 }
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(rename_all = "lowercase"))]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub enum LineEnding {
     #[default]
     Lf,

@@ -9,6 +9,7 @@
 )]
 mod commands;
 mod error;
+mod format_settings;
 mod output;
 
 use std::{

@@ -18,6 +18,7 @@ const_format = { workspace = true }
 displaydoc = { workspace = true }
 itoa = { version = "1.0.18", optional = true }
 serde = { version = "1.0.228", optional = true, features = ["derive"] }
+schemars = { version = "1.2.3", optional = true }
 zmij = { version = "1.0.23", optional = true }
 
 [dev-dependencies]
@@ -26,6 +27,7 @@ rstest_reuse = { workspace = true }
 
 [features]
 serde = ["dep:serde", "dep:itoa", "dep:zmij"]
+schema = ["serde", "dep:schemars"]
 
 [lints]
 workspace = true

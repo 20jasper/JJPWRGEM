@@ -75,11 +75,13 @@ clap = { version = "4.6.7", default-features = false, features = [
   "error-context",
   "suggestions",
   "derive",
+  "string",
 ] }
 displaydoc = { workspace = true }
-jjpwrgem-parse = { workspace = true }
+jjpwrgem-parse = { workspace = true, features = ["serde"] }
 jjpwrgem-ui = { workspace = true }
 lsp = { workspace = true }
+serde_json = { workspace = true }
 simdutf8 = "0.1.5"
 
 [dev-dependencies]

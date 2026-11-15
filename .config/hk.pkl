@@ -12,9 +12,9 @@ local fix_steps = new Mapping<String, Step> {
     fix = "mise run format"
   }
   ["readmes"] {
-    glob = List("xtask/templates/**", "xtask/src/template.rs", "crates/bytes2chars/src/**", "benches/docker/output/*.md", "benches/output/*.md")
+    glob = List("xtask/templates/**", "xtask/src/template.rs", "xtask/src/settings.rs", "crates/parse/src/format/config.rs", "crates/bytes2chars/src/**", "benches/docker/output/*.md", "benches/output/*.md")
     fix = "mise run readmes"
-    stage = List("**/*.md", "*.md")
+    stage = List("**/*.md", "*.md", "crates/cli/format_settings.rs")
   }
 }
 

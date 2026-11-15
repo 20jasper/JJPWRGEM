@@ -9,12 +9,45 @@ pub enum Parser {
     Jsonlines,
 }
 
+const PREFERRED_WIDTH_SETTING: &str = "preferredWidth";
+
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(::serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(rename_all = "camelCase", default))]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct FormatConfig {
+    #[cfg_attr(feature = "serde", serde(skip))]
     pub parser: Parser,
+    #[cfg_attr(feature = "serde", serde(skip))]
     pub uglify: bool,
+    /// Preferred maximum line width. Note this is not a hard maximum width
+    #[cfg_attr(
+        feature = "schema",
+        schemars(extend("type" = "integer", "default" = super::DEFAULT_PREFERRED_WIDTH))
+    )]
     pub preferred_width: Option<usize>,
+    #[cfg_attr(feature = "serde", serde(rename = "endOfLine"))]
+    /// Line ending to use when formatting output
     pub line_ending: LineEnding,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SettingKind {
+    Integer {
+        default: usize,
+    },
+    Choice {
+        values: &'static [&'static str],
+        default: &'static str,
+    },
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Setting {
+    pub name: &'static str,
+    pub flag: &'static str,
+    pub description: &'static str,
+    pub kind: SettingKind,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -36,6 +69,15 @@ pub const FORMAT_RULES: &[Rule] = &[
 ];
 
 impl FormatOption {
+    pub const ALL: [Self; 3] = [Self::Uglify, Self::Jsonlines, Self::PreferredWidth];
+
+    pub fn setting(self) -> Option<&'static str> {
+        match self {
+            Self::PreferredWidth => Some(PREFERRED_WIDTH_SETTING),
+            Self::Uglify | Self::Jsonlines => None,
+        }
+    }
+
     fn is_active(self, config: &FormatConfig) -> bool {
         match self {
             Self::Uglify => config.uglify,
