@@ -10,7 +10,7 @@ use jjpwrgem_parse::{
 use crate::{
     docs::{indent, strip_front_matter},
     get_docs_snapshot,
-    setting_args::{FromSettings, Help},
+    setting_args::{FromSettings, Help, shorthand_text},
 };
 
 #[derive(Parser)]
@@ -87,8 +87,10 @@ impl Help for FormatHelp {
     }
 
     fn shorthand_help(setting: &Setting, shorthand: &Shorthand) -> String {
-        let help = format!("Shorthand for --{} {}", setting.flag(), shorthand.value);
-        with_rules(&help, &FormatOption::for_setting(setting))
+        with_rules(
+            &shorthand_text(setting, shorthand),
+            &FormatOption::for_setting(setting),
+        )
     }
 }
 

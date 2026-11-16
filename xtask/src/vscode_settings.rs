@@ -3,7 +3,7 @@ use std::fs;
 use anyhow::{Context, Result, bail};
 use itertools::Itertools;
 use jjpwrgem_parse::{
-    format::{FORMAT_RULES, FormatOption, FormatSetting},
+    format::{FormatOption, FormatSetting},
     settings::{Setting, SettingKind},
 };
 use serde_json::{Map, Value, json};
@@ -16,16 +16,9 @@ const SETTINGS_PREFIX: &str = "jjpwrgem.format.";
 const PROPERTIES_POINTER: &str = "/contributes/configuration/properties";
 
 pub fn ignored_conditions(row: &Setting) -> impl Iterator<Item = (String, &'static str)> {
-    FORMAT_RULES
-        .iter()
-        .filter(|rule| rule.option.setting().name == row.name)
-        .filter(|rule| !matches!(rule.ignored_when, FormatOption::Parser(_)))
-        .filter_map(|rule| {
-            Some((
-                rule.ignored_when.setting().key(),
-                rule.ignored_when.value()?,
-            ))
-        })
+    FormatOption::ignored_when(row)
+        .filter(|option| !matches!(option, FormatOption::Parser(_)))
+        .filter_map(|option| Some((option.setting().key(), option.value()?)))
 }
 
 fn markdown_description(setting: &Setting) -> String {
