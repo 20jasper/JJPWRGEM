@@ -28,7 +28,7 @@
   "artifactDownloadUrl": "",
   "glibcMinimum": {
     "major": 2,
-    "series": 35
+    "series": 28
   },
   "preferUnplugged": true,
   "supportedPlatforms": {}
