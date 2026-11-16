@@ -4,13 +4,9 @@ use clap::{
     Arg, ArgAction, ArgMatches, Args, Command, FromArgMatches, builder::PossibleValuesParser,
     error::ErrorKind, parser::ValueSource, value_parser,
 };
-use jjpwrgem_parse::settings::{Setting, SettingKind, Shorthand};
+use jjpwrgem_parse::settings::{Setting, SettingKind, Shorthand, Table};
 use serde::de::DeserializeOwned;
 use serde_json::{Map, Value};
-
-pub trait Settings: DeserializeOwned {
-    const TABLE: &'static [Setting];
-}
 
 pub trait Help {
     fn help(setting: &Setting) -> String;
@@ -30,7 +26,13 @@ impl Help for Plain {
 }
 
 #[derive(Clone, Debug)]
-pub struct FromSettings<T, H = Plain>(pub T, PhantomData<H>);
+pub struct FromSettings<T, H = Plain>(T, PhantomData<H>);
+
+impl<T, H> FromSettings<T, H> {
+    pub fn into_inner(self) -> T {
+        self.0
+    }
+}
 
 fn invalid_value(message: impl Display) -> clap::Error {
     clap::Error::raw(ErrorKind::InvalidValue, message)
@@ -42,7 +44,6 @@ fn setting_arg(setting: &Setting, help: String) -> Arg {
         .help(help)
         .visible_aliases(setting.aliases.iter().copied());
     match setting.kind {
-        SettingKind::Flag => arg.action(ArgAction::SetTrue),
         SettingKind::Integer { default } => arg
             .value_name(setting.name.to_uppercase())
             .default_value(default.to_string())
@@ -62,14 +63,16 @@ fn shorthand_arg(setting: &Setting, shorthand: &Shorthand, help: String) -> Arg 
         .help(help)
         .action(ArgAction::SetTrue)
         .conflicts_with(setting.name);
-    shorthand.short.into_iter().fold(arg, Arg::short)
+    match shorthand.short {
+        Some(short) => arg.short(short),
+        None => arg,
+    }
 }
 
 fn shorthand_value(matches: &ArgMatches, setting: &Setting) -> Option<Value> {
     setting
         .shorthand
-        .iter()
-        .find(|shorthand| matches.get_flag(shorthand.name))
+        .filter(|shorthand| matches.get_flag(shorthand.name))
         .map(|shorthand| Value::from(shorthand.value))
 }
 
@@ -82,7 +85,6 @@ fn main_value(matches: &ArgMatches, setting: &Setting) -> Option<Value> {
         return None;
     }
     match setting.kind {
-        SettingKind::Flag => matches.get_flag(setting.name).then_some(Value::Bool(true)),
         SettingKind::Integer { .. } => matches
             .get_one::<usize>(setting.name)
             .map(|value| Value::from(*value)),
@@ -99,7 +101,7 @@ fn command_line_values(matches: &ArgMatches, table: &[Setting]) -> Map<String, V
         .collect()
 }
 
-impl<T: Settings, H: Help> Args for FromSettings<T, H> {
+impl<T: Table + DeserializeOwned, H: Help> Args for FromSettings<T, H> {
     fn augment_args(cmd: Command) -> Command {
         cmd.args(T::TABLE.iter().flat_map(|setting| {
             std::iter::once(setting_arg(setting, H::help(setting))).chain(
@@ -115,7 +117,7 @@ impl<T: Settings, H: Help> Args for FromSettings<T, H> {
     }
 }
 
-impl<T: Settings, H: Help> FromArgMatches for FromSettings<T, H> {
+impl<T: Table + DeserializeOwned, H: Help> FromArgMatches for FromSettings<T, H> {
     fn from_arg_matches(matches: &ArgMatches) -> Result<Self, clap::Error> {
         serde_json::from_value(Value::Object(command_line_values(matches, T::TABLE)))
             .map(|settings| Self(settings, PhantomData))

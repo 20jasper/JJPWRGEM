@@ -1,12 +1,9 @@
 //! Settings metadata to more easily generate or describe settings for integrations like editor extensions. See the xtask for an example
 
+use std::marker::PhantomData;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[expect(
-    variant_size_differences,
-    reason = "settings are static table rows, never moved around"
-)]
 pub enum SettingKind {
-    Flag,
     Integer {
         default: usize,
     },
@@ -34,31 +31,52 @@ pub struct Setting {
     pub shorthand: Option<Shorthand>,
 }
 
+pub trait Table {
+    const TABLE: &'static [Setting];
+}
+
+pub trait IntegerSetting {}
+
+impl IntegerSetting for usize {}
+
+impl IntegerSetting for Option<usize> {}
+
+#[derive(Debug)]
+#[must_use]
+pub struct Spec<T>(Setting, PhantomData<fn() -> T>);
+
+impl<T> Clone for Spec<T> {
+    fn clone(&self) -> Self {
+        *self
+    }
+}
+
+impl<T> Copy for Spec<T> {}
+
 pub trait Choice {
     const VALUES: &'static [&'static str];
     const DESCRIPTIONS: &'static [&'static str];
     const DEFAULT: &'static str;
 }
 
-const fn blank(kind: SettingKind) -> Setting {
-    Setting {
-        name: "",
-        description: "",
-        kind,
-        aliases: &[],
-        shorthand: None,
-    }
+const fn blank<T>(kind: SettingKind) -> Spec<T> {
+    Spec(
+        Setting {
+            name: "",
+            description: "",
+            kind,
+            aliases: &[],
+            shorthand: None,
+        },
+        PhantomData,
+    )
 }
 
-pub const fn flag() -> Setting {
-    blank(SettingKind::Flag)
-}
-
-pub const fn integer(default: usize) -> Setting {
+pub const fn integer<T: IntegerSetting>(default: usize) -> Spec<T> {
     blank(SettingKind::Integer { default })
 }
 
-pub const fn choice<T: Choice>() -> Setting {
+pub const fn choice<T: Choice>() -> Spec<T> {
     blank(SettingKind::Choice {
         values: T::VALUES,
         descriptions: T::DESCRIPTIONS,
@@ -66,22 +84,31 @@ pub const fn choice<T: Choice>() -> Setting {
     })
 }
 
-impl Setting {
+impl<T> Spec<T> {
+    pub const fn row(spec: Self) -> Setting {
+        spec.0
+    }
+
     pub const fn aliases(self, aliases: &'static [&'static str]) -> Self {
-        Self { aliases, ..self }
+        Self(Setting { aliases, ..self.0 }, PhantomData)
     }
 
     pub const fn shorthand(self, name: &'static str, short: char, value: &'static str) -> Self {
-        Self {
-            shorthand: Some(Shorthand {
-                name,
-                short: Some(short),
-                value,
-            }),
-            ..self
-        }
+        Self(
+            Setting {
+                shorthand: Some(Shorthand {
+                    name,
+                    short: Some(short),
+                    value,
+                }),
+                ..self.0
+            },
+            PhantomData,
+        )
     }
+}
 
+impl Setting {
     pub fn key(&self) -> String {
         snake_to_camel(self.name)
     }
@@ -134,9 +161,13 @@ macro_rules! settings {
             $($crate::settings::Setting {
                 name: stringify!($field_name),
                 description: $field_doc.trim_ascii(),
-                ..$spec
+                ..$crate::settings::Spec::<$field_type>::row($spec)
             },)*
         ];
+
+        impl $crate::settings::Table for $struct_name {
+            const TABLE: &'static [$crate::settings::Setting] = $table_name;
+        }
 
         impl $id_name {
             pub const ALL: &[Self] = &[$(Self::$variant),*];

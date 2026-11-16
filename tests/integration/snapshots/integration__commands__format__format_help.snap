@@ -14,7 +14,7 @@ Usage: jjp format [OPTIONS]
 
 Options:
       --mode <MODE>
-          Pretty print, or remove all insignificant whitespace (uglify, also known as minify). --mode uglify cannot be combined with --parser jsonlines [default: pretty] [possible values: pretty, uglify]
+          Pretty print, or remove all insignificant whitespace (uglify, also known as minify). --mode uglify cannot be combined with --parser jsonlines or --preferred-width [default: pretty] [possible values: pretty, uglify]
   -u, --uglify
           Shorthand for --mode uglify. --mode uglify cannot be combined with --parser jsonlines or --preferred-width
       --preferred-width <PREFERRED_WIDTH>

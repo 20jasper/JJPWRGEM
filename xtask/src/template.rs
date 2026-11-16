@@ -6,7 +6,7 @@ use std::{
 
 use anyhow::bail;
 
-use crate::helix_settings::helix_config;
+use crate::helix_settings::helix_format_config;
 
 const BYTES2CHARS_README_PATH: &str = concat!(
     env!("CARGO_MANIFEST_DIR"),
@@ -324,7 +324,7 @@ fn render_template(
         .replace("{{LSP_DEMO_ALT}}", LSP_DEMO_ALT)
         .replace("{{LSP_DEMO_URL}}", LSP_DEMO_URL)
         .replace("{{LSP_FEATURES}}", LSP_FEATURES.trim())
-        .replace("{{HELIX_CONFIG}}", &helix_config())
+        .replace("{{HELIX_FORMAT_CONFIG}}", &helix_format_config())
         .replace("{{BENCH_SUMMARY}}", BENCH_SUMMARY)
         .replace("{{BENCH_INPUTS}}", BENCH_INPUTS)
         .replace("{{BENCH_HARDWARE}}", BENCH_HARDWARE)

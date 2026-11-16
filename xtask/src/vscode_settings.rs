@@ -3,8 +3,8 @@ use std::fs;
 use anyhow::{Context, Result, bail};
 use itertools::Itertools;
 use jjpwrgem_parse::{
-    format::{FORMAT_RULES, FormatSetting, Rule},
-    settings::SettingKind,
+    format::{FORMAT_RULES, FormatOption, FormatSetting},
+    settings::{Setting, SettingKind},
 };
 use serde_json::{Map, Value, json};
 
@@ -15,40 +15,33 @@ const PACKAGE_JSON: &str = concat!(
 const SETTINGS_PREFIX: &str = "jjpwrgem.format.";
 const PROPERTIES_POINTER: &str = "/contributes/configuration/properties";
 
-fn setting_link(id: FormatSetting) -> String {
-    format!("`#{SETTINGS_PREFIX}{}#`", id.setting().key())
-}
-
-pub fn ignored_conditions(id: FormatSetting) -> Vec<(FormatSetting, &'static str)> {
+pub fn ignored_conditions(row: &Setting) -> Vec<(String, &'static str)> {
     FORMAT_RULES
         .iter()
-        .filter_map(|rule| match *rule {
-            Rule::IgnoredWhen(setting, condition) if setting == id => condition.condition(),
-            Rule::IgnoredWhen(..) => None,
+        .filter(|rule| rule.option.setting().name == row.name)
+        .filter(|rule| !matches!(rule.ignored_when, FormatOption::Parser(_)))
+        .filter_map(|rule| {
+            Some((
+                rule.ignored_when.setting().key(),
+                rule.ignored_when.value()?,
+            ))
         })
         .collect()
 }
 
-fn ignored_when(id: FormatSetting) -> Vec<String> {
-    ignored_conditions(id)
-        .into_iter()
-        .map(|(setting, value)| format!("Ignored when {} is `{value}`.", setting_link(setting)))
-        .collect()
-}
-
-fn markdown_description(id: FormatSetting) -> String {
-    std::iter::once(format!("{}.", id.setting().description))
-        .chain(ignored_when(id))
+fn markdown_description(setting: &Setting) -> String {
+    std::iter::once(format!("{}.", setting.description))
+        .chain(
+            ignored_conditions(setting).into_iter().map(|(key, value)| {
+                format!("Ignored when `#{SETTINGS_PREFIX}{key}#` is `{value}`.")
+            }),
+        )
         .join(" ")
 }
 
 fn property(id: FormatSetting) -> Value {
     let setting = id.setting();
-    let schema = match setting.kind {
-        SettingKind::Flag => json!({
-            "type": "boolean",
-            "default": false,
-        }),
+    let mut schema = match setting.kind {
         SettingKind::Integer { default } => json!({
             "type": "integer",
             "minimum": 0,
@@ -65,20 +58,9 @@ fn property(id: FormatSetting) -> Value {
             "default": default,
         }),
     };
-    let extra = json!({
-        "markdownDescription": markdown_description(id),
-        "order": id as usize,
-    });
-    Value::Object(
-        [schema, extra]
-            .into_iter()
-            .filter_map(|value| match value {
-                Value::Object(map) => Some(map),
-                _ => None,
-            })
-            .flatten()
-            .collect(),
-    )
+    schema["markdownDescription"] = markdown_description(setting).into();
+    schema["order"] = (id as usize).into();
+    schema
 }
 
 fn generated_properties() -> Map<String, Value> {

@@ -1,12 +1,9 @@
 use std::fmt;
 
-use FormatOption::{Jsonlines, Uglify};
-use FormatSetting::{Mode, PreferredWidth};
-
 use super::{
     DEFAULT_PREFERRED_WIDTH, FormatRequest, JsonMode, JsonlinesOptions, LineEnding, PrettifyOptions,
 };
-use crate::settings::{choice, integer, settings};
+use crate::settings::{Setting, choice, integer, settings};
 
 choice! {
     pub enum Parser default Json {
@@ -29,18 +26,18 @@ choice! {
 settings! {
     struct InputSettings, table INPUT_SETTINGS, id InputSetting {
         /// Parser to use for input
-        Parser parser: Parser = choice::<Parser>(),
+        Parser parser: Parser = choice(),
     }
 }
 
 settings! {
     struct FormatSettings, table FORMAT_SETTINGS, id FormatSetting {
         /// Pretty print, or remove all insignificant whitespace (uglify, also known as minify)
-        Mode mode: FormatMode = choice::<FormatMode>().shorthand("uglify", 'u', "uglify"),
+        Mode mode: FormatMode = choice().shorthand("uglify", 'u', "uglify"),
         /// Preferred maximum line width. Note this is not a hard maximum width
         PreferredWidth preferred_width: Option<usize> = integer(DEFAULT_PREFERRED_WIDTH),
         /// Line ending to use when formatting output
-        EndOfLine end_of_line: LineEnding = choice::<LineEnding>().aliases(&["eol"]),
+        EndOfLine end_of_line: LineEnding = choice().aliases(&["eol"]),
     }
 }
 
@@ -52,44 +49,82 @@ pub struct FormatConfig {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum FormatOption {
-    Jsonlines,
-    Uglify,
     Setting(FormatSetting),
+    Mode(FormatMode),
+    Parser(Parser),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Rule {
-    IgnoredWhen(FormatSetting, FormatOption),
+pub struct Rule {
+    pub option: FormatOption,
+    pub ignored_when: FormatOption,
 }
 
 pub const FORMAT_RULES: &[Rule] = &[
-    Rule::IgnoredWhen(Mode, Jsonlines),
-    Rule::IgnoredWhen(PreferredWidth, Jsonlines),
-    Rule::IgnoredWhen(PreferredWidth, Uglify),
+    Rule {
+        option: FormatOption::Mode(FormatMode::Uglify),
+        ignored_when: FormatOption::Parser(Parser::Jsonlines),
+    },
+    Rule {
+        option: FormatOption::Setting(FormatSetting::PreferredWidth),
+        ignored_when: FormatOption::Parser(Parser::Jsonlines),
+    },
+    Rule {
+        option: FormatOption::Setting(FormatSetting::PreferredWidth),
+        ignored_when: FormatOption::Mode(FormatMode::Uglify),
+    },
 ];
 
 impl FormatOption {
     fn is_active(self, config: &FormatConfig) -> bool {
         match self {
-            Self::Jsonlines => config.input.parser == Parser::Jsonlines,
-            Self::Uglify => config.settings.mode == FormatMode::Uglify,
             Self::Setting(id) => config.settings.is_set(id),
+            Self::Mode(mode) => config.settings.mode == mode,
+            Self::Parser(parser) => config.input.parser == parser,
+        }
+    }
+
+    pub fn setting(self) -> &'static Setting {
+        match self {
+            Self::Setting(id) => id.setting(),
+            Self::Mode(_) => FormatSetting::Mode.setting(),
+            Self::Parser(_) => InputSetting::Parser.setting(),
+        }
+    }
+
+    pub fn value(self) -> Option<&'static str> {
+        match self {
+            Self::Setting(_) => None,
+            Self::Mode(mode) => Some(mode.name()),
+            Self::Parser(parser) => Some(parser.name()),
         }
     }
 
     pub fn name(self) -> String {
+        let setting = self.setting().name.replace('_', " ");
+        self.value()
+            .map_or_else(|| setting.clone(), |value| format!("{setting} {value}"))
+    }
+
+    fn format_setting(self) -> Option<FormatSetting> {
         match self {
-            Self::Jsonlines => "jsonlines".to_owned(),
-            Self::Uglify => "uglify".to_owned(),
-            Self::Setting(id) => id.setting().name.replace('_', " "),
+            Self::Setting(id) => Some(id),
+            Self::Mode(_) => Some(FormatSetting::Mode),
+            Self::Parser(_) => None,
         }
     }
 
-    pub fn condition(self) -> Option<(FormatSetting, &'static str)> {
-        match self {
-            Self::Uglify => Some((Mode, FormatMode::Uglify.name())),
-            Self::Jsonlines | Self::Setting(_) => None,
-        }
+    pub fn for_setting(row: &Setting) -> Vec<Self> {
+        FORMAT_RULES
+            .iter()
+            .flat_map(|rule| [rule.option, rule.ignored_when])
+            .filter(|option| option.setting().name == row.name)
+            .fold(Vec::new(), |mut options, option| {
+                if !options.contains(&option) {
+                    options.push(option);
+                }
+                options
+            })
     }
 }
 
@@ -99,21 +134,23 @@ fn cannot_be_combined_with(others: &str) -> String {
 
 impl Rule {
     fn is_broken(self, config: &FormatConfig) -> bool {
-        match self {
-            Self::IgnoredWhen(setting, condition) => {
-                config.settings.is_set(setting) && condition.is_active(config)
-            }
+        self.option.is_active(config) && self.ignored_when.is_active(config)
+    }
+
+    fn counterpart(self, options: &[FormatOption]) -> Option<FormatOption> {
+        if options.contains(&self.option) {
+            Some(self.ignored_when)
+        } else {
+            options.contains(&self.ignored_when).then_some(self.option)
         }
     }
 
     pub fn describe(self, name: impl Fn(FormatOption) -> String) -> String {
-        match self {
-            Self::IgnoredWhen(setting, condition) => format!(
-                "{} {}",
-                name(FormatOption::Setting(setting)),
-                cannot_be_combined_with(&name(condition))
-            ),
-        }
+        format!(
+            "{} {}",
+            name(self.option),
+            cannot_be_combined_with(&name(self.ignored_when))
+        )
     }
 }
 
@@ -130,17 +167,7 @@ pub fn rule_clause(
 ) -> Option<String> {
     let others: Vec<String> = FORMAT_RULES
         .iter()
-        .filter_map(|rule| match *rule {
-            Rule::IgnoredWhen(setting, condition)
-                if options.contains(&FormatOption::Setting(setting)) =>
-            {
-                Some(condition)
-            }
-            Rule::IgnoredWhen(setting, condition) if options.contains(&condition) => {
-                Some(FormatOption::Setting(setting))
-            }
-            Rule::IgnoredWhen(..) => None,
-        })
+        .filter_map(|rule| rule.counterpart(options))
         .map(name)
         .collect();
     (!others.is_empty()).then(|| cannot_be_combined_with(&join(&others)))
@@ -158,15 +185,39 @@ impl fmt::Display for ConfigError {
 impl std::error::Error for ConfigError {}
 
 impl FormatConfig {
-    #[must_use]
-    pub fn drop_ignored(self) -> Self {
+    fn drop_ignored(self) -> Self {
         FORMAT_RULES.iter().fold(self, |mut config, rule| {
-            let Rule::IgnoredWhen(setting, condition) = *rule;
-            if condition.is_active(&config) {
-                config.settings.reset(setting);
+            if let (true, Some(id)) = (
+                rule.ignored_when.is_active(&config),
+                rule.option.format_setting(),
+            ) {
+                config.settings.reset(id);
             }
             config
         })
+    }
+
+    fn json_mode(&self) -> JsonMode {
+        match self.settings.mode {
+            FormatMode::Uglify => JsonMode::Uglify,
+            FormatMode::Pretty => JsonMode::Prettify(
+                PrettifyOptions::builder()
+                    .maybe_preferred_width(self.settings.preferred_width)
+                    .line_ending(self.settings.end_of_line)
+                    .build(),
+            ),
+        }
+    }
+}
+
+impl JsonMode {
+    pub fn from_settings(settings: &FormatSettings) -> Self {
+        FormatConfig {
+            input: InputSettings::default(),
+            settings: settings.clone(),
+        }
+        .drop_ignored()
+        .json_mode()
     }
 }
 
@@ -181,32 +232,14 @@ impl TryFrom<FormatConfig> for FormatRequest {
         {
             return Err(ConfigError(rule));
         }
-        Ok(Self::from_valid(&config))
-    }
-}
-
-impl FormatRequest {
-    pub fn from_lenient(config: FormatConfig) -> Self {
-        Self::from_valid(&config.drop_ignored())
-    }
-
-    fn from_valid(config: &FormatConfig) -> Self {
-        let mode = match config.settings.mode {
-            FormatMode::Uglify => JsonMode::Uglify,
-            FormatMode::Pretty => JsonMode::Prettify(
-                PrettifyOptions::builder()
-                    .maybe_preferred_width(config.settings.preferred_width)
-                    .line_ending(config.settings.end_of_line)
-                    .build(),
-            ),
-        };
-        match config.input.parser {
+        let mode = config.json_mode();
+        Ok(match config.input.parser {
             Parser::Json => FormatRequest::Json(mode),
             Parser::Jsonlines => FormatRequest::Jsonlines(
                 JsonlinesOptions::builder()
                     .line_ending(config.settings.end_of_line)
                     .build(),
             ),
-        }
+        })
     }
 }
