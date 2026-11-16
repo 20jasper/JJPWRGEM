@@ -1,9 +1,16 @@
-use clap::{Parser, Subcommand, ValueEnum};
-use jjpwrgem_parse::format::LineEnding;
+use clap::{Args, Command, CommandFactory, FromArgMatches, Parser, Subcommand, error::ErrorKind};
+use jjpwrgem_parse::{
+    format::{
+        ConfigError, FormatConfig, FormatOption, FormatRequest, FormatSettings, InputSettings,
+        Parser as ParseParser, rule_clause,
+    },
+    settings::{Setting, Shorthand},
+};
 
 use crate::{
     docs::{indent, strip_front_matter},
     get_docs_snapshot,
+    setting_args::{FromSettings, Help, shorthand_text},
 };
 
 #[derive(Parser)]
@@ -35,62 +42,106 @@ pub enum Commands {
         indent(strip_front_matter(get_docs_snapshot!("format_pretty"))),
         indent(strip_front_matter(get_docs_snapshot!("format_uglify"))),
     ))]
-    Format {
-        /// Removes all insignificant whitespace instead of pretty printing,
-        /// also known as minifying. Cannot be combined with --preferred-width or --parser jsonlines
-        #[arg(short, long, conflicts_with = "preferred_width")]
-        uglify: bool,
-
-        /// Preferred maximum line width. Note this is not a hard maximum width [default: 80]
-        #[arg(long, conflicts_with = "uglify")]
-        preferred_width: Option<usize>,
-
-        /// Line ending to use when formatting output
-        #[arg(value_enum, long, visible_alias = "eol", default_value_t)]
-        end_of_line: LineEndingArg,
-
-        /// Parser to use for input. jsonlines cannot be combined with --uglify
-        #[arg(value_enum, long, default_value_t)]
-        parser: ParserArg,
-    },
+    Format(FormatArgs),
     #[command(after_help = format!(
         "Examples:\n{}\n\n{}",
         indent(strip_front_matter(get_docs_snapshot!("check_success"))),
         indent(strip_front_matter(get_docs_snapshot!("check_failure"))),
     ))]
     /// Validates json syntax
-    Check {
-        /// Parser to use for input
-        #[arg(value_enum, long, default_value_t)]
-        parser: ParserArg,
-    },
+    Check(CheckArgs),
     /// Start a language server over stdio
     Lsp,
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq, ValueEnum, Default)]
-pub enum LineEndingArg {
-    #[default]
-    #[value(name = "lf")]
-    Lf,
-    #[value(name = "crlf")]
-    CrLf,
+#[derive(Args, Debug)]
+pub struct FormatArgs {
+    #[command(flatten)]
+    settings: FromSettings<FormatSettings, FormatHelp>,
+
+    #[command(flatten)]
+    input: FromSettings<InputSettings, FormatHelp>,
 }
 
-#[derive(Clone, Copy, Debug, Default, Eq, PartialEq, ValueEnum)]
-pub enum ParserArg {
-    #[default]
-    #[value(name = "json")]
-    Json,
-    #[value(name = "jsonlines")]
-    Jsonlines,
+#[derive(Args, Debug)]
+pub struct CheckArgs {
+    #[command(flatten)]
+    input: FromSettings<InputSettings>,
 }
 
-impl LineEndingArg {
-    pub const fn into_parse(self) -> LineEnding {
-        match self {
-            Self::Lf => LineEnding::Lf,
-            Self::CrLf => LineEnding::CrLf,
+impl From<FormatArgs> for FormatConfig {
+    fn from(args: FormatArgs) -> Self {
+        Self {
+            input: args.input.into_inner(),
+            settings: args.settings.into_inner(),
         }
     }
+}
+
+#[derive(Debug, Clone)]
+struct FormatHelp;
+
+impl Help for FormatHelp {
+    fn help(setting: &Setting) -> String {
+        with_rules(setting.description, &FormatOption::for_setting(setting))
+    }
+
+    fn shorthand_help(setting: &Setting, shorthand: &Shorthand) -> String {
+        with_rules(
+            &shorthand_text(setting, shorthand),
+            &FormatOption::for_setting(setting),
+        )
+    }
+}
+
+pub enum Action {
+    Lsp,
+    Check(ParseParser),
+    Format(FormatRequest),
+}
+
+pub fn parse() -> Action {
+    let mut command = Cli::command();
+    let matches = command.get_matches_mut();
+    let cli =
+        Cli::from_arg_matches(&matches).unwrap_or_else(|error| error.format(&mut command).exit());
+    match cli.command {
+        Commands::Lsp => Action::Lsp,
+        Commands::Check(args) => Action::Check(args.input.into_inner().parser),
+        Commands::Format(args) => match FormatRequest::try_from(FormatConfig::from(args)) {
+            Ok(request) => Action::Format(request),
+            Err(ConfigError(rule)) => usage_error(
+                &command,
+                matches.subcommand_name(),
+                rule.describe(option_flag),
+            )
+            .exit(),
+        },
+    }
+}
+
+fn option_flag(option: FormatOption) -> String {
+    match option.value() {
+        Some(value) => format!("--{} {value}", option.setting().flag()),
+        None => format!("--{}", option.setting().flag()),
+    }
+}
+
+fn with_rules(help: &str, options: &[FormatOption]) -> String {
+    match (options.first(), rule_clause(options, option_flag)) {
+        (Some(&subject), Some(clause)) => format!("{help}. {} {clause}", option_flag(subject)),
+        _ => help.to_owned(),
+    }
+}
+
+fn usage_error(
+    command: &Command,
+    subcommand: Option<&str>,
+    message: impl std::fmt::Display,
+) -> clap::Error {
+    subcommand
+        .and_then(|name| command.find_subcommand(name))
+        .unwrap_or(command)
+        .clone()
+        .error(ErrorKind::ArgumentConflict, message)
 }

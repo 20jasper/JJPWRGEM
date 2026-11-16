@@ -2,11 +2,9 @@
   "name": "jjpwrgem-vscode",
   "displayName": "JJPWRGEM",
   "version": "0.0.6",
+  "private": true,
   "description": "JSON language server with rich error messages",
-  "categories": [
-    "Formatters",
-    "Linters"
-  ],
+  "categories": ["Formatters", "Linters"],
   "keywords": [
     "diagnostics",
     "formatter",
@@ -16,10 +14,7 @@
     "lsp"
   ],
   "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/20jasper/JJPWRGEM"
-  },
+  "repository": { "type": "git", "url": "https://github.com/20jasper/JJPWRGEM" },
   "qna": "https://github.com/20jasper/JJPWRGEM/discussions",
   "publisher": "20jasper",
   "type": "commonjs",
@@ -41,9 +36,7 @@
     "vsce:publish": "vsce publish --no-dependencies",
     "ovsx:publish": "ovsx publish --no-dependencies"
   },
-  "dependencies": {
-    "vscode-languageclient": "^11.0.0"
-  },
+  "dependencies": { "vscode-languageclient": "^11.0.0" },
   "devDependencies": {
     "@types/mocha": "10.0.10",
     "@types/node": "22.20.5",
@@ -65,20 +58,43 @@
           "default": "jjp",
           "scope": "machine",
           "markdownDescription": "Path to the `jjp` executable used to run the language server. Defaults to `jjp` on your `PATH`. Reload the window after changing."
+        },
+        "jjpwrgem.format.mode": {
+          "type": "string",
+          "enum": ["pretty", "uglify"],
+          "enumDescriptions": [
+            "Pretty print with indentation and line breaks",
+            "Remove all insignificant whitespace, also known as minifying"
+          ],
+          "default": "pretty",
+          "markdownDescription": "Output style.",
+          "order": 0
+        },
+        "jjpwrgem.format.preferredWidth": {
+          "type": "integer",
+          "minimum": 0,
+          "default": 80,
+          "markdownDescription": "Preferred maximum line width. Note this is not a hard maximum width. Ignored when `#jjpwrgem.format.mode#` is `uglify`.",
+          "order": 1
+        },
+        "jjpwrgem.format.endOfLine": {
+          "type": "string",
+          "enum": ["lf", "crlf"],
+          "enumDescriptions": [
+            "Unix line endings (LF)",
+            "Windows line endings (CRLF)"
+          ],
+          "default": "lf",
+          "markdownDescription": "Line ending to use when formatting output.",
+          "order": 2
         }
       }
     }
   },
-  "activationEvents": [
-    "onLanguage:json"
-  ],
-  "extensionKind": [
-    "workspace"
-  ],
+  "activationEvents": ["onLanguage:json"],
+  "extensionKind": ["workspace"],
   "icon": "axolotl-thumb.png",
-  "engines": {
-    "vscode": "^1.82.0"
-  },
+  "engines": { "vscode": "^1.82.0" },
   "capabilities": {
     "untrustedWorkspaces": {
       "supported": false,

@@ -1,7 +1,7 @@
 use std::{process::Command, time::Duration};
 
 use gen_lsp_types::*;
-use lspresso::{Client, ErrorKind, Protocol};
+use lspresso::{Client, ErrorKind, Initialize, Protocol};
 use serde_json::json;
 
 use crate::common::*;
@@ -17,6 +17,28 @@ fn initialize_and_shutdown_round_trip() {
 
     let status = client.wait_for_exit().unwrap();
     assert!(status.success());
+}
+
+#[test]
+fn initialization_options_are_sent_with_the_initialize_request() {
+    let recording = Recording::new();
+    let options = json!({ "format": { "indent": 2 } });
+    let mut client = ScriptedServer::new()
+        .steps([step::respond()])
+        .recording_to(&recording)
+        .spawn();
+
+    client
+        .initialize(Initialize {
+            capabilities: ClientCapabilities::default(),
+            options: Some(options.clone()),
+        })
+        .unwrap();
+
+    let [params] = &recording.requests::<InitializeRequest>()[..] else {
+        panic!("expected one initialize request");
+    };
+    assert_eq!(params.initialization_options, Some(options));
 }
 
 #[test]

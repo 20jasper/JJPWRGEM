@@ -12,13 +12,19 @@
 
 ### Generic LSP Client
 
-For example, here's a Helix configuration
+Run `jjp lsp` as the language server for JSON files. See the [Helix](#helix) section for a full example configuration.
+
+{{SETTINGS_REFERENCE}}
+
+### Helix
 
 ```toml
 # languages.toml
 [language-server.jjp]
 command = "jjp"
 args = ["lsp"]
+
+{{HELIX_FORMAT_CONFIG}}
 
 [[language]]
 name = "json"

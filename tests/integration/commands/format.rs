@@ -118,6 +118,7 @@ fn preferred_width_conflicts_with_uglify() {
 #[rstest::rstest]
 #[case(&["--uglify", "--preferred-width", "24"], "uglify_then_width")]
 #[case(&["--preferred-width", "24", "--uglify"], "width_then_uglify")]
+#[case(&["--uglify", "--preferred-width", "80"], "uglify_then_default_width")]
 fn preferred_width_conflict_cases(#[case] args: &[&str], #[case] label: &str) {
     let mut cmd = cli();
     cmd.args(std::iter::once("format").chain(args.iter().copied()));
@@ -130,6 +131,38 @@ fn preferred_width_conflict_cases(#[case] args: &[&str], #[case] label: &str) {
             format!("preferred_width_conflict_{label}"),
             output.snapshot_display()
         );
+    });
+}
+
+#[rstest::rstest]
+#[case(&["--mode", "uglify"], "{\"a\":[1,2]}")]
+#[case(&["--mode=uglify"], "{\"a\":[1,2]}")]
+#[case(&["--mode", "pretty"], "{ \"a\": [1, 2] }\n")]
+#[case(&["-u"], "{\"a\":[1,2]}")]
+fn mode(#[case] args: &[&str], #[case] expected: &str) {
+    let mut cmd = cli();
+    cmd.args(std::iter::once("format").chain(args.iter().copied()));
+
+    let output = exec_cmd(&mut cmd, Some(br#"{ "a": [1,  2] }"#.to_vec()));
+    assert!(output.status.success(), "{}", output.snapshot_display());
+    assert_eq!(expected.trim_end(), output.stdout.trim_end());
+}
+
+#[rstest::rstest]
+#[case(&["-u", "--mode", "pretty"], "short_uglify_with_mode_pretty")]
+#[case(&["--uglify", "--mode", "uglify"], "uglify_twice")]
+#[case(&["--mode", "uglify", "--preferred-width", "80"], "uglify_with_preferred_width")]
+#[case(&["-u", "--preferred-width", "80"], "short_uglify_with_preferred_width")]
+#[case(&["--mode", "fancy"], "invalid")]
+fn mode_invalid_args(#[case] args: &[&str], #[case] label: &str) {
+    let mut cmd = cli();
+    cmd.args(std::iter::once("format").chain(args.iter().copied()));
+
+    let output = exec_cmd(&mut cmd, None);
+    assert!(!output.status.success());
+
+    insta::with_settings!({snapshot_path => "../snapshots"}, {
+        assert_snapshot!(format!("mode_{label}"), output.snapshot_display());
     });
 }
 
