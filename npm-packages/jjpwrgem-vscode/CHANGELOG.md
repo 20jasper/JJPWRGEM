@@ -6,6 +6,9 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 ## [Unreleased]
 
+- Add `jjpwrgem.format.mode`, `jjpwrgem.format.preferredWidth` and `jjpwrgem.format.endOfLine` settings, used when formatting with the language server
+- Settings that do not apply, such as a preferred width in uglify mode, are ignored
+
 ## [0.0.6] - 2026-11-11
 
 - Update the README with current large-file performance claims

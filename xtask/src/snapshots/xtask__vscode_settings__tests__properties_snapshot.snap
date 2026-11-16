@@ -1,0 +1,41 @@
+---
+source: xtask/src/vscode_settings.rs
+expression: generated_properties()
+---
+{
+  "jjpwrgem.format.mode": {
+    "type": "string",
+    "enum": [
+      "pretty",
+      "uglify"
+    ],
+    "enumDescriptions": [
+      "Pretty print with indentation and line breaks",
+      "Remove all insignificant whitespace"
+    ],
+    "default": "pretty",
+    "markdownDescription": "Pretty print, or remove all insignificant whitespace (uglify, also known as minify).",
+    "order": 0
+  },
+  "jjpwrgem.format.preferredWidth": {
+    "type": "integer",
+    "minimum": 0,
+    "default": 80,
+    "markdownDescription": "Preferred maximum line width. Note this is not a hard maximum width. Ignored when `#jjpwrgem.format.mode#` is `uglify`.",
+    "order": 1
+  },
+  "jjpwrgem.format.endOfLine": {
+    "type": "string",
+    "enum": [
+      "lf",
+      "crlf"
+    ],
+    "enumDescriptions": [
+      "Unix line endings (LF)",
+      "Windows line endings (CRLF)"
+    ],
+    "default": "lf",
+    "markdownDescription": "Line ending to use when formatting output.",
+    "order": 2
+  }
+}

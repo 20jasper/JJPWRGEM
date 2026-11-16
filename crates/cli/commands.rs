@@ -5,7 +5,7 @@ use jjpwrgem_parse::{
         FormatSettings, INPUT_SETTINGS, InputSetting, InputSettings, Parser as ParseParser,
         rule_clause,
     },
-    settings::Setting,
+    settings::{Setting, Shorthand},
 };
 
 use crate::{
@@ -90,12 +90,16 @@ impl Settings for FormatSettings {
 #[derive(Debug, Clone)]
 struct FormatHelp;
 
+fn format_setting(setting: &Setting) -> Option<FormatSetting> {
+    FormatSetting::ALL
+        .iter()
+        .copied()
+        .find(|id| id.setting().name == setting.name)
+}
+
 impl Help for FormatHelp {
     fn help(setting: &Setting) -> String {
-        FormatSetting::ALL
-            .iter()
-            .copied()
-            .find(|id| id.setting().name == setting.name)
+        format_setting(setting)
             .map(FormatOption::Setting)
             .or_else(|| {
                 (InputSetting::Parser.setting().name == setting.name)
@@ -103,8 +107,18 @@ impl Help for FormatHelp {
             })
             .map_or_else(
                 || setting.description.to_owned(),
-                |option| with_rules(setting.description, option),
+                |option| with_rules(setting.description, &[option]),
             )
+    }
+
+    fn shorthand_help(setting: &Setting, shorthand: &Shorthand) -> String {
+        let help = format!("Shorthand for --{} {}", setting.flag(), shorthand.value);
+        let options: Vec<FormatOption> = format_setting(setting)
+            .map(FormatOption::Setting)
+            .into_iter()
+            .chain(shorthand_option(shorthand))
+            .collect();
+        with_rules(&help, &options)
     }
 }
 
@@ -132,17 +146,37 @@ pub fn parse() -> Action {
     }
 }
 
+fn shorthand_option(shorthand: &Shorthand) -> Option<FormatOption> {
+    [FormatOption::Uglify]
+        .into_iter()
+        .find(|option| option.name() == shorthand.name)
+}
+
+fn value_flag(setting: &Setting, value: &str) -> String {
+    format!("--{} {value}", setting.flag())
+}
+
 fn option_flag(option: FormatOption) -> String {
     match option {
         FormatOption::Jsonlines => "--parser jsonlines".to_owned(),
-        FormatOption::Setting(id) => format!("--{}", id.setting().flag()),
+        FormatOption::Uglify => option
+            .condition()
+            .map_or_else(String::new, |(id, value)| value_flag(id.setting(), value)),
+        FormatOption::Setting(id) => {
+            let setting = id.setting();
+            setting.shorthand.map_or_else(
+                || format!("--{}", setting.flag()),
+                |shorthand| value_flag(setting, shorthand.value),
+            )
+        }
     }
 }
 
-fn with_rules(help: &str, option: FormatOption) -> String {
-    rule_clause(option, option_flag).map_or_else(
+fn with_rules(help: &str, options: &[FormatOption]) -> String {
+    let subject = options.first().copied().map(option_flag);
+    rule_clause(options, option_flag).zip(subject).map_or_else(
         || help.to_owned(),
-        |clause| format!("{help}. {} {clause}", option_flag(option)),
+        |(clause, flag)| format!("{help}. {flag} {clause}"),
     )
 }
 

@@ -418,7 +418,7 @@ fn initialization_options_change_formatting() -> TestResult {
 
 #[test]
 fn initialization_options_can_uglify() -> TestResult {
-    let options = serde_json::json!({ "format": { "uglify": true } });
+    let options = serde_json::json!({ "format": { "mode": "uglify" } });
     let mut client = configured_client(Some(options))?;
 
     assert_eq!(formatted(&mut client)?, SETTINGS_INPUT);
@@ -440,22 +440,39 @@ fn did_change_configuration_updates_formatting() -> TestResult {
 }
 
 #[test]
-fn conflicting_settings_are_an_error_without_edits() -> TestResult {
-    let options = serde_json::json!({ "format": { "uglify": true, "preferredWidth": 40 } });
+fn mode_uglify_ignores_preferred_width() -> TestResult {
+    let options = serde_json::json!({ "format": { "mode": "uglify", "preferredWidth": 0 } });
     let mut client = configured_client(Some(options))?;
-    let uri = open(&mut client, SETTINGS_INPUT)?;
 
-    let err = client
-        .formatting(&uri, FormattingOptions::default())
-        .unwrap_err();
-    assert!(
-        matches!(
-            err.kind(),
-            ErrorKind::Response { message, .. }
-                if message == "uglify cannot be combined with preferred width"
-        ),
-        "{err:?}"
+    assert_eq!(formatted(&mut client)?, SETTINGS_INPUT);
+    Ok(())
+}
+
+#[test]
+fn mode_pretty_applies_preferred_width() -> TestResult {
+    let options = serde_json::json!({ "format": { "mode": "pretty", "preferredWidth": 0 } });
+    let mut client = configured_client(Some(options))?;
+
+    assert_eq!(
+        formatted(&mut client)?,
+        "{\n  \"a\": [\n    1,\n    2\n  ]\n}"
     );
+    Ok(())
+}
+
+#[test]
+fn invalid_mode_warns_and_falls_back_to_defaults() -> TestResult {
+    let options = serde_json::json!({ "format": { "mode": "fancy" } });
+    let mut client = configured_client(Some(options))?;
+
+    let warning = client.wait_for_notification::<ShowMessageNotification>()?;
+    assert_eq!(warning.kind, MessageType::Warning);
+    assert!(
+        warning.message.contains("unknown variant `fancy`"),
+        "{}",
+        warning.message
+    );
+    assert_eq!(formatted(&mut client)?, "{ \"a\": [1, 2] }");
     Ok(())
 }
 

@@ -6,11 +6,7 @@ use jjpwrgem_parse::{
     format::{FormatConfig, FormatRequest, FormatSettings, InputSettings, format_document},
 };
 use serde_json::Value;
-use tower_lsp_server::{
-    Client, LanguageServer,
-    jsonrpc::{Error, Result},
-    ls_types::*,
-};
+use tower_lsp_server::{Client, LanguageServer, jsonrpc::Result, ls_types::*};
 
 use crate::{
     backend::{
@@ -257,10 +253,8 @@ impl LanguageServer for Backend {
                 .unwrap_or_else(PoisonError::into_inner)
                 .clone(),
         };
-        let mode = match FormatRequest::try_from(config) {
-            Ok(FormatRequest::Json(mode)) => mode,
-            Ok(FormatRequest::Jsonlines(_)) => return Ok(None),
-            Err(error) => return Err(Error::invalid_params(error.to_string())),
+        let FormatRequest::Json(mode) = FormatRequest::from_lenient(config) else {
+            return Ok(None);
         };
         Ok(self.with_document(&params.text_document.uri, |document| {
             vec![TextEdit {

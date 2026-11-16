@@ -66,19 +66,26 @@
           "scope": "machine",
           "markdownDescription": "Path to the `jjp` executable used to run the language server. Defaults to `jjp` on your `PATH`. Reload the window after changing."
         },
-        "jjpwrgem.format.uglify": {
-          "type": "boolean",
-          "default": false,
-          "description": "Removes all insignificant whitespace instead of pretty printing, also known as minifying"
+        "jjpwrgem.format.mode": {
+          "type": "string",
+          "enum": [
+            "pretty",
+            "uglify"
+          ],
+          "enumDescriptions": [
+            "Pretty print with indentation and line breaks",
+            "Remove all insignificant whitespace"
+          ],
+          "default": "pretty",
+          "markdownDescription": "Pretty print, or remove all insignificant whitespace (uglify, also known as minify).",
+          "order": 0
         },
         "jjpwrgem.format.preferredWidth": {
-          "type": [
-            "integer",
-            "null"
-          ],
+          "type": "integer",
           "minimum": 0,
-          "default": null,
-          "description": "Preferred maximum line width. Note this is not a hard maximum width. Defaults to 80 when unset"
+          "default": 80,
+          "markdownDescription": "Preferred maximum line width. Note this is not a hard maximum width. Ignored when `#jjpwrgem.format.mode#` is `uglify`.",
+          "order": 1
         },
         "jjpwrgem.format.endOfLine": {
           "type": "string",
@@ -86,8 +93,13 @@
             "lf",
             "crlf"
           ],
+          "enumDescriptions": [
+            "Unix line endings (LF)",
+            "Windows line endings (CRLF)"
+          ],
           "default": "lf",
-          "description": "Line ending to use when formatting output"
+          "markdownDescription": "Line ending to use when formatting output.",
+          "order": 2
         }
       }
     }
