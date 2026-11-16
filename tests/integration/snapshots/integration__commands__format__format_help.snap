@@ -26,7 +26,9 @@ Options:
           Shorthand for --mode uglify. --mode uglify cannot be combined with --parser jsonlines or --preferred-width
 
       --preferred-width <PREFERRED_WIDTH>
-          Preferred maximum line width. Note this is not a hard maximum width. --preferred-width cannot be combined with --parser jsonlines or --mode uglify [default: 80]
+          Preferred maximum line width. Note this is not a hard maximum width. --preferred-width cannot be combined with --parser jsonlines or --mode uglify
+          
+          [default: 80]
 
       --end-of-line <END_OF_LINE>
           Line ending to use when formatting output
