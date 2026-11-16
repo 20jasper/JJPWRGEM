@@ -47,6 +47,31 @@ pub struct FormatConfig {
     pub settings: FormatSettings,
 }
 
+impl FormatConfig {
+    fn json_mode(&self) -> JsonMode {
+        match self.settings.mode {
+            FormatMode::Uglify => JsonMode::Uglify,
+            FormatMode::Pretty => JsonMode::Prettify(
+                PrettifyOptions::builder()
+                    .maybe_preferred_width(self.settings.preferred_width)
+                    .line_ending(self.settings.end_of_line)
+                    .build(),
+            ),
+        }
+    }
+}
+
+impl JsonMode {
+    pub fn from_settings(settings: &FormatSettings) -> Self {
+        FormatConfig {
+            input: InputSettings::default(),
+            settings: settings.clone(),
+        }
+        .drop_ignored()
+        .json_mode()
+    }
+}
+
 impl TryFrom<FormatConfig> for FormatRequest {
     type Error = ConfigError;
 
@@ -58,15 +83,7 @@ impl TryFrom<FormatConfig> for FormatRequest {
         {
             return Err(ConfigError(rule));
         }
-        let mode = match config.settings.mode {
-            FormatMode::Uglify => JsonMode::Uglify,
-            FormatMode::Pretty => JsonMode::Prettify(
-                PrettifyOptions::builder()
-                    .maybe_preferred_width(config.settings.preferred_width)
-                    .line_ending(config.settings.end_of_line)
-                    .build(),
-            ),
-        };
+        let mode = config.json_mode();
         Ok(match config.input.parser {
             Parser::Json => FormatRequest::Json(mode),
             Parser::Jsonlines => FormatRequest::Jsonlines(

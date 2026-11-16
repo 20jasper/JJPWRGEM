@@ -64,6 +64,14 @@ impl FormatOption {
         }
     }
 
+    fn format_setting(self) -> Option<FormatSetting> {
+        match self {
+            Self::Setting(id) => Some(id),
+            Self::Mode(_) => Some(FormatSetting::Mode),
+            Self::Parser(_) => None,
+        }
+    }
+
     pub fn for_setting(row: &Setting) -> Vec<Self> {
         FORMAT_RULES
             .iter()
@@ -128,6 +136,19 @@ pub fn rule_clause(
         .map(name)
         .collect();
     (!others.is_empty()).then(|| cannot_be_combined_with(&join(&others)))
+}
+
+impl FormatConfig {
+    pub(super) fn drop_ignored(self) -> Self {
+        FORMAT_RULES.iter().fold(self, |mut config, rule| {
+            if rule.ignored_when.is_active(&config)
+                && let Some(id) = rule.option.format_setting()
+            {
+                config.settings.reset(id);
+            }
+            config
+        })
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

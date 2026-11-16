@@ -70,6 +70,12 @@ macro_rules! settings {
                 }
             }
 
+            pub fn reset(&mut self, id: $id_name) {
+                match id {
+                    $($id_name::$variant => self.$field_name = <$field_type as Default>::default(),)*
+                }
+            }
+
             pub fn value_text(&self, id: $id_name) -> String {
                 match id {
                     $($id_name::$variant => $crate::settings::SettingValue::text(
