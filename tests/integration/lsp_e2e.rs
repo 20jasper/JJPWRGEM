@@ -1,6 +1,7 @@
 use std::{error::Error, process::Command, time::Duration};
 
 use insta::assert_snapshot;
+use jjpwrgem_parse::{format::FORMAT_SETTINGS, settings::SettingKind};
 use lspresso::{Client, ErrorKind, Initialize, capabilities, gen_lsp_types::*};
 
 const TIMEOUT: Duration = Duration::from_secs(5);
@@ -488,5 +489,26 @@ fn invalid_settings_warn_and_fall_back_to_defaults() -> TestResult {
         warning.message
     );
     assert_eq!(formatted(&mut client)?, "{ \"a\": [1, 2] }");
+    Ok(())
+}
+
+#[test]
+fn table_defaults_as_client_settings_match_no_settings() -> TestResult {
+    let defaults: serde_json::Map<_, _> = FORMAT_SETTINGS
+        .iter()
+        .map(|setting| {
+            let value = match setting.kind {
+                SettingKind::Integer { default } => default.into(),
+                SettingKind::Choice { default, .. } => default.into(),
+            };
+            (setting.key(), value)
+        })
+        .collect();
+    let options = serde_json::json!({ "format": defaults });
+
+    assert_eq!(
+        formatted(&mut configured_client(Some(options))?)?,
+        formatted(&mut configured_client(None)?)?
+    );
     Ok(())
 }
