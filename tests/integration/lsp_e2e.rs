@@ -1,7 +1,7 @@
 use std::{error::Error, process::Command, time::Duration};
 
 use insta::assert_snapshot;
-use lspresso::{Client, ErrorKind, capabilities, gen_lsp_types::*};
+use lspresso::{Client, ErrorKind, Initialize, capabilities, gen_lsp_types::*};
 
 const TIMEOUT: Duration = Duration::from_secs(5);
 type TestResult<T = ()> = Result<T, Box<dyn Error>>;
@@ -384,10 +384,10 @@ fn configured_client(options: Option<serde_json::Value>) -> TestResult<Client> {
     let mut command = Command::new(env!("CARGO_BIN_EXE_jjp"));
     command.arg("lsp");
     let mut client = Client::spawn(command)?.with_timeout(TIMEOUT);
-    if let Some(options) = options {
-        client = client.with_initialization_options(options);
-    }
-    client.initialize(capabilities::vscode::latest())?;
+    client.initialize(Initialize {
+        capabilities: capabilities::vscode::latest(),
+        options,
+    })?;
     Ok(client)
 }
 
