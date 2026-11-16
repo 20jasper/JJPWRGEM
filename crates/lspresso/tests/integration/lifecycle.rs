@@ -20,6 +20,24 @@ fn initialize_and_shutdown_round_trip() {
 }
 
 #[test]
+fn initialization_options_are_sent_with_the_initialize_request() {
+    let recording = Recording::new();
+    let options = json!({ "format": { "indent": 2 } });
+    let mut client = ScriptedServer::new()
+        .steps([step::respond()])
+        .recording_to(&recording)
+        .spawn()
+        .with_initialization_options(options.clone());
+
+    client.initialize(ClientCapabilities::default()).unwrap();
+
+    let [params] = &recording.requests::<InitializeRequest>()[..] else {
+        panic!("expected one initialize request");
+    };
+    assert_eq!(params.initialization_options, Some(options));
+}
+
+#[test]
 fn exits_immediately_is_reported_as_disconnected() {
     let mut client = ScriptedServer::new().steps([step::exit()]).spawn();
 
