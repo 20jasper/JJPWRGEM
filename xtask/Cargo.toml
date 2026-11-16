@@ -23,6 +23,6 @@ itertools = "0.15"
 
 [dev-dependencies]
 cargo_metadata = { version = "=0.23.1", features = ["builder"] }
-insta = { version = "=1.49.0", features = ["json"] }
+insta = { workspace = true, features = ["json"] }
 
 [lints]
