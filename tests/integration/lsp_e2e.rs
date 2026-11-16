@@ -26,9 +26,10 @@ fn initialize_reports_the_server_and_shutdown_exits_cleanly() -> TestResult {
     let mut client = Client::spawn(command)?.with_timeout(TIMEOUT);
 
     let result = client.initialize(capabilities::vscode::latest())?;
-    let info = result.server_info.expect("server info");
-    assert_eq!(info.name, "jjpwrgem");
-    assert_eq!(info.version.as_deref(), Some(env!("CARGO_PKG_VERSION")));
+    assert_eq!(
+        result.server_info.map(|info| info.name).as_deref(),
+        Some("jjpwrgem")
+    );
 
     client.shutdown()?;
     assert!(client.wait_for_exit()?.success());

@@ -23,7 +23,6 @@ const SOURCE: &str = "jjpwrgem";
 #[derive(Debug)]
 pub struct Backend {
     client: Client,
-    server_version: &'static str,
     documents: DashMap<Uri, jjpwrgem_parse::Result<Document<String>>>,
     position_encoding: OnceLock<PositionEncoding>,
     client_pulls_diagnostics: OnceLock<bool>,
@@ -67,10 +66,9 @@ fn apply_change(
 }
 
 impl Backend {
-    pub fn new(client: Client, server_version: &'static str) -> Self {
+    pub fn new(client: Client) -> Self {
         Self {
             client,
-            server_version,
             documents: DashMap::new(),
             position_encoding: OnceLock::new(),
             client_pulls_diagnostics: OnceLock::new(),
@@ -154,7 +152,7 @@ impl LanguageServer for Backend {
             offset_encoding: None,
             server_info: Some(ServerInfo {
                 name: SOURCE.into(),
-                version: Some(self.server_version.into()),
+                version: Some(env!("CARGO_PKG_VERSION").into()),
             }),
             capabilities: ServerCapabilities {
                 position_encoding,

@@ -32,7 +32,7 @@ fn main() -> ExitCode {
 
     match commands::parse() {
         Action::Lsp => {
-            lsp::run_blocking(env!("CARGO_PKG_VERSION"));
+            lsp::run_blocking();
             ExitCode::SUCCESS
         }
         Action::Check(Parser::Jsonlines) => run_on_stdin(style, check_jsonlines),

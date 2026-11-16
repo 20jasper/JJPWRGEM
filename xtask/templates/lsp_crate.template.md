@@ -20,7 +20,6 @@ For example, here's a Helix configuration
 command = "jjp"
 args = ["lsp"]
 
-{{HELIX_FORMAT_CONFIG}}
 [[language]]
 name = "json"
 language-servers = ["jjp"]
