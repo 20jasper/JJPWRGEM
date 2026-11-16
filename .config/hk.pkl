@@ -84,6 +84,10 @@ local sync_mise = new Mapping<String, Step> {
   }
 }
 
+env {
+  ["MISE_LOCKED"] = "1"
+}
+
 hooks {
   ["pre-commit"] {
     fix = true
