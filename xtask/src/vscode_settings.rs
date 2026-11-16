@@ -15,7 +15,7 @@ const PACKAGE_JSON: &str = concat!(
 const SETTINGS_PREFIX: &str = "jjpwrgem.format.";
 const PROPERTIES_POINTER: &str = "/contributes/configuration/properties";
 
-pub fn ignored_conditions(row: &Setting) -> Vec<(String, &'static str)> {
+pub fn ignored_conditions(row: &Setting) -> impl Iterator<Item = (String, &'static str)> {
     FORMAT_RULES
         .iter()
         .filter(|rule| rule.option.setting().name == row.name)
@@ -26,13 +26,12 @@ pub fn ignored_conditions(row: &Setting) -> Vec<(String, &'static str)> {
                 rule.ignored_when.value()?,
             ))
         })
-        .collect()
 }
 
 fn markdown_description(setting: &Setting) -> String {
     std::iter::once(format!("{}.", setting.description))
         .chain(
-            ignored_conditions(setting).into_iter().map(|(key, value)| {
+            ignored_conditions(setting).map(|(key, value)| {
                 format!("Ignored when `#{SETTINGS_PREFIX}{key}#` is `{value}`.")
             }),
         )

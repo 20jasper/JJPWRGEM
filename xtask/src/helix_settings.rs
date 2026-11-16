@@ -25,7 +25,6 @@ fn comments(setting: &Setting) -> Vec<String> {
         .chain(choices)
         .chain(
             ignored_conditions(setting)
-                .into_iter()
                 .map(|(key, value)| format!("Ignored when {key} is \"{value}\"")),
         )
         .collect()
