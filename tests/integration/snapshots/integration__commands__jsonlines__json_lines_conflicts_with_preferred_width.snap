@@ -3,15 +3,15 @@ source: tests/integration/commands/jsonlines.rs
 expression: output.snapshot_display()
 ---
 args: ["format", "--parser", "jsonlines", "--preferred-width", "100"]
-status: 1
+status: 2
 success: false
 stdin ---
 {}
 stdout ---
 
 stderr ---
-error: the argument '--parser jsonlines' cannot be used with '--preferred-width'
+error: --preferred-width cannot be combined with --parser jsonlines
 
-Usage: jjp format --parser jsonlines
+Usage: jjp format [OPTIONS]
 
 For more information, try '--help'.

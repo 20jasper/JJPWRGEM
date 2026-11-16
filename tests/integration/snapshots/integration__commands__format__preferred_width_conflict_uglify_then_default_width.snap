@@ -1,0 +1,17 @@
+---
+source: tests/integration/commands/format.rs
+expression: output.snapshot_display()
+---
+args: ["format", "--uglify", "--preferred-width", "80"]
+status: 2
+success: false
+stdin ---
+<no stdin passed>
+stdout ---
+
+stderr ---
+error: --preferred-width cannot be combined with --mode uglify
+
+Usage: jjp format [OPTIONS]
+
+For more information, try '--help'.

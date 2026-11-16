@@ -5,8 +5,10 @@ mod bench_table;
 mod lsp_bench_report;
 mod npm;
 mod plot;
+mod settings_docs;
 mod spec_badges;
 mod template;
+mod vscode_settings;
 
 #[derive(Parser)]
 #[command(author, version, about)]
@@ -21,6 +23,10 @@ enum Commands {
     GenerateReadmes,
     /// Verify generated READMEs match what's committed
     VerifyReadmes,
+    /// Write the format settings into the VS Code extension package.json
+    GenerateVscodeSettings,
+    /// Verify the VS Code extension package.json has up to date format settings
+    VerifyVscodeSettings,
     /// Generate candlestick charts for all benchmark datasets
     PlotBenchmarks,
     /// Generate npm package.json
@@ -42,6 +48,8 @@ fn main() -> anyhow::Result<()> {
             Ok(())
         }
         Commands::VerifyReadmes => template::are_readmes_updated(),
+        Commands::GenerateVscodeSettings => vscode_settings::write_vscode_settings(),
+        Commands::VerifyVscodeSettings => vscode_settings::are_vscode_settings_updated(),
         Commands::PlotBenchmarks => plot::plot_all_benchmarks(),
         Commands::GenerateNpmPackage => npm::write_package_json(),
         Commands::BenchTable => bench_table::write_bench_table(),

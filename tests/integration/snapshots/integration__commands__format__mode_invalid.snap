@@ -1,0 +1,16 @@
+---
+source: tests/integration/commands/format.rs
+expression: output.snapshot_display()
+---
+args: ["format", "--mode", "fancy"]
+status: 2
+success: false
+stdin ---
+<no stdin passed>
+stdout ---
+
+stderr ---
+error: invalid value 'fancy' for '--mode <MODE>'
+  [possible values: pretty, uglify]
+
+For more information, try '--help'.

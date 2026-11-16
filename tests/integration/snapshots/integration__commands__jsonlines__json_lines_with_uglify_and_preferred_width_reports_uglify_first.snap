@@ -1,0 +1,17 @@
+---
+source: tests/integration/commands/jsonlines.rs
+expression: output.snapshot_display()
+---
+args: ["format", "--uglify", "--preferred-width", "24", "--parser", "jsonlines"]
+status: 2
+success: false
+stdin ---
+{}
+stdout ---
+
+stderr ---
+error: --mode uglify cannot be combined with --parser jsonlines
+
+Usage: jjp format [OPTIONS]
+
+For more information, try '--help'.

@@ -1,7 +1,9 @@
 use std::{error::Error, process::Command, time::Duration};
 
 use insta::assert_snapshot;
-use lspresso::{Client, ErrorKind, capabilities, gen_lsp_types::*};
+use jjpwrgem_parse::{format::FORMAT_SETTINGS, settings::SettingKind};
+use lspresso::{Client, ErrorKind, Initialize, capabilities, gen_lsp_types::*};
+use rstest::rstest;
 
 const TIMEOUT: Duration = Duration::from_secs(5);
 type TestResult<T = ()> = Result<T, Box<dyn Error>>;
@@ -464,6 +466,107 @@ fn selection_ranges_are_none_for_invalid_json() -> TestResult {
     assert_eq!(
         client.selection_range(&uri, vec![Position::new(0, 1)])?,
         None
+    );
+    Ok(())
+}
+
+const SETTINGS_INPUT: &str = r#"{"a":[1,2]}"#;
+
+fn configured_client(options: Option<serde_json::Value>) -> TestResult<Client> {
+    let mut command = Command::new(env!("CARGO_BIN_EXE_jjp"));
+    command.arg("lsp");
+    let mut client = Client::spawn(command)?.with_timeout(TIMEOUT);
+    client.initialize(Initialize {
+        capabilities: capabilities::vscode::latest(),
+        options,
+    })?;
+    Ok(client)
+}
+
+fn formatted(client: &mut Client) -> TestResult<String> {
+    let uri = open(client, SETTINGS_INPUT)?;
+    let edits = client
+        .formatting(&uri, FormattingOptions::default())?
+        .expect("expected formatting edits");
+    client.did_close(&uri)?;
+    let [TextEdit { new_text, .. }] = edits.as_slice() else {
+        panic!("expected one formatting edit: {edits:?}");
+    };
+    Ok(new_text.clone())
+}
+
+const DEFAULT_OUTPUT: &str = "{ \"a\": [1, 2] }";
+const WIDTH_ZERO_LF: &str = "{\n  \"a\": [\n    1,\n    2\n  ]\n}";
+const WIDTH_ZERO_CRLF: &str = "{\r\n  \"a\": [\r\n    1,\r\n    2\r\n  ]\r\n}";
+
+fn format_options(format: serde_json::Value) -> serde_json::Value {
+    serde_json::Value::Object([("format".to_owned(), format)].into_iter().collect())
+}
+
+fn format_with(format: serde_json::Value) -> TestResult<String> {
+    formatted(&mut configured_client(Some(format_options(format)))?)
+}
+
+fn assert_warns_and_uses_defaults(format: serde_json::Value, fragment: &str) -> TestResult {
+    let mut client = configured_client(Some(format_options(format)))?;
+
+    let warning = client.wait_for_notification::<ShowMessageNotification>()?;
+    assert_eq!(warning.kind, MessageType::Warning);
+    assert!(warning.message.contains(fragment), "{}", warning.message);
+    assert_eq!(formatted(&mut client)?, DEFAULT_OUTPUT);
+    Ok(())
+}
+
+#[rstest]
+#[case::width_and_crlf(serde_json::json!({ "preferredWidth": 0, "endOfLine": "crlf" }), WIDTH_ZERO_CRLF)]
+#[case::uglify(serde_json::json!({ "mode": "uglify" }), SETTINGS_INPUT)]
+#[case::uglify_ignores_width(serde_json::json!({ "mode": "uglify", "preferredWidth": 0 }), SETTINGS_INPUT)]
+#[case::pretty_applies_width(serde_json::json!({ "mode": "pretty", "preferredWidth": 0 }), WIDTH_ZERO_LF)]
+fn initialization_options_change_formatting(
+    #[case] format: serde_json::Value,
+    #[case] expected: &str,
+) -> TestResult {
+    assert_eq!(format_with(format)?, expected);
+    Ok(())
+}
+
+#[test]
+fn did_change_configuration_updates_formatting() -> TestResult {
+    let mut client = configured_client(None)?;
+    assert_eq!(formatted(&mut client)?, DEFAULT_OUTPUT);
+
+    let settings = serde_json::json!({ "jjpwrgem": { "format": { "preferredWidth": 0 } } });
+    client.workspace_did_change_configuration(settings)?;
+    assert_eq!(formatted(&mut client)?, WIDTH_ZERO_LF);
+    Ok(())
+}
+
+#[rstest]
+#[case::invalid_mode(serde_json::json!({ "mode": "fancy" }), "unknown variant `fancy`")]
+#[case::invalid_end_of_line(serde_json::json!({ "endOfLine": "cr" }), "unknown variant `cr`")]
+fn invalid_settings_warn_and_fall_back_to_defaults(
+    #[case] format: serde_json::Value,
+    #[case] fragment: &str,
+) -> TestResult {
+    assert_warns_and_uses_defaults(format, fragment)
+}
+
+#[test]
+fn table_defaults_as_client_settings_match_no_settings() -> TestResult {
+    let defaults: serde_json::Map<_, _> = FORMAT_SETTINGS
+        .iter()
+        .map(|setting| {
+            let value = match setting.kind {
+                SettingKind::Integer { default } => default.into(),
+                SettingKind::Choice { default, .. } => default.into(),
+            };
+            (setting.key(), value)
+        })
+        .collect();
+
+    assert_eq!(
+        format_with(defaults.into())?,
+        formatted(&mut configured_client(None)?)?
     );
     Ok(())
 }

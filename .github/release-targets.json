@@ -23,5 +23,10 @@
     "target": "x86_64-pc-windows-msvc",
     "runner": "windows-2022",
     "archive": "jjpwrgem-x86_64-pc-windows-msvc.zip"
+  },
+  {
+    "target": "aarch64-pc-windows-msvc",
+    "runner": "windows-11-arm",
+    "archive": "jjpwrgem-aarch64-pc-windows-msvc.zip"
   }
 ]
