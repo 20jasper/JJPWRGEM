@@ -1,15 +1,16 @@
 mod config;
 mod prettify;
+mod rules;
 #[cfg(feature = "serde")]
 pub mod serde;
 pub(crate) mod uglify;
 
 pub use config::{
-    ConfigError, FORMAT_RULES, FORMAT_SETTINGS, FormatConfig, FormatMode, FormatOption,
-    FormatSetting, FormatSettings, INPUT_SETTINGS, InputSetting, InputSettings, Parser, Rule,
-    rule_clause,
+    FORMAT_SETTINGS, FormatConfig, FormatMode, FormatSetting, FormatSettings, INPUT_SETTINGS,
+    InputSetting, InputSettings, Parser,
 };
 pub use prettify::{prettify_document, prettify_document_into, prettify_str};
+pub use rules::{ConfigError, FORMAT_RULES, FormatOption, Rule, rule_clause};
 pub use uglify::{uglify_document, uglify_document_into, uglify_str, uglify_str_into};
 
 use crate::{ast::Document, settings::choice_enum};
