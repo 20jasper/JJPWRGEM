@@ -324,7 +324,7 @@ fn render_template(
         .replace("{{LSP_DEMO_ALT}}", LSP_DEMO_ALT)
         .replace("{{LSP_DEMO_URL}}", LSP_DEMO_URL)
         .replace("{{LSP_FEATURES}}", LSP_FEATURES.trim())
-        .replace("{{HELIX_FORMAT_CONFIG}}", &helix_format_config())
+        .replace("{{HELIX_FORMAT_CONFIG}}", helix_format_config().trim_end())
         .replace("{{BENCH_SUMMARY}}", BENCH_SUMMARY)
         .replace("{{BENCH_INPUTS}}", BENCH_INPUTS)
         .replace("{{BENCH_HARDWARE}}", BENCH_HARDWARE)

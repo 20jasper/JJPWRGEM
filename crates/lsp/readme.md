@@ -22,18 +22,7 @@ Scales well for large files. There is no perceivable delay when editing a 68k li
 
 ### Generic LSP Client
 
-For example, here's a Helix configuration
-
-```toml
-# languages.toml
-[language-server.jjp]
-command = "jjp"
-args = ["lsp"]
-
-[[language]]
-name = "json"
-language-servers = ["jjp"]
-```
+Run `jjp lsp` as the language server for JSON files. See the [Helix](#helix) section for a full example configuration.
 
 ## Settings
 
@@ -61,10 +50,12 @@ Line ending to use when formatting output
 
 ### Helix
 
-Pass settings under the language server's `config.format` table. These are the defaults
-
 ```toml
 # languages.toml
+[language-server.jjp]
+command = "jjp"
+args = ["lsp"]
+
 [language-server.jjp.config.format]
 # Pretty print, or remove all insignificant whitespace (uglify, also known as minify)
 #   "pretty": Pretty print with indentation and line breaks
@@ -79,4 +70,8 @@ Pass settings under the language server's `config.format` table. These are the d
 #   "lf": Unix line endings (LF)
 #   "crlf": Windows line endings (CRLF)
 # endOfLine = "lf"
+
+[[language]]
+name = "json"
+language-servers = ["jjp"]
 ```
