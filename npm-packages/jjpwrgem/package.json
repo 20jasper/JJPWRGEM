@@ -80,15 +80,15 @@
       },
       "zipExt": ".zip"
     },
-    "aarch64-pc-windows-msvc": {
+    "x86_64-pc-windows-msvc": {
       "artifactName": "jjpwrgem-x86_64-pc-windows-msvc.zip",
       "bins": {
         "jjp": "jjp.exe"
       },
       "zipExt": ".zip"
     },
-    "x86_64-pc-windows-msvc": {
-      "artifactName": "jjpwrgem-x86_64-pc-windows-msvc.zip",
+    "aarch64-pc-windows-msvc": {
+      "artifactName": "jjpwrgem-aarch64-pc-windows-msvc.zip",
       "bins": {
         "jjp": "jjp.exe"
       },

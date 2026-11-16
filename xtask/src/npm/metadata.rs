@@ -20,11 +20,10 @@ impl PackageMetadata {
     }
 }
 
-pub const AARCH64_PC_WINDOWS_MSVC: &str = "aarch64-pc-windows-msvc";
 pub const X86_64_PC_WINDOWS_GNU: &str = "x86_64-pc-windows-gnu";
 pub const X86_64_PC_WINDOWS_MSVC: &str = "x86_64-pc-windows-msvc";
 
-pub const MSVC_ALIAS_FOR_X86_64: [&str; 2] = [X86_64_PC_WINDOWS_GNU, AARCH64_PC_WINDOWS_MSVC];
+pub const MSVC_ALIAS_FOR_X86_64: [&str; 1] = [X86_64_PC_WINDOWS_GNU];
 
 #[derive(Debug, Clone)]
 pub struct PlatformConfig {
