@@ -59,7 +59,7 @@ pub enum Commands {
 #[derive(Args, Debug)]
 pub struct FormatArgs {
     #[arg(value_enum, long, default_value_t, help = with_rules(
-        "Pretty print, or remove all insignificant whitespace (uglify, also known as minify)",
+        "Output style",
         &FormatOption::for_setting(FormatSetting::Mode.name()),
     ))]
     mode: ModeArg,
@@ -139,8 +139,10 @@ pub fn parse() -> Action {
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq, ValueEnum)]
 pub enum ModeArg {
     #[default]
+    /// Pretty print with indentation and line breaks
     #[value(name = "pretty")]
     Pretty,
+    /// Remove all insignificant whitespace, also known as minifying
     #[value(name = "uglify")]
     Uglify,
 }
@@ -157,8 +159,10 @@ impl From<ModeArg> for FormatMode {
 #[derive(Clone, Copy, Debug, Eq, PartialEq, ValueEnum, Default)]
 pub enum LineEndingArg {
     #[default]
+    /// Unix line endings (LF)
     #[value(name = "lf")]
     Lf,
+    /// Windows line endings (CRLF)
     #[value(name = "crlf")]
     CrLf,
 }
@@ -166,8 +170,10 @@ pub enum LineEndingArg {
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq, ValueEnum)]
 pub enum ParserArg {
     #[default]
+    /// A single json document
     #[value(name = "json")]
     Json,
+    /// One json document per line
     #[value(name = "jsonlines")]
     Jsonlines,
 }
