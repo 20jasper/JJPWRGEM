@@ -1,7 +1,7 @@
 use std::{process::Command, time::Duration};
 
 use gen_lsp_types::*;
-use lspresso::{Client, ErrorKind, Protocol};
+use lspresso::{Client, ErrorKind, Initialize, Protocol};
 use serde_json::json;
 
 use crate::common::*;
@@ -26,10 +26,14 @@ fn initialization_options_are_sent_with_the_initialize_request() {
     let mut client = ScriptedServer::new()
         .steps([step::respond()])
         .recording_to(&recording)
-        .spawn()
-        .with_initialization_options(options.clone());
+        .spawn();
 
-    client.initialize(ClientCapabilities::default()).unwrap();
+    client
+        .initialize(Initialize {
+            capabilities: ClientCapabilities::default(),
+            options: Some(options.clone()),
+        })
+        .unwrap();
 
     let [params] = &recording.requests::<InitializeRequest>()[..] else {
         panic!("expected one initialize request");

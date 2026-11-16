@@ -2,4 +2,4 @@
 cargo/lspresso: patch (Added)
 ---
 
-add `Client::with_initialization_options`
+`Client::initialize` and `Client::spawn_initialized` take `impl Into<Initialize>`, allowing options to be passed backwards compatibly
