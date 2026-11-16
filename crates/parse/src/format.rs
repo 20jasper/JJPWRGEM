@@ -1,17 +1,19 @@
 mod config;
 mod prettify;
+mod rules;
 #[cfg(feature = "serde")]
 pub mod serde;
 pub(crate) mod uglify;
 
 pub use config::{
-    ConfigError, FORMAT_RULES, FormatConfig, FormatMode, FormatOption, FormatSetting,
-    FormatSettings, InputSettings, Parser, Rule, rule_clause,
+    FORMAT_SETTINGS, FormatConfig, FormatMode, FormatSetting, FormatSettings, INPUT_SETTINGS,
+    InputSetting, InputSettings, Parser,
 };
 pub use prettify::{prettify_document, prettify_document_into, prettify_str};
+pub use rules::{ConfigError, FORMAT_RULES, FormatOption, Rule, rule_clause};
 pub use uglify::{uglify_document, uglify_document_into, uglify_str, uglify_str_into};
 
-use crate::ast::Document;
+use crate::{ast::Document, settings::choice_enum};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum FormatRequest {
@@ -84,11 +86,13 @@ pub(crate) fn join_into<T, B>(
     }
 }
 
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
-pub enum LineEnding {
-    #[default]
-    Lf,
-    CrLf,
+choice_enum! {
+    pub enum LineEnding default Lf {
+        /// Unix line endings (LF)
+        Lf = "lf",
+        /// Windows line endings (CRLF)
+        CrLf = "crlf",
+    }
 }
 
 impl LineEnding {

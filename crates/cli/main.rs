@@ -10,6 +10,7 @@
 mod commands;
 mod error;
 mod output;
+mod setting_args;
 
 use std::{
     io::{IsTerminal, Read, Write},
