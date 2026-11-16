@@ -15,18 +15,23 @@ fn value(setting: &Setting) -> String {
 
 fn comments(setting: &Setting) -> Vec<String> {
     let choices = match setting.kind {
-        SettingKind::Choice { values, .. } => Some(format!(
-            "One of {}",
-            values.iter().map(|value| format!("\"{value}\"")).join(", ")
-        )),
-        SettingKind::Integer { .. } => None,
+        SettingKind::Choice {
+            values,
+            descriptions,
+            ..
+        } => values
+            .iter()
+            .zip(descriptions)
+            .map(|(value, description)| format!("  \"{value}\": {description}"))
+            .collect(),
+        SettingKind::Integer { .. } => Vec::new(),
     };
     std::iter::once(setting.description.to_owned())
-        .chain(choices)
         .chain(
             ignored_conditions(setting)
                 .map(|(key, value)| format!("Ignored when {key} is \"{value}\"")),
         )
+        .chain(choices)
         .collect()
 }
 
@@ -38,9 +43,9 @@ pub fn helix_format_config() -> String {
             comments(setting)
                 .into_iter()
                 .map(|line| format!("# {line}\n"))
-                .chain([format!("{} = {}\n", setting.key(), value(setting))])
+                .chain([format!("# {} = {}\n", setting.key(), value(setting))])
                 .collect::<String>()
         })
-        .join("");
+        .join("\n");
     format!("[language-server.jjp.config.format]\n{settings}")
 }

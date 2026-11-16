@@ -32,14 +32,18 @@ args = ["lsp"]
 
 [language-server.jjp.config.format]
 # Pretty print, or remove all insignificant whitespace (uglify, also known as minify)
-# One of "pretty", "uglify"
-mode = "pretty"
+#   "pretty": Pretty print with indentation and line breaks
+#   "uglify": Remove all insignificant whitespace
+# mode = "pretty"
+
 # Preferred maximum line width. Note this is not a hard maximum width
 # Ignored when mode is "uglify"
-preferredWidth = 80
+# preferredWidth = 80
+
 # Line ending to use when formatting output
-# One of "lf", "crlf"
-endOfLine = "lf"
+#   "lf": Unix line endings (LF)
+#   "crlf": Windows line endings (CRLF)
+# endOfLine = "lf"
 
 [[language]]
 name = "json"
