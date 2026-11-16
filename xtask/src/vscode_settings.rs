@@ -1,9 +1,9 @@
 use std::fs;
 
-use anyhow::{Context, Result, bail};
+use anyhow::{Context, Result, anyhow, bail};
 use itertools::Itertools;
 use jjpwrgem_parse::{
-    format::{FormatOption, FormatSetting},
+    format::{DEFAULT_PREFERRED_WIDTH, FormatOption, FormatSetting, LineEnding, prettify_str},
     settings::{Setting, SettingKind},
 };
 use serde_json::{Map, Value, json};
@@ -78,7 +78,10 @@ fn render(package_json: &str) -> Result<String> {
         .filter(|(key, _)| !key.starts_with(SETTINGS_PREFIX))
         .collect();
     *properties = kept.into_iter().chain(generated_properties()).collect();
-    Ok(serde_json::to_string_pretty(&package)? + "\n")
+    let compact = serde_json::to_string(&package)?;
+    let pretty = prettify_str(&compact, DEFAULT_PREFERRED_WIDTH, LineEnding::default())
+        .map_err(|error| anyhow!("{error}"))?;
+    Ok(pretty + "\n")
 }
 
 pub fn write_vscode_settings() -> Result<()> {
