@@ -47,6 +47,21 @@ macro_rules! assert_server_to_client {
     };
 }
 
+#[derive(Debug, Clone, Default)]
+pub struct Initialize {
+    pub capabilities: ClientCapabilities,
+    pub options: Option<LspAny>,
+}
+
+impl From<ClientCapabilities> for Initialize {
+    fn from(capabilities: ClientCapabilities) -> Self {
+        Self {
+            capabilities,
+            options: None,
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct Client {
     transport: Transport,
@@ -73,9 +88,9 @@ impl Client {
         })
     }
 
-    pub fn spawn_initialized(command: Command, capabilities: ClientCapabilities) -> Result<Self> {
+    pub fn spawn_initialized(command: Command, init: impl Into<Initialize>) -> Result<Self> {
         let mut client = Self::spawn(command)?;
-        client.initialize(capabilities)?;
+        client.initialize(init)?;
         Ok(client)
     }
 
@@ -101,9 +116,11 @@ impl Client {
         self
     }
 
-    pub fn initialize(&mut self, capabilities: ClientCapabilities) -> Result<InitializeResult> {
+    pub fn initialize(&mut self, init: impl Into<Initialize>) -> Result<InitializeResult> {
+        let init = init.into();
         let now = Instant::now();
-        let params = core::capabilities::initialize_params(capabilities);
+        let mut params = core::capabilities::initialize_params(init.capabilities);
+        params.initialization_options = init.options;
         let params = serde_json::to_value(params).expect("serializing as JSON cannot fail");
         let (id, message) = self.state.start_initialize(params, now, self.timeout)?;
         self.send_request(&id, &message, now)?;
