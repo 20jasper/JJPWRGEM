@@ -71,12 +71,15 @@ pub fn exec_cmd(cmd: &mut Command, stdin: Option<Vec<u8>>) -> Output {
         .expect("test command failed");
 
     if let Some(stdin) = &stdin {
-        child
+        match child
             .stdin
             .take()
             .expect("should have stdin")
             .write_all(stdin)
-            .expect("failed to write to stdin");
+        {
+            Err(e) if e.kind() == std::io::ErrorKind::BrokenPipe => {}
+            result => result.expect("failed to write to stdin"),
+        }
     }
 
     let output = child.wait_with_output().expect("failed to wait on child");

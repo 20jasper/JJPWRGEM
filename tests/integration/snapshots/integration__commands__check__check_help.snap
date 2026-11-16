@@ -13,8 +13,17 @@ Validates json syntax
 Usage: jjp check [OPTIONS]
 
 Options:
-      --parser <PARSER>  Parser to use for input [default: json] [possible values: json, jsonlines]
-  -h, --help             Print help
+      --parser <PARSER>
+          Parser to use for input
+
+          Possible values:
+          - json:      A single json document
+          - jsonlines: One json document per line
+          
+          [default: json]
+
+  -h, --help
+          Print help (see a summary with '-h')
 
 Examples:
 	$ echo -en "{\"hello I am valid\": null} " | jjp check

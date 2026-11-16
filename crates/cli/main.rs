@@ -16,30 +16,33 @@ use std::{
     process::ExitCode,
 };
 
-use clap::Parser;
 pub use error::{Error, Result};
 use jjpwrgem_parse::{
     diagnostics::Diagnostic,
-    format::{FormatRequest, JsonMode, JsonlinesOptions, PrettifyOptions},
+    format::{FormatRequest, Parser},
     format_str, validate_str,
 };
 use jjpwrgem_ui::{Color, Style};
 
-use crate::{
-    commands::{Commands, ParserArg},
-    output::Output,
-};
+use crate::{commands::Action, output::Output};
 
 fn main() -> ExitCode {
-    let cli = commands::Cli::parse();
-
     let style = Style::Pretty(Color::Plain);
 
-    if matches!(cli.command, Commands::Lsp) {
-        lsp::run_blocking();
-        return ExitCode::SUCCESS;
+    match commands::parse() {
+        Action::Lsp => {
+            lsp::run_blocking();
+            ExitCode::SUCCESS
+        }
+        Action::Check(Parser::Jsonlines) => run_on_stdin(style, check_jsonlines),
+        Action::Check(Parser::Json) => run_on_stdin(style, check),
+        Action::Format(request) => {
+            run_on_stdin(style, |json, style| format_input(json, style, &request))
+        }
     }
+}
 
+fn run_on_stdin(style: Style, run: impl FnOnce(&str, Style) -> Output) -> ExitCode {
     let Some(input) = read_stdin(style) else {
         return ExitCode::FAILURE;
     };
@@ -47,51 +50,7 @@ fn main() -> ExitCode {
         return ExitCode::FAILURE;
     };
 
-    let mut output = match &cli.command {
-        Commands::Format {
-            uglify,
-            preferred_width,
-            end_of_line,
-            parser,
-        } => match parser {
-            ParserArg::Jsonlines => {
-                if *uglify {
-                    Output::failure(
-                        "error: the argument '--parser jsonlines' cannot be used with '--uglify'\n\nUsage: jjp format --parser jsonlines\n\nFor more information, try '--help'.",
-                    )
-                } else if preferred_width.is_some() {
-                    Output::failure(
-                        "error: the argument '--parser jsonlines' cannot be used with '--preferred-width'\n\nUsage: jjp format --parser jsonlines\n\nFor more information, try '--help'.",
-                    )
-                } else {
-                    let request = FormatRequest::Jsonlines(
-                        JsonlinesOptions::builder()
-                            .line_ending(end_of_line.into_parse())
-                            .build(),
-                    );
-                    format_input(json, style, &request)
-                }
-            }
-            ParserArg::Json => {
-                let mode = if *uglify {
-                    JsonMode::Uglify
-                } else {
-                    JsonMode::Prettify(
-                        PrettifyOptions::builder()
-                            .line_ending(end_of_line.into_parse())
-                            .maybe_preferred_width(*preferred_width)
-                            .build(),
-                    )
-                };
-                format_input(json, style, &FormatRequest::Json(mode))
-            }
-        },
-        Commands::Check { parser } => match parser {
-            ParserArg::Jsonlines => check_jsonlines(json, style),
-            ParserArg::Json => check(json, style),
-        },
-        Commands::Lsp => unreachable!("LSP command handled above"),
-    };
+    let mut output = run(json, style);
 
     print_output(&mut output);
     output.exit_code
