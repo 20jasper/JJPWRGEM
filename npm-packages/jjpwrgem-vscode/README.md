@@ -30,3 +30,27 @@ LSP providing
 - folding ranges
 
 Scales well for large files. There is no perceivable delay when editing a 68k line, 5MB file. Diagnostics, code actions, and formatting take around 20ms
+
+## Settings
+
+### `jjpwrgem.format.mode`
+
+Pretty print, or remove all insignificant whitespace (uglify, also known as minify)
+
+- `"pretty"` (default): Pretty print with indentation and line breaks
+- `"uglify"`: Remove all insignificant whitespace
+
+### `jjpwrgem.format.preferredWidth`
+
+Preferred maximum line width. Note this is not a hard maximum width
+
+Default `80`.
+
+Ignored when `jjpwrgem.format.mode` is `"uglify"`.
+
+### `jjpwrgem.format.endOfLine`
+
+Line ending to use when formatting output
+
+- `"lf"` (default): Unix line endings (LF)
+- `"crlf"`: Windows line endings (CRLF)

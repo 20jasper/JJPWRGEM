@@ -34,3 +34,49 @@ args = ["lsp"]
 name = "json"
 language-servers = ["jjp"]
 ```
+
+## Settings
+
+### `mode`
+
+Pretty print, or remove all insignificant whitespace (uglify, also known as minify)
+
+- `"pretty"` (default): Pretty print with indentation and line breaks
+- `"uglify"`: Remove all insignificant whitespace
+
+### `preferredWidth`
+
+Preferred maximum line width. Note this is not a hard maximum width
+
+Default `80`.
+
+Ignored when `mode` is `"uglify"`.
+
+### `endOfLine`
+
+Line ending to use when formatting output
+
+- `"lf"` (default): Unix line endings (LF)
+- `"crlf"`: Windows line endings (CRLF)
+
+### Helix
+
+Pass settings under the language server's `config.format` table. These are the defaults
+
+```toml
+# languages.toml
+[language-server.jjp.config.format]
+# Pretty print, or remove all insignificant whitespace (uglify, also known as minify)
+#   "pretty": Pretty print with indentation and line breaks
+#   "uglify": Remove all insignificant whitespace
+# mode = "pretty"
+
+# Preferred maximum line width. Note this is not a hard maximum width
+# Ignored when mode is "uglify"
+# preferredWidth = 80
+
+# Line ending to use when formatting output
+#   "lf": Unix line endings (LF)
+#   "crlf": Windows line endings (CRLF)
+# endOfLine = "lf"
+```

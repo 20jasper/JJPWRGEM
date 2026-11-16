@@ -6,6 +6,8 @@ use std::{
 
 use anyhow::bail;
 
+use crate::settings_docs::{helix_format_config, settings_reference};
+
 const BYTES2CHARS_README_PATH: &str = concat!(
     env!("CARGO_MANIFEST_DIR"),
     "/../crates/bytes2chars/README.md"
@@ -322,6 +324,7 @@ fn render_template(
         .replace("{{LSP_DEMO_ALT}}", LSP_DEMO_ALT)
         .replace("{{LSP_DEMO_URL}}", LSP_DEMO_URL)
         .replace("{{LSP_FEATURES}}", LSP_FEATURES.trim())
+        .replace("{{HELIX_FORMAT_CONFIG}}", &helix_format_config())
         .replace("{{BENCH_SUMMARY}}", BENCH_SUMMARY)
         .replace("{{BENCH_INPUTS}}", BENCH_INPUTS)
         .replace("{{BENCH_HARDWARE}}", BENCH_HARDWARE)
@@ -360,8 +363,19 @@ pub fn write_readmes() {
     let json_bench_rendered =
         render_template(JSON_BENCH_TEMPLATE, &JSON_BENCH_TABLE_REPLACEMENTS).unwrap();
 
-    let vscode_rendered = render_template(VSCODE_TEMPLATE, &[]).unwrap();
-    let lsp_crate_rendered = render_template(LSP_CRATE_TEMPLATE, &[]).unwrap();
+    let vscode_rendered = render_template(
+        VSCODE_TEMPLATE,
+        &[(
+            "{{SETTINGS_REFERENCE}}",
+            &settings_reference("jjpwrgem.format."),
+        )],
+    )
+    .unwrap();
+    let lsp_crate_rendered = render_template(
+        LSP_CRATE_TEMPLATE,
+        &[("{{SETTINGS_REFERENCE}}", &settings_reference(""))],
+    )
+    .unwrap();
 
     fs::write(ROOT_OUT_PATH_STR, root_rendered).unwrap();
     fs::write(PARSE_OUT_PATH_STR, parse_rendered).unwrap();
@@ -436,8 +450,19 @@ pub fn are_readmes_updated() -> anyhow::Result<()> {
     let json_bench_rendered =
         render_template(JSON_BENCH_TEMPLATE, &JSON_BENCH_TABLE_REPLACEMENTS).unwrap();
 
-    let vscode_rendered = render_template(VSCODE_TEMPLATE, &[]).unwrap();
-    let lsp_crate_rendered = render_template(LSP_CRATE_TEMPLATE, &[]).unwrap();
+    let vscode_rendered = render_template(
+        VSCODE_TEMPLATE,
+        &[(
+            "{{SETTINGS_REFERENCE}}",
+            &settings_reference("jjpwrgem.format."),
+        )],
+    )
+    .unwrap();
+    let lsp_crate_rendered = render_template(
+        LSP_CRATE_TEMPLATE,
+        &[("{{SETTINGS_REFERENCE}}", &settings_reference(""))],
+    )
+    .unwrap();
 
     check_readme("readme.md", EXISTING_ROOT, &root_rendered)?;
     check_readme("crates/parse/readme.md", EXISTING_PARSE, &parse_rendered)?;

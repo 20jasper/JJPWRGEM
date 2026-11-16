@@ -55,7 +55,7 @@ RUSTFLAGS="-C target-cpu=native" cargo install --path .
 
 ### LSP
 
-See [LSP setup](./crates/lsp/readme.md#quick-start) to configure your editor
+See [LSP setup](./crates/lsp/readme.md#quick-start) to configure your editor, and [settings](./crates/lsp/readme.md#settings) for the format options
 
 ## Stability
 

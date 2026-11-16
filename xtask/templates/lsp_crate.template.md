@@ -24,3 +24,14 @@ args = ["lsp"]
 name = "json"
 language-servers = ["jjp"]
 ```
+
+{{SETTINGS_REFERENCE}}
+
+### Helix
+
+Pass settings under the language server's `config.format` table. These are the defaults
+
+```toml
+# languages.toml
+{{HELIX_FORMAT_CONFIG}}
+```

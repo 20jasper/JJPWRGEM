@@ -15,3 +15,5 @@ Install `jjp`
 ## Features
 
 {{LSP_FEATURES}}
+
+{{SETTINGS_REFERENCE}}
