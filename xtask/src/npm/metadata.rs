@@ -20,11 +20,6 @@ impl PackageMetadata {
     }
 }
 
-pub const X86_64_PC_WINDOWS_GNU: &str = "x86_64-pc-windows-gnu";
-pub const X86_64_PC_WINDOWS_MSVC: &str = "x86_64-pc-windows-msvc";
-
-pub const MSVC_ALIAS_FOR_X86_64: [&str; 1] = [X86_64_PC_WINDOWS_GNU];
-
 #[derive(Debug, Clone)]
 pub struct PlatformConfig {
     pub rust_target: String,
@@ -67,22 +62,12 @@ pub fn build_platforms_from_targets(
             "{target} should be archived as {zip_ext}, not {archive}"
         );
 
-        let base = PlatformConfig {
-            rust_target: target.clone(),
+        platforms.push(PlatformConfig {
+            rust_target: target,
             artifact_name: archive,
             exe_suffix: exe_suffix.to_string(),
             zip_ext: zip_ext.to_string(),
-        };
-
-        if target == X86_64_PC_WINDOWS_MSVC {
-            for &alias in MSVC_ALIAS_FOR_X86_64.iter() {
-                let mut alias_cfg = base.clone();
-                alias_cfg.rust_target = alias.to_string();
-                platforms.push(alias_cfg);
-            }
-        }
-
-        platforms.push(base);
+        });
     }
 
     Ok(platforms)

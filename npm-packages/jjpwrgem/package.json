@@ -73,13 +73,6 @@
       },
       "zipExt": ".tar.xz"
     },
-    "x86_64-pc-windows-gnu": {
-      "artifactName": "jjpwrgem-x86_64-pc-windows-msvc.zip",
-      "bins": {
-        "jjp": "jjp.exe"
-      },
-      "zipExt": ".zip"
-    },
     "x86_64-pc-windows-msvc": {
       "artifactName": "jjpwrgem-x86_64-pc-windows-msvc.zip",
       "bins": {
