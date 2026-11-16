@@ -11,10 +11,10 @@ expression: generated_properties()
     ],
     "enumDescriptions": [
       "Pretty print with indentation and line breaks",
-      "Remove all insignificant whitespace"
+      "Remove all insignificant whitespace, also known as minifying"
     ],
     "default": "pretty",
-    "markdownDescription": "Pretty print, or remove all insignificant whitespace (uglify, also known as minify).",
+    "markdownDescription": "Output style.",
     "order": 0
   },
   "jjpwrgem.format.preferredWidth": {
