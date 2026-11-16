@@ -1,8 +1,11 @@
 use std::{fmt::Display, marker::PhantomData};
 
 use clap::{
-    Arg, ArgAction, ArgMatches, Args, Command, FromArgMatches, builder::PossibleValuesParser,
-    error::ErrorKind, parser::ValueSource, value_parser,
+    Arg, ArgAction, ArgMatches, Args, Command, FromArgMatches,
+    builder::{PossibleValue, PossibleValuesParser},
+    error::ErrorKind,
+    parser::ValueSource,
+    value_parser,
 };
 use jjpwrgem_parse::settings::{Setting, SettingKind, Shorthand, Table};
 use serde::de::DeserializeOwned;
@@ -41,19 +44,28 @@ fn invalid_value(message: impl Display) -> clap::Error {
 fn setting_arg(setting: &Setting, help: String) -> Arg {
     let arg = Arg::new(setting.name)
         .long(setting.flag())
-        .help(help)
         .visible_aliases(setting.aliases.iter().copied());
     match setting.kind {
         SettingKind::Integer { default } => arg
+            .help(format!("{help} [default: {default}]"))
             .value_name(setting.name.to_uppercase())
             .default_value(default.to_string())
+            .hide_default_value(true)
             .value_parser(value_parser!(usize)),
         SettingKind::Choice {
-            values, default, ..
+            values,
+            descriptions,
+            default,
         } => arg
+            .help(help)
             .value_name(setting.name.to_uppercase())
             .default_value(default)
-            .value_parser(PossibleValuesParser::new(values)),
+            .value_parser(PossibleValuesParser::new(
+                values
+                    .iter()
+                    .zip(descriptions)
+                    .map(|(value, description)| PossibleValue::new(*value).help(*description)),
+            )),
     }
 }
 

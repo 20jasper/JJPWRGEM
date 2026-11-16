@@ -2,6 +2,7 @@
   "name": "jjpwrgem-vscode",
   "displayName": "JJPWRGEM",
   "version": "0.0.6",
+  "private": true,
   "description": "JSON language server with rich error messages",
   "categories": [
     "Formatters",
@@ -74,10 +75,10 @@
           ],
           "enumDescriptions": [
             "Pretty print with indentation and line breaks",
-            "Remove all insignificant whitespace"
+            "Remove all insignificant whitespace, also known as minifying"
           ],
           "default": "pretty",
-          "markdownDescription": "Pretty print, or remove all insignificant whitespace (uglify, also known as minify).",
+          "markdownDescription": "Output style.",
           "order": 0
         },
         "jjpwrgem.format.preferredWidth": {

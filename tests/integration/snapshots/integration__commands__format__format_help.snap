@@ -14,17 +14,41 @@ Usage: jjp format [OPTIONS]
 
 Options:
       --mode <MODE>
-          Pretty print, or remove all insignificant whitespace (uglify, also known as minify). --mode uglify cannot be combined with --parser jsonlines or --preferred-width [default: pretty] [possible values: pretty, uglify]
+          Output style. --mode uglify cannot be combined with --parser jsonlines or --preferred-width
+
+          Possible values:
+          - pretty: Pretty print with indentation and line breaks
+          - uglify: Remove all insignificant whitespace, also known as minifying
+          
+          [default: pretty]
+
   -u, --uglify
           Shorthand for --mode uglify. --mode uglify cannot be combined with --parser jsonlines or --preferred-width
+
       --preferred-width <PREFERRED_WIDTH>
           Preferred maximum line width. Note this is not a hard maximum width. --preferred-width cannot be combined with --parser jsonlines or --mode uglify [default: 80]
+
       --end-of-line <END_OF_LINE>
-          Line ending to use when formatting output [default: lf] [alias: --eol] [possible values: lf, crlf]
+          Line ending to use when formatting output
+
+          Possible values:
+          - lf:   Unix line endings (LF)
+          - crlf: Windows line endings (CRLF)
+          
+          [default: lf]
+          [alias: --eol]
+
       --parser <PARSER>
-          Parser to use for input. --parser jsonlines cannot be combined with --mode uglify or --preferred-width [default: json] [possible values: json, jsonlines]
+          Parser to use for input. --parser jsonlines cannot be combined with --mode uglify or --preferred-width
+
+          Possible values:
+          - json:      A single json document
+          - jsonlines: One json document per line
+          
+          [default: json]
+
   -h, --help
-          Print help
+          Print help (see a summary with '-h')
 
 Examples:
 	$ echo -en "{ \"rust\":\"is a must\"   } " | jjp format
