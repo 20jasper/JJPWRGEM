@@ -4,7 +4,6 @@
 
 const { Package } = require("./binary-install");
 const os = require("os");
-const libc = require("detect-libc");
 
 const error = (msg) => {
   console.error(msg);
@@ -15,11 +14,7 @@ const {
   name,
   artifactDownloadUrl,
   supportedPlatforms,
-  glibcMinimum,
 } = require("./package.json");
-
-const builderGlibcMajorVersion = glibcMinimum.major;
-const builderGlibcMinorVersion = glibcMinimum.series;
 
 const getPlatform = () => {
   const rawOsType = os.type();
@@ -48,33 +43,6 @@ const getPlatform = () => {
     case "arm64":
       arch = "aarch64";
       break;
-  }
-
-  if (rawOsType === "Linux") {
-    if (libc.familySync() == "musl") {
-      osType = "unknown-linux-musl-dynamic";
-    } else if (libc.isNonGlibcLinuxSync()) {
-      console.warn(
-        "Your libc is neither glibc nor musl; trying static musl binary instead",
-      );
-      osType = "unknown-linux-musl-static";
-    } else {
-      let libcVersion = libc.versionSync();
-      let splitLibcVersion = libcVersion.split(".");
-      let libcMajorVersion = splitLibcVersion[0];
-      let libcMinorVersion = splitLibcVersion[1];
-      if (
-        libcMajorVersion != builderGlibcMajorVersion ||
-        libcMinorVersion < builderGlibcMinorVersion
-      ) {
-        // We can't run the glibc binaries, but we can run the static musl ones
-        // if they exist
-        console.warn(
-          "Your glibc isn't compatible; trying static musl binary instead",
-        );
-        osType = "unknown-linux-musl-static";
-      }
-    }
   }
 
   // Assume the above succeeded and build a target triple to look things up with.
