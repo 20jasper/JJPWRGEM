@@ -2,6 +2,7 @@ use clap::{Parser, Subcommand};
 
 mod badge;
 mod bench_table;
+mod helix_settings;
 mod lsp_bench_report;
 mod npm;
 mod plot;

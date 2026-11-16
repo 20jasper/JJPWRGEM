@@ -30,6 +30,17 @@ For example, here's a Helix configuration
 command = "jjp"
 args = ["lsp"]
 
+[language-server.jjp.config.format]
+# Pretty print, or remove all insignificant whitespace (uglify, also known as minify)
+# One of "pretty", "uglify"
+mode = "pretty"
+# Preferred maximum line width. Note this is not a hard maximum width
+# Ignored when mode is "uglify"
+preferredWidth = 80
+# Line ending to use when formatting output
+# One of "lf", "crlf"
+endOfLine = "lf"
+
 [[language]]
 name = "json"
 language-servers = ["jjp"]

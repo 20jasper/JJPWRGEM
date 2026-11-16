@@ -15,12 +15,5 @@
 For example, here's a Helix configuration
 
 ```toml
-# languages.toml
-[language-server.jjp]
-command = "jjp"
-args = ["lsp"]
-
-[[language]]
-name = "json"
-language-servers = ["jjp"]
+{{HELIX_CONFIG}}
 ```
