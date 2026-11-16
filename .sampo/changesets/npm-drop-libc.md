@@ -2,4 +2,4 @@
 cargo/jjpwrgem: patch (Changed)
 ---
 
-the npm package no longer depends on detect-libc or checks the glibc version at install
+npm installer no longer validates glibc version before install, lowering install size by about 26 KB
