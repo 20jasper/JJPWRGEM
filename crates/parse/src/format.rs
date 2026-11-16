@@ -12,7 +12,7 @@ pub use config::{
 pub use prettify::{prettify_document, prettify_document_into, prettify_str};
 pub use uglify::{uglify_document, uglify_document_into, uglify_str, uglify_str_into};
 
-use crate::{ast::Document, settings::choice};
+use crate::{ast::Document, settings::choice_enum};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum FormatRequest {
@@ -85,7 +85,7 @@ pub(crate) fn join_into<T, B>(
     }
 }
 
-choice! {
+choice_enum! {
     pub enum LineEnding default Lf {
         /// Unix line endings (LF)
         Lf = "lf",

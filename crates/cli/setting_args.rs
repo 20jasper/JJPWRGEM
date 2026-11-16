@@ -47,10 +47,9 @@ fn setting_arg(setting: &Setting, help: String) -> Arg {
         .visible_aliases(setting.aliases.iter().copied());
     match setting.kind {
         SettingKind::Integer { default } => arg
-            .help(format!("{help} [default: {default}]"))
+            .help(help)
             .value_name(setting.name.to_uppercase())
             .default_value(default.to_string())
-            .hide_default_value(true)
             .value_parser(value_parser!(usize)),
         SettingKind::Choice {
             values,

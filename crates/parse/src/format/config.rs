@@ -3,9 +3,9 @@ use std::fmt;
 use super::{
     DEFAULT_PREFERRED_WIDTH, FormatRequest, JsonMode, JsonlinesOptions, LineEnding, PrettifyOptions,
 };
-use crate::settings::{Setting, choice, integer, settings};
+use crate::settings::{Setting, choice, choice_enum, integer, settings};
 
-choice! {
+choice_enum! {
     pub enum Parser default Json {
         /// A single json document
         Json = "json",
@@ -14,7 +14,7 @@ choice! {
     }
 }
 
-choice! {
+choice_enum! {
     pub enum FormatMode default Pretty {
         /// Pretty print with indentation and line breaks
         Pretty = "pretty",
