@@ -28,10 +28,10 @@ Run `jjp lsp` as the language server for JSON files. See the [Helix](#helix) sec
 
 ### `mode`
 
-Pretty print, or remove all insignificant whitespace (uglify, also known as minify)
+Output style
 
 - `"pretty"` (default): Pretty print with indentation and line breaks
-- `"uglify"`: Remove all insignificant whitespace
+- `"uglify"`: Remove all insignificant whitespace, also known as minifying
 
 ### `preferredWidth`
 
@@ -57,9 +57,9 @@ command = "jjp"
 args = ["lsp"]
 
 [language-server.jjp.config.format]
-# Pretty print, or remove all insignificant whitespace (uglify, also known as minify)
+# Output style
 #   "pretty": Pretty print with indentation and line breaks
-#   "uglify": Remove all insignificant whitespace
+#   "uglify": Remove all insignificant whitespace, also known as minifying
 # mode = "pretty"
 
 # Preferred maximum line width. Note this is not a hard maximum width

@@ -35,10 +35,10 @@ Scales well for large files. There is no perceivable delay when editing a 68k li
 
 ### `jjpwrgem.format.mode`
 
-Pretty print, or remove all insignificant whitespace (uglify, also known as minify)
+Output style
 
 - `"pretty"` (default): Pretty print with indentation and line breaks
-- `"uglify"`: Remove all insignificant whitespace
+- `"uglify"`: Remove all insignificant whitespace, also known as minifying
 
 ### `jjpwrgem.format.preferredWidth`
 
