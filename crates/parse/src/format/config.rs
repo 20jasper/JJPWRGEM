@@ -102,8 +102,10 @@ impl FormatOption {
 
     pub fn name(self) -> String {
         let setting = self.setting().name.replace('_', " ");
-        self.value()
-            .map_or_else(|| setting.clone(), |value| format!("{setting} {value}"))
+        match self.value() {
+            Some(value) => format!("{setting} {value}"),
+            None => setting,
+        }
     }
 
     pub fn for_setting(row: &Setting) -> Vec<Self> {

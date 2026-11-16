@@ -100,18 +100,20 @@ pub enum Action {
 
 pub fn parse() -> Action {
     let mut command = Cli::command();
-    let mut matches = command.get_matches_mut();
-    let name = matches.subcommand_name().map(str::to_owned);
-    let cli = Cli::from_arg_matches_mut(&mut matches)
-        .unwrap_or_else(|error| error.format(&mut command).exit());
+    let matches = command.get_matches_mut();
+    let cli =
+        Cli::from_arg_matches(&matches).unwrap_or_else(|error| error.format(&mut command).exit());
     match cli.command {
         Commands::Lsp => Action::Lsp,
         Commands::Check(args) => Action::Check(args.input.into_inner().parser),
         Commands::Format(args) => match FormatRequest::try_from(FormatConfig::from(args)) {
             Ok(request) => Action::Format(request),
-            Err(ConfigError(rule)) => {
-                usage_error(&command, name.as_deref(), rule.describe(option_flag)).exit()
-            }
+            Err(ConfigError(rule)) => usage_error(
+                &command,
+                matches.subcommand_name(),
+                rule.describe(option_flag),
+            )
+            .exit(),
         },
     }
 }
