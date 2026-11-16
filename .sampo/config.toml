@@ -17,5 +17,5 @@ exclude_acknowledgments = ["20jasper", "Jacob Asper"]
 
 [packages]
 bump_dependents = "out-of-range"
-ignore_unpublished = true
-ignore = ["npm/jjpwrgem-vscode"]
+ignore_unpublished = false
+ignore = ["cargo/benches", "cargo/xtask", "npm/root"]

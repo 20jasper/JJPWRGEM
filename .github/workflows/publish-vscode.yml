@@ -3,6 +3,7 @@ name: Publish VSCode Extension
 on:
   push:
     tags:
+      - "jjpwrgem-vscode-v*"
       - "vscode-v*"
   workflow_dispatch:
     inputs:
