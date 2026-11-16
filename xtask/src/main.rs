@@ -5,6 +5,7 @@ mod bench_table;
 mod lsp_bench_report;
 mod npm;
 mod plot;
+mod settings_docs;
 mod spec_badges;
 mod template;
 mod vscode_settings;
