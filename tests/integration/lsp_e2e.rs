@@ -3,6 +3,7 @@ use std::{error::Error, process::Command, time::Duration};
 use insta::assert_snapshot;
 use jjpwrgem_parse::{format::FORMAT_SETTINGS, settings::SettingKind};
 use lspresso::{Client, ErrorKind, Initialize, capabilities, gen_lsp_types::*};
+use rstest::rstest;
 
 const TIMEOUT: Duration = Duration::from_secs(5);
 type TestResult<T = ()> = Result<T, Box<dyn Error>>;
@@ -405,92 +406,60 @@ fn formatted(client: &mut Client) -> TestResult<String> {
     Ok(new_text.clone())
 }
 
-#[test]
-fn initialization_options_change_formatting() -> TestResult {
-    let options = serde_json::json!({ "format": { "preferredWidth": 0, "endOfLine": "crlf" } });
-    let mut client = configured_client(Some(options))?;
+const DEFAULT_OUTPUT: &str = "{ \"a\": [1, 2] }";
+const WIDTH_ZERO_LF: &str = "{\n  \"a\": [\n    1,\n    2\n  ]\n}";
+const WIDTH_ZERO_CRLF: &str = "{\r\n  \"a\": [\r\n    1,\r\n    2\r\n  ]\r\n}";
 
-    assert_eq!(
-        formatted(&mut client)?,
-        "{\r\n  \"a\": [\r\n    1,\r\n    2\r\n  ]\r\n}"
-    );
+fn format_options(format: serde_json::Value) -> serde_json::Value {
+    serde_json::Value::Object([("format".to_owned(), format)].into_iter().collect())
+}
+
+fn format_with(format: serde_json::Value) -> TestResult<String> {
+    formatted(&mut configured_client(Some(format_options(format)))?)
+}
+
+fn assert_warns_and_uses_defaults(format: serde_json::Value, fragment: &str) -> TestResult {
+    let mut client = configured_client(Some(format_options(format)))?;
+
+    let warning = client.wait_for_notification::<ShowMessageNotification>()?;
+    assert_eq!(warning.kind, MessageType::Warning);
+    assert!(warning.message.contains(fragment), "{}", warning.message);
+    assert_eq!(formatted(&mut client)?, DEFAULT_OUTPUT);
     Ok(())
 }
 
-#[test]
-fn initialization_options_can_uglify() -> TestResult {
-    let options = serde_json::json!({ "format": { "mode": "uglify" } });
-    let mut client = configured_client(Some(options))?;
-
-    assert_eq!(formatted(&mut client)?, SETTINGS_INPUT);
+#[rstest]
+#[case::width_and_crlf(serde_json::json!({ "preferredWidth": 0, "endOfLine": "crlf" }), WIDTH_ZERO_CRLF)]
+#[case::uglify(serde_json::json!({ "mode": "uglify" }), SETTINGS_INPUT)]
+#[case::uglify_ignores_width(serde_json::json!({ "mode": "uglify", "preferredWidth": 0 }), SETTINGS_INPUT)]
+#[case::pretty_applies_width(serde_json::json!({ "mode": "pretty", "preferredWidth": 0 }), WIDTH_ZERO_LF)]
+fn initialization_options_change_formatting(
+    #[case] format: serde_json::Value,
+    #[case] expected: &str,
+) -> TestResult {
+    assert_eq!(format_with(format)?, expected);
     Ok(())
 }
 
 #[test]
 fn did_change_configuration_updates_formatting() -> TestResult {
     let mut client = configured_client(None)?;
-    assert_eq!(formatted(&mut client)?, "{ \"a\": [1, 2] }");
+    assert_eq!(formatted(&mut client)?, DEFAULT_OUTPUT);
 
     let settings = serde_json::json!({ "jjpwrgem": { "format": { "preferredWidth": 0 } } });
     client.workspace_did_change_configuration(settings)?;
-    assert_eq!(
-        formatted(&mut client)?,
-        "{\n  \"a\": [\n    1,\n    2\n  ]\n}"
-    );
+    assert_eq!(formatted(&mut client)?, WIDTH_ZERO_LF);
     Ok(())
 }
 
-#[test]
-fn mode_uglify_ignores_preferred_width() -> TestResult {
-    let options = serde_json::json!({ "format": { "mode": "uglify", "preferredWidth": 0 } });
-    let mut client = configured_client(Some(options))?;
-
-    assert_eq!(formatted(&mut client)?, SETTINGS_INPUT);
-    Ok(())
-}
-
-#[test]
-fn mode_pretty_applies_preferred_width() -> TestResult {
-    let options = serde_json::json!({ "format": { "mode": "pretty", "preferredWidth": 0 } });
-    let mut client = configured_client(Some(options))?;
-
-    assert_eq!(
-        formatted(&mut client)?,
-        "{\n  \"a\": [\n    1,\n    2\n  ]\n}"
-    );
-    Ok(())
-}
-
-#[test]
-fn invalid_mode_warns_and_falls_back_to_defaults() -> TestResult {
-    let options = serde_json::json!({ "format": { "mode": "fancy" } });
-    let mut client = configured_client(Some(options))?;
-
-    let warning = client.wait_for_notification::<ShowMessageNotification>()?;
-    assert_eq!(warning.kind, MessageType::Warning);
-    assert!(
-        warning.message.contains("unknown variant `fancy`"),
-        "{}",
-        warning.message
-    );
-    assert_eq!(formatted(&mut client)?, "{ \"a\": [1, 2] }");
-    Ok(())
-}
-
-#[test]
-fn invalid_settings_warn_and_fall_back_to_defaults() -> TestResult {
-    let options = serde_json::json!({ "format": { "endOfLine": "cr" } });
-    let mut client = configured_client(Some(options))?;
-
-    let warning = client.wait_for_notification::<ShowMessageNotification>()?;
-    assert_eq!(warning.kind, MessageType::Warning);
-    assert!(
-        warning.message.contains("unknown variant `cr`"),
-        "{}",
-        warning.message
-    );
-    assert_eq!(formatted(&mut client)?, "{ \"a\": [1, 2] }");
-    Ok(())
+#[rstest]
+#[case::invalid_mode(serde_json::json!({ "mode": "fancy" }), "unknown variant `fancy`")]
+#[case::invalid_end_of_line(serde_json::json!({ "endOfLine": "cr" }), "unknown variant `cr`")]
+fn invalid_settings_warn_and_fall_back_to_defaults(
+    #[case] format: serde_json::Value,
+    #[case] fragment: &str,
+) -> TestResult {
+    assert_warns_and_uses_defaults(format, fragment)
 }
 
 #[test]
@@ -505,10 +474,9 @@ fn table_defaults_as_client_settings_match_no_settings() -> TestResult {
             (setting.key(), value)
         })
         .collect();
-    let options = serde_json::json!({ "format": defaults });
 
     assert_eq!(
-        formatted(&mut configured_client(Some(options))?)?,
+        format_with(defaults.into())?,
         formatted(&mut configured_client(None)?)?
     );
     Ok(())
