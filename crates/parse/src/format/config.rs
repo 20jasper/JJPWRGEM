@@ -18,7 +18,7 @@ choice! {
     pub enum FormatMode default Pretty {
         /// Pretty print with indentation and line breaks
         Pretty = "pretty",
-        /// Remove all insignificant whitespace
+        /// Remove all insignificant whitespace, also known as minifying
         Uglify = "uglify",
     }
 }
@@ -32,7 +32,7 @@ settings! {
 
 settings! {
     struct FormatSettings, table FORMAT_SETTINGS, id FormatSetting {
-        /// Pretty print, or remove all insignificant whitespace (uglify, also known as minify)
+        /// Output style
         Mode mode: FormatMode = choice().shorthand("uglify", 'u', "uglify"),
         /// Preferred maximum line width. Note this is not a hard maximum width
         PreferredWidth preferred_width: Option<usize> = integer(DEFAULT_PREFERRED_WIDTH),
