@@ -69,6 +69,27 @@ impl Value {
         }
     }
 
+    pub fn member_span(&self, key: Key) -> Range<usize> {
+        let span = self.span();
+        match key {
+            Key::Name(name) => quoted(name).start..span.end,
+            Key::Index(_) => span,
+        }
+    }
+
+    pub fn child_at(&self, offset: usize) -> Option<(Key, &Value)> {
+        self.children().find(|(key, child)| {
+            let member = child.member_span(*key);
+            member.start <= offset && offset <= member.end
+        })
+    }
+
+    pub fn path_at(&self, offset: usize) -> impl Iterator<Item = (Key, &Value)> {
+        core::iter::successors(self.child_at(offset), move |(_, child)| {
+            child.child_at(offset)
+        })
+    }
+
     /// outputs layer of direct children
     pub fn children(&self) -> impl DoubleEndedIterator<Item = (Key, &Value)> {
         let (entries, items) = match self {
@@ -410,6 +431,25 @@ mod tests {
                 "3"
             ]
         );
+    }
+
+    #[test]
+    fn path_at_follows_the_offset_down_to_the_innermost_value() {
+        let source = r#"{"a": [10, {"bb": 2}]}"#;
+        let doc = Document::parse(source).unwrap();
+        let path = |needle: &str, shift: usize| {
+            doc.root()
+                .path_at(source.find(needle).unwrap() + shift)
+                .map(|(_, value)| doc.slice(value.span()))
+                .collect::<Vec<_>>()
+        };
+        let array = r#"[10, {"bb": 2}]"#;
+        let object = r#"{"bb": 2}"#;
+
+        assert_eq!(path("2", 0), [array, object, "2"]);
+        assert_eq!(path("bb", 1), [array, object, "2"]);
+        assert_eq!(path("\"a", 1), [array]);
+        assert_eq!(path(", {", 1), [array]);
     }
 
     #[rstest_reuse::template]

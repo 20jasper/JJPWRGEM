@@ -96,6 +96,9 @@ fn table(
     out.push_str(&method("folding ranges", &|p| {
         format!("folding_ranges/{p}/{fixture}")
     }));
+    out.push_str(&method("selection ranges", &|p| {
+        format!("selection_ranges/{p}/{fixture}")
+    }));
     out
 }
 
@@ -133,7 +136,8 @@ pub fn write_lsp_bench_report() -> anyhow::Result<()> {
         .keys()
         .filter_map(|id| match id.split('/').collect::<Vec<_>>()[..] {
             [
-                "initialize" | "diagnostics" | "formatting" | "document_symbols" | "folding_ranges",
+                "initialize" | "diagnostics" | "formatting" | "document_symbols" | "folding_ranges"
+                | "selection_ranges",
                 profile,
                 ..,
             ] => Some(profile.to_owned()),
