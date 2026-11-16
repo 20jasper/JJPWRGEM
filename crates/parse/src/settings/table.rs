@@ -1,7 +1,21 @@
-use super::Setting;
+use super::{Setting, SettingKind};
 
 pub trait Table {
     const TABLE: &'static [Setting];
+}
+
+pub trait SettingValue {
+    fn text(&self, setting: &Setting) -> String;
+}
+
+impl SettingValue for Option<usize> {
+    fn text(&self, setting: &Setting) -> String {
+        match (self, setting.kind) {
+            (Some(value), _) => value.to_string(),
+            (None, SettingKind::Integer { default }) => default.to_string(),
+            (None, SettingKind::Choice { .. }) => String::new(),
+        }
+    }
 }
 
 // Rust-like syntax for defining Settings for conflicts, defaults, descriptions
@@ -59,6 +73,15 @@ macro_rules! settings {
             pub fn reset(&mut self, id: $id_name) {
                 match id {
                     $($id_name::$variant => self.$field_name = <$field_type as Default>::default(),)*
+                }
+            }
+
+            pub fn value_text(&self, id: $id_name) -> String {
+                match id {
+                    $($id_name::$variant => $crate::settings::SettingValue::text(
+                        &self.$field_name,
+                        id.setting(),
+                    ),)*
                 }
             }
         }

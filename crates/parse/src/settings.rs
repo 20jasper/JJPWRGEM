@@ -7,8 +7,8 @@ mod table;
 pub(crate) use choice::choice_enum;
 pub use choice::{Choice, choice};
 pub use spec::{IntegerSetting, Spec, integer};
-pub use table::Table;
 pub(crate) use table::settings;
+pub use table::{SettingValue, Table};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SettingKind {

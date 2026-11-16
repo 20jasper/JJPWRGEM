@@ -94,3 +94,25 @@ impl TryFrom<FormatConfig> for FormatRequest {
         })
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn value_text_renders_current_values() {
+        let defaults = FormatSettings::default();
+        assert_eq!(defaults.value_text(FormatSetting::Mode), "pretty");
+        assert_eq!(defaults.value_text(FormatSetting::PreferredWidth), "80");
+        assert_eq!(defaults.value_text(FormatSetting::EndOfLine), "lf");
+
+        let set = FormatSettings {
+            mode: FormatMode::Uglify,
+            preferred_width: Some(100),
+            end_of_line: LineEnding::CrLf,
+        };
+        assert_eq!(set.value_text(FormatSetting::Mode), "uglify");
+        assert_eq!(set.value_text(FormatSetting::PreferredWidth), "100");
+        assert_eq!(set.value_text(FormatSetting::EndOfLine), "crlf");
+    }
+}

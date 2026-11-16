@@ -46,6 +46,12 @@ macro_rules! choice_enum {
             }
         }
 
+        impl $crate::settings::SettingValue for $name {
+            fn text(&self, _: &$crate::settings::Setting) -> String {
+                self.name().to_owned()
+            }
+        }
+
         impl $crate::settings::Choice for $name {
             const VALUES: &'static [&'static str] = &[$($name_lit),+];
             const DESCRIPTIONS: &'static [&'static str] = &[$($variant_doc.trim_ascii()),+];
