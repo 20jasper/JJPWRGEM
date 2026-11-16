@@ -3,7 +3,7 @@ use std::sync::{OnceLock, PoisonError, RwLock};
 use dashmap::DashMap;
 use jjpwrgem_parse::{
     ast::Document,
-    format::{FormatConfig, FormatRequest, FormatSettings, InputSettings, format_document},
+    format::{FormatSettings, JsonMode, format_document},
 };
 use serde_json::Value;
 use tower_lsp_server::{Client, LanguageServer, jsonrpc::Result, ls_types::*};
@@ -23,6 +23,7 @@ const SOURCE: &str = "jjpwrgem";
 #[derive(Debug)]
 pub struct Backend {
     client: Client,
+    server_version: &'static str,
     documents: DashMap<Uri, jjpwrgem_parse::Result<Document<String>>>,
     position_encoding: OnceLock<PositionEncoding>,
     client_pulls_diagnostics: OnceLock<bool>,
@@ -66,9 +67,10 @@ fn apply_change(
 }
 
 impl Backend {
-    pub fn new(client: Client) -> Self {
+    pub fn new(client: Client, server_version: &'static str) -> Self {
         Self {
             client,
+            server_version,
             documents: DashMap::new(),
             position_encoding: OnceLock::new(),
             client_pulls_diagnostics: OnceLock::new(),
@@ -152,7 +154,7 @@ impl LanguageServer for Backend {
             offset_encoding: None,
             server_info: Some(ServerInfo {
                 name: SOURCE.into(),
-                version: Some(env!("CARGO_PKG_VERSION").into()),
+                version: Some(self.server_version.into()),
             }),
             capabilities: ServerCapabilities {
                 position_encoding,
@@ -245,17 +247,8 @@ impl LanguageServer for Backend {
     }
 
     async fn formatting(&self, params: DocumentFormattingParams) -> Result<Option<Vec<TextEdit>>> {
-        let config = FormatConfig {
-            input: InputSettings::default(),
-            settings: self
-                .format
-                .read()
-                .unwrap_or_else(PoisonError::into_inner)
-                .clone(),
-        };
-        let FormatRequest::Json(mode) = FormatRequest::from_lenient(config) else {
-            return Ok(None);
-        };
+        let mode =
+            JsonMode::from_settings(&self.format.read().unwrap_or_else(PoisonError::into_inner));
         Ok(self.with_document(&params.text_document.uri, |document| {
             vec![TextEdit {
                 range: FULL_DOCUMENT_RANGE,
