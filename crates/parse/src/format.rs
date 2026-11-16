@@ -5,8 +5,9 @@ pub mod serde;
 pub(crate) mod uglify;
 
 pub use config::{
-    ConfigError, FORMAT_RULES, FORMAT_SETTINGS, FormatConfig, FormatOption, FormatSetting,
-    FormatSettings, INPUT_SETTINGS, InputSetting, InputSettings, Parser, Rule, rule_clause,
+    ConfigError, FORMAT_RULES, FORMAT_SETTINGS, FormatConfig, FormatMode, FormatOption,
+    FormatSetting, FormatSettings, INPUT_SETTINGS, InputSetting, InputSettings, Parser, Rule,
+    rule_clause,
 };
 pub use prettify::{prettify_document, prettify_document_into, prettify_str};
 pub use uglify::{uglify_document, uglify_document_into, uglify_str, uglify_str_into};
@@ -86,7 +87,9 @@ pub(crate) fn join_into<T, B>(
 
 choice! {
     pub enum LineEnding default Lf {
+        /// Unix line endings (LF)
         Lf = "lf",
+        /// Windows line endings (CRLF)
         CrLf = "crlf",
     }
 }

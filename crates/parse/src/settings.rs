@@ -1,19 +1,22 @@
 //! Settings metadata to more easily generate or describe settings for integrations like editor extensions. See the xtask for an example
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[expect(
-    variant_size_differences,
-    reason = "settings are static table rows, never moved around"
-)]
 pub enum SettingKind {
-    Flag,
     Integer {
         default: usize,
     },
     Choice {
         values: &'static [&'static str],
+        descriptions: &'static [&'static str],
         default: &'static str,
     },
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Shorthand {
+    pub name: &'static str,
+    pub short: Option<char>,
+    pub value: &'static str,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -22,12 +25,13 @@ pub struct Setting {
     pub name: &'static str,
     pub description: &'static str,
     pub kind: SettingKind,
-    pub short: Option<char>,
     pub aliases: &'static [&'static str],
+    pub shorthand: Option<Shorthand>,
 }
 
 pub trait Choice {
     const VALUES: &'static [&'static str];
+    const DESCRIPTIONS: &'static [&'static str];
     const DEFAULT: &'static str;
 }
 
@@ -36,13 +40,9 @@ const fn blank(kind: SettingKind) -> Setting {
         name: "",
         description: "",
         kind,
-        short: None,
         aliases: &[],
+        shorthand: None,
     }
-}
-
-pub const fn flag() -> Setting {
-    blank(SettingKind::Flag)
 }
 
 pub const fn integer(default: usize) -> Setting {
@@ -52,20 +52,25 @@ pub const fn integer(default: usize) -> Setting {
 pub const fn choice<T: Choice>() -> Setting {
     blank(SettingKind::Choice {
         values: T::VALUES,
+        descriptions: T::DESCRIPTIONS,
         default: T::DEFAULT,
     })
 }
 
 impl Setting {
-    pub const fn short(self, short: char) -> Self {
-        Self {
-            short: Some(short),
-            ..self
-        }
-    }
-
     pub const fn aliases(self, aliases: &'static [&'static str]) -> Self {
         Self { aliases, ..self }
+    }
+
+    pub const fn shorthand(self, name: &'static str, short: char, value: &'static str) -> Self {
+        Self {
+            shorthand: Some(Shorthand {
+                name,
+                short: Some(short),
+                value,
+            }),
+            ..self
+        }
     }
 
     pub fn key(&self) -> String {
@@ -146,7 +151,7 @@ mod choice_macro {
     macro_rules! choice {
         (
             pub enum $name:ident default $default:ident {
-                $($variant:ident = $name_lit:literal),+ $(,)?
+                $(#[doc = $variant_doc:literal] $variant:ident = $name_lit:literal),+ $(,)?
             }
         ) => {
             #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -174,6 +179,7 @@ mod choice_macro {
 
             impl $crate::settings::Choice for $name {
                 const VALUES: &'static [&'static str] = &[$($name_lit),+];
+                const DESCRIPTIONS: &'static [&'static str] = &[$($variant_doc.trim_ascii()),+];
                 const DEFAULT: &'static str = Self::$default.name();
             }
         };
