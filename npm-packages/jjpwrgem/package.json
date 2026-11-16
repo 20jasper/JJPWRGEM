@@ -41,7 +41,7 @@
   "artifactDownloadUrl": "https://github.com/20jasper/jjpwrgem/releases/download/jjpwrgem-v0.7.6",
   "glibcMinimum": {
     "major": 2,
-    "series": 28
+    "series": 35
   },
   "preferUnplugged": true,
   "supportedPlatforms": {

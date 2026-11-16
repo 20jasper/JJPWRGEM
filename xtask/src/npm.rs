@@ -254,7 +254,7 @@ mod tests {
           "devDependencies": {},
           "engines": { "node": ">=14.18.0", "npm": ">=6" },
           "artifactDownloadUrl": "https://github.com/20jasper/jjpwrgem/releases/download/jjpwrgem-v0.5.1",
-          "glibcMinimum": { "major": 2, "series": 28 },
+          "glibcMinimum": { "major": 2, "series": 35 },
           "preferUnplugged": true,
           "supportedPlatforms": {
             "aarch64-apple-darwin": {

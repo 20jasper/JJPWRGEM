@@ -26,4 +26,4 @@ run = 'cargo zigbuild --locked --profile dist --bin jjp --target "$TARGET.$GLIBC
 
 [tasks.zigbuild.tools]
 zig = "0.17.1"
-"cargo:cargo-zigbuild" = "0.24.1"
+"github:rust-cross/cargo-zigbuild" = "0.24.1"
