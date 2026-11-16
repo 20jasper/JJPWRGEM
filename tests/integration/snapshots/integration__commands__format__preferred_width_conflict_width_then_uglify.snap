@@ -10,7 +10,7 @@ stdin ---
 stdout ---
 
 stderr ---
-error: --uglify cannot be combined with --preferred-width
+error: --preferred-width cannot be combined with --mode uglify
 
 Usage: jjp format [OPTIONS]
 

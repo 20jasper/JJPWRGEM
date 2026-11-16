@@ -1,0 +1,17 @@
+---
+source: tests/integration/commands/format.rs
+expression: output.snapshot_display()
+---
+args: ["format", "--uglify", "--mode", "uglify"]
+status: 2
+success: false
+stdin ---
+<no stdin passed>
+stdout ---
+
+stderr ---
+error: the argument '--uglify' cannot be used with '--mode <MODE>'
+
+Usage: jjp format --uglify
+
+For more information, try '--help'.

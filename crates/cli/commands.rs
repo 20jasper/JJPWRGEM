@@ -2,8 +2,8 @@ use clap::{
     Args, Command, CommandFactory, FromArgMatches, Parser, Subcommand, ValueEnum, error::ErrorKind,
 };
 use jjpwrgem_parse::format::{
-    ConfigError, DEFAULT_PREFERRED_WIDTH, FormatConfig, FormatOption, FormatRequest, LineEnding,
-    Parser as ParseParser, rule_clause,
+    ConfigError, DEFAULT_PREFERRED_WIDTH, FormatConfig, FormatMode, FormatOption, FormatRequest,
+    FormatSetting, FormatSettings, InputSettings, LineEnding, Parser as ParseParser, rule_clause,
 };
 
 use crate::{
@@ -56,11 +56,17 @@ pub enum Commands {
     Lsp,
 }
 
-#[derive(Args)]
+#[derive(Args, Debug)]
 pub struct FormatArgs {
-    #[arg(short, long, help = with_rules(
-        "Removes all insignificant whitespace instead of pretty printing, also known as minifying",
-        FormatOption::Uglify,
+    #[arg(value_enum, long, default_value_t, help = with_rules(
+        "Pretty print, or remove all insignificant whitespace (uglify, also known as minify)",
+        &FormatOption::for_setting(FormatSetting::Mode.name()),
+    ))]
+    mode: ModeArg,
+
+    #[arg(short, long, conflicts_with = "mode", help = with_rules(
+        "Shorthand for --mode uglify",
+        &FormatOption::for_setting(FormatSetting::Mode.name()),
     ))]
     uglify: bool,
 
@@ -68,7 +74,7 @@ pub struct FormatArgs {
         "{} [default: {DEFAULT_PREFERRED_WIDTH}]",
         with_rules(
             "Preferred maximum line width. Note this is not a hard maximum width",
-            FormatOption::PreferredWidth,
+            &FormatOption::for_setting(FormatSetting::PreferredWidth.name()),
         ),
     ))]
     preferred_width: Option<usize>,
@@ -79,42 +85,72 @@ pub struct FormatArgs {
 
     #[arg(value_enum, long, default_value_t, help = with_rules(
         "Parser to use for input",
-        FormatOption::Jsonlines,
+        &FormatOption::for_setting("parser"),
     ))]
     parser: ParserArg,
 }
 
-impl FormatArgs {
-    fn config(&self) -> FormatConfig {
-        FormatConfig {
-            parser: self.parser.into(),
-            uglify: self.uglify,
-            preferred_width: self.preferred_width,
-            line_ending: self.end_of_line.into(),
+impl From<FormatArgs> for FormatConfig {
+    fn from(args: FormatArgs) -> Self {
+        let mode = if args.uglify {
+            FormatMode::Uglify
+        } else {
+            args.mode.into()
+        };
+        Self {
+            input: InputSettings {
+                parser: args.parser.into(),
+            },
+            settings: FormatSettings {
+                mode,
+                preferred_width: args.preferred_width,
+                end_of_line: args.end_of_line.into(),
+            },
         }
     }
 }
 
 pub enum Action {
     Lsp,
-    Check(ParserArg),
+    Check(ParseParser),
     Format(FormatRequest),
 }
 
 pub fn parse() -> Action {
     let mut command = Cli::command();
-    let mut matches = command.get_matches_mut();
-    let name = matches.subcommand_name().map(str::to_owned);
-    let cli = Cli::from_arg_matches_mut(&mut matches).unwrap_or_else(|error| error.exit());
+    let matches = command.get_matches_mut();
+    let cli =
+        Cli::from_arg_matches(&matches).unwrap_or_else(|error| error.format(&mut command).exit());
     match cli.command {
         Commands::Lsp => Action::Lsp,
-        Commands::Check { parser } => Action::Check(parser),
-        Commands::Format(args) => match args.config().validate() {
+        Commands::Check { parser } => Action::Check(parser.into()),
+        Commands::Format(args) => match FormatRequest::try_from(FormatConfig::from(args)) {
             Ok(request) => Action::Format(request),
-            Err(ConfigError(rule)) => {
-                usage_error(&command, name.as_deref(), rule.describe(flag_spelling)).exit()
-            }
+            Err(ConfigError(rule)) => usage_error(
+                &command,
+                matches.subcommand_name(),
+                rule.describe(option_flag),
+            )
+            .exit(),
         },
+    }
+}
+
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq, ValueEnum)]
+pub enum ModeArg {
+    #[default]
+    #[value(name = "pretty")]
+    Pretty,
+    #[value(name = "uglify")]
+    Uglify,
+}
+
+impl From<ModeArg> for FormatMode {
+    fn from(arg: ModeArg) -> Self {
+        match arg {
+            ModeArg::Pretty => Self::Pretty,
+            ModeArg::Uglify => Self::Uglify,
+        }
     }
 }
 
@@ -154,20 +190,19 @@ impl From<ParserArg> for ParseParser {
     }
 }
 
-fn flag_spelling(option: FormatOption) -> String {
-    match option {
-        FormatOption::Uglify => "--uglify",
-        FormatOption::Jsonlines => "--parser jsonlines",
-        FormatOption::PreferredWidth => "--preferred-width",
+fn option_flag(option: FormatOption) -> String {
+    let flag = option.setting_name().replace('_', "-");
+    match option.value() {
+        Some(value) => format!("--{flag} {value}"),
+        None => format!("--{flag}"),
     }
-    .to_owned()
 }
 
-fn with_rules(help: &str, option: FormatOption) -> String {
-    rule_clause(option, flag_spelling).map_or_else(
-        || help.to_owned(),
-        |clause| format!("{help}. {} {clause}", flag_spelling(option)),
-    )
+fn with_rules(help: &str, options: &[FormatOption]) -> String {
+    match (options.first(), rule_clause(options, option_flag)) {
+        (Some(&subject), Some(clause)) => format!("{help}. {} {clause}", option_flag(subject)),
+        _ => help.to_owned(),
+    }
 }
 
 fn usage_error(

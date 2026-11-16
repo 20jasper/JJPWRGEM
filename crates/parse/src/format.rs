@@ -5,7 +5,8 @@ pub mod serde;
 pub(crate) mod uglify;
 
 pub use config::{
-    ConfigError, FORMAT_RULES, FormatConfig, FormatOption, Parser, Rule, rule_clause,
+    ConfigError, FORMAT_RULES, FormatConfig, FormatMode, FormatOption, FormatSetting,
+    FormatSettings, InputSettings, Parser, Rule, rule_clause,
 };
 pub use prettify::{prettify_document, prettify_document_into, prettify_str};
 pub use uglify::{uglify_document, uglify_document_into, uglify_str, uglify_str_into};

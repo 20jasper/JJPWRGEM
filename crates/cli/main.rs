@@ -17,13 +17,14 @@ use std::{
 };
 
 pub use error::{Error, Result};
-use jjpwrgem_parse::{diagnostics::Diagnostic, format::FormatRequest, format_str, validate_str};
+use jjpwrgem_parse::{
+    diagnostics::Diagnostic,
+    format::{FormatRequest, Parser},
+    format_str, validate_str,
+};
 use jjpwrgem_ui::{Color, Style};
 
-use crate::{
-    commands::{Action, ParserArg},
-    output::Output,
-};
+use crate::{commands::Action, output::Output};
 
 fn main() -> ExitCode {
     let style = Style::Pretty(Color::Plain);
@@ -33,8 +34,8 @@ fn main() -> ExitCode {
             lsp::run_blocking();
             ExitCode::SUCCESS
         }
-        Action::Check(ParserArg::Jsonlines) => run_on_stdin(style, check_jsonlines),
-        Action::Check(ParserArg::Json) => run_on_stdin(style, check),
+        Action::Check(Parser::Jsonlines) => run_on_stdin(style, check_jsonlines),
+        Action::Check(Parser::Json) => run_on_stdin(style, check),
         Action::Format(request) => {
             run_on_stdin(style, |json, style| format_input(json, style, &request))
         }
