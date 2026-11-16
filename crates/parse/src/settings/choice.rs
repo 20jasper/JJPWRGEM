@@ -1,4 +1,7 @@
-use super::{SettingKind, Spec, blank};
+use super::{
+    SettingKind,
+    spec::{Spec, blank},
+};
 
 pub trait Choice {
     const VALUES: &'static [&'static str];

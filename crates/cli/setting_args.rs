@@ -15,8 +15,12 @@ pub trait Help {
     fn help(setting: &Setting) -> String;
 
     fn shorthand_help(setting: &Setting, shorthand: &Shorthand) -> String {
-        format!("Shorthand for --{} {}", setting.flag(), shorthand.value)
+        shorthand_text(setting, shorthand)
     }
+}
+
+pub fn shorthand_text(setting: &Setting, shorthand: &Shorthand) -> String {
+    format!("Shorthand for --{} {}", setting.flag(), shorthand.value)
 }
 
 #[derive(Debug, Clone)]
@@ -44,11 +48,11 @@ fn invalid_value(message: impl Display) -> clap::Error {
 fn setting_arg(setting: &Setting, help: String) -> Arg {
     let arg = Arg::new(setting.name)
         .long(setting.flag())
-        .visible_aliases(setting.aliases.iter().copied());
+        .visible_aliases(setting.aliases.iter().copied())
+        .help(help)
+        .value_name(setting.name.to_uppercase());
     match setting.kind {
         SettingKind::Integer { default } => arg
-            .help(help)
-            .value_name(setting.name.to_uppercase())
             .default_value(default.to_string())
             .value_parser(value_parser!(usize)),
         SettingKind::Choice {
@@ -56,8 +60,6 @@ fn setting_arg(setting: &Setting, help: String) -> Arg {
             descriptions,
             default,
         } => arg
-            .help(help)
-            .value_name(setting.name.to_uppercase())
             .default_value(default)
             .value_parser(PossibleValuesParser::new(
                 values
@@ -69,15 +71,12 @@ fn setting_arg(setting: &Setting, help: String) -> Arg {
 }
 
 fn shorthand_arg(setting: &Setting, shorthand: &Shorthand, help: String) -> Arg {
-    let arg = Arg::new(shorthand.name)
+    Arg::new(shorthand.name)
         .long(shorthand.name)
+        .short(shorthand.short)
         .help(help)
         .action(ArgAction::SetTrue)
-        .conflicts_with(setting.name);
-    match shorthand.short {
-        Some(short) => arg.short(short),
-        None => arg,
-    }
+        .conflicts_with(setting.name)
 }
 
 fn shorthand_value(matches: &ArgMatches, setting: &Setting) -> Option<Value> {
