@@ -1,5 +1,6 @@
 use clap::{
     Args, Command, CommandFactory, FromArgMatches, Parser, Subcommand, ValueEnum, error::ErrorKind,
+    parser::ValueSource,
 };
 use jjpwrgem_parse::format::{
     ConfigError, DEFAULT_PREFERRED_WIDTH, FormatConfig, FormatMode, FormatOption, FormatRequest,
@@ -70,14 +71,11 @@ pub struct FormatArgs {
     ))]
     uglify: bool,
 
-    #[arg(long, help = format!(
-        "{} [default: {DEFAULT_PREFERRED_WIDTH}]",
-        with_rules(
-            "Preferred maximum line width. Note this is not a hard maximum width",
-            &FormatOption::for_setting(FormatSetting::PreferredWidth.name()),
-        ),
+    #[arg(long, default_value_t = DEFAULT_PREFERRED_WIDTH, help = with_rules(
+        "Preferred maximum line width. Note this is not a hard maximum width",
+        &FormatOption::for_setting(FormatSetting::PreferredWidth.name()),
     ))]
-    preferred_width: Option<usize>,
+    preferred_width: usize,
 
     /// Line ending to use when formatting output
     #[arg(value_enum, long, visible_alias = "eol", default_value_t)]
@@ -90,20 +88,21 @@ pub struct FormatArgs {
     parser: ParserArg,
 }
 
-impl From<FormatArgs> for FormatConfig {
-    fn from(args: FormatArgs) -> Self {
+impl FormatArgs {
+    fn into_config(self, width_explicit: bool) -> FormatConfig {
+        let args = self;
         let mode = if args.uglify {
             FormatMode::Uglify
         } else {
             args.mode.into()
         };
-        Self {
+        FormatConfig {
             input: InputSettings {
                 parser: args.parser.into(),
             },
             settings: FormatSettings {
                 mode,
-                preferred_width: args.preferred_width,
+                preferred_width: width_explicit.then_some(args.preferred_width),
                 end_of_line: args.end_of_line.into(),
             },
         }
@@ -124,15 +123,21 @@ pub fn parse() -> Action {
     match cli.command {
         Commands::Lsp => Action::Lsp,
         Commands::Check { parser } => Action::Check(parser.into()),
-        Commands::Format(args) => match FormatRequest::try_from(FormatConfig::from(args)) {
-            Ok(request) => Action::Format(request),
-            Err(ConfigError(rule)) => usage_error(
-                &command,
-                matches.subcommand_name(),
-                rule.describe(option_flag),
-            )
-            .exit(),
-        },
+        Commands::Format(args) => {
+            let width_explicit = matches
+                .subcommand_matches("format")
+                .and_then(|sub| sub.value_source("preferred_width"))
+                == Some(ValueSource::CommandLine);
+            match FormatRequest::try_from(args.into_config(width_explicit)) {
+                Ok(request) => Action::Format(request),
+                Err(ConfigError(rule)) => usage_error(
+                    &command,
+                    matches.subcommand_name(),
+                    rule.describe(option_flag),
+                )
+                .exit(),
+            }
+        }
     }
 }
 
