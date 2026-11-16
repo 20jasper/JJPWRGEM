@@ -78,7 +78,8 @@ fn render(package_json: &str) -> Result<String> {
         .filter(|(key, _)| !key.starts_with(SETTINGS_PREFIX))
         .collect();
     *properties = kept.into_iter().chain(generated_properties()).collect();
-    let compact = serde_json::to_string(&package)?;
+    let compact = jjpwrgem_parse::format::serde::uglify_serializable(&package)
+        .map_err(|error| anyhow!("{error}"))?;
     let pretty = prettify_str(&compact, DEFAULT_PREFERRED_WIDTH, LineEnding::default())
         .map_err(|error| anyhow!("{error}"))?;
     Ok(pretty + "\n")
