@@ -206,20 +206,14 @@ mod tests {
                 zip_ext: ".tar.xz".into(),
             },
             PlatformConfig {
-                rust_target: "x86_64-pc-windows-gnu".into(),
+                rust_target: "x86_64-pc-windows-msvc".into(),
                 artifact_name: "jjpwrgem-x86_64-pc-windows-msvc.zip".into(),
                 exe_suffix: ".exe".into(),
                 zip_ext: ".zip".into(),
             },
             PlatformConfig {
                 rust_target: "aarch64-pc-windows-msvc".into(),
-                artifact_name: "jjpwrgem-x86_64-pc-windows-msvc.zip".into(),
-                exe_suffix: ".exe".into(),
-                zip_ext: ".zip".into(),
-            },
-            PlatformConfig {
-                rust_target: "x86_64-pc-windows-msvc".into(),
-                artifact_name: "jjpwrgem-x86_64-pc-windows-msvc.zip".into(),
+                artifact_name: "jjpwrgem-aarch64-pc-windows-msvc.zip".into(),
                 exe_suffix: ".exe".into(),
                 zip_ext: ".zip".into(),
             },
@@ -283,18 +277,13 @@ mod tests {
               "bins": { "jjp": "jjp" },
               "zipExt": ".tar.xz"
             },
-            "x86_64-pc-windows-gnu": {
+            "x86_64-pc-windows-msvc": {
               "artifactName": "jjpwrgem-x86_64-pc-windows-msvc.zip",
               "bins": { "jjp": "jjp.exe" },
               "zipExt": ".zip"
             },
             "aarch64-pc-windows-msvc": {
-              "artifactName": "jjpwrgem-x86_64-pc-windows-msvc.zip",
-              "bins": { "jjp": "jjp.exe" },
-              "zipExt": ".zip"
-            },
-            "x86_64-pc-windows-msvc": {
-              "artifactName": "jjpwrgem-x86_64-pc-windows-msvc.zip",
+              "artifactName": "jjpwrgem-aarch64-pc-windows-msvc.zip",
               "bins": { "jjp": "jjp.exe" },
               "zipExt": ".zip"
             }
