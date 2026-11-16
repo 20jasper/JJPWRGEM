@@ -11,6 +11,7 @@
     "benches/docker/output/",
     "CHANGELOG.md",
     "pnpm-lock.yaml",
+    "npm-packages/jjpwrgem-vscode/package.json",
     "out",
     "dist",
     ".vscode-test/",
