@@ -1,3 +1,5 @@
+//! Settings metadata to more easily generate or describe settings for integrations like editor extensions. See the xtask for an example
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[expect(
     variant_size_differences,
