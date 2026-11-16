@@ -141,6 +141,16 @@ jobs:
           GLIBC: ${{ matrix.glibc }}
           GITHUB_TOKEN: ${{ github.token }}
           MISE_LOCKED: "1"
+      - if: matrix.glibc != ''
+        env:
+          GLIBC: ${{ matrix.glibc }}
+        run: |
+          highest=$(readelf --dyn-syms -W "target/$TARGET/dist/jjp" | grep -o 'GLIBC_[0-9.]*' | sed 's/^GLIBC_//' | sort -Vu | tail -n1)
+          echo "highest glibc symbol: $highest, floor: $GLIBC"
+          if [ "$(printf '%s\n' "$highest" "$GLIBC" | sort -V | tail -n1)" != "$GLIBC" ]; then
+            echo "jjp needs glibc $highest, above the $GLIBC floor" >&2
+            exit 1
+          fi
       - run: ./scripts/release/package.sh "$TARGET"
       - if: github.event_name == 'push'
         uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
