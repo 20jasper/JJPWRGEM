@@ -87,7 +87,7 @@ impl Help for FormatHelp {
     }
 
     fn shorthand_help(setting: &Setting, shorthand: &Shorthand) -> String {
-        let help = format!("Shorthand for {}", value_flag(setting, shorthand.value));
+        let help = format!("Shorthand for --{} {}", setting.flag(), shorthand.value);
         with_rules(&help, &FormatOption::for_setting(setting))
     }
 }
@@ -118,13 +118,9 @@ pub fn parse() -> Action {
     }
 }
 
-fn value_flag(setting: &Setting, value: &str) -> String {
-    format!("--{} {value}", setting.flag())
-}
-
 fn option_flag(option: FormatOption) -> String {
     match option.value() {
-        Some(value) => value_flag(option.setting(), value),
+        Some(value) => format!("--{} {value}", option.setting().flag()),
         None => format!("--{}", option.setting().flag()),
     }
 }
