@@ -108,7 +108,7 @@ pub mod scripted_server;
 
 pub use core::capabilities;
 
-pub use client::{Client, Timings};
+pub use client::{Client, Initialize, Timings};
 pub use command::server_command;
 pub use error::{Awaited, Error, ErrorKind, Result};
 pub use gen_lsp_types;
