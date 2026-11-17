@@ -42,17 +42,29 @@ run = [
 "github:bearcove/tracey" = "v1.4.0"
 "npm:oxfmt" = "0.77.0"
 
-[tasks.bench-codspeed]
-description = "Build and run all criterion benches via codspeed"
+[tasks.bench-codspeed-build]
+description = "Build the criterion benches for codspeed in simulation mode"
 dir = "{{config_root}}/benches"
 run = [
   "cargo build --profile dist -p jjpwrgem",
-  "cargo codspeed build {{vars.codspeed_benches}}",
-  "cargo codspeed run {{vars.codspeed_benches}}",
+  "cargo codspeed build --measurement-mode simulation {{vars.codspeed_benches}}",
 ]
 
-[tasks.bench-codspeed.tools]
+[tasks.bench-codspeed-build.tools]
 "github:CodSpeedHQ/codspeed-rust" = "6.0.0"
+
+[tasks.bench-codspeed-run]
+description = "Run the prebuilt codspeed benches (CI runs this inside the codspeed action)"
+dir = "{{config_root}}/benches"
+run = "cargo codspeed run {{vars.codspeed_benches}}"
+
+[tasks.bench-codspeed-run.tools]
+"github:CodSpeedHQ/codspeed-rust" = "6.0.0"
+
+[tasks.bench-codspeed]
+description = "Build and run all criterion benches via codspeed"
+depends = ["bench-codspeed-build"]
+run = "mise run bench-codspeed-run"
 
 [tasks.bench-iai]
 description = "Run the iai (gungraun) bench"
