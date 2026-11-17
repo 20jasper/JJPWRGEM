@@ -18,6 +18,7 @@ const TEMPLATE: &str = include_str!(concat!(
 struct ReleaseTarget {
     target: String,
     archive: String,
+    glibc: Option<String>,
 }
 
 fn release_targets() -> Result<Vec<ReleaseTarget>> {
@@ -67,6 +68,22 @@ fn supported_platform(archive: &str) -> Result<Value> {
         "bins": { BIN_NAME: format!("jjp{exe_suffix}") },
         "zipExt": zip_ext,
     }))
+}
+
+fn glibc_minimum(targets: &[ReleaseTarget]) -> Result<Value> {
+    let floors = targets
+        .iter()
+        .filter(|t| t.target.contains("linux"))
+        .filter_map(|t| t.glibc.as_deref())
+        .unique()
+        .collect::<Vec<_>>();
+    let [floor] = floors[..] else {
+        bail!("linux release targets must declare one glibc floor, found {floors:?}");
+    };
+    let (major, series) = floor
+        .split_once('.')
+        .with_context(|| format!("glibc floor {floor} is not major.series"))?;
+    Ok(json!({ "major": major.parse::<u64>()?, "series": series.parse::<u64>()? }))
 }
 
 fn patch_package_json(package: &Package, targets: &[ReleaseTarget]) -> Result<Value> {
@@ -122,6 +139,8 @@ fn patch_package_json(package: &Package, targets: &[ReleaseTarget]) -> Result<Va
             .collect::<Result<serde_json::Map<_, _>>>()?
             .into(),
     );
+
+    map.insert("glibcMinimum".into(), glibc_minimum(targets)?);
 
     Ok(pkg)
 }

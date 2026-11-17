@@ -4,6 +4,7 @@
 
 const { Package } = require("./binary-install");
 const os = require("os");
+const libc = require("detect-libc");
 
 const error = (msg) => {
   console.error(msg);
@@ -14,6 +15,7 @@ const {
   name,
   artifactDownloadUrl,
   supportedPlatforms,
+  glibcMinimum,
 } = require("./package.json");
 
 const getPlatform = () => {
@@ -43,6 +45,23 @@ const getPlatform = () => {
     case "arm64":
       arch = "aarch64";
       break;
+  }
+
+  if (rawOsType === "Linux") {
+    if (libc.familySync() !== "glibc") {
+      error(
+        `jjp only supports glibc on Linux, found ${libc.familySync() || "an unknown libc"}.`,
+      );
+    }
+    const [major, minor] = libc.versionSync().split(".").map(Number);
+    if (
+      major < glibcMinimum.major ||
+      (major === glibcMinimum.major && minor < glibcMinimum.series)
+    ) {
+      error(
+        `jjp needs glibc ${glibcMinimum.major}.${glibcMinimum.series} or newer, found ${major}.${minor}.`,
+      );
+    }
   }
 
   // Assume the above succeeded and build a target triple to look things up with.
