@@ -34,6 +34,9 @@ expression: actual
   "scripts": {
     "postinstall": "node ./install.js"
   },
+  "dependencies": {
+    "detect-libc": "^2.1.2"
+  },
   "devDependencies": {},
   "engines": {
     "node": ">=14.18.0",
@@ -84,5 +87,9 @@ expression: actual
       },
       "zipExt": ".zip"
     }
+  },
+  "glibcMinimum": {
+    "major": 2,
+    "series": 28
   }
 }

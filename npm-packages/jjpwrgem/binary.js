@@ -53,10 +53,14 @@ const getPlatform = () => {
         `jjp only supports glibc on Linux, found ${libc.familySync() || "an unknown libc"}.`,
       );
     }
-    const [major, minor] = libc.versionSync().split(".").map(Number);
+    const glibcVersion = libc.versionSync();
+    const [major, minor] = glibcVersion
+      ? glibcVersion.split(".").map(Number)
+      : [];
     if (
-      major < glibcMinimum.major ||
-      (major === glibcMinimum.major && minor < glibcMinimum.series)
+      glibcVersion &&
+      (major < glibcMinimum.major ||
+        (major === glibcMinimum.major && minor < glibcMinimum.series))
     ) {
       error(
         `jjp needs glibc ${glibcMinimum.major}.${glibcMinimum.series} or newer, found ${major}.${minor}.`,
