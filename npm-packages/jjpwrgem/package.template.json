@@ -26,10 +26,6 @@
     "npm": ">=6"
   },
   "artifactDownloadUrl": "",
-  "glibcMinimum": {
-    "major": 2,
-    "series": 35
-  },
   "preferUnplugged": true,
   "supportedPlatforms": {}
 }

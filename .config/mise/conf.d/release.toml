@@ -19,3 +19,21 @@ run = "cargo semver-checks check-release --workspace"
 
 [tasks.semver-check.tools]
 "cargo:cargo-semver-checks" = "0.51.0"
+
+[tasks.zigbuild]
+description = "Build the release binary for $TARGET against glibc $GLIBC"
+run = [
+  'cargo zigbuild --locked --profile dist --bin jjp --target "$TARGET.$GLIBC"',
+  """
+  highest=$(readelf --dyn-syms -W "target/$TARGET/dist/jjp" | grep -o 'GLIBC_[0-9.]*' | sed 's/^GLIBC_//' | sort -Vu | tail -n1)
+  echo "highest glibc symbol: $highest, floor: $GLIBC"
+  if [ "$(printf '%s\\n' "$highest" "$GLIBC" | sort -V | tail -n1)" != "$GLIBC" ]; then
+    echo "jjp needs glibc $highest, above the $GLIBC floor" >&2
+    exit 1
+  fi
+  """,
+]
+
+[tasks.zigbuild.tools]
+zig = "0.17.1"
+"github:rust-cross/cargo-zigbuild" = "0.24.1"
