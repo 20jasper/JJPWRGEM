@@ -2,9 +2,7 @@
 
 ## esbuild
 
-`optimize.js` is taken from esbuild v0.28.2, from `maybeOptimizePackage` and `isYarn` in [`lib/npm/node-install.ts`](https://github.com/evanw/esbuild/blob/v0.28.2/lib/npm/node-install.ts). TypeScript annotations are converted to JSDoc, and module-level state is turned into parameters.
-
-### esbuild license (MIT)
+`optimize.js`, from [esbuild v0.28.2](https://github.com/evanw/esbuild/blob/v0.28.2/lib/npm/node-install.ts).
 
 MIT License
 
@@ -30,9 +28,7 @@ SOFTWARE.
 
 ## cargo-dist
 
-`binary.js` and `binary-install.js` are derived from the npm installer of [cargo-dist](https://github.com/axodotdev/cargo-dist). cargo-dist is licensed under MIT OR Apache-2.0, and this package uses it under the MIT license below. The Apache License 2.0 is the alternative.
-
-### cargo-dist license (MIT)
+`binary.js` and `binary-install.js`, from [cargo-dist](https://github.com/axodotdev/cargo-dist). MIT OR Apache-2.0, used under MIT.
 
 Copyright (c) 2022-2024 Axo Developer Co.
 
