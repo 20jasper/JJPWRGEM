@@ -294,7 +294,7 @@ checksum = "fc652a48c352aef3ea3aed32080501cf3ef6ed5da78602a020c991775b0aff04"
 
 [[package]]
 name = "bytes2chars"
-version = "0.2.3"
+version = "0.2.4"
 dependencies = [
  "displaydoc",
 ]
@@ -1219,7 +1219,7 @@ checksum = "3bd1574e617a9a6c1f8f8181bd7e841e1f20e4277607ef28945765188d6284d4"
 
 [[package]]
 name = "jjpwrgem"
-version = "0.7.6"
+version = "0.7.7"
 dependencies = [
  "anstream",
  "bytes2chars",
@@ -1241,7 +1241,7 @@ dependencies = [
 
 [[package]]
 name = "jjpwrgem-lsp"
-version = "0.1.5"
+version = "0.1.6"
 dependencies = [
  "dashmap",
  "itertools 0.15.0",
@@ -1256,7 +1256,7 @@ dependencies = [
 
 [[package]]
 name = "jjpwrgem-parse"
-version = "0.14.3"
+version = "0.14.4"
 dependencies = [
  "bon",
  "bytes2chars",
@@ -1271,7 +1271,7 @@ dependencies = [
 
 [[package]]
 name = "jjpwrgem-schema"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "displaydoc",
  "jjpwrgem-parse",
@@ -1383,7 +1383,7 @@ dependencies = [
 
 [[package]]
 name = "lspresso"
-version = "0.2.2"
+version = "0.2.3"
 dependencies = [
  "codspeed-criterion-compat",
  "crossbeam-channel",

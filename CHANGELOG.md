@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## 0.7.7 — 2026-11-17
+
+### Changed
+
+- [98df779](https://github.com/20jasper/JJPWRGEM/commit/98df77924ee0129e082ae49acf60923917d2cfc5) strip debug symbol tables from release binary, lowering size by around 20%
+- [5df0ae2](https://github.com/20jasper/JJPWRGEM/commit/5df0ae2d872b7bde23ff8ae66d289ed57b0170a4) linux binaries now run on glibc 2.28 and newer, including RHEL 8
+- [eff36b5](https://github.com/20jasper/JJPWRGEM/commit/eff36b510b5c7ec962cf875461f7228d704ffe06) add `format::FormatConfig` and its conversion into a `FormatRequest`, shared by every front end. Format option conflicts exit with code 2 and a usage line. An explicit `--preferred-width` conflicts even at its default
+
+### Documentation
+
+- [4ee81fa](https://github.com/20jasper/JJPWRGEM/commit/4ee81fa8e591e767287bd3831b88316bb5ef6350) docs: document the format settings in the extension and language server readmes, with a Helix example
+
+### Fixed
+
+- [d209a12](https://github.com/20jasper/JJPWRGEM/commit/d209a12ee24961da18226ec88b7228b10b4bd9fd) fix broken doc links
+- [5df0ae2](https://github.com/20jasper/JJPWRGEM/commit/5df0ae2d872b7bde23ff8ae66d289ed57b0170a4) npm installer now accepts glibc 2.28 and newer, and says when glibc is too old or musl is in use instead of failing with "not supported"
+
+### Added
+
+- [eff36b5](https://github.com/20jasper/JJPWRGEM/commit/eff36b510b5c7ec962cf875461f7228d704ffe06) add `--mode <pretty|uglify>` with `-u` as a shorthand for `--mode uglify`, and `format::FormatMode`
+- [bd4555b](https://github.com/20jasper/JJPWRGEM/commit/bd4555bfcbbd7feb006e13c2b7d8a615ba1a90a5) native windows arm binaries
+- [83336de](https://github.com/20jasper/JJPWRGEM/commit/83336de3065bd62a2ec970b787e1373900d4d9ac) the language server and VS Code extension read `jjpwrgem.format` settings (`mode`, `preferredWidth`, `endOfLine`) from initialization options and `workspace/didChangeConfiguration`. Settings that do not apply are ignored instead of failing
+
 ## 0.7.6 — 2026-11-13
 
 ### Added
