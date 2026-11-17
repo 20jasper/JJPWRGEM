@@ -1,22 +1,34 @@
 #!/usr/bin/env node
 
+const { chmodSync, copyFileSync, linkSync, unlinkSync } = require("fs");
 const { join } = require("path");
 const { install, getPackage } = require("./binary");
-const { maybeOptimizePackage } = require("./optimize");
 const { artifactDownloadUrl } = require("./package.json");
 
-const isPnpm = /\bpnpm\//.test(process.env.npm_config_user_agent || "");
+const place = (source, target) => {
+  try {
+    unlinkSync(target);
+  } catch {}
+  try {
+    linkSync(source, target);
+  } catch {
+    copyFileSync(source, target);
+  }
+  if (process.platform !== "win32") {
+    chmodSync(target, 0o755);
+  }
+};
 
-Promise.resolve(install(false)).then(() => {
-  if (!artifactDownloadUrl) return;
-  if (!isPnpm) {
+Promise.resolve(install(false))
+  .then(() => {
+    if (!artifactDownloadUrl) return;
     const pkg = getPackage();
-    maybeOptimizePackage(
+    place(
       join(pkg.installDirectory, pkg.binaries.jjp),
-      join(__dirname, "run-jjp.js"),
+      join(__dirname, "bin", "jjp.exe"),
     );
-  }
-  if (process.platform === "win32" || isPnpm) {
-    console.error(require("./notice"));
-  }
-});
+  })
+  .catch((e) => {
+    console.error(`Failed to install jjp: ${e.message}`);
+    process.exit(1);
+  });

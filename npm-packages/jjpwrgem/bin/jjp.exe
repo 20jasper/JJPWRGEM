@@ -1,0 +1,9 @@
+echo "jjp was not installed: the package's install script did not run." >&2
+echo "" >&2
+echo "Reinstall with one of:" >&2
+echo "  npm install -g jjpwrgem --allow-scripts=jjpwrgem   (npm 11 and newer)" >&2
+echo "  npm install -g jjpwrgem                            (older npm)" >&2
+echo "" >&2
+echo "Or run the install script by hand:" >&2
+echo "  node <path to the jjpwrgem package>/install.js" >&2
+exit 1

@@ -26,7 +26,7 @@ cargo install jjpwrgem --locked
 
 **npm**
 
-Not recommended on Windows because of its overhead: on macOS and Linux npm runs the native binary directly, but on Windows every call goes through Node.
+npm needs jjpwrgem's install script to run, hence `--allow-scripts=jjpwrgem` on npm 11 and newer.
 
 npm 11 and newer:
 

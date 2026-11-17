@@ -100,14 +100,7 @@ const install = (suppressLogs) => {
   return pkg.install(suppressLogs);
 };
 
-const run = (binaryName) => {
-  const pkg = getPackage();
-
-  pkg.run(binaryName);
-};
-
 module.exports = {
   install,
-  run,
   getPackage,
 };
