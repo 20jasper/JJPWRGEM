@@ -45,9 +45,9 @@ Also there's a really cool axolotl riding a skateboard as the logo
 mise use -g github:20jasper/jjpwrgem
 ```
 
-Or `npm install -g jjpwrgem`, `cargo install jjpwrgem --locked`, or download a binary from [releases](https://github.com/20jasper/JJPWRGEM/releases)
+Or `npm install -g jjpwrgem --allow-scripts=jjpwrgem`, `cargo install jjpwrgem --locked`, or download a binary from [releases](https://github.com/20jasper/JJPWRGEM/releases)
 
-On macOS and Linux with npm, `jjp` runs the native binary after install. On Windows, under pnpm or Yarn, or when install scripts are blocked, it runs through Node, which adds about 20-30 ms per call. Native installs avoid that.
+With npm on macOS and Linux, `jjp` runs the native binary directly after install. Everywhere else (Windows, pnpm, Yarn, or with install scripts blocked) it runs through Node, which adds about 20-30 ms per call.
 
 ### From source
 

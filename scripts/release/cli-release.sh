@@ -26,7 +26,7 @@ if [ "$state" = missing ]; then
 
 \`\`\`bash
 mise use -g github:20jasper/jjpwrgem@$version
-npm install -g jjpwrgem@$version
+npm install -g jjpwrgem@$version --allow-scripts=jjpwrgem
 cargo install jjpwrgem --version $version --locked
 \`\`\`
 EOF
