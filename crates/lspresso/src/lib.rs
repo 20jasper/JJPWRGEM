@@ -2,7 +2,7 @@
 //!
 //! Use existing test helpers and benchmarking tools to validate and performance and correctness!
 //!
-//! ![an orange axolotl in a blue coffee cup falling over. coffee is spilling out and the axolotl looks distressed](./lspresso.webp)
+//! ![an orange axolotl in a blue coffee cup falling over. coffee is spilling out and the axolotl looks distressed](https://raw.githubusercontent.com/20jasper/JJPWRGEM/main/crates/lspresso/lspresso.webp)
 //!
 //! ```no_run
 //! # use std::{process::Command, time::Duration};
