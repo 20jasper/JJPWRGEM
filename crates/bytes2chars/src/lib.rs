@@ -101,7 +101,7 @@
 //!
 //! the unique benefit `bytes2chars` provides is rich error context
 //!
-//! see [BENCHMARKS.md](../BENCHMARKS.md) for throughput comparisons. `bytes2chars` still has a ways to go with perf!
+//! see [BENCHMARKS.md](https://github.com/20jasper/JJPWRGEM/blob/main/benches/BENCHMARKS.md) for throughput comparisons. `bytes2chars` still has a ways to go with perf!
 //!
 //! ### [`std::str::from_utf8`](https://doc.rust-lang.org/std/str/fn.from_utf8.html)
 //!

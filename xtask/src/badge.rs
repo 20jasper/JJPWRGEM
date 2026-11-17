@@ -63,7 +63,7 @@ pub fn spec_badge(spec: &str, covered: u32, total: u32) -> String {
     // `%25` is URL-encoded `%`
     let label = format!("spec:{}", spec.replace('-', "--"));
     format!(
-        "[![{spec}: {pct_int}%](https://img.shields.io/badge/{label}-{pct_int}%25-{color})](spec/{spec}.md)"
+        "[![{spec}: {pct_int}%](https://img.shields.io/badge/{label}-{pct_int}%25-{color})](https://github.com/20jasper/JJPWRGEM/blob/main/spec/{spec}.md)"
     )
 }
 
