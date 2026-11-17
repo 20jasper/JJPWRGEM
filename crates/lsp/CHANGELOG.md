@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## 0.1.6 — 2026-11-17
+
+### Documentation
+
+- [4ee81fa](https://github.com/20jasper/JJPWRGEM/commit/4ee81fa8e591e767287bd3831b88316bb5ef6350) docs: document the format settings in the extension and language server readmes, with a Helix example
+
+### Fixed
+
+- [d209a12](https://github.com/20jasper/JJPWRGEM/commit/d209a12ee24961da18226ec88b7228b10b4bd9fd) fix broken doc links
+
+### Added
+
+- [83336de](https://github.com/20jasper/JJPWRGEM/commit/83336de3065bd62a2ec970b787e1373900d4d9ac) the language server and VS Code extension read `jjpwrgem.format` settings (`mode`, `preferredWidth`, `endOfLine`) from initialization options and `workspace/didChangeConfiguration`. Settings that do not apply are ignored instead of failing
+
 ## 0.1.5 — 2026-11-13
 
 ### Added
