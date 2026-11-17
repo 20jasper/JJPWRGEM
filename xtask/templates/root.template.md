@@ -32,6 +32,8 @@ mise use -g github:20jasper/jjpwrgem
 
 Or `npm install -g jjpwrgem`, `cargo install jjpwrgem --locked`, or download a binary from [releases](https://github.com/20jasper/JJPWRGEM/releases)
 
+On macOS and Linux with npm, `jjp` runs the native binary after install. On Windows, under pnpm or Yarn, or when install scripts are blocked, it runs through Node, which adds about 20-30 ms per call. Native installs avoid that.
+
 ### From source
 
 ```bash

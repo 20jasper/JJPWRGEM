@@ -11,7 +11,7 @@
   "bin": {
     "jjp": "run-jjp.js"
   },
-  "files": ["*.js", "README.md", "CHANGELOG.md", "LICENSE"],
+  "files": ["*.js", "README.md", "CHANGELOG.md", "LICENSE", "THIRD_PARTY.md"],
   "type": "",
   "main": "",
   "scripts": {
