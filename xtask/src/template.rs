@@ -42,12 +42,6 @@ const LSP_DEMO_ALT: &str = "animation of JJPWRGEM's LSP in a 60,000 line file. f
 const LSP_DEMO_URL: &str = "https://raw.githubusercontent.com/20jasper/JJPWRGEM/main/npm-packages/jjpwrgem-vscode/vscode-jjp.gif";
 const LSP_FEATURES: &str = template!("lsp_features.md");
 
-const JJPWRGEM_TEMPLATE: &str = template!("root.template.md");
-const JJPWRGEM_PARSE_TEMPLATE: &str = template!("parse.template.md");
-const BENCH_TEMPLATE: &str = template!("bench.template.md");
-const BYTES2CHARS_BENCH_TEMPLATE: &str = template!("bytes2chars-bench.template.md");
-const JSON_BENCH_TEMPLATE: &str = template!("json-bench.template.md");
-const CLI_BENCH_TEMPLATE: &str = template!("cli-formatter-bench.template.md");
 const SHARED_FRAGMENT: &str = template!("indeterminate_handling.md");
 const BENCH_SUMMARY: &str = template!("bench_summary.md");
 const BENCH_INPUTS: &str = template!("bench_inputs.md");
@@ -57,10 +51,6 @@ const FIXTURE_CITM_CATALOG: &str = template!("fixture_citm_catalog.md");
 const FIXTURE_TWITTER: &str = template!("fixture_twitter.md");
 const FIXTURE_SMALL: &str = template!("fixture_small.md");
 const LSP_BENCH_TEMPLATE: &str = template!("lsp-bench.template.md");
-const VSCODE_TEMPLATE: &str = template!("vscode.template.md");
-const VSCODE_OUT_PATH_STR: &str = repo_path!("npm-packages/jjpwrgem-vscode/README.md");
-const LSP_CRATE_TEMPLATE: &str = template!("lsp_crate.template.md");
-const LSP_CRATE_OUT_PATH_STR: &str = repo_path!("crates/lsp/readme.md");
 const LSP_BENCH_OUT_PATH_STR: &str = repo_path!("benches/lsp/lsp.md");
 const LSP_BENCH_RESULTS_DIR: &str = repo_path!("benches/lsp/results");
 
@@ -71,12 +61,16 @@ fn generate_lsp_bench_readme() -> Option<String> {
     let citm_catalog =
         fs::read_to_string(format!("{LSP_BENCH_RESULTS_DIR}/citm_catalog.md")).ok()?;
 
-    let replacements = [
-        ("{{LSP_BENCH_CANADA_TABLE}}", canada.trim()),
-        ("{{LSP_BENCH_TWITTER_TABLE}}", twitter.trim()),
-        ("{{LSP_BENCH_SMALL_TABLE}}", small.trim()),
-        ("{{LSP_BENCH_CITM_CATALOG_TABLE}}", citm_catalog.trim()),
-    ];
+    let mut replacements = shared_replacements();
+    replacements.extend([
+        ("{{LSP_BENCH_CANADA_TABLE}}", canada.trim().to_string()),
+        ("{{LSP_BENCH_TWITTER_TABLE}}", twitter.trim().to_string()),
+        ("{{LSP_BENCH_SMALL_TABLE}}", small.trim().to_string()),
+        (
+            "{{LSP_BENCH_CITM_CATALOG_TABLE}}",
+            citm_catalog.trim().to_string(),
+        ),
+    ]);
 
     render_template(LSP_BENCH_TEMPLATE, &replacements).ok()
 }
@@ -91,64 +85,6 @@ fn coverage_badge(pct_str: &str) -> String {
         pct, pct, color
     )
 }
-
-const ROOT_OUT_PATH_STR: &str = repo_path!("readme.md");
-const PARSE_OUT_PATH_STR: &str = repo_path!("crates/parse/readme.md");
-const BENCH_OUT_PATH_STR: &str = repo_path!("benches/BENCHMARKS.md");
-const BYTES2CHARS_BENCH_OUT_PATH_STR: &str = repo_path!("benches/utf8.md");
-const JSON_BENCH_OUT_PATH_STR: &str = repo_path!("benches/json.md");
-const CLI_BENCH_OUT_PATH_STR: &str = repo_path!("benches/cli-formatter.md");
-
-const BYTES2CHARS_BENCH_TABLE_REPLACEMENTS: [(&str, &str); 1] = [(
-    "{{BYTES2CHARS_BENCH_TABLE}}",
-    include_str!(repo_path!("benches/output/bytes2chars.md")),
-)];
-
-const JSON_BENCH_TABLE_REPLACEMENTS: [(&str, &str); 4] = [
-    (
-        "{{JSON_DESER_BENCH_TABLE}}",
-        include_str!(repo_path!("benches/output/json_deser.md")),
-    ),
-    (
-        "{{JSON_PRETTIFY_BENCH_TABLE}}",
-        include_str!(repo_path!("benches/output/json_prettify.md")),
-    ),
-    (
-        "{{JSON_UGLIFY_BENCH_TABLE}}",
-        include_str!(repo_path!("benches/output/json_uglify.md")),
-    ),
-    (
-        "{{JSON_SERIALIZE_BENCH_TABLE}}",
-        include_str!(repo_path!("benches/output/json_serialize.md")),
-    ),
-];
-
-const BENCH_TABLE_REPLACEMENTS: [(&str, &str); 6] = [
-    (
-        "{{PRETTY_CANADA_TABLE}}",
-        include_str!(repo_path!("benches/docker/output/pretty-canada.md")),
-    ),
-    (
-        "{{UGLY_CANADA_TABLE}}",
-        include_str!(repo_path!("benches/docker/output/ugly-canada.md")),
-    ),
-    (
-        "{{PRETTY_CITM_CATALOG_TABLE}}",
-        include_str!(repo_path!("benches/docker/output/pretty-citm_catalog.md")),
-    ),
-    (
-        "{{UGLY_CITM_CATALOG_TABLE}}",
-        include_str!(repo_path!("benches/docker/output/ugly-citm_catalog.md")),
-    ),
-    (
-        "{{PRETTY_TWITTER_TABLE}}",
-        include_str!(repo_path!("benches/docker/output/pretty-twitter.md")),
-    ),
-    (
-        "{{UGLY_TWITTER_TABLE}}",
-        include_str!(repo_path!("benches/docker/output/ugly-twitter.md")),
-    ),
-];
 
 fn oxfmt_format(input: &str) -> Result<String> {
     let mut child = Command::new("oxfmt")
@@ -174,108 +110,176 @@ fn oxfmt_format(input: &str) -> Result<String> {
     Ok(formatted)
 }
 
-fn render_template(template: &str, replacements: &[(&str, &str)]) -> Result<String> {
-    let mut processed = template
-        .replace("{{IND}}", SHARED_FRAGMENT)
-        .replace("{{CHECK_EXAMPLE}}", strip_front_matter(CHECK_EXAMPLE))
-        .replace(
+fn shared_replacements() -> Vec<(&'static str, String)> {
+    let trimmed = |text: &str| text.trim().to_string();
+    vec![
+        ("{{IND}}", SHARED_FRAGMENT.to_string()),
+        (
+            "{{CHECK_EXAMPLE}}",
+            strip_front_matter(CHECK_EXAMPLE).to_string(),
+        ),
+        (
             "{{INSTALL}}",
-            &INSTALL
+            INSTALL
                 .trim()
                 .replace("{{AT_VERSION}}", "")
                 .replace("{{CARGO_VERSION}}", ""),
-        )
-        .replace("{{LSP_PERF_CLAIM}}", LSP_PERF_CLAIM)
-        .replace("{{LSP_DEMO_ALT}}", LSP_DEMO_ALT)
-        .replace("{{LSP_DEMO_URL}}", LSP_DEMO_URL)
-        .replace("{{LSP_FEATURES}}", LSP_FEATURES.trim())
-        .replace("{{HELIX_FORMAT_CONFIG}}", helix_format_config().trim_end())
-        .replace("{{BENCH_SUMMARY}}", BENCH_SUMMARY)
-        .replace("{{BENCH_INPUTS}}", BENCH_INPUTS)
-        .replace("{{BENCH_HARDWARE}}", BENCH_HARDWARE)
-        .replace("{{FIXTURE_CANADA}}", FIXTURE_CANADA)
-        .replace("{{FIXTURE_CITM_CATALOG}}", FIXTURE_CITM_CATALOG)
-        .replace("{{FIXTURE_TWITTER}}", FIXTURE_TWITTER)
-        .replace("{{FIXTURE_SMALL}}", FIXTURE_SMALL);
-
-    for (needle, replacement) in replacements {
-        processed = processed.replace(needle, replacement.trim());
-    }
-
-    let formatted = oxfmt_format(&format!("{}{}", BANNER, processed))?;
-    Ok(formatted)
+        ),
+        ("{{LSP_PERF_CLAIM}}", LSP_PERF_CLAIM.to_string()),
+        ("{{LSP_DEMO_ALT}}", LSP_DEMO_ALT.to_string()),
+        ("{{LSP_DEMO_URL}}", LSP_DEMO_URL.to_string()),
+        ("{{LSP_FEATURES}}", LSP_FEATURES.trim().to_string()),
+        (
+            "{{HELIX_FORMAT_CONFIG}}",
+            helix_format_config().trim_end().to_string(),
+        ),
+        ("{{BENCH_SUMMARY}}", BENCH_SUMMARY.to_string()),
+        ("{{BENCH_INPUTS}}", BENCH_INPUTS.to_string()),
+        ("{{BENCH_HARDWARE}}", BENCH_HARDWARE.to_string()),
+        ("{{FIXTURE_CANADA}}", FIXTURE_CANADA.to_string()),
+        ("{{FIXTURE_CITM_CATALOG}}", FIXTURE_CITM_CATALOG.to_string()),
+        ("{{FIXTURE_TWITTER}}", FIXTURE_TWITTER.to_string()),
+        ("{{FIXTURE_SMALL}}", FIXTURE_SMALL.to_string()),
+        ("{{COVERAGE_BADGE}}", trimmed(&coverage_badge(COVERAGE))),
+        (
+            "{{JSONLINES_SPEC_BADGE}}",
+            trimmed(&crate::spec_badges::badge_for("jsonlines")),
+        ),
+        (
+            "{{BYTES2CHARS_BENCH_TABLE}}",
+            trimmed(include_str!(repo_path!("benches/output/bytes2chars.md"))),
+        ),
+        (
+            "{{JSON_DESER_BENCH_TABLE}}",
+            trimmed(include_str!(repo_path!("benches/output/json_deser.md"))),
+        ),
+        (
+            "{{JSON_PRETTIFY_BENCH_TABLE}}",
+            trimmed(include_str!(repo_path!("benches/output/json_prettify.md"))),
+        ),
+        (
+            "{{JSON_UGLIFY_BENCH_TABLE}}",
+            trimmed(include_str!(repo_path!("benches/output/json_uglify.md"))),
+        ),
+        (
+            "{{JSON_SERIALIZE_BENCH_TABLE}}",
+            trimmed(include_str!(repo_path!("benches/output/json_serialize.md"))),
+        ),
+        (
+            "{{PRETTY_CANADA_TABLE}}",
+            trimmed(include_str!(repo_path!(
+                "benches/docker/output/pretty-canada.md"
+            ))),
+        ),
+        (
+            "{{UGLY_CANADA_TABLE}}",
+            trimmed(include_str!(repo_path!(
+                "benches/docker/output/ugly-canada.md"
+            ))),
+        ),
+        (
+            "{{PRETTY_CITM_CATALOG_TABLE}}",
+            trimmed(include_str!(repo_path!(
+                "benches/docker/output/pretty-citm_catalog.md"
+            ))),
+        ),
+        (
+            "{{UGLY_CITM_CATALOG_TABLE}}",
+            trimmed(include_str!(repo_path!(
+                "benches/docker/output/ugly-citm_catalog.md"
+            ))),
+        ),
+        (
+            "{{PRETTY_TWITTER_TABLE}}",
+            trimmed(include_str!(repo_path!(
+                "benches/docker/output/pretty-twitter.md"
+            ))),
+        ),
+        (
+            "{{UGLY_TWITTER_TABLE}}",
+            trimmed(include_str!(repo_path!(
+                "benches/docker/output/ugly-twitter.md"
+            ))),
+        ),
+        (
+            "{{VSCODE_SETTINGS_REFERENCE}}",
+            trimmed(&settings_reference("jjpwrgem.format.")),
+        ),
+        (
+            "{{LSP_SETTINGS_REFERENCE}}",
+            trimmed(&settings_reference("")),
+        ),
+    ]
 }
 
+fn render_template(template: &str, replacements: &[(&str, String)]) -> Result<String> {
+    let mut processed = template.to_string();
+    for (needle, replacement) in replacements {
+        processed = processed.replace(needle, replacement);
+    }
+
+    oxfmt_format(&format!("{}{}", BANNER, processed))
+}
+
+const GENERATED_READMES: &[(&str, &str)] = &[
+    (repo_path!("readme.md"), template!("root.template.md")),
+    (
+        repo_path!("crates/parse/readme.md"),
+        template!("parse.template.md"),
+    ),
+    (
+        repo_path!("benches/BENCHMARKS.md"),
+        template!("bench.template.md"),
+    ),
+    (
+        repo_path!("benches/cli-formatter.md"),
+        template!("cli-formatter-bench.template.md"),
+    ),
+    (
+        repo_path!("benches/utf8.md"),
+        template!("bytes2chars-bench.template.md"),
+    ),
+    (
+        repo_path!("benches/json.md"),
+        template!("json-bench.template.md"),
+    ),
+    (
+        repo_path!("npm-packages/jjpwrgem-vscode/README.md"),
+        template!("vscode.template.md"),
+    ),
+    (
+        repo_path!("crates/lsp/readme.md"),
+        template!("lsp_crate.template.md"),
+    ),
+];
+
 fn generated_readmes() -> Result<Vec<(&'static str, String)>> {
-    let badge = coverage_badge(COVERAGE);
-    let jsonlines_badge = crate::spec_badges::badge_for("jsonlines");
+    let replacements = shared_replacements();
+
+    let mut readmes = Vec::new();
+    for (path, template) in GENERATED_READMES {
+        readmes.push((*path, render_template(template, &replacements)?));
+    }
+
     let utf8_badge = crate::spec_badges::badge_for("utf8");
     let json_schema_badge = crate::spec_badges::badge_for("json-schema-v7");
-
     let bytes2chars_pre_rdme = BYTES2CHARS_TEMPLATE.replace("{{UTF8_SPEC_BADGE}}", &utf8_badge);
     let json_schema_pre_rdme =
         JSON_SCHEMA_TEMPLATE.replace("{{JSON_SCHEMA_V7_SPEC_BADGE}}", &json_schema_badge);
-
-    let mut readmes = vec![
-        (
-            ROOT_OUT_PATH_STR,
-            render_template(JJPWRGEM_TEMPLATE, &[("{{COVERAGE_BADGE}}", &badge)])?,
+    readmes.push((
+        BYTES2CHARS_README_PATH,
+        inject_pre_rdme(
+            &fs::read_to_string(BYTES2CHARS_README_PATH)?,
+            &bytes2chars_pre_rdme,
         ),
-        (
-            PARSE_OUT_PATH_STR,
-            render_template(
-                JJPWRGEM_PARSE_TEMPLATE,
-                &[("{{JSONLINES_SPEC_BADGE}}", &jsonlines_badge)],
-            )?,
+    ));
+    readmes.push((
+        JSON_SCHEMA_README_PATH,
+        inject_pre_rdme(
+            &fs::read_to_string(JSON_SCHEMA_README_PATH)?,
+            &json_schema_pre_rdme,
         ),
-        (BENCH_OUT_PATH_STR, render_template(BENCH_TEMPLATE, &[])?),
-        (
-            CLI_BENCH_OUT_PATH_STR,
-            render_template(CLI_BENCH_TEMPLATE, &BENCH_TABLE_REPLACEMENTS)?,
-        ),
-        (
-            BYTES2CHARS_BENCH_OUT_PATH_STR,
-            render_template(
-                BYTES2CHARS_BENCH_TEMPLATE,
-                &BYTES2CHARS_BENCH_TABLE_REPLACEMENTS,
-            )?,
-        ),
-        (
-            JSON_BENCH_OUT_PATH_STR,
-            render_template(JSON_BENCH_TEMPLATE, &JSON_BENCH_TABLE_REPLACEMENTS)?,
-        ),
-        (
-            VSCODE_OUT_PATH_STR,
-            render_template(
-                VSCODE_TEMPLATE,
-                &[(
-                    "{{SETTINGS_REFERENCE}}",
-                    &settings_reference("jjpwrgem.format."),
-                )],
-            )?,
-        ),
-        (
-            LSP_CRATE_OUT_PATH_STR,
-            render_template(
-                LSP_CRATE_TEMPLATE,
-                &[("{{SETTINGS_REFERENCE}}", &settings_reference(""))],
-            )?,
-        ),
-        (
-            BYTES2CHARS_README_PATH,
-            inject_pre_rdme(
-                &fs::read_to_string(BYTES2CHARS_README_PATH)?,
-                &bytes2chars_pre_rdme,
-            ),
-        ),
-        (
-            JSON_SCHEMA_README_PATH,
-            inject_pre_rdme(
-                &fs::read_to_string(JSON_SCHEMA_README_PATH)?,
-                &json_schema_pre_rdme,
-            ),
-        ),
-    ];
+    ));
     if let Some(lsp_bench_rendered) = generate_lsp_bench_readme() {
         readmes.push((LSP_BENCH_OUT_PATH_STR, lsp_bench_rendered));
     }
