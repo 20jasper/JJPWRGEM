@@ -24,8 +24,6 @@ Also there's a really cool axolotl riding a skateboard as the logo
 
 ## Installation
 
-### Precompiled
-
 {{INSTALL}}
 
 ### From source

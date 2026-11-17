@@ -17,9 +17,10 @@
   "author": "Jacob Asper <jacobasper191@gmail.com>",
   "repository": "https://github.com/20jasper/jjpwrgem",
   "bin": {
-    "jjp": "run-jjp.js"
+    "jjp": "bin/jjp.exe"
   },
   "files": [
+    "bin/jjp.exe",
     "*.js",
     "README.md",
     "CHANGELOG.md",

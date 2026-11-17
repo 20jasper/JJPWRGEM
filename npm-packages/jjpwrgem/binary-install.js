@@ -316,33 +316,6 @@ class Package {
         error(`Error fetching release: ${e.message}`);
       });
   }
-
-  run(binaryName) {
-    const promise = !this.exists() ? this.install(true) : Promise.resolve();
-
-    promise
-      .then(() => {
-        const [, , ...args] = process.argv;
-
-        const options = { cwd: process.cwd(), stdio: "inherit" };
-
-        const binRelPath = this.binaries[binaryName];
-        if (!binRelPath) {
-          error(`${binaryName} is not a known binary in ${this.name}`);
-        }
-        const binPath = join(this.installDirectory, binRelPath);
-        const result = spawnSync(binPath, args, options);
-
-        if (result.error) {
-          error(result.error);
-        }
-
-        process.exit(result.status);
-      })
-      .catch((e) => {
-        error(e.message);
-      });
-  }
 }
 
 module.exports.Package = Package;
