@@ -8,22 +8,7 @@ use anyhow::{Result, anyhow, bail};
 
 use crate::settings_docs::{helix_format_config, settings_reference};
 
-const BYTES2CHARS_README_PATH: &str = repo_path!("crates/bytes2chars/README.md");
-const BYTES2CHARS_TEMPLATE: &str = template!("bytes2chars.template.md");
-const JSON_SCHEMA_README_PATH: &str = repo_path!("crates/json-schema/README.md");
-const JSON_SCHEMA_TEMPLATE: &str = template!("json-schema.template.md");
 const RDME_START: &str = "<!-- cargo-rdme start -->";
-
-fn rdme_content(readme: &str) -> &str {
-    readme
-        .find(RDME_START)
-        .map(|pos| &readme[pos..])
-        .unwrap_or(readme)
-}
-
-fn inject_pre_rdme(readme: &str, pre_rdme: &str) -> String {
-    format!("{}\n\n{}", pre_rdme.trim_end(), rdme_content(readme))
-}
 
 fn strip_front_matter(raw: &str) -> &str {
     const FRONT_MATTER_SEP: &str = "\n---\n";
@@ -124,6 +109,14 @@ fn shared_replacements() -> Vec<(&'static str, String)> {
                 .trim()
                 .replace("{{AT_VERSION}}", "")
                 .replace("{{CARGO_VERSION}}", ""),
+        ),
+        (
+            "{{UTF8_SPEC_BADGE}}",
+            trimmed(&crate::spec_badges::badge_for("utf8")),
+        ),
+        (
+            "{{JSON_SCHEMA_V7_SPEC_BADGE}}",
+            trimmed(&crate::spec_badges::badge_for("json-schema-v7")),
         ),
         ("{{LSP_PERF_CLAIM}}", LSP_PERF_CLAIM.to_string()),
         ("{{LSP_DEMO_ALT}}", LSP_DEMO_ALT.to_string()),
@@ -251,6 +244,14 @@ const GENERATED_READMES: &[(&str, &str)] = &[
         repo_path!("crates/lsp/readme.md"),
         template!("lsp_crate.template.md"),
     ),
+    (
+        repo_path!("crates/bytes2chars/README.md"),
+        template!("bytes2chars.template.md"),
+    ),
+    (
+        repo_path!("crates/json-schema/README.md"),
+        template!("json-schema.template.md"),
+    ),
 ];
 
 fn generated_readmes() -> Result<Vec<(&'static str, String)>> {
@@ -258,28 +259,15 @@ fn generated_readmes() -> Result<Vec<(&'static str, String)>> {
 
     let mut readmes = Vec::new();
     for (path, template) in GENERATED_READMES {
-        readmes.push((*path, render_template(template, &replacements)?));
+        let mut rendered = render_template(template, &replacements)?;
+        if let Ok(existing) = fs::read_to_string(path)
+            && let Some(pos) = existing.find(RDME_START)
+        {
+            rendered = format!("{}\n\n{}", rendered.trim_end(), &existing[pos..]);
+        }
+        readmes.push((*path, rendered));
     }
 
-    let utf8_badge = crate::spec_badges::badge_for("utf8");
-    let json_schema_badge = crate::spec_badges::badge_for("json-schema-v7");
-    let bytes2chars_pre_rdme = BYTES2CHARS_TEMPLATE.replace("{{UTF8_SPEC_BADGE}}", &utf8_badge);
-    let json_schema_pre_rdme =
-        JSON_SCHEMA_TEMPLATE.replace("{{JSON_SCHEMA_V7_SPEC_BADGE}}", &json_schema_badge);
-    readmes.push((
-        BYTES2CHARS_README_PATH,
-        inject_pre_rdme(
-            &fs::read_to_string(BYTES2CHARS_README_PATH)?,
-            &bytes2chars_pre_rdme,
-        ),
-    ));
-    readmes.push((
-        JSON_SCHEMA_README_PATH,
-        inject_pre_rdme(
-            &fs::read_to_string(JSON_SCHEMA_README_PATH)?,
-            &json_schema_pre_rdme,
-        ),
-    ));
     if let Some(lsp_bench_rendered) = generate_lsp_bench_readme() {
         readmes.push((LSP_BENCH_OUT_PATH_STR, lsp_bench_rendered));
     }
