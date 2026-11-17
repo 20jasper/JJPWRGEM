@@ -27,7 +27,8 @@ expression: actual
     "*.js",
     "README.md",
     "CHANGELOG.md",
-    "LICENSE"
+    "LICENSE",
+    "THIRD_PARTY.md"
   ],
   "type": "",
   "main": "",

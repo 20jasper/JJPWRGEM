@@ -37,7 +37,7 @@ function maybeOptimizePackage(binPath, toPath) {
   // This optimization also doesn't apply when npm's "--ignore-scripts" flag is
   // used since in that case this install script will not be run.
   if (os.platform() !== "win32" && !isYarn()) {
-    const tempPath = path.join(path.dirname(toPath), "bin-esbuild");
+    const tempPath = path.join(path.dirname(toPath), "bin-jjp");
     try {
       // First link the binary with a temporary file. If this fails and throws an
       // error, then we'll just end up doing nothing. This uses a hard link to
