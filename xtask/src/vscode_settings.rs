@@ -8,10 +8,7 @@ use jjpwrgem_parse::{
 };
 use serde_json::{Map, Value, json};
 
-const PACKAGE_JSON: &str = concat!(
-    env!("CARGO_MANIFEST_DIR"),
-    "/../npm-packages/jjpwrgem-vscode/package.json"
-);
+const PACKAGE_JSON: &str = repo_path!("npm-packages/jjpwrgem-vscode/package.json");
 const SETTINGS_PREFIX: &str = "jjpwrgem.format.";
 const PROPERTIES_POINTER: &str = "/contributes/configuration/properties";
 

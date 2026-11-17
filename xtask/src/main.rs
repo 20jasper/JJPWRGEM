@@ -1,5 +1,17 @@
 use clap::{Parser, Subcommand};
 
+macro_rules! repo_path {
+    ($path:literal) => {
+        concat!(env!("CARGO_MANIFEST_DIR"), "/../", $path)
+    };
+}
+
+macro_rules! template {
+    ($name:literal) => {
+        include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/templates/", $name))
+    };
+}
+
 mod badge;
 mod bench_table;
 mod lsp_bench_report;
