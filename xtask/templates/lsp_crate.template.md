@@ -1,10 +1,10 @@
 {{LSP_FEATURES}}
 
-![{{LSP_DEMO_ALT}}](./lsp-demo.gif)
+![{{LSP_DEMO_ALT}}](https://raw.githubusercontent.com/20jasper/JJPWRGEM/main/crates/lsp/lsp-demo.gif)
 
 ## Installation
 
-[Install `jjp`](../../readme.md#installation), then configure based on your editor
+[Install `jjp`](https://github.com/20jasper/JJPWRGEM/blob/main/readme.md#installation), then configure based on your editor
 
 ### VSCode
 

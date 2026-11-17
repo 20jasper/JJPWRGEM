@@ -1,6 +1,6 @@
 <!-- GENERATED FILE - update the templates in the xtask -->
 
-[![crates.io](https://img.shields.io/crates/v/bytes2chars)](https://crates.io/crates/bytes2chars) [![docs.rs](https://img.shields.io/docsrs/bytes2chars)](https://docs.rs/bytes2chars) [![utf8: 100%](https://img.shields.io/badge/spec:utf8-100%25-brightgreen)](spec/utf8.md)
+[![crates.io](https://img.shields.io/crates/v/bytes2chars)](https://crates.io/crates/bytes2chars) [![docs.rs](https://img.shields.io/docsrs/bytes2chars)](https://docs.rs/bytes2chars) [![utf8: 100%](https://img.shields.io/badge/spec:utf8-100%25-brightgreen)](https://github.com/20jasper/JJPWRGEM/blob/main/spec/utf8.md)
 
 <!-- cargo-rdme start -->
 
@@ -87,7 +87,7 @@ conformance is validated against the [flenniken utf-8 test suite][utf8tests]
 
 the unique benefit `bytes2chars` provides is rich error context
 
-see [BENCHMARKS.md](../BENCHMARKS.md) for throughput comparisons. `bytes2chars` still has a ways to go with perf!
+see [BENCHMARKS.md](https://github.com/20jasper/JJPWRGEM/blob/main/benches/BENCHMARKS.md) for throughput comparisons. `bytes2chars` still has a ways to go with perf!
 
 ### [`std::str::from_utf8`](https://doc.rust-lang.org/std/str/fn.from_utf8.html)
 
