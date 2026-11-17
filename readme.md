@@ -39,23 +39,21 @@ Also there's a really cool axolotl riding a skateboard as the logo
 
 ## Installation
 
-### Precompiled
-
-**mise**
+### mise
 
 ```bash
 mise use -g github:20jasper/jjpwrgem
 ```
 
-**Cargo**
+### Cargo
 
 ```bash
 cargo install jjpwrgem --locked
 ```
 
-**npm**
+### npm
 
-npm needs jjpwrgem's install script to run, hence `--allow-scripts=jjpwrgem` on npm 11 and newer.
+The install script must run to fetch the native binary.
 
 npm 11 and newer:
 

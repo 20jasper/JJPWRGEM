@@ -12,21 +12,21 @@ JSON language server with rich error messages
 
 Install `jjp`
 
-**mise**
+### mise
 
 ```bash
 mise use -g github:20jasper/jjpwrgem
 ```
 
-**Cargo**
+### Cargo
 
 ```bash
 cargo install jjpwrgem --locked
 ```
 
-**npm**
+### npm
 
-npm needs jjpwrgem's install script to run, hence `--allow-scripts=jjpwrgem` on npm 11 and newer.
+The install script must run to fetch the native binary.
 
 npm 11 and newer:
 
