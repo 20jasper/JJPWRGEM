@@ -10,7 +10,7 @@ JSON language server with rich error messages
 
 Install `jjp`
 
-{{INSTALL_QUICK}}
+{{INSTALL}}
 
 ## Features
 

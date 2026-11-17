@@ -50,10 +50,7 @@ const CHECK_EXAMPLE: &str = include_str!(concat!(
 
 const BANNER: &str = "<!-- GENERATED FILE - update the templates in the xtask -->\n\n";
 
-const INSTALL_QUICK: &str = include_str!(concat!(
-    env!("CARGO_MANIFEST_DIR"),
-    "/templates/install_quick.md"
-));
+const INSTALL: &str = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/templates/install.md"));
 const LSP_PERF_CLAIM: &str = "[On large JSON files, diagnostics are up to ~5x faster and use ~20–25x less RAM than VSCode's LSP](https://github.com/20jasper/JJPWRGEM/blob/main/benches/lsp/lsp.md)";
 const LSP_DEMO_ALT: &str = "animation of JJPWRGEM's LSP in a 60,000 line file. file changes are made quickly and feedback is shown quickly. code actions fix common issues like missing colons";
 const LSP_DEMO_URL: &str = "https://raw.githubusercontent.com/20jasper/JJPWRGEM/main/npm-packages/jjpwrgem-vscode/vscode-jjp.gif";
@@ -319,7 +316,13 @@ fn render_template(
     let mut processed = template
         .replace("{{IND}}", SHARED_FRAGMENT)
         .replace("{{CHECK_EXAMPLE}}", strip_front_matter(CHECK_EXAMPLE))
-        .replace("{{INSTALL_QUICK}}", INSTALL_QUICK.trim())
+        .replace(
+            "{{INSTALL}}",
+            &INSTALL
+                .trim()
+                .replace("{{AT_VERSION}}", "")
+                .replace("{{CARGO_VERSION}}", ""),
+        )
         .replace("{{LSP_PERF_CLAIM}}", LSP_PERF_CLAIM)
         .replace("{{LSP_DEMO_ALT}}", LSP_DEMO_ALT)
         .replace("{{LSP_DEMO_URL}}", LSP_DEMO_URL)
