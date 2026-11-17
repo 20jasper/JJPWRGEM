@@ -48,23 +48,19 @@ const getPlatform = () => {
   }
 
   if (rawOsType === "Linux") {
-    if (libc.familySync() !== "glibc") {
+    const family = libc.familySync();
+    if (family !== "glibc") {
       error(
-        `jjp only supports glibc on Linux, found ${libc.familySync() || "an unknown libc"}.`,
+        `jjp only supports glibc on Linux, found ${family || "an unknown libc"}.`,
       );
     }
-    const glibcVersion = libc.versionSync();
-    const [major, minor] = glibcVersion
-      ? glibcVersion.split(".").map(Number)
-      : [];
-    if (
-      glibcVersion &&
-      (major < glibcMinimum.major ||
-        (major === glibcMinimum.major && minor < glibcMinimum.series))
-    ) {
-      error(
-        `jjp needs glibc ${glibcMinimum.major}.${glibcMinimum.series} or newer, found ${major}.${minor}.`,
-      );
+    const version = libc.versionSync();
+    if (version) {
+      const [major, minor] = version.split(".").map(Number);
+      const [minMajor, minMinor] = glibcMinimum.split(".").map(Number);
+      if (major < minMajor || (major === minMajor && minor < minMinor)) {
+        error(`jjp needs glibc ${glibcMinimum} or newer, found ${version}.`);
+      }
     }
   }
 

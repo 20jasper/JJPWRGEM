@@ -1,5 +1,5 @@
 use std::{
-    io::{BufRead, BufReader, Stdout, Write, stdin, stdout},
+    io::{BufRead, Stdout, Write, stdin, stdout},
     sync::{Arc, Mutex},
     thread::sleep,
     time::Duration,
@@ -112,7 +112,7 @@ fn main() {
         serde_json::from_str(&std::env::var(scripted_server::ENV).unwrap()).unwrap();
     let mut steps = std::mem::take(&mut config.steps).into_iter();
     let out = Arc::new(Mutex::new(stdout()));
-    let mut reader = BufReader::new(stdin());
+    let mut reader = stdin().lock();
 
     loop {
         let request =

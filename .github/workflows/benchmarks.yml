@@ -27,9 +27,12 @@ jobs:
           submodules: true
       - uses: ./.github/actions/setup-rust
       - uses: ./.github/actions/setup-mise
+      - name: Build benchmarks
+        run: mise run bench-codspeed-build
+      # anything in codspeed action runs in simulation mode, so build must go outside
       - name: Run benchmarks
         uses: CodSpeedHQ/action@78102a468f96d8e0ccb92d0ec49425753fc42062 # v5.6.0
         with:
-          run: mise run bench-codspeed
+          run: mise run bench-codspeed-run
           mode: simulation
           token: ${{ secrets.CODSPEED_TOKEN }}

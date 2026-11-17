@@ -88,8 +88,5 @@ expression: actual
       "zipExt": ".zip"
     }
   },
-  "glibcMinimum": {
-    "major": 2,
-    "series": 28
-  }
+  "glibcMinimum": "2.28"
 }
