@@ -43,7 +43,7 @@ export function activate(context: vscode.ExtensionContext): {
           if (action === "Installation instructions") {
             void vscode.env.openExternal(
               vscode.Uri.parse(
-                "https://github.com/20jasper/jjpwrgem#installation",
+                "https://github.com/20jasper/JJPWRGEM#installation",
               ),
             );
           }
