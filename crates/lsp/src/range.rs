@@ -1,4 +1,4 @@
-use gen_lsp_types::{Position, Range};
+use gen_lsp_types::*;
 use line_index::{LineIndex, TextSize, WideEncoding};
 
 pub(crate) const FULL_DOCUMENT_RANGE: Range = Range {

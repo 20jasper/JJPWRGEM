@@ -1,9 +1,6 @@
 use std::collections::HashMap;
 
-use gen_lsp_types::{
-    CodeAction, CodeActionKind, CodeActionResponse, Diagnostic, DiagnosticRelatedInformation,
-    DiagnosticSeverity, Location, TextEdit, Uri, WorkspaceEdit,
-};
+use gen_lsp_types::*;
 use jjpwrgem_parse::{
     ast::Document,
     diagnostics::{Context, Patch},

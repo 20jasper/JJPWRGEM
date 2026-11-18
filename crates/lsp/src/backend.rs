@@ -7,21 +7,7 @@ use std::{
     process::ExitCode,
 };
 
-use gen_lsp_types::{
-    ClientCapabilities, CodeActionParams, CodeActionRequest, CodeActionResponse, Diagnostic,
-    DiagnosticOptions, DiagnosticProvider, DidChangeConfigurationParams,
-    DidChangeTextDocumentParams, DidCloseTextDocumentParams, DidOpenTextDocumentParams,
-    DocumentDiagnosticParams, DocumentDiagnosticReport, DocumentDiagnosticRequest,
-    DocumentFormattingParams, DocumentFormattingRequest, DocumentSymbolParams,
-    DocumentSymbolRequest, DocumentSymbolResponse, FoldingRange, FoldingRangeParams,
-    FoldingRangeRequest, FullDocumentDiagnosticReport, InitializeParams, InitializeRequest,
-    InitializeResult, LogMessageNotification, LogMessageParams, LspNotificationMethod,
-    LspRequestMethod, MessageType, PositionEncodingKind, PublishDiagnosticsNotification,
-    PublishDiagnosticsParams, RelatedFullDocumentDiagnosticReport, Request, ServerCapabilities,
-    ServerInfo, ShowMessageNotification, ShowMessageParams, ShutdownRequest,
-    TextDocumentContentChangeEvent, TextDocumentSync, TextDocumentSyncKind,
-    TextDocumentSyncOptions, TextEdit, Uri, WorkDoneProgressOptions, json_rpc::Id,
-};
+use gen_lsp_types::*;
 use jjpwrgem_parse::{
     ast::Document,
     format::{FormatSettings, JsonMode, format_document},
@@ -37,7 +23,7 @@ use crate::{
         symbols::document_symbols,
     },
     range::{FULL_DOCUMENT_RANGE, PositionEncoding, Positions},
-    req_queue::Outgoing,
+    req_queue::{Id, Outgoing},
     transport::{Rejection, Writer},
     vendored::ErrorCode,
 };
@@ -467,11 +453,6 @@ fn client_supports_pull_diagnostics(capabilities: &ClientCapabilities) -> bool {
 
 #[cfg(test)]
 mod tests {
-
-    use gen_lsp_types::{
-        DiagnosticSeverity, Position, Range, TextDocumentContentChangePartial,
-        TextDocumentContentChangeWholeDocument,
-    };
 
     use super::*;
 

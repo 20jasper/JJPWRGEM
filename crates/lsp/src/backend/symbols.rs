@@ -1,6 +1,6 @@
 use std::range::Range as Span;
 
-use gen_lsp_types::{DocumentSymbol, SymbolKind};
+use gen_lsp_types::*;
 use jjpwrgem_parse::ast::{Document, Key, Value, quoted};
 
 use crate::range::{PositionEncoding, Positions};

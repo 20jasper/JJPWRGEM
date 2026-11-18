@@ -1,7 +1,7 @@
 // vendored from lsp-server v0.10.0
 use std::collections::HashMap;
 
-use gen_lsp_types::json_rpc::Id;
+pub(crate) use gen_lsp_types::json_rpc::Id;
 
 pub struct Outgoing<O> {
     next_id: i64,

@@ -3,11 +3,14 @@ use std::{
     io::{self, BufRead, BufWriter, StdoutLock, stdout},
 };
 
-use gen_lsp_types::{Notification, Request, json_rpc::Id};
+use gen_lsp_types::*;
 use serde::{Deserialize, Deserializer, Serialize, de::IgnoredAny};
 use serde_json::value::RawValue;
 
-use crate::vendored::{ErrorCode, ResponseError, read_msg_text, write_msg_text};
+use crate::{
+    req_queue::Id,
+    vendored::{ErrorCode, ResponseError, read_msg_text, write_msg_text},
+};
 
 const JSONRPC: &str = "2.0";
 
