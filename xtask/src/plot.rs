@@ -513,7 +513,7 @@ fn tick_positions(x_end: f64) -> Vec<f64> {
 }
 
 fn minor_tick_positions(majors: &[f64], x_end: f64) -> Vec<f64> {
-    const MINORS_PER_GAP: usize = 4;
+    const MINORS_PER_GAP: usize = 3;
     let mut ends: Vec<f64> = majors.iter().map(|position| position * position).collect();
     if let Some(&last) = ends.last()
         && let Some(&next) = TICK_CANDIDATES_MS.iter().find(|ms| **ms > last + 1e-9)
@@ -578,14 +578,14 @@ mod tests {
     }
 
     #[test]
-    fn minor_ticks_split_each_gap_into_four() {
+    fn minor_ticks_split_each_gap_into_three() {
         let majors = [100.0_f64.sqrt(), 250.0_f64.sqrt()];
         let minors: Vec<f64> = minor_tick_positions(&majors, 25.0)
             .iter()
             .map(|position| position * position)
             .collect();
 
-        let expected = [137.5, 175.0, 212.5, 312.5, 375.0, 437.5];
+        let expected = [150.0, 200.0, 1000.0 / 3.0, 1250.0 / 3.0];
         assert_eq!(minors.len(), expected.len());
         for (actual, expected) in minors.iter().zip(expected) {
             assert!((actual - expected).abs() < 1e-9);
