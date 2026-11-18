@@ -1,25 +1,14 @@
 use std::{
     cmp::Ordering,
     path::{Path, PathBuf},
-    sync::OnceLock,
 };
 
 use anyhow::{Context, Error, Result, anyhow, bail};
-use base64::{Engine as _, engine::general_purpose::STANDARD};
 use jjpwrgem_parse::ast::{self, Document, Value};
-use plotters::{
-    coord::Shift,
-    prelude::*,
-    style::{FontStyle, register_font},
-};
+use plotters::prelude::*;
 
 const CHART_WIDTH: u32 = 1280;
 const CHART_HEIGHT: u32 = 720;
-// Liberation Sans Narrow Regular is licensed under the SIL Open Font License 1.1.
-const EMBEDDED_FONT_BASE64: &str =
-    include_str!("../assets/fonts/liberation_sans_narrow_regular.ttf.base64");
-
-static FONT_BYTES: OnceLock<&'static [u8]> = OnceLock::new();
 
 struct BenchmarkResult {
     command: String,
@@ -140,35 +129,18 @@ enum BenchmarkAction {
 
 impl BenchmarkDataset {
     fn title(&self) -> String {
+        let action = match self.action {
+            BenchmarkAction::Pretty => "pretty print",
+            BenchmarkAction::Minify => "minify",
+        };
         format!(
-            "JSON {} {} Benchmark - Execution Time",
-            self.action.title_label(),
+            "JSON {action} {} Benchmark - Execution Time",
             self.info.display_name
         )
     }
 
     fn subtitle(&self) -> String {
-        format!(
-            "{} a {}",
-            self.action.subtitle_prefix(),
-            self.info.description
-        )
-    }
-}
-
-impl BenchmarkAction {
-    fn title_label(self) -> &'static str {
-        match self {
-            Self::Pretty => "pretty print",
-            Self::Minify => "minify",
-        }
-    }
-
-    fn subtitle_prefix(self) -> &'static str {
-        match self {
-            Self::Pretty => "Parsing and stringifying",
-            Self::Minify => "Parsing and stringifying",
-        }
+        format!("Parsing and stringifying a {}", self.info.description)
     }
 }
 
@@ -230,7 +202,7 @@ pub fn plot_all_benchmarks() -> Result<()> {
 
     for dataset in BENCHMARK_DATASETS {
         let input = output_dir.join(format!("{}.json", dataset.stem));
-        let output = output_dir.join(format!("{}.png", dataset.stem));
+        let output = output_dir.join(format!("{}.svg", dataset.stem));
         if let Err(err) =
             plot_benchmark_candlesticks(&input, &output, &dataset.title(), &dataset.subtitle())
         {
@@ -250,26 +222,12 @@ pub fn plot_all_benchmarks() -> Result<()> {
     }
 }
 
-impl CandlestickStats {
-    fn scaled(&self, factor: f64) -> Self {
-        Self {
-            min: self.min * factor,
-            q1: self.q1 * factor,
-            median: self.median * factor,
-            q3: self.q3 * factor,
-            max: self.max * factor,
-        }
-    }
-}
-
 pub fn plot_benchmark_candlesticks(
     input: &Path,
     output: &Path,
     title: &str,
     subtitle: &str,
 ) -> Result<()> {
-    ensure_font_registered()?;
-
     let raw = std::fs::read_to_string(input)
         .with_context(|| format!("failed to read input file {}", input.display()))?;
     let results = parse_benchmark_results(&raw)
@@ -277,13 +235,13 @@ pub fn plot_benchmark_candlesticks(
 
     let mut entries = Vec::new();
     for result in results {
-        let Some(time_stats) = compute_stats(&result.times) else {
+        let seconds_to_ms: Vec<f64> = result.times.iter().map(|time| time * 1_000.0).collect();
+        let Some(time) = compute_stats(&seconds_to_ms) else {
             bail!("benchmark '{}' is missing time samples", result.command);
         };
-
         entries.push(SeriesEntry {
             name: result.command,
-            time: time_stats,
+            time,
         });
     }
 
@@ -302,112 +260,67 @@ pub fn plot_benchmark_candlesticks(
         std::fs::create_dir_all(parent)?;
     }
 
-    let root = BitMapBackend::new(output, (CHART_WIDTH, CHART_HEIGHT)).into_drawing_area();
-    let background = RGBColor(255, 255, 255);
-    root.fill(&background)
-        .map_err(|err| anyhow!("failed to clear drawing area: {err}"))?;
-
-    let names: Vec<String> = entries.iter().map(|entry| entry.name.clone()).collect();
-    let raw_max = entries
-        .iter()
-        .map(|entry| entry.time.max * 1_000.0)
-        .fold(f64::NEG_INFINITY, |acc, value| acc.max(value));
-    let time_color = RGBColor(33, 150, 243);
+    let root = SVGBackend::new(output, (CHART_WIDTH, CHART_HEIGHT)).into_drawing_area();
+    root.fill(&WHITE).context("failed to clear drawing area")?;
     let chart_area = root
         .titled(title, ("sans-serif", 28).into_font())
-        .map_err(|err| anyhow!("failed to render chart title: {err}"))?;
-    let chart_area = chart_area
+        .context("failed to render chart title")?
         .titled(subtitle, ("sans-serif", 22).into_font())
-        .map_err(|err| anyhow!("failed to render chart subtitle: {err}"))?;
+        .context("failed to render chart subtitle")?;
 
-    let time_range = linear_range(raw_max);
-    draw_candlesticks(
-        &chart_area,
-        "Milliseconds",
-        &names,
-        &entries,
-        |entry| entry.time.scaled(1_000.0),
-        time_range,
-        time_color,
-        |_entry, stats| format!("{:.1} ms", stats.median),
-    )?;
+    draw_candlesticks(&chart_area, &entries)?;
 
-    root.present()
-        .map_err(|err| anyhow!("failed to write chart image: {err}"))?;
+    root.present().context("failed to write chart image")?;
     Ok(())
 }
 
-fn ensure_font_registered() -> Result<()> {
-    if FONT_BYTES.get().is_some() {
-        return Ok(());
-    }
-
-    let sanitized: String = EMBEDDED_FONT_BASE64.split_whitespace().collect();
-    let decoded = STANDARD
-        .decode(sanitized)
-        .context("failed to decode embedded font data")?;
-    let leaked: &'static [u8] = Box::leak(decoded.into_boxed_slice());
-    register_font("sans-serif", FontStyle::Normal, leaked)
-        .map_err(|_| anyhow!("embedded font registration failed"))?;
-    let _ = FONT_BYTES.set(leaked);
-    Ok(())
-}
-
-type SeriesAccessor = fn(&SeriesEntry) -> CandlestickStats;
-type LabelFormatter = fn(&SeriesEntry, CandlestickStats) -> String;
-
-#[allow(clippy::too_many_arguments)]
 fn draw_candlesticks(
-    area: &DrawingArea<BitMapBackend, Shift>,
-    y_label: &str,
-    names: &[String],
+    area: &DrawingArea<SVGBackend, plotters::coord::Shift>,
     entries: &[SeriesEntry],
-    accessor: SeriesAccessor,
-    y_range: std::ops::Range<f64>,
-    color: RGBColor,
-    label_formatter: LabelFormatter,
 ) -> Result<()> {
-    let x_range = 0..(entries.len() as i32);
+    let color = RGBColor(33, 150, 243);
     let grid_color = RGBColor(210, 210, 210);
-    let label_count = 8;
-    let candle_width: u32 = 28;
+    let label_color = RGBColor(30, 30, 30);
+    let font = ("sans-serif", 20).into_font();
+    let max = entries
+        .iter()
+        .map(|entry| entry.time.max)
+        .fold(f64::NEG_INFINITY, f64::max);
+
     let mut chart = ChartBuilder::on(area)
         .margin(25)
         .set_label_area_size(LabelAreaPosition::Left, 70)
         .set_label_area_size(LabelAreaPosition::Bottom, 90)
-        .build_cartesian_2d(x_range.clone(), y_range.clone())
-        .map_err(|err| anyhow!("failed to build candlestick chart: {err}"))?;
+        .build_cartesian_2d(0..entries.len() as i32, linear_range(max))
+        .context("failed to build candlestick chart")?;
 
-    let axis_font = ("sans-serif", 20).into_font();
     chart
         .configure_mesh()
         .light_line_style(ShapeStyle::from(grid_color).stroke_width(1))
         .bold_line_style(ShapeStyle::from(grid_color).stroke_width(2))
         .x_desc("Command")
-        .y_desc(y_label)
-        .axis_desc_style(("sans-serif", 20).into_font())
-        .label_style(axis_font.clone())
-        .x_labels(names.len())
+        .y_desc("Milliseconds")
+        .axis_desc_style(font.clone())
+        .label_style(font.clone())
+        .x_labels(entries.len())
         .x_label_formatter(&|value| {
-            if *value < 0 {
-                return String::new();
-            }
-            names.get(*value as usize).cloned().unwrap_or_default()
+            usize::try_from(*value)
+                .ok()
+                .and_then(|index| entries.get(index))
+                .map(|entry| entry.name.clone())
+                .unwrap_or_default()
         })
-        .x_label_style(axis_font.clone())
-        .y_labels(label_count)
+        .y_labels(8)
         .y_label_formatter(&|value| format!("{value:.0}"))
         .draw()
-        .map_err(|err| anyhow!("failed to configure chart mesh: {err}"))?;
+        .context("failed to configure chart mesh")?;
 
     let candle_style = ShapeStyle::from(color).filled().stroke_width(3);
     let whisker_style = ShapeStyle::from(color.mix(0.7)).stroke_width(10);
-    let label_font = ("sans-serif", 20).into_font();
-    let label_color = RGBColor(30, 30, 30);
 
     chart
         .draw_series(entries.iter().enumerate().map(|(index, entry)| {
-            let stats = accessor(entry);
+            let stats = entry.time;
             CandleStick::new(
                 index as i32,
                 stats.q1,
@@ -416,19 +329,21 @@ fn draw_candlesticks(
                 stats.q3,
                 candle_style,
                 whisker_style,
-                candle_width,
+                28,
             )
         }))
-        .map_err(|err| anyhow!("failed to draw candlestick series: {err}"))?;
+        .context("failed to draw candlestick series")?;
 
     chart
         .draw_series(entries.iter().enumerate().map(|(index, entry)| {
-            let stats = accessor(entry);
-            let label = label_formatter(entry, stats);
-            EmptyElement::at((index as i32, stats.max))
-                + Text::new(label, (0, -18), label_font.clone().color(&label_color))
+            EmptyElement::at((index as i32, entry.time.max))
+                + Text::new(
+                    format!("{:.1} ms", entry.time.median),
+                    (0, -18),
+                    font.clone().color(&label_color),
+                )
         }))
-        .map_err(|err| anyhow!("failed to draw candlestick labels: {err}"))?;
+        .context("failed to draw candlestick labels")?;
 
     Ok(())
 }
@@ -536,7 +451,7 @@ mod tests {
         let dir = std::env::temp_dir().join(format!("xtask-plot-{}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
         let input = dir.join("bench.json");
-        let output = dir.join("bench.png");
+        let output = dir.join("bench.svg");
         std::fs::write(&input, HYPERFINE_V2).unwrap();
 
         plot_benchmark_candlesticks(&input, &output, "title", "subtitle").unwrap();
