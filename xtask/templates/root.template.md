@@ -13,7 +13,7 @@ An RFC 8259 compliant JSON language server and formatter!
 ## Why JJP?
 
 - Rich errors with context, descriptions, and patches
-- {% filter trim %}{% include "lsp_perf_claim.md" %}{% endfilter %}
+- {% include "lsp_perf_claim.md" %}
 - Parses and pretty prints a 1.7MB file in ~7ms — [benchmarks](https://github.com/20jasper/JJPWRGEM/blob/main/benches/BENCHMARKS.md)
 
 ![animation of JJPWRGEM's LSP. file changes are made quickly and feedback is shown quickly. code actions fix common issues like missing colons](https://raw.githubusercontent.com/20jasper/JJPWRGEM/main/crates/lsp/lsp-demo.gif)

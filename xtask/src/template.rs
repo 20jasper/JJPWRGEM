@@ -32,7 +32,7 @@ const LSP_BENCH_RESULTS: &[&str] = &["canada", "twitter", "small", "citm_catalog
 fn load_source(name: &str) -> Result<Option<String>, minijinja::Error> {
     for root in [TEMPLATES_DIR, REPO_ROOT] {
         match fs::read_to_string(Path::new(root).join(name)) {
-            Ok(source) => return Ok(Some(source)),
+            Ok(source) => return Ok(Some(source.trim_end().to_string())),
             Err(err) if err.kind() == io::ErrorKind::NotFound => {}
             Err(err) => {
                 return Err(minijinja::Error::new(

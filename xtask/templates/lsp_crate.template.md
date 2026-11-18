@@ -1,6 +1,6 @@
-{% filter trim %}{% include "lsp_features.md" %}{% endfilter %}
+{% include "lsp_features.md" %}
 
-![{% filter trim %}{% include "lsp_demo_alt.md" %}{% endfilter %}](https://raw.githubusercontent.com/20jasper/JJPWRGEM/main/crates/lsp/lsp-demo.gif)
+![{% include "lsp_demo_alt.md" %}](https://raw.githubusercontent.com/20jasper/JJPWRGEM/main/crates/lsp/lsp-demo.gif)
 
 ## Installation
 

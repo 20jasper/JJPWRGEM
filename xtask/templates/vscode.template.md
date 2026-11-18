@@ -2,18 +2,18 @@
 
 JSON language server with rich error messages
 
-![{% filter trim %}{% include "lsp_demo_alt.md" %}{% endfilter %}]({% filter trim %}{% include "lsp_demo_url.md" %}{% endfilter %})
+![{% include "lsp_demo_alt.md" %}]({% include "lsp_demo_url.md" %})
 
-{% filter trim %}{% include "lsp_perf_claim.md" %}{% endfilter %}
+{% include "lsp_perf_claim.md" %}
 
 ## Requirements
 
 Install `jjp`
 
-{% filter trim %}{% include "install_quick.md" %}{% endfilter %}
+{% include "install_quick.md" %}
 
 ## Features
 
-{% filter trim %}{% include "lsp_features.md" %}{% endfilter %}
+{% include "lsp_features.md" %}
 
 {{ vscode_settings_reference }}
