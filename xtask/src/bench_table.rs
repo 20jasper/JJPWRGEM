@@ -3,30 +3,7 @@ use std::{
     io::{self, BufRead as _},
 };
 
-use serde::Deserialize;
-
-#[derive(Deserialize)]
-struct Estimate {
-    estimate: f64,
-}
-
-#[derive(Deserialize)]
-struct ThroughputEntry {
-    per_iteration: f64,
-}
-
-#[derive(Deserialize)]
-#[serde(tag = "reason")]
-enum Message {
-    #[serde(rename = "benchmark-complete")]
-    BenchmarkComplete {
-        id: String,
-        typical: Estimate,
-        throughput: Vec<ThroughputEntry>,
-    },
-    #[serde(other)]
-    Other,
-}
+use crate::criterion::{Message, format_time};
 
 fn parse_id(id: &str) -> Option<(&str, &str, &str)> {
     let mut parts = id.splitn(3, '/');
@@ -42,16 +19,6 @@ fn format_size(bytes: &str) -> String {
         Ok(b) if b >= 1024 => format!("{} KiB", b / 1024),
         Ok(b) => format!("{b} B"),
         Err(_) => bytes.to_owned(),
-    }
-}
-
-fn format_time(ns: f64) -> String {
-    if ns >= 1_000_000.0 {
-        format!("{:.2} ms", ns / 1_000_000.0)
-    } else if ns >= 1_000.0 {
-        format!("{:.2} µs", ns / 1_000.0)
-    } else {
-        format!("{:.2} ns", ns)
     }
 }
 
@@ -138,7 +105,7 @@ pub fn write_bench_table() -> anyhow::Result<()> {
             let mut throughput_row = format!("| throughput ({size}) |");
             for bench in &bench_names {
                 if let Some(&(ns, bytes)) = benches.get(bench) {
-                    time_row.push_str(&format!(" {} |", format_time(ns)));
+                    time_row.push_str(&format!(" {} |", format_time(ns, 2, " ", true)));
                     if let Some(bytes) = bytes {
                         throughput_row.push_str(&format!(" {} |", format_throughput(bytes, ns)));
                     } else {

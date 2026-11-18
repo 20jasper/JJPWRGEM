@@ -14,6 +14,7 @@ macro_rules! template {
 
 mod badges;
 mod bench_table;
+mod criterion;
 mod generated;
 mod lsp_bench_report;
 mod npm;

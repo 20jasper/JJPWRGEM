@@ -7,32 +7,12 @@ use std::{
 use anyhow::Context;
 use serde::Deserialize;
 
+use crate::criterion::{Message, format_time};
+
 const FIXTURES: &[&str] = &["small", "twitter", "citm_catalog", "canada"];
-
-#[derive(Deserialize)]
-struct Estimate {
-    estimate: f64,
-}
-
-#[derive(Deserialize)]
-#[serde(tag = "reason")]
-enum Message {
-    #[serde(rename = "benchmark-complete")]
-    BenchmarkComplete { id: String, typical: Estimate },
-    #[serde(other)]
-    Other,
-}
 
 #[derive(Clone, Copy, Deserialize)]
 struct Sums(f64, f64);
-
-fn duration(ns: f64) -> String {
-    if ns < 1_000_000.0 {
-        format!("{:.1}µs", ns / 1_000.0)
-    } else {
-        format!("{:.1}ms", ns / 1_000_000.0)
-    }
-}
 
 fn cell(ns: Option<f64>, sums: Option<Sums>, rss_bytes: Option<u64>) -> String {
     let Some(ns) = ns else {
@@ -40,9 +20,13 @@ fn cell(ns: Option<f64>, sums: Option<Sums>, rss_bytes: Option<u64>) -> String {
     };
     let timing = match sums {
         Some(Sums(server, total)) if server > 0.0 => {
-            format!("{} / {}", duration(ns), duration(ns * total / server))
+            format!(
+                "{} / {}",
+                format_time(ns, 1, "", false),
+                format_time(ns * total / server, 1, "", false)
+            )
         }
-        _ => duration(ns),
+        _ => format_time(ns, 1, "", false),
     };
     match rss_bytes {
         Some(bytes) => format!("{timing} ({:.1} MB)", bytes as f64 / (1024.0 * 1024.0)),
@@ -106,7 +90,7 @@ fn table(
 pub fn write_lsp_bench_report() -> anyhow::Result<()> {
     let mut times = BTreeMap::new();
     for line in io::stdin().lock().lines() {
-        if let Ok(Message::BenchmarkComplete { id, typical }) = serde_json::from_str(&line?) {
+        if let Ok(Message::BenchmarkComplete { id, typical, .. }) = serde_json::from_str(&line?) {
             times.insert(id, typical.estimate);
         }
     }
