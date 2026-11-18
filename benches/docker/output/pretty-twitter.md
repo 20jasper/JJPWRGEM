@@ -1,17 +1,17 @@
 | Command | Mean Wall Time [ms] | Change | Factor |
 |:---|---:|---:|:---|
-| `jjp` | 1.7 ± 0.4 |  |  |
-| `json-pp-rust` | 2.6 ± 0.6 | +50.5% | (1.5x slower) |
-| `jsonice` | 2.5 ± 0.5 | +45.9% | (1.5x slower) |
-| `prettier` | 199.2 ± 5.7 | +11649.6% | (117.5x slower) |
-| `jq` | 11.2 ± 1.2 | +561.9% | (6.6x slower) |
-| `gojq` | 8.2 ± 0.4 | +381.8% | (4.8x slower) |
-| `jaq` | 5.2 ± 0.7 | +205.2% | (3.1x slower) |
-| `sjq` | 27.9 ± 1.3 | +1544.1% | (16.4x slower) |
-| `dprint` | 29.5 ± 2.7 | +1642.0% | (17.4x slower) |
-| `python` | 104.1 ± 8.4 | +6041.9% | (61.4x slower) |
-| `node` | 23.7 ± 3.2 | +1298.6% | (14.0x slower) |
-| `bun` | 5.6 ± 0.8 | +227.4% | (3.3x slower) |
-| `jsonxf` | 0.8 ± 0.2 | -50.1% | (2.0x faster) |
-| `jsonformat` | 1.9 ± 0.3 | +14.7% |  |
-| `oxfmt` | 31.9 ± 3.7 | +1778.9% | (18.8x slower) |
+| `jjp` | 1.6 ± 0.3 |  |  |
+| `json-pp-rust` | 2.5 ± 0.6 | +59.6% | (1.6x slower) |
+| `jsonice` | 2.4 ± 0.4 | +49.6% | (1.5x slower) |
+| `prettier` | 204.6 ± 16.0 | +12723.8% | (128.2x slower) |
+| `jq` | 10.6 ± 1.0 | +561.7% | (6.6x slower) |
+| `gojq` | 8.0 ± 0.2 | +403.4% | (5.0x slower) |
+| `jaq` | 5.2 ± 0.7 | +225.2% | (3.3x slower) |
+| `sjq` | 27.3 ± 1.0 | +1614.2% | (17.1x slower) |
+| `dprint` | 29.6 ± 2.6 | +1755.3% | (18.6x slower) |
+| `python` | 102.7 ± 8.6 | +6339.2% | (64.4x slower) |
+| `node` | 23.1 ± 3.0 | +1350.0% | (14.5x slower) |
+| `bun` | 5.6 ± 0.9 | +248.1% | (3.5x slower) |
+| `jsonxf` | 0.8 ± 0.2 | -47.6% | (1.9x faster) |
+| `jsonformat` | 2.0 ± 0.3 | +23.5% |  |
+| `oxfmt` | 32.9 ± 3.9 | +1964.5% | (20.6x slower) |
