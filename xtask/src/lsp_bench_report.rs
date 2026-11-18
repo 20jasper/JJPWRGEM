@@ -104,8 +104,6 @@ fn table(
 /// table per fixture to `benches/lsp/results/` for `generate-readmes` to
 /// stitch into `benches/lsp/lsp.md`.
 pub fn write_lsp_bench_report() -> anyhow::Result<()> {
-    let manifest_dir = env!("CARGO_MANIFEST_DIR");
-
     let mut times = BTreeMap::new();
     for line in io::stdin().lock().lines() {
         if let Ok(Message::BenchmarkComplete { id, typical }) = serde_json::from_str(&line?) {
@@ -117,15 +115,15 @@ pub fn write_lsp_bench_report() -> anyhow::Result<()> {
         "no benchmark-complete messages on stdin -- pipe in `cargo criterion --bench lsp --message-format=json`"
     );
 
-    let sidecar_path = format!("{manifest_dir}/../target/bench/lsp-memory.json");
+    let sidecar_path = repo_path!("target/bench/lsp-memory.json");
     let memory: BTreeMap<String, u64> = serde_json::from_str(
-        &fs::read_to_string(&sidecar_path).with_context(|| format!("reading {sidecar_path}"))?,
+        &fs::read_to_string(sidecar_path).with_context(|| format!("reading {sidecar_path}"))?,
     )
     .with_context(|| format!("parsing {sidecar_path}"))?;
 
-    let timings_path = format!("{manifest_dir}/../target/bench/lsp-timings.json");
+    let timings_path = repo_path!("target/bench/lsp-timings.json");
     let sums: BTreeMap<String, Sums> = serde_json::from_str(
-        &fs::read_to_string(&timings_path).with_context(|| format!("reading {timings_path}"))?,
+        &fs::read_to_string(timings_path).with_context(|| format!("reading {timings_path}"))?,
     )
     .with_context(|| format!("parsing {timings_path}"))?;
 
@@ -141,8 +139,8 @@ pub fn write_lsp_bench_report() -> anyhow::Result<()> {
         })
         .collect();
 
-    let results_dir = format!("{manifest_dir}/../benches/lsp/results");
-    fs::create_dir_all(&results_dir).with_context(|| format!("creating {results_dir}"))?;
+    let results_dir = repo_path!("benches/lsp/results");
+    fs::create_dir_all(results_dir).with_context(|| format!("creating {results_dir}"))?;
     for fixture in FIXTURES {
         let path = format!("{results_dir}/{fixture}.md");
         fs::write(&path, table(fixture, &profiles, &times, &sums, &memory))
