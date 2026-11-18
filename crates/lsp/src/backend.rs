@@ -250,10 +250,7 @@ impl Backend {
         if let Err(panic) = catch_unwind(AssertUnwindSafe(|| {
             self.dispatch_notification(method, params);
         })) {
-            self.log_message(
-                MessageType::Error,
-                format!("internal error: {}", panic_message(&*panic)),
-            );
+            self.error(format!("internal error: {}", panic_message(&*panic)));
         }
         ControlFlow::Continue(())
     }
@@ -306,11 +303,16 @@ impl Backend {
     ) {
         match parse_params(params) {
             Ok(params) => handler(self, params),
-            Err(error) => self.log_message(
-                MessageType::Warning,
-                format!("invalid notification params: {error}"),
-            ),
+            Err(error) => self.warn(format!("invalid notification params: {error}")),
         }
+    }
+
+    fn error(&mut self, message: impl Into<String>) {
+        self.log_message(MessageType::Error, message);
+    }
+
+    fn warn(&mut self, message: impl Into<String>) {
+        self.log_message(MessageType::Warning, message);
     }
 
     fn log_message(&mut self, kind: MessageType, message: impl Into<String>) {
@@ -370,10 +372,7 @@ impl Backend {
     fn did_change(&mut self, params: DidChangeTextDocumentParams) {
         let uri = params.text_document.text_document_identifier.uri;
         let Some(document) = self.documents.remove(&uri) else {
-            self.log_message(
-                MessageType::Warning,
-                format!("received change for unopened document: {uri:?}"),
-            );
+            self.warn(format!("received change for unopened document: {uri:?}"));
             return;
         };
 
@@ -384,7 +383,7 @@ impl Backend {
         for change in params.content_changes {
             let positions = Positions::new(&text, self.position_encoding);
             if !apply_change(&mut text, change, &positions) {
-                self.log_message(MessageType::Warning, "ignored invalid content change");
+                self.warn("ignored invalid content change");
             }
         }
 
