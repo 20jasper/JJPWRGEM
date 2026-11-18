@@ -106,31 +106,33 @@ callgrind_annotate \
 [tasks.iai-annotate.tools]
 "cargo:rustfilt" = "0.2.2"
 
-[tasks.bench-docker]
-description = "Run perf tests against 10+ cli tools via docker and embed outputs in readmes"
+[tasks.bench-image]
+description = "Build the docker benchmark image (jjp-benchmark) with docker or podman"
 shell = "bash -c"
 run = '''
 set -euo pipefail
-mkdir -p benches/docker/output
-mise run -C benches/docker build-oci
 engine=$(command -v docker || command -v podman)
-export GITHUB_TOKEN="$(gh auth token 2>/dev/null || true)"
-if [ "$(basename "$engine")" = podman ]; then
-  tools_image=$(podman pull -q "oci:$(pwd)/benches/docker/.mise-oci")
-  podman build --security-opt label=disable -t jjp-benchmark \
-    --build-context "mise-tools=container-image://$tools_image" \
-    --secret id=gh_token,env=GITHUB_TOKEN \
-    .
-  run_args="--userns=keep-id -v $(pwd)/benches/docker/output:/benchmark/output:Z"
-else
-  docker buildx create --name jjp-bench --driver docker-container 2>/dev/null || true
-  docker buildx build --builder jjp-bench -t jjp-benchmark \
-    --build-context "mise-tools=oci-layout://$(pwd)/benches/docker/.mise-oci" \
-    --secret id=gh_token,env=GITHUB_TOKEN \
-    --load .
-  run_args="-v $(pwd)/benches/docker/output:/benchmark/output"
+export GITHUB_TOKEN="${GITHUB_TOKEN:-$(gh auth token 2>/dev/null || true)}"
+mise run -C benches/docker build-oci
+loaded=$(tar -C benches/docker/.mise-oci -c . | "$engine" load | sed -n 's/^Loaded image[^:]*: //p' | tail -n 1)
+"$engine" tag "$loaded" localhost/jjp-mise-tools
+"$engine" build --security-opt label=disable -t jjp-benchmark .
+'''
+
+[tasks.bench-docker]
+description = "Run perf tests against 10+ cli tools via docker and embed outputs in readmes"
+shell = "bash -c"
+depends = ["bench-image"]
+run = '''
+set -euo pipefail
+mkdir -p benches/docker/output
+engine=$(command -v docker || command -v podman)
+userns=()
+if [ "$(basename "$(readlink -f "$engine")")" = podman ]; then
+  userns=(--userns=keep-id)
 fi
-$engine run --rm -u "$(id -u):$(id -g)" $run_args jjp-benchmark
+"$engine" run --rm -u "$(id -u):$(id -g)" "${userns[@]}" --security-opt label=disable \
+  -v "$(pwd)/benches/docker/output:/benchmark/output:Z" jjp-benchmark
 
 oxfmt --no-error-on-unmatched-pattern './benches/docker/output/*.md' --write
 cargo xtask plot-benchmarks

@@ -28,7 +28,7 @@ RUN --mount=type=bind,source=crates,target=crates \
     cargo build --locked --profile dist && \
     install -Dm755 ./target/dist/$APP_NAME /usr/local/cargo/bin/$APP_NAME
 
-FROM mise-tools AS final
+FROM localhost/jjp-mise-tools AS final
 
 ARG BENCHMARK_PATH="./benches/docker"
 
