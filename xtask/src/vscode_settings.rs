@@ -1,12 +1,14 @@
 use std::fs;
 
-use anyhow::{Context, Result, anyhow, bail};
+use anyhow::{Context, Result, anyhow};
 use itertools::Itertools;
 use jjpwrgem_parse::{
     format::{DEFAULT_PREFERRED_WIDTH, FormatOption, FormatSetting, LineEnding, prettify_str},
     settings::{Setting, SettingKind},
 };
 use serde_json::{Map, Value, json};
+
+use crate::generated::write_or_check;
 
 const PACKAGE_JSON: &str = repo_path!("npm-packages/jjpwrgem-vscode/package.json");
 const SETTINGS_PREFIX: &str = "jjpwrgem.format.";
@@ -82,18 +84,9 @@ fn render(package_json: &str) -> Result<String> {
     Ok(pretty + "\n")
 }
 
-pub fn write_vscode_settings() -> Result<()> {
-    fs::write(PACKAGE_JSON, render(&fs::read_to_string(PACKAGE_JSON)?)?)?;
-    println!("generated vscode settings");
-    Ok(())
-}
-
-pub fn are_vscode_settings_updated() -> Result<()> {
-    let current = fs::read_to_string(PACKAGE_JSON)?;
-    if render(&current)? != current {
-        bail!("vscode settings are out of date, run `cargo xtask generate-vscode-settings`");
-    }
-    Ok(())
+pub fn vscode_settings(check: bool) -> Result<()> {
+    let generated = render(&fs::read_to_string(PACKAGE_JSON)?)?;
+    write_or_check(PACKAGE_JSON, &generated, "vscode-settings", check)
 }
 
 #[cfg(test)]

@@ -16,7 +16,7 @@ mkdir -p output
 cargo criterion --bench "$usage_name" --message-format=json \
   ${usage_sample_size:+--sample-size "$usage_sample_size"} \
   | cargo xtask bench-table > "output/$usage_name.md"
-cargo xtask generate-readmes
+cargo xtask readmes
 cargo +nightly fmt -p bytes2chars
 cargo rdme --workspace-project bytes2chars --force
 '''
@@ -125,7 +125,7 @@ docker run --rm \
 
 oxfmt './benches/docker/output/*.md' --write
 cargo xtask plot-benchmarks
-cargo xtask generate-readmes
+cargo xtask readmes
 cargo rdme --workspace-project bytes2chars --force
 '''
 
@@ -142,7 +142,7 @@ run = '''
 set -euo pipefail
 cargo build --profile dist -p jjpwrgem
 VSCODE_JSON_BIN="{{vars.vscode_json_bin}}" cargo criterion --bench lsp --message-format=json | cargo xtask lsp-bench-report
-cargo xtask generate-readmes
+cargo xtask readmes
 '''
 
 [tasks.bench-lsp.tools]

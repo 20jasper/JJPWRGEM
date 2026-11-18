@@ -24,8 +24,8 @@ outputs = [
   "npm-packages/jjpwrgem-vscode/package.json",
 ]
 run = [
-  "cargo xtask generate-readmes",
-  "cargo xtask generate-vscode-settings",
+  "cargo xtask readmes",
+  "cargo xtask vscode-settings",
   "cargo +nightly fmt -p bytes2chars",
   "cargo rdme --workspace-project bytes2chars --force",
   "cargo rdme --workspace-project lspresso --force",
@@ -39,8 +39,9 @@ run = [
 [tasks."readmes-check"]
 description = "Verify markdown files match generated templates"
 run = [
-  "cargo xtask verify-readmes",
-  "cargo xtask verify-vscode-settings",
+  "cargo xtask readmes --check",
+  "cargo xtask vscode-settings --check",
+  "cargo xtask npm-package --check",
   "cargo rdme --workspace-project bytes2chars --check",
   "cargo rdme --workspace-project lspresso --check",
 ]
