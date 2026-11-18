@@ -1,11 +1,13 @@
 use std::{
     cmp::Ordering,
+    ops::Range,
     path::{Path, PathBuf},
 };
 
 use anyhow::{Context, Error, Result, anyhow, bail};
 use jjpwrgem_parse::ast::{self, Document, Value};
 use plotters::{
+    coord::ranged1d::{DefaultFormatting, KeyPointHint, KeyPointWeight},
     element::DashedPathElement,
     prelude::*,
     style::text_anchor::{HPos, Pos, VPos},
@@ -18,6 +20,15 @@ const TICK_CANDIDATES_MS: [f64; 10] = [
 ];
 const PLOT_WIDTH_PX: f64 = 1100.0;
 const MIN_TICK_SPACING_PX: f64 = 80.0;
+const MINORS_PER_GAP: usize = 3;
+const AXIS_HEADROOM: f64 = 1.15;
+const BOX_HEIGHT_PX: u32 = 24;
+const CAP_PX: i32 = 10;
+const BASE: RGBColor = RGBColor(33, 150, 243);
+const HIGHLIGHT: RGBColor = RGBColor(255, 112, 0);
+const GRID: RGBColor = RGBColor(210, 210, 210);
+const MINOR_GRID: RGBColor = RGBColor(235, 235, 235);
+const TEXT: RGBColor = RGBColor(30, 30, 30);
 
 struct BenchmarkResult {
     command: String,
@@ -283,171 +294,169 @@ pub fn plot_benchmark_candlesticks(
     Ok(())
 }
 
+type RowKey = SegmentValue<usize>;
+
+struct SqrtRange {
+    end_ms: f64,
+}
+
+impl SqrtRange {
+    fn covering(max_ms: f64) -> Self {
+        Self {
+            end_ms: (max_ms * AXIS_HEADROOM * AXIS_HEADROOM).max(1.0),
+        }
+    }
+}
+
+impl Ranged for SqrtRange {
+    type FormatOption = DefaultFormatting;
+    type ValueType = f64;
+
+    fn map(&self, value: &f64, limit: (i32, i32)) -> i32 {
+        let fraction = value.max(0.0).sqrt() / self.end_ms.sqrt();
+        limit.0 + (fraction * f64::from(limit.1 - limit.0)).round() as i32
+    }
+
+    fn key_points<Hint: KeyPointHint>(&self, hint: Hint) -> Vec<f64> {
+        let majors = major_ticks(self.end_ms);
+        match hint.weight() {
+            KeyPointWeight::Bold => majors,
+            KeyPointWeight::Any => {
+                let minors = minor_ticks(&majors, self.end_ms);
+                majors.into_iter().chain(minors).collect()
+            }
+        }
+    }
+
+    fn range(&self) -> Range<f64> {
+        0.0..self.end_ms
+    }
+}
+
+struct Palette {
+    color: RGBColor,
+    label: RGBColor,
+    weight: FontStyle,
+}
+
+fn palette(name: &str) -> Palette {
+    if name == "jjp" {
+        Palette {
+            color: HIGHLIGHT,
+            label: HIGHLIGHT,
+            weight: FontStyle::Bold,
+        }
+    } else {
+        Palette {
+            color: BASE,
+            label: TEXT,
+            weight: FontStyle::Normal,
+        }
+    }
+}
+
 fn draw_candlesticks(
     area: &DrawingArea<SVGBackend, plotters::coord::Shift>,
     entries: &[SeriesEntry],
 ) -> Result<()> {
-    let color = RGBColor(33, 150, 243);
-    let highlight = RGBColor(255, 112, 0);
-    let grid_color = RGBColor(210, 210, 210);
-    let label_color = RGBColor(30, 30, 30);
     let font = ("sans-serif", 20).into_font();
     let max = entries
         .iter()
         .map(|entry| entry.time.max)
-        .fold(f64::NEG_INFINITY, f64::max);
-    let rows = entries.len() as f64;
-    let x_end = sqrt_range_end(max);
-    let ticks = tick_positions(x_end);
-    let minor_ticks = minor_tick_positions(&ticks, x_end);
-    let minor_grid_color = RGBColor(235, 235, 235);
-    let row_center = |index: usize| rows - index as f64 - 0.5;
-    let half_height = 0.3;
-    let cap = 0.15;
+        .fold(0.0, f64::max);
+    let rows = entries.len();
 
     let mut chart = ChartBuilder::on(area)
         .margin(25)
         .set_label_area_size(LabelAreaPosition::Left, 130)
         .set_label_area_size(LabelAreaPosition::Bottom, 100)
-        .build_cartesian_2d(0.0..x_end, 0.0..rows)
-        .context("failed to build candlestick chart")?;
+        .build_cartesian_2d(SqrtRange::covering(max), (0..rows - 1).into_segmented())
+        .context("failed to build chart")?;
 
     chart
         .configure_mesh()
-        .light_line_style(ShapeStyle::from(grid_color).stroke_width(1))
-        .bold_line_style(ShapeStyle::from(grid_color).stroke_width(2))
+        .bold_line_style(ShapeStyle::from(GRID).stroke_width(1))
+        .light_line_style(ShapeStyle::from(MINOR_GRID).stroke_width(1))
         .x_desc("Milliseconds (square-root scale)")
         .y_desc("Command")
         .axis_desc_style(font.clone())
-        .label_style(font.clone())
+        .x_label_style(font.clone().color(&TEXT))
+        .x_label_formatter(&|ms| format!("{ms:.0}"))
         .disable_y_mesh()
-        .y_labels(0)
-        .disable_x_mesh()
-        .x_labels(0)
+        .disable_y_axis()
         .draw()
-        .context("failed to configure chart mesh")?;
+        .context("failed to draw axes")?;
 
-    for tick in &minor_ticks {
-        chart
-            .draw_series(std::iter::once(PathElement::new(
-                vec![(*tick, 0.0), (*tick, rows)],
-                ShapeStyle::from(minor_grid_color).stroke_width(1),
-            )))
-            .context("failed to draw minor grid lines")?;
-        let (px, py) = chart.backend_coord(&(*tick, 0.0));
-        area.draw(&PathElement::new(
-            vec![(px, py), (px, py + 3)],
-            ShapeStyle::from(grid_color).stroke_width(1),
-        ))
-        .context("failed to draw minor tick marks")?;
-    }
-
-    for tick in &ticks {
-        chart
-            .draw_series(std::iter::once(PathElement::new(
-                vec![(*tick, 0.0), (*tick, rows)],
-                ShapeStyle::from(grid_color).stroke_width(1),
-            )))
-            .context("failed to draw grid lines")?;
-        let (px, py) = chart.backend_coord(&(*tick, 0.0));
-        area.draw(&Text::new(
-            format!("{:.0}", tick * tick),
-            (px, py + 6),
-            font.clone()
-                .color(&label_color)
-                .pos(Pos::new(HPos::Center, VPos::Top)),
-        ))
-        .context("failed to draw tick labels")?;
-    }
-
-    if let Some(jjp_index) = entries.iter().position(|entry| entry.name == "jjp") {
-        let median = entries[jjp_index].time.median.sqrt();
+    if let Some(jjp) = entries.iter().find(|entry| entry.name == "jjp") {
+        let median = jjp.time.median;
         chart
             .draw_series(std::iter::once(DashedPathElement::new(
-                [(median, 0.0), (median, rows)],
+                [(median, RowKey::Exact(0)), (median, RowKey::Last)],
                 6,
                 4,
-                ShapeStyle::from(highlight.mix(0.8)).stroke_width(1),
+                ShapeStyle::from(HIGHLIGHT.mix(0.8)).stroke_width(1),
             )))
             .context("failed to draw reference line")?;
     }
 
-    for (index, entry) in entries.iter().enumerate() {
-        let raw = entry.time;
-        let stats = CandlestickStats {
-            min: raw.min.sqrt(),
-            q1: raw.q1.sqrt(),
-            median: raw.median.sqrt(),
-            q3: raw.q3.sqrt(),
-            max: raw.max.sqrt(),
-        };
-        let is_jjp = entry.name == "jjp";
-        let row_color = if is_jjp { highlight } else { color };
-        let y = row_center(index);
-        let weight = if is_jjp {
-            FontStyle::Bold
-        } else {
-            FontStyle::Normal
-        };
+    for (row, entry) in entries.iter().rev().enumerate() {
+        let CandlestickStats {
+            min,
+            q1,
+            median,
+            q3,
+            max,
+        } = entry.time;
+        let Palette {
+            color,
+            label,
+            weight,
+        } = palette(&entry.name);
+        let y = RowKey::CenterOf(row);
+        let whisker_style = ShapeStyle::from(color.mix(0.7)).stroke_width(2);
+        let half_box = BOX_HEIGHT_PX / 2;
 
         chart
             .draw_series([
+                PathElement::new(vec![(min, y.clone()), (max, y.clone())], whisker_style),
                 PathElement::new(
-                    vec![(stats.min, y), (stats.max, y)],
-                    ShapeStyle::from(row_color.mix(0.7)).stroke_width(2),
-                ),
-                PathElement::new(
-                    vec![(stats.min, y - cap), (stats.min, y + cap)],
-                    ShapeStyle::from(row_color.mix(0.7)).stroke_width(2),
-                ),
-                PathElement::new(
-                    vec![(stats.max, y - cap), (stats.max, y + cap)],
-                    ShapeStyle::from(row_color.mix(0.7)).stroke_width(2),
+                    vec![(q1, y.clone()), (q3, y.clone())],
+                    ShapeStyle::from(color).stroke_width(BOX_HEIGHT_PX),
                 ),
             ])
-            .context("failed to draw whiskers")?;
+            .context("failed to draw whiskers and box")?;
 
         chart
-            .draw_series(std::iter::once(Rectangle::new(
-                [(stats.q1, y - half_height), (stats.q3, y + half_height)],
-                ShapeStyle::from(row_color).filled(),
-            )))
-            .context("failed to draw boxes")?;
+            .draw_series([min, max].map(|x| {
+                EmptyElement::at((x, y.clone()))
+                    + PathElement::new(vec![(0, -CAP_PX), (0, CAP_PX)], whisker_style)
+            }))
+            .context("failed to draw whisker caps")?;
 
         chart
-            .draw_series(std::iter::once(PathElement::new(
-                vec![
-                    (stats.median, y - half_height),
-                    (stats.median, y + half_height),
-                ],
-                ShapeStyle::from(WHITE).stroke_width(2),
-            )))
-            .context("failed to draw medians")?;
+            .draw_series([EmptyElement::at((median, y.clone()))
+                + PathElement::new(
+                    vec![(0, -(half_box as i32)), (0, half_box as i32)],
+                    ShapeStyle::from(WHITE).stroke_width(2),
+                )])
+            .context("failed to draw median marker")?;
 
-        let right_edge = stats.max.max(stats.q3);
-        chart
-            .draw_series(std::iter::once(
-                EmptyElement::at((right_edge, y))
-                    + Text::new(
-                        format!("{:.1} ms", raw.median),
-                        (10, 0),
-                        font.clone()
-                            .color(&label_color)
-                            .pos(Pos::new(HPos::Left, VPos::Center)),
-                    ),
-            ))
-            .context("failed to draw median labels")?;
-
-        let name_style = font
+        let median_label = font
+            .clone()
+            .color(&TEXT)
+            .pos(Pos::new(HPos::Left, VPos::Center));
+        let name_label = font
             .clone()
             .style(weight)
-            .color(&if is_jjp { highlight } else { label_color })
+            .color(&label)
             .pos(Pos::new(HPos::Right, VPos::Center));
         chart
-            .draw_series(std::iter::once(
-                EmptyElement::at((0.0, y)) + Text::new(entry.name.clone(), (-10, 0), name_style),
-            ))
-            .context("failed to draw row labels")?;
+            .draw_series([
+                EmptyElement::at((max.max(q3), y.clone()))
+                    + Text::new(format!("{median:.1} ms"), (10, 0), median_label),
+                EmptyElement::at((0.0, y)) + Text::new(entry.name.clone(), (-10, 0), name_label),
+            ])
+            .context("failed to draw labels")?;
     }
 
     Ok(())
@@ -492,45 +501,35 @@ fn percentile(sorted: &[f64], percentile: f64) -> f64 {
     }
 }
 
-fn sqrt_range_end(max: f64) -> f64 {
-    (max.max(0.0).sqrt() * 1.15).max(1.0)
-}
-
-fn tick_positions(x_end: f64) -> Vec<f64> {
+fn major_ticks(end_ms: f64) -> Vec<f64> {
     let mut kept: Vec<f64> = Vec::new();
-    for position in TICK_CANDIDATES_MS.iter().map(|ms| ms.sqrt()) {
-        if position > x_end {
-            break;
-        }
-        let far_enough = kept
-            .last()
-            .is_none_or(|last| (position - last) / x_end * PLOT_WIDTH_PX >= MIN_TICK_SPACING_PX);
+    for ms in TICK_CANDIDATES_MS
+        .into_iter()
+        .take_while(|ms| *ms <= end_ms)
+    {
+        let far_enough = kept.last().is_none_or(|last| {
+            (ms.sqrt() - last.sqrt()) / end_ms.sqrt() * PLOT_WIDTH_PX >= MIN_TICK_SPACING_PX
+        });
         if far_enough {
-            kept.push(position);
+            kept.push(ms);
         }
     }
     kept
 }
 
-fn minor_tick_positions(majors: &[f64], x_end: f64) -> Vec<f64> {
-    const MINORS_PER_GAP: usize = 3;
-    let mut ends: Vec<f64> = majors.iter().map(|position| position * position).collect();
-    if let Some(&last) = ends.last()
-        && let Some(&next) = TICK_CANDIDATES_MS.iter().find(|ms| **ms > last + 1e-9)
-    {
-        ends.push(next);
-    }
-    let mut minors = Vec::new();
-    for pair in ends.windows(2) {
-        let step = (pair[1] - pair[0]) / MINORS_PER_GAP as f64;
-        for index in 1..MINORS_PER_GAP {
-            let position = (pair[0] + step * index as f64).sqrt();
-            if position <= x_end {
-                minors.push(position);
-            }
-        }
-    }
-    minors
+fn minor_ticks(majors: &[f64], end_ms: f64) -> Vec<f64> {
+    let next_candidate = majors
+        .last()
+        .and_then(|last| TICK_CANDIDATES_MS.into_iter().find(|ms| ms > last));
+    let bounds: Vec<f64> = majors.iter().copied().chain(next_candidate).collect();
+    bounds
+        .windows(2)
+        .flat_map(|pair| {
+            let step = (pair[1] - pair[0]) / MINORS_PER_GAP as f64;
+            (1..MINORS_PER_GAP).map(move |index| pair[0] + step * index as f64)
+        })
+        .filter(|ms| *ms <= end_ms)
+        .collect()
 }
 
 #[cfg(test)]
@@ -579,17 +578,29 @@ mod tests {
 
     #[test]
     fn minor_ticks_split_each_gap_into_three() {
-        let majors = [100.0_f64.sqrt(), 250.0_f64.sqrt()];
-        let minors: Vec<f64> = minor_tick_positions(&majors, 25.0)
-            .iter()
-            .map(|position| position * position)
-            .collect();
+        let minors = minor_ticks(&[100.0, 250.0], 625.0);
 
         let expected = [150.0, 200.0, 1000.0 / 3.0, 1250.0 / 3.0];
         assert_eq!(minors.len(), expected.len());
         for (actual, expected) in minors.iter().zip(expected) {
             assert!((actual - expected).abs() < 1e-9);
         }
+    }
+
+    #[test]
+    fn major_ticks_stay_within_range() {
+        assert_eq!(
+            major_ticks(625.0),
+            [0.0, 5.0, 25.0, 50.0, 100.0, 250.0, 500.0]
+        );
+    }
+
+    #[test]
+    fn sqrt_range_maps_midpoint_of_root_axis() {
+        let range = SqrtRange { end_ms: 100.0 };
+
+        assert_eq!(range.map(&25.0, (0, 200)), 100);
+        assert_eq!(range.map(&100.0, (0, 200)), 200);
     }
 
     #[test]
