@@ -4,8 +4,8 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use anyhow::{Context, Error, Result, anyhow, bail};
-use jjpwrgem_parse::ast::{self, Document, Value};
+use anyhow::{Context, Result, anyhow, bail};
+use jjpwrgem_parse::ast::{Document, ObjectEntries, Value};
 use plotters::{
     coord::ranged1d::{DefaultFormatting, KeyPointHint, KeyPointWeight},
     element::DashedPathElement,
@@ -13,204 +13,90 @@ use plotters::{
     style::text_anchor::{HPos, Pos, VPos},
 };
 
-const CHART_WIDTH: u32 = 1280;
-const CHART_HEIGHT: u32 = 720;
-const TICK_CANDIDATES_MS: [f64; 10] = [
-    0.0, 5.0, 10.0, 25.0, 50.0, 100.0, 250.0, 500.0, 1000.0, 2500.0,
-];
-const PLOT_WIDTH_PX: f64 = 1100.0;
-const MIN_TICK_SPACING_PX: f64 = 80.0;
-const MINORS_PER_GAP: usize = 3;
-const AXIS_HEADROOM: f64 = 1.15;
-const BOX_HEIGHT_PX: u32 = 24;
-const CAP_PX: i32 = 10;
-const BASE: RGBColor = RGBColor(33, 150, 243);
-const HIGHLIGHT: RGBColor = RGBColor(255, 112, 0);
-const GRID: RGBColor = RGBColor(210, 210, 210);
-const MINOR_GRID: RGBColor = RGBColor(235, 235, 235);
-const TEXT: RGBColor = RGBColor(30, 30, 30);
+mod config;
+
+use config::{
+    AXIS_HEADROOM, BASE, BENCHMARK_DATASETS, BOX_HEIGHT_PX, CAP_PX, CHART_HEIGHT, CHART_MARGIN,
+    CHART_WIDTH, EXCLUDED_COMMANDS, GRID, HIGHLIGHT, HIGHLIGHT_COMMAND, LABEL_AREA_BOTTOM_PX,
+    LABEL_AREA_LEFT_PX, MIN_TICK_SPACING_PX, MINOR_GRID, MINORS_PER_GAP, PLOT_WIDTH_PX, TEXT,
+    TICK_CANDIDATES_MS,
+};
 
 struct BenchmarkResult {
     command: String,
     times: Vec<f64>,
 }
 
-impl TryFrom<(&Document<&str>, &Value)> for BenchmarkResult {
-    type Error = Error;
+fn field<'a>(doc: &Document<&str>, entries: &'a ObjectEntries, name: &str) -> Result<&'a Value> {
+    doc.get_object_value(entries, name)
+        .ok_or_else(|| anyhow!("missing '{name}' field"))
+}
 
-    fn try_from((doc, item): (&Document<&str>, &Value)) -> std::result::Result<Self, Self::Error> {
-        let ast::Value::Object(_, entry) = item else {
-            bail!("must be a JSON object");
-        };
-
-        let command_value = doc
-            .get_object_value(entry, "command")
-            .with_context(|| "missing 'command' field")?;
-        let command = doc
-            .as_str(command_value)
-            .with_context(|| "command must be a string")?;
-        // `name` holds the `--command-name` label, `command` the full command line
-        let command = doc
-            .get_object_value(entry, "name")
-            .and_then(|name| doc.as_str(name))
-            .unwrap_or(command)
-            .to_owned();
-
-        let measurements_value = doc
-            .get_object_value(entry, "measurements")
-            .with_context(|| "missing 'measurements' field")?;
-        let ast::Value::Array(_, measurements) = measurements_value else {
-            bail!("'measurements' must be an array");
-        };
-
-        let times = measurements
-            .iter()
-            .enumerate()
-            .map(|(index, measurement)| -> Result<f64> {
-                let ast::Value::Object(_, fields) = measurement else {
-                    bail!("measurements[{index}] must be an object");
-                };
-                let wall_clock = doc
-                    .get_object_value(fields, "time_wall_clock")
-                    .with_context(|| format!("measurements[{index}] missing 'time_wall_clock'"))?;
-                let ast::Value::Object(_, wall_clock_fields) = wall_clock else {
-                    bail!("measurements[{index}].time_wall_clock must be an object");
-                };
-                let value = doc
-                    .get_object_value(wall_clock_fields, "value")
-                    .with_context(|| {
-                        format!("measurements[{index}].time_wall_clock missing 'value'")
-                    })?;
-                doc.parse_f64(value).with_context(|| {
-                    format!("measurements[{index}].time_wall_clock.value must be a number")
-                })
-            })
-            .collect::<Result<Vec<_>>>()?;
-
-        Ok(BenchmarkResult { command, times })
+fn as_object<'a>(value: &'a Value, what: &str) -> Result<&'a ObjectEntries> {
+    match value {
+        Value::Object(_, entries) => Ok(entries),
+        _ => bail!("{what} must be an object"),
     }
+}
+
+fn as_array<'a>(value: &'a Value, what: &str) -> Result<&'a [Value]> {
+    match value {
+        Value::Array(_, items) => Ok(items),
+        _ => bail!("{what} must be an array"),
+    }
+}
+
+fn parse_result(doc: &Document<&str>, item: &Value) -> Result<BenchmarkResult> {
+    let entries = as_object(item, "result")?;
+
+    let command = doc
+        .as_str(field(doc, entries, "command")?)
+        .ok_or_else(|| anyhow!("'command' must be a string"))?;
+    // `name` holds the `--command-name` label, `command` the full command line
+    let command = field(doc, entries, "name")
+        .ok()
+        .and_then(|name| doc.as_str(name))
+        .unwrap_or(command)
+        .to_owned();
+
+    let times = as_array(field(doc, entries, "measurements")?, "'measurements'")?
+        .iter()
+        .enumerate()
+        .map(|(index, measurement)| {
+            let what = format!("measurements[{index}]");
+            let fields = as_object(measurement, &what)?;
+            let wall_clock = as_object(
+                field(doc, fields, "time_wall_clock").with_context(|| what.clone())?,
+                &format!("{what}.time_wall_clock"),
+            )?;
+            doc.parse_f64(field(doc, wall_clock, "value").with_context(|| what.clone())?)
+                .ok_or_else(|| anyhow!("{what}.time_wall_clock.value must be a number"))
+        })
+        .collect::<Result<Vec<_>>>()?;
+
+    Ok(BenchmarkResult { command, times })
 }
 
 fn parse_benchmark_results(raw: &str) -> Result<Vec<BenchmarkResult>> {
     let doc = Document::parse(raw)
         .map_err(|err| anyhow!("failed to parse JSON with jjpwrgem parser: {err}"))?;
-    let ast::Value::Object(_, entries) = doc.root() else {
-        bail!("benchmark data must be a JSON object");
-    };
+    let entries = as_object(doc.root(), "benchmark data")?;
 
-    let results_value = doc
-        .get_object_value(entries, "results")
-        .context("benchmark data missing 'results' field")?;
-    let ast::Value::Array(_, items) = results_value else {
-        bail!("'results' field must be an array");
-    };
-
-    items
+    as_array(field(&doc, entries, "results")?, "'results'")?
         .iter()
         .enumerate()
-        .map(|(index, item)| -> Result<BenchmarkResult> {
-            (&doc, item)
-                .try_into()
-                .with_context(|| format!("index: {index}"))
-        })
+        .map(|(index, item)| parse_result(&doc, item).with_context(|| format!("index: {index}")))
         .collect()
 }
 
-#[derive(Clone, Copy)]
-struct CandlestickStats {
+struct Series {
+    name: String,
     min: f64,
     q1: f64,
     median: f64,
     q3: f64,
     max: f64,
 }
-
-struct SeriesEntry {
-    name: String,
-    time: CandlestickStats,
-}
-
-struct BenchmarkDataset {
-    stem: &'static str,
-    action: BenchmarkAction,
-    info: &'static DatasetInfo,
-}
-
-struct DatasetInfo {
-    display_name: &'static str,
-    description: &'static str,
-}
-
-#[derive(Clone, Copy)]
-enum BenchmarkAction {
-    Pretty,
-    Minify,
-}
-
-impl BenchmarkDataset {
-    fn title(&self) -> String {
-        let action = match self.action {
-            BenchmarkAction::Pretty => "pretty print",
-            BenchmarkAction::Minify => "minify",
-        };
-        format!(
-            "JSON {action} {} Benchmark - Execution Time",
-            self.info.display_name
-        )
-    }
-
-    fn subtitle(&self) -> String {
-        format!("Parsing and stringifying a {}", self.info.description)
-    }
-}
-
-const CANADA_INFO: DatasetInfo = DatasetInfo {
-    display_name: "Canada",
-    description: "2.2MB JSON file with lots of lightly nested arrays",
-};
-
-const CITM_CATALOG_INFO: DatasetInfo = DatasetInfo {
-    display_name: "CITM catalog",
-    description: "1.7MB JSON file with lots of lightly nested, long objects",
-};
-
-const TWITTER_INFO: DatasetInfo = DatasetInfo {
-    display_name: "Twitter",
-    description: ".6MB JSON file with lots of lightly nested, short objects",
-};
-
-const BENCHMARK_DATASETS: &[BenchmarkDataset] = &[
-    BenchmarkDataset {
-        stem: "pretty-canada",
-        action: BenchmarkAction::Pretty,
-        info: &CANADA_INFO,
-    },
-    BenchmarkDataset {
-        stem: "pretty-citm_catalog",
-        action: BenchmarkAction::Pretty,
-        info: &CITM_CATALOG_INFO,
-    },
-    BenchmarkDataset {
-        stem: "pretty-twitter",
-        action: BenchmarkAction::Pretty,
-        info: &TWITTER_INFO,
-    },
-    BenchmarkDataset {
-        stem: "ugly-canada",
-        action: BenchmarkAction::Minify,
-        info: &CANADA_INFO,
-    },
-    BenchmarkDataset {
-        stem: "ugly-citm_catalog",
-        action: BenchmarkAction::Minify,
-        info: &CITM_CATALOG_INFO,
-    },
-    BenchmarkDataset {
-        stem: "ugly-twitter",
-        action: BenchmarkAction::Minify,
-        info: &TWITTER_INFO,
-    },
-];
 
 fn bench_output_dir() -> PathBuf {
     PathBuf::from(repo_path!("benches/docker/output"))
@@ -254,15 +140,15 @@ pub fn plot_benchmark_candlesticks(
         .with_context(|| format!("failed to parse benchmark data in {}", input.display()))?;
 
     let mut entries = Vec::new();
-    for result in results.into_iter().filter(|result| result.command != "sjq") {
+    for result in results
+        .into_iter()
+        .filter(|result| !EXCLUDED_COMMANDS.contains(&result.command.as_str()))
+    {
         let seconds_to_ms: Vec<f64> = result.times.iter().map(|time| time * 1_000.0).collect();
-        let Some(time) = compute_stats(&seconds_to_ms) else {
+        let Some(series) = compute_stats(result.command.clone(), &seconds_to_ms) else {
             bail!("benchmark '{}' is missing time samples", result.command);
         };
-        entries.push(SeriesEntry {
-            name: result.command,
-            time,
-        });
+        entries.push(series);
     }
 
     if entries.is_empty() {
@@ -270,9 +156,8 @@ pub fn plot_benchmark_candlesticks(
     }
 
     entries.sort_by(|left, right| {
-        left.time
-            .median
-            .partial_cmp(&right.time.median)
+        left.median
+            .partial_cmp(&right.median)
             .unwrap_or(Ordering::Equal)
     });
 
@@ -333,43 +218,18 @@ impl Ranged for SqrtRange {
     }
 }
 
-struct Palette {
-    color: RGBColor,
-    label: RGBColor,
-    weight: FontStyle,
-}
-
-fn palette(name: &str) -> Palette {
-    if name == "jjp" {
-        Palette {
-            color: HIGHLIGHT,
-            label: HIGHLIGHT,
-            weight: FontStyle::Bold,
-        }
-    } else {
-        Palette {
-            color: BASE,
-            label: TEXT,
-            weight: FontStyle::Normal,
-        }
-    }
-}
-
 fn draw_candlesticks(
     area: &DrawingArea<SVGBackend, plotters::coord::Shift>,
-    entries: &[SeriesEntry],
+    entries: &[Series],
 ) -> Result<()> {
     let font = ("sans-serif", 20).into_font();
-    let max = entries
-        .iter()
-        .map(|entry| entry.time.max)
-        .fold(0.0, f64::max);
+    let max = entries.iter().map(|entry| entry.max).fold(0.0, f64::max);
     let rows = entries.len();
 
     let mut chart = ChartBuilder::on(area)
-        .margin(25)
-        .set_label_area_size(LabelAreaPosition::Left, 130)
-        .set_label_area_size(LabelAreaPosition::Bottom, 100)
+        .margin(CHART_MARGIN)
+        .set_label_area_size(LabelAreaPosition::Left, LABEL_AREA_LEFT_PX)
+        .set_label_area_size(LabelAreaPosition::Bottom, LABEL_AREA_BOTTOM_PX)
         .build_cartesian_2d(SqrtRange::covering(max), (0..rows - 1).into_segmented())
         .context("failed to build chart")?;
 
@@ -387,8 +247,8 @@ fn draw_candlesticks(
         .draw()
         .context("failed to draw axes")?;
 
-    if let Some(jjp) = entries.iter().find(|entry| entry.name == "jjp") {
-        let median = jjp.time.median;
+    if let Some(jjp) = entries.iter().find(|entry| entry.name == HIGHLIGHT_COMMAND) {
+        let median = jjp.median;
         chart
             .draw_series(std::iter::once(DashedPathElement::new(
                 [(median, RowKey::Exact(0)), (median, RowKey::Last)],
@@ -400,18 +260,16 @@ fn draw_candlesticks(
     }
 
     for (row, entry) in entries.iter().rev().enumerate() {
-        let CandlestickStats {
+        let Series {
             min,
             q1,
             median,
             q3,
             max,
-        } = entry.time;
-        let Palette {
-            color,
-            label,
-            weight,
-        } = palette(&entry.name);
+            ..
+        } = *entry;
+        let highlighted = entry.name == HIGHLIGHT_COMMAND;
+        let color = if highlighted { HIGHLIGHT } else { BASE };
         let y = RowKey::CenterOf(row);
         let whisker_style = ShapeStyle::from(color.mix(0.7)).stroke_width(2);
         let half_box = BOX_HEIGHT_PX / 2;
@@ -447,8 +305,12 @@ fn draw_candlesticks(
             .pos(Pos::new(HPos::Left, VPos::Center));
         let name_label = font
             .clone()
-            .style(weight)
-            .color(&label)
+            .style(if highlighted {
+                FontStyle::Bold
+            } else {
+                FontStyle::Normal
+            })
+            .color(if highlighted { &HIGHLIGHT } else { &TEXT })
             .pos(Pos::new(HPos::Right, VPos::Center));
         chart
             .draw_series([
@@ -462,7 +324,7 @@ fn draw_candlesticks(
     Ok(())
 }
 
-fn compute_stats(values: &[f64]) -> Option<CandlestickStats> {
+fn compute_stats(name: String, values: &[f64]) -> Option<Series> {
     if values.is_empty() {
         return None;
     }
@@ -473,7 +335,8 @@ fn compute_stats(values: &[f64]) -> Option<CandlestickStats> {
     let min = *sorted.first()?;
     let max = *sorted.last()?;
 
-    Some(CandlestickStats {
+    Some(Series {
+        name,
         min,
         q1: percentile(&sorted, 0.25),
         median: percentile(&sorted, 0.5),
