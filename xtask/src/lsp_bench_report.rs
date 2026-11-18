@@ -7,7 +7,7 @@ use std::{
 use anyhow::Context;
 use serde::Deserialize;
 
-use crate::criterion::{Message, format_time};
+use crate::criterion::{Message, format_time, markdown_table};
 
 const FIXTURES: &[&str] = &["small", "twitter", "citm_catalog", "canada"];
 
@@ -34,13 +34,6 @@ fn cell(ns: Option<f64>, sums: Option<Sums>, rss_bytes: Option<u64>) -> String {
     }
 }
 
-fn row(label: &str, cells: impl IntoIterator<Item = String>) -> String {
-    format!(
-        "| {label} | {} |\n",
-        cells.into_iter().collect::<Vec<_>>().join(" | ")
-    )
-}
-
 /// `times`, `sums` and `memory` are all keyed by criterion's benchmark id
 fn table(
     fixture: &str,
@@ -50,37 +43,37 @@ fn table(
     memory: &BTreeMap<String, u64>,
 ) -> String {
     let method = |label: &str, id: &dyn Fn(&str) -> String| {
-        row(
-            label,
-            profiles.iter().map(|p| {
+        std::iter::once(label.to_owned())
+            .chain(profiles.iter().map(|p| {
                 let id = id(p);
                 cell(
                     times.get(&id).copied(),
                     sums.get(&id).copied(),
                     memory.get(&id).copied(),
                 )
-            }),
-        )
+            }))
+            .collect::<Vec<_>>()
     };
 
-    let mut out =
-        String::from("Note: memory values are RSS (resident set size), shown in megabytes.\n\n");
-    out.push_str(&row("method", profiles.iter().cloned()));
-    out.push_str(&row("---", profiles.iter().map(|_| "---".to_owned())));
-    out.push_str(&method("initialize", &|p| format!("initialize/{p}")));
-    out.push_str(&method("diagnostic", &|p| {
-        format!("diagnostics/{p}/{fixture}")
-    }));
-    out.push_str(&method("formatting", &|p| {
-        format!("formatting/{p}/{fixture}")
-    }));
-    out.push_str(&method("document symbols", &|p| {
-        format!("document_symbols/{p}/{fixture}")
-    }));
-    out.push_str(&method("folding ranges", &|p| {
-        format!("folding_ranges/{p}/{fixture}")
-    }));
-    out
+    let header: Vec<String> = std::iter::once("method".to_owned())
+        .chain(profiles.iter().cloned())
+        .collect();
+    let separator = vec![" --- "; header.len()];
+    let rows = vec![
+        method("initialize", &|p| format!("initialize/{p}")),
+        method("diagnostic", &|p| format!("diagnostics/{p}/{fixture}")),
+        method("formatting", &|p| format!("formatting/{p}/{fixture}")),
+        method("document symbols", &|p| {
+            format!("document_symbols/{p}/{fixture}")
+        }),
+        method("folding ranges", &|p| {
+            format!("folding_ranges/{p}/{fixture}")
+        }),
+    ];
+    format!(
+        "Note: memory values are RSS (resident set size), shown in megabytes.\n\n{}",
+        markdown_table(&header, &separator, &rows)
+    )
 }
 
 /// Reads `cargo criterion --bench lsp --message-format=json` from stdin,
