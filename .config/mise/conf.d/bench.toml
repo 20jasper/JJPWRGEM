@@ -110,20 +110,29 @@ callgrind_annotate \
 description = "Run perf tests against 10+ cli tools via docker and embed outputs in readmes"
 shell = "bash -c"
 run = '''
+set -euo pipefail
 mkdir -p benches/docker/output
 mise run -C benches/docker build-oci
-docker buildx create --name jjp-bench --driver docker-container 2>/dev/null || true
-GITHUB_TOKEN="$(gh auth token 2>/dev/null || true)" \
+engine=$(command -v docker || command -v podman)
+export GITHUB_TOKEN="$(gh auth token 2>/dev/null || true)"
+if [ "$(basename "$engine")" = podman ]; then
+  tools_image=$(podman pull -q "oci:$(pwd)/benches/docker/.mise-oci")
+  podman build --security-opt label=disable -t jjp-benchmark \
+    --build-context "mise-tools=container-image://$tools_image" \
+    --secret id=gh_token,env=GITHUB_TOKEN \
+    .
+  run_args="--userns=keep-id -v $(pwd)/benches/docker/output:/benchmark/output:Z"
+else
+  docker buildx create --name jjp-bench --driver docker-container 2>/dev/null || true
   docker buildx build --builder jjp-bench -t jjp-benchmark \
     --build-context "mise-tools=oci-layout://$(pwd)/benches/docker/.mise-oci" \
     --secret id=gh_token,env=GITHUB_TOKEN \
     --load .
-docker run --rm \
-  -u "$(id -u):$(id -g)" \
-  -v "$(pwd)/benches/docker/output:/benchmark/output" \
-  jjp-benchmark
+  run_args="-v $(pwd)/benches/docker/output:/benchmark/output"
+fi
+$engine run --rm -u "$(id -u):$(id -g)" $run_args jjp-benchmark
 
-oxfmt './benches/docker/output/*.md' --write
+oxfmt --no-error-on-unmatched-pattern './benches/docker/output/*.md' --write
 cargo xtask plot-benchmarks
 cargo xtask readmes
 cargo rdme --workspace-project bytes2chars --force
