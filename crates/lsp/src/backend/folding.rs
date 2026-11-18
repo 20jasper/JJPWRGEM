@@ -1,6 +1,6 @@
+use gen_lsp_types::FoldingRange;
 use itertools::Itertools;
 use jjpwrgem_parse::ast::{Document, Value};
-use tower_lsp_server::ls_types::FoldingRange;
 
 use crate::range::{PositionEncoding, Positions};
 

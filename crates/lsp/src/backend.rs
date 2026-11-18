@@ -1,12 +1,33 @@
-use std::sync::{OnceLock, PoisonError, RwLock};
+use std::{
+    any::Any,
+    collections::HashMap,
+    io,
+    ops::ControlFlow,
+    panic::{AssertUnwindSafe, catch_unwind},
+    process::ExitCode,
+};
 
-use dashmap::DashMap;
+use gen_lsp_types::{
+    ClientCapabilities, CodeActionParams, CodeActionRequest, CodeActionResponse, Diagnostic,
+    DiagnosticOptions, DiagnosticProvider, DidChangeConfigurationParams,
+    DidChangeTextDocumentParams, DidCloseTextDocumentParams, DidOpenTextDocumentParams,
+    DocumentDiagnosticParams, DocumentDiagnosticReport, DocumentDiagnosticRequest,
+    DocumentFormattingParams, DocumentFormattingRequest, DocumentSymbolParams,
+    DocumentSymbolRequest, DocumentSymbolResponse, FoldingRange, FoldingRangeParams,
+    FoldingRangeRequest, FullDocumentDiagnosticReport, InitializeParams, InitializeRequest,
+    InitializeResult, LogMessageNotification, LogMessageParams, LspNotificationMethod,
+    LspRequestMethod, MessageType, PositionEncodingKind, PublishDiagnosticsNotification,
+    PublishDiagnosticsParams, RelatedFullDocumentDiagnosticReport, Request, ServerCapabilities,
+    ServerInfo, ShowMessageNotification, ShowMessageParams, ShutdownRequest,
+    TextDocumentContentChangeEvent, TextDocumentSync, TextDocumentSyncKind,
+    TextDocumentSyncOptions, TextEdit, Uri, WorkDoneProgressOptions, json_rpc::Id,
+};
 use jjpwrgem_parse::{
     ast::Document,
     format::{FormatSettings, JsonMode, format_document},
 };
-use serde_json::Value;
-use tower_lsp_server::{Client, LanguageServer, jsonrpc::Result, ls_types::*};
+use serde::Deserialize;
+use serde_json::{Value, value::RawValue};
 
 use crate::{
     backend::{
@@ -16,17 +37,28 @@ use crate::{
         symbols::document_symbols,
     },
     range::{FULL_DOCUMENT_RANGE, PositionEncoding, Positions},
+    req_queue::Outgoing,
+    transport::{Rejection, Writer},
+    vendored::ErrorCode,
 };
 
 const SOURCE: &str = "jjpwrgem";
 
-#[derive(Debug)]
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Lifecycle {
+    Uninitialized,
+    Running,
+    ShutDown,
+}
+
 pub struct Backend {
-    client: Client,
-    documents: DashMap<Uri, jjpwrgem_parse::Result<Document<String>>>,
-    position_encoding: OnceLock<PositionEncoding>,
-    client_pulls_diagnostics: OnceLock<bool>,
-    format: RwLock<FormatSettings>,
+    out: Writer,
+    outgoing: Outgoing<()>,
+    lifecycle: Lifecycle,
+    documents: HashMap<Uri, jjpwrgem_parse::Result<Document<String>>>,
+    position_encoding: PositionEncoding,
+    client_pulls_diagnostics: bool,
+    format: FormatSettings,
 }
 
 mod diagnostics;
@@ -50,9 +82,14 @@ fn apply_change(
     change: TextDocumentContentChangeEvent,
     positions: &Positions,
 ) -> bool {
-    let Some(range) = change.range else {
-        *text = change.text;
-        return true;
+    let (range, new_text) = match change {
+        TextDocumentContentChangeEvent::TextDocumentContentChangePartial(change) => {
+            (change.range, change.text)
+        }
+        TextDocumentContentChangeEvent::TextDocumentContentChangeWholeDocument(change) => {
+            *text = change.text;
+            return true;
+        }
     };
 
     let start = positions.offset(text, range.start);
@@ -61,69 +98,38 @@ fn apply_change(
         return false;
     }
 
-    text.replace_range(start..end, &change.text);
+    text.replace_range(start..end, &new_text);
     true
 }
 
-impl Backend {
-    pub fn new(client: Client) -> Self {
-        Self {
-            client,
-            documents: DashMap::new(),
-            position_encoding: OnceLock::new(),
-            client_pulls_diagnostics: OnceLock::new(),
-            format: RwLock::default(),
-        }
-    }
-
-    fn position_encoding(&self) -> PositionEncoding {
-        self.position_encoding.get().copied().unwrap_or_default()
-    }
-
-    fn client_pulls_diagnostics(&self) -> bool {
-        self.client_pulls_diagnostics
-            .get()
-            .copied()
-            .unwrap_or_default()
-    }
-
-    fn with_document<T>(&self, uri: &Uri, f: impl FnOnce(&Document<String>) -> T) -> Option<T> {
-        let document = self.documents.get(uri)?;
-        document.as_ref().ok().map(f)
-    }
-
-    async fn update_format_settings(&self, value: Value) {
-        let settings = match format_settings(value) {
-            Ok(settings) => settings,
-            Err(error) => {
-                self.client
-                    .show_message(
-                        MessageType::WARNING,
-                        format!("{SOURCE}: invalid format settings, using defaults: {error}"),
-                    )
-                    .await;
-                FormatSettings::default()
-            }
-        };
-        *self.format.write().unwrap_or_else(PoisonError::into_inner) = settings;
-    }
-
-    async fn process_document(&self, uri: Uri, text: String) {
-        let document = Document::parse(text);
-        let diagnostics = (!self.client_pulls_diagnostics())
-            .then(|| diagnostics_for(&uri, &document, self.position_encoding()));
-        self.documents.insert(uri.clone(), document);
-        if let Some(diagnostics) = diagnostics {
-            self.client
-                .publish_diagnostics(uri, diagnostics, None)
-                .await;
-        }
-    }
+fn parse_params<'a, P: Deserialize<'a>>(
+    params: Option<&'a RawValue>,
+) -> Result<P, serde_json::Error> {
+    serde_json::from_str(params.map_or("null", RawValue::get))
 }
 
-#[expect(clippy::unused_async_trait_impl, reason = "trait requires async fn")]
-impl LanguageServer for Backend {
-    async fn initialize(&self, params: InitializeParams) -> Result<InitializeResult> {
+impl Backend {
+    pub fn new(out: Writer) -> Self {
+        Self {
+            out,
+            outgoing: Outgoing::new(),
+            lifecycle: Lifecycle::Uninitialized,
+            documents: HashMap::new(),
+            position_encoding: PositionEncoding::Utf16,
+            client_pulls_diagnostics: false,
+            format: FormatSettings::default(),
+        }
+    }
+
+    pub fn exit_code(&self) -> ExitCode {
+        if self.lifecycle == Lifecycle::ShutDown {
+            ExitCode::SUCCESS
+        } else {
+            ExitCode::FAILURE
+        }
+    }
+
+    fn initialize(&mut self, params: InitializeParams) -> InitializeResult {
         let client_supports_utf8 = params
             .capabilities
             .general
@@ -131,43 +137,35 @@ impl LanguageServer for Backend {
             .and_then(|g| g.position_encodings.as_ref())
             .is_some_and(|encodings| encodings.contains(&PositionEncodingKind::UTF8));
 
-        let encoding = if client_supports_utf8 {
+        self.lifecycle = Lifecycle::Running;
+        self.position_encoding = if client_supports_utf8 {
             PositionEncoding::Utf8
         } else {
             PositionEncoding::Utf16
         };
+        self.client_pulls_diagnostics = client_supports_pull_diagnostics(&params.capabilities);
         if let Some(options) = params.initialization_options {
-            self.update_format_settings(options).await;
+            self.update_format_settings(options);
         }
-        let _ = self.position_encoding.set(encoding);
-        let _ = self
-            .client_pulls_diagnostics
-            .set(client_supports_pull_diagnostics(&params.capabilities));
 
         let position_encoding = client_supports_utf8.then_some(PositionEncodingKind::UTF8);
-
-        Ok(InitializeResult {
-            // deprecated clangd extension superseded by positionEncoding in LSP 3.17
-            // https://clangd.llvm.org/extensions.html#utf-8-offsets
-            offset_encoding: None,
+        InitializeResult {
             server_info: Some(ServerInfo {
                 name: SOURCE.into(),
                 version: Some(env!("CARGO_PKG_VERSION").into()),
             }),
             capabilities: ServerCapabilities {
                 position_encoding,
-                text_document_sync: Some(TextDocumentSyncCapability::Options(
-                    TextDocumentSyncOptions {
-                        open_close: Some(true),
-                        change: Some(TextDocumentSyncKind::INCREMENTAL),
-                        ..Default::default()
-                    },
-                )),
-                document_formatting_provider: Some(OneOf::Left(true)),
-                code_action_provider: Some(CodeActionProviderCapability::Simple(true)),
-                document_symbol_provider: Some(OneOf::Left(true)),
-                folding_range_provider: Some(FoldingRangeProviderCapability::Simple(true)),
-                diagnostic_provider: Some(DiagnosticServerCapabilities::Options(
+                text_document_sync: Some(TextDocumentSync::Options(TextDocumentSyncOptions {
+                    open_close: Some(true),
+                    change: Some(TextDocumentSyncKind::Incremental),
+                    ..Default::default()
+                })),
+                document_formatting_provider: Some(true.into()),
+                code_action_provider: Some(true.into()),
+                document_symbol_provider: Some(true.into()),
+                folding_range_provider: Some(true.into()),
+                diagnostic_provider: Some(DiagnosticProvider::DiagnosticOptions(
                     DiagnosticOptions {
                         identifier: Some(SOURCE.into()),
                         inter_file_dependencies: false,
@@ -177,27 +175,208 @@ impl LanguageServer for Backend {
                 )),
                 ..Default::default()
             },
-        })
+        }
     }
 
-    async fn did_open(&self, params: DidOpenTextDocumentParams) {
-        self.process_document(params.text_document.uri, params.text_document.text)
-            .await;
+    pub fn response(&mut self, id: &Id) {
+        self.outgoing.complete(id);
     }
 
-    async fn did_change_configuration(&self, params: DidChangeConfigurationParams) {
-        self.update_format_settings(params.settings).await;
+    pub fn reject(&mut self, rejection: Rejection) -> io::Result<()> {
+        self.out
+            .fail(rejection.id, rejection.code, rejection.message)
     }
 
-    async fn did_change(&self, params: DidChangeTextDocumentParams) {
-        let uri = params.text_document.uri;
-        let Some((_, document)) = self.documents.remove(&uri) else {
-            self.client
-                .log_message(
-                    MessageType::WARNING,
-                    format!("received change for unopened document: {uri:?}"),
-                )
-                .await;
+    pub fn request(&mut self, id: Id, method: &str, params: Option<&RawValue>) -> io::Result<()> {
+        let failed_id = id.clone();
+        match catch_unwind(AssertUnwindSafe(|| {
+            self.dispatch_request(id, method, params)
+        })) {
+            Ok(result) => result,
+            Err(panic) => self.out.fail(
+                failed_id,
+                ErrorCode::InternalError,
+                format!("internal error: {}", panic_message(&*panic)),
+            ),
+        }
+    }
+
+    fn dispatch_request(
+        &mut self,
+        id: Id,
+        method: &str,
+        params: Option<&RawValue>,
+    ) -> io::Result<()> {
+        let method = LspRequestMethod::from(method);
+        match (self.lifecycle, method) {
+            (Lifecycle::Uninitialized, LspRequestMethod::Initialize) => {
+                match parse_params::<InitializeParams>(params) {
+                    Ok(params) => {
+                        let result = self.initialize(params);
+                        self.out.respond::<InitializeRequest>(id, result)
+                    }
+                    Err(error) => self.invalid_params(id, &error),
+                }
+            }
+            (Lifecycle::Uninitialized, _) => self.out.fail(
+                id,
+                ErrorCode::ServerNotInitialized,
+                "server not initialized".to_owned(),
+            ),
+            (Lifecycle::ShutDown, _) => self.out.fail(
+                id,
+                ErrorCode::InvalidRequest,
+                "server is shut down".to_owned(),
+            ),
+            (Lifecycle::Running, LspRequestMethod::Shutdown) => {
+                self.lifecycle = Lifecycle::ShutDown;
+                self.out.respond::<ShutdownRequest>(id, ())
+            }
+            (Lifecycle::Running, LspRequestMethod::TextDocumentDiagnostic) => {
+                self.respond::<DocumentDiagnosticRequest>(id, params, Self::diagnostic)
+            }
+            (Lifecycle::Running, LspRequestMethod::TextDocumentFormatting) => {
+                self.respond::<DocumentFormattingRequest>(id, params, Self::formatting)
+            }
+            (Lifecycle::Running, LspRequestMethod::TextDocumentCodeAction) => {
+                self.respond::<CodeActionRequest>(id, params, Self::code_action)
+            }
+            (Lifecycle::Running, LspRequestMethod::TextDocumentDocumentSymbol) => {
+                self.respond::<DocumentSymbolRequest>(id, params, Self::document_symbol)
+            }
+            (Lifecycle::Running, LspRequestMethod::TextDocumentFoldingRange) => {
+                self.respond::<FoldingRangeRequest>(id, params, Self::folding_range)
+            }
+            (Lifecycle::Running, method) => self.out.fail(
+                id,
+                ErrorCode::MethodNotFound,
+                format!("method not found: {method}"),
+            ),
+        }
+    }
+
+    pub fn notification(&mut self, method: &str, params: Option<&RawValue>) -> ControlFlow<()> {
+        if LspNotificationMethod::from(method) == LspNotificationMethod::Exit {
+            return ControlFlow::Break(());
+        }
+        if let Err(panic) = catch_unwind(AssertUnwindSafe(|| {
+            self.dispatch_notification(method, params);
+        })) {
+            self.log_message(format!("internal error: {}", panic_message(&*panic)));
+        }
+        ControlFlow::Continue(())
+    }
+
+    fn dispatch_notification(&mut self, method: &str, params: Option<&RawValue>) {
+        match (self.lifecycle, LspNotificationMethod::from(method)) {
+            (Lifecycle::Running, LspNotificationMethod::TextDocumentDidOpen) => {
+                self.notify(params, Self::did_open);
+            }
+            (Lifecycle::Running, LspNotificationMethod::TextDocumentDidChange) => {
+                self.notify(params, Self::did_change);
+            }
+            (Lifecycle::Running, LspNotificationMethod::TextDocumentDidClose) => {
+                self.notify(params, Self::did_close);
+            }
+            (Lifecycle::Running, LspNotificationMethod::WorkspaceDidChangeConfiguration) => {
+                self.notify(params, Self::did_change_configuration);
+            }
+            _ => {}
+        }
+    }
+
+    fn respond<R: Request>(
+        &mut self,
+        id: Id,
+        params: Option<&RawValue>,
+        handler: impl FnOnce(&Self, &R::Params) -> R::Result,
+    ) -> io::Result<()> {
+        match parse_params(params) {
+            Ok(params) => {
+                let result = handler(self, &params);
+                self.out.respond::<R>(id, result)
+            }
+            Err(error) => self.invalid_params(id, &error),
+        }
+    }
+
+    fn invalid_params(&mut self, id: Id, error: &serde_json::Error) -> io::Result<()> {
+        self.out.fail(
+            id,
+            ErrorCode::InvalidParams,
+            format!("invalid params: {error}"),
+        )
+    }
+
+    fn notify<P: for<'de> Deserialize<'de>>(
+        &mut self,
+        params: Option<&RawValue>,
+        handler: impl FnOnce(&mut Self, P),
+    ) {
+        match parse_params(params) {
+            Ok(params) => handler(self, params),
+            Err(error) => self.log_message(format!("invalid notification params: {error}")),
+        }
+    }
+
+    fn log_message(&mut self, message: impl Into<String>) {
+        self.out.notify::<LogMessageNotification>(LogMessageParams {
+            kind: MessageType::Warning,
+            message: message.into(),
+        });
+    }
+
+    fn with_document<T>(&self, uri: &Uri, f: impl FnOnce(&Document<String>) -> T) -> Option<T> {
+        self.documents.get(uri)?.as_ref().ok().map(f)
+    }
+
+    fn update_format_settings(&mut self, value: Value) {
+        self.format = match format_settings(value) {
+            Ok(settings) => settings,
+            Err(error) => {
+                self.out
+                    .notify::<ShowMessageNotification>(ShowMessageParams {
+                        kind: MessageType::Warning,
+                        message: format!(
+                            "{SOURCE}: invalid format settings, using defaults: {error}"
+                        ),
+                    });
+                FormatSettings::default()
+            }
+        };
+    }
+
+    fn process_document(&mut self, uri: Uri, text: String) {
+        let document = Document::parse(text);
+        let diagnostics = (!self.client_pulls_diagnostics)
+            .then(|| diagnostics_for(&uri, &document, self.position_encoding));
+        self.documents.insert(uri.clone(), document);
+        if let Some(diagnostics) = diagnostics {
+            self.publish_diagnostics(uri, diagnostics);
+        }
+    }
+
+    fn publish_diagnostics(&mut self, uri: Uri, diagnostics: Vec<Diagnostic>) {
+        self.out
+            .notify::<PublishDiagnosticsNotification>(PublishDiagnosticsParams {
+                uri,
+                version: None,
+                diagnostics,
+            });
+    }
+
+    fn did_open(&mut self, params: DidOpenTextDocumentParams) {
+        self.process_document(params.text_document.uri, params.text_document.text);
+    }
+
+    fn did_change_configuration(&mut self, params: DidChangeConfigurationParams) {
+        self.update_format_settings(params.settings);
+    }
+
+    fn did_change(&mut self, params: DidChangeTextDocumentParams) {
+        let uri = params.text_document.text_document_identifier.uri;
+        let Some(document) = self.documents.remove(&uri) else {
+            self.log_message(format!("received change for unopened document: {uri:?}"));
             return;
         };
 
@@ -206,85 +385,77 @@ impl LanguageServer for Backend {
             Err(error) => error.into_source_text(),
         };
         for change in params.content_changes {
-            let positions = Positions::new(&text, self.position_encoding());
+            let positions = Positions::new(&text, self.position_encoding);
             if !apply_change(&mut text, change, &positions) {
-                self.client
-                    .log_message(MessageType::WARNING, "ignored invalid content change")
-                    .await;
+                self.log_message("ignored invalid content change");
             }
         }
 
-        self.process_document(uri, text).await;
+        self.process_document(uri, text);
     }
 
-    async fn did_close(&self, params: DidCloseTextDocumentParams) {
+    fn did_close(&mut self, params: DidCloseTextDocumentParams) {
         let uri = params.text_document.uri;
         self.documents.remove(&uri);
-        if !self.client_pulls_diagnostics() {
-            self.client.publish_diagnostics(uri, vec![], None).await;
+        if !self.client_pulls_diagnostics {
+            self.publish_diagnostics(uri, vec![]);
         }
     }
 
-    async fn diagnostic(
-        &self,
-        params: DocumentDiagnosticParams,
-    ) -> Result<DocumentDiagnosticReportResult> {
+    fn diagnostic(&self, params: &DocumentDiagnosticParams) -> DocumentDiagnosticReport {
         let uri = &params.text_document.uri;
         let items = self.documents.get(uri).map_or_else(Vec::new, |document| {
-            diagnostics_for(uri, &document, self.position_encoding())
+            diagnostics_for(uri, document, self.position_encoding)
         });
-        Ok(DocumentDiagnosticReportResult::Report(
-            DocumentDiagnosticReport::Full(RelatedFullDocumentDiagnosticReport {
+        DocumentDiagnosticReport::RelatedFullDocumentDiagnosticReport(
+            RelatedFullDocumentDiagnosticReport {
                 related_documents: None,
                 full_document_diagnostic_report: FullDocumentDiagnosticReport {
                     result_id: None,
                     items,
                 },
-            }),
-        ))
+            },
+        )
     }
 
-    async fn formatting(&self, params: DocumentFormattingParams) -> Result<Option<Vec<TextEdit>>> {
-        let mode =
-            JsonMode::from_settings(&self.format.read().unwrap_or_else(PoisonError::into_inner));
-        Ok(self.with_document(&params.text_document.uri, |document| {
+    fn formatting(&self, params: &DocumentFormattingParams) -> Option<Vec<TextEdit>> {
+        let mode = JsonMode::from_settings(&self.format);
+        self.with_document(&params.text_document.uri, |document| {
             vec![TextEdit {
                 range: FULL_DOCUMENT_RANGE,
                 new_text: format_document(document, &mode),
             }]
-        }))
+        })
     }
 
-    async fn code_action(&self, params: CodeActionParams) -> Result<Option<CodeActionResponse>> {
+    fn code_action(&self, params: &CodeActionParams) -> Option<Vec<CodeActionResponse>> {
         let uri = &params.text_document.uri;
-        let Some(document) = self.documents.get(uri) else {
-            return Ok(None);
-        };
-        Ok(Some(build_code_actions(
-            uri,
-            &document,
-            self.position_encoding(),
-        )))
+        let document = self.documents.get(uri)?;
+        Some(build_code_actions(uri, document, self.position_encoding))
     }
 
-    async fn document_symbol(
-        &self,
-        params: DocumentSymbolParams,
-    ) -> Result<Option<DocumentSymbolResponse>> {
-        Ok(self.with_document(&params.text_document.uri, |document| {
-            DocumentSymbolResponse::Nested(document_symbols(document, self.position_encoding()))
-        }))
+    fn document_symbol(&self, params: &DocumentSymbolParams) -> Option<DocumentSymbolResponse> {
+        self.with_document(&params.text_document.uri, |document| {
+            DocumentSymbolResponse::DocumentSymbolList(document_symbols(
+                document,
+                self.position_encoding,
+            ))
+        })
     }
 
-    async fn folding_range(&self, params: FoldingRangeParams) -> Result<Option<Vec<FoldingRange>>> {
-        Ok(self.with_document(&params.text_document.uri, |document| {
-            folding_ranges(document, self.position_encoding())
-        }))
+    fn folding_range(&self, params: &FoldingRangeParams) -> Option<Vec<FoldingRange>> {
+        self.with_document(&params.text_document.uri, |document| {
+            folding_ranges(document, self.position_encoding)
+        })
     }
+}
 
-    async fn shutdown(&self) -> Result<()> {
-        Ok(())
-    }
+fn panic_message(panic: &dyn Any) -> &str {
+    panic
+        .downcast_ref::<&str>()
+        .copied()
+        .or_else(|| panic.downcast_ref::<String>().map(String::as_str))
+        .unwrap_or("panic")
 }
 
 fn client_supports_pull_diagnostics(capabilities: &ClientCapabilities) -> bool {
@@ -297,10 +468,15 @@ fn client_supports_pull_diagnostics(capabilities: &ClientCapabilities) -> bool {
 #[cfg(test)]
 mod tests {
 
+    use gen_lsp_types::{
+        DiagnosticSeverity, Position, Range, TextDocumentContentChangePartial,
+        TextDocumentContentChangeWholeDocument,
+    };
+
     use super::*;
 
     fn dummy_uri() -> Uri {
-        Uri::from_file_path("/test.json").expect("valid file path")
+        Uri::parse("file:///test.json".to_owned()).expect("valid uri")
     }
 
     fn parse(text: &str) -> jjpwrgem_parse::Result<Document<String>> {
@@ -319,7 +495,7 @@ mod tests {
         let diagnostics =
             diagnostics_for(&dummy_uri(), &parse(r#"{"a": }"#), PositionEncoding::Utf16);
         assert_eq!(diagnostics.len(), 1);
-        assert_eq!(diagnostics[0].severity, Some(DiagnosticSeverity::ERROR));
+        assert_eq!(diagnostics[0].severity, Some(DiagnosticSeverity::Error));
         assert_eq!(diagnostics[0].source.as_deref(), Some(SOURCE));
     }
 
@@ -340,11 +516,16 @@ mod tests {
         assert_eq!(actions, Vec::new());
     }
 
+    #[expect(deprecated, reason = "the field is required to build the struct")]
     fn change(range: Option<Range>, text: &str) -> TextDocumentContentChangeEvent {
-        TextDocumentContentChangeEvent {
-            range,
-            range_length: None,
-            text: text.into(),
+        match range {
+            Some(range) => TextDocumentContentChangePartial {
+                range,
+                range_length: None,
+                text: text.into(),
+            }
+            .into(),
+            None => TextDocumentContentChangeWholeDocument { text: text.into() }.into(),
         }
     }
 

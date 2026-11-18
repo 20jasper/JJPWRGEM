@@ -31,10 +31,13 @@ fn main() -> ExitCode {
     let style = Style::Pretty(Color::Plain);
 
     match commands::parse() {
-        Action::Lsp => {
-            lsp::run_blocking();
-            ExitCode::SUCCESS
-        }
+        Action::Lsp => match lsp::run_blocking() {
+            Ok(code) => code,
+            Err(error) => {
+                anstream::eprintln!("jjp lsp: {error}");
+                ExitCode::FAILURE
+            }
+        },
         Action::Check(Parser::Jsonlines) => run_on_stdin(style, check_jsonlines),
         Action::Check(Parser::Json) => run_on_stdin(style, check),
         Action::Format(request) => {

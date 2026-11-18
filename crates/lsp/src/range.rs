@@ -1,5 +1,5 @@
+use gen_lsp_types::{Position, Range};
 use line_index::{LineIndex, TextSize, WideEncoding};
-use tower_lsp_server::ls_types::*;
 
 pub(crate) const FULL_DOCUMENT_RANGE: Range = Range {
     start: Position {

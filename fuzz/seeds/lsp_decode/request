@@ -1,0 +1,3 @@
+Content-Length: 77
+
+{"jsonrpc":"2.0","id":1,"method":"textDocument/documentSymbol","params":null}

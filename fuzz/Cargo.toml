@@ -9,6 +9,7 @@ cargo-fuzz = true
 
 [dependencies]
 libfuzzer-sys = "=0.4.13"
+jjpwrgem-lsp = { path = "../crates/lsp" }
 jjpwrgem-parse = { path = "../crates/parse" }
 jjpwrgem-ui = { path = "../crates/ui" }
 
@@ -22,6 +23,13 @@ bench = false
 [[bin]]
 name = "cli_check"
 path = "fuzz_targets/cli_check.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "lsp_decode"
+path = "fuzz_targets/lsp_decode.rs"
 test = false
 doc = false
 bench = false

@@ -1,10 +1,13 @@
 use std::collections::HashMap;
 
+use gen_lsp_types::{
+    CodeAction, CodeActionKind, CodeActionResponse, Diagnostic, DiagnosticRelatedInformation,
+    DiagnosticSeverity, Location, TextEdit, Uri, WorkspaceEdit,
+};
 use jjpwrgem_parse::{
     ast::Document,
     diagnostics::{Context, Patch},
 };
-use tower_lsp_server::ls_types::*;
 
 use crate::{
     backend::SOURCE,
@@ -30,9 +33,9 @@ pub fn diagnostics_from_error(
 
     vec![Diagnostic {
         range: span_to_range(text, *e.range(), encoding),
-        severity: Some(DiagnosticSeverity::ERROR),
+        severity: Some(DiagnosticSeverity::Error),
         source: Some(SOURCE.into()),
-        message: e.message(),
+        message: e.message().into(),
         related_information: (!related.is_empty()).then_some(related),
         ..Default::default()
     }]
@@ -42,7 +45,7 @@ pub fn build_code_actions(
     uri: &Uri,
     document: &jjpwrgem_parse::Result<Document<String>>,
     encoding: PositionEncoding,
-) -> CodeActionResponse {
+) -> Vec<CodeActionResponse> {
     let Err(err) = document else {
         return vec![];
     };
@@ -58,9 +61,9 @@ pub fn build_code_actions(
                     new_text: patch.replacement.into_owned(),
                 }],
             )]);
-            CodeActionOrCommand::CodeAction(CodeAction {
+            CodeActionResponse::CodeAction(CodeAction {
                 title: patch.message.into_owned(),
-                kind: Some(CodeActionKind::QUICKFIX),
+                kind: Some(CodeActionKind::QuickFix),
                 diagnostics: diagnostics.clone(),
                 edit: Some(WorkspaceEdit {
                     changes: Some(changes),
