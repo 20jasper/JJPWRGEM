@@ -5,7 +5,7 @@ use jjpwrgem_parse::{format::FORMAT_SETTINGS, settings::SettingKind};
 use lspresso::{Client, ErrorKind, Initialize, capabilities, gen_lsp_types::*};
 use rstest::rstest;
 
-pub const TIMEOUT: Duration = Duration::from_secs(5);
+const TIMEOUT: Duration = Duration::from_secs(5);
 pub type TestResult<T = ()> = Result<T, Box<dyn Error>>;
 
 pub fn client(preset: fn() -> ClientCapabilities) -> TestResult<Client> {
