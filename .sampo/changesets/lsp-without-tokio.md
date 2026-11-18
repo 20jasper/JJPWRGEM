@@ -4,4 +4,4 @@ cargo/jjpwrgem: patch (Performance)
 npm/jjpwrgem-vscode: patch (Performance)
 ---
 
-the language server runs without tokio, with a smaller binary, faster startup and lower memory use
+migrate off of tower-lsp-server to a customized lsp-server, removing Tokio and avoiding intermediate deserialization. Uses 1.6x less RAM and benches are on average 1.7x faster across the board. Binary is 31% smaller
