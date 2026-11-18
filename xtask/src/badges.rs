@@ -3,7 +3,7 @@ use std::process::Command;
 use anyhow::Context;
 use serde::Deserialize;
 
-pub fn badge_color(pct: f64) -> &'static str {
+fn badge_color(pct: f64) -> &'static str {
     match pct as u32 {
         90..=100 => "brightgreen",
         80..=89 => "green",
@@ -15,27 +15,27 @@ pub fn badge_color(pct: f64) -> &'static str {
 }
 
 #[derive(Deserialize)]
-pub struct TraceyStatus {
-    pub impls: Vec<ImplStatus>,
+struct TraceyStatus {
+    impls: Vec<ImplStatus>,
 }
 
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct ImplStatus {
-    pub spec: String,
-    pub total_rules: u32,
-    pub covered_rules: u32,
-    pub verified_rules: u32,
+struct ImplStatus {
+    spec: String,
+    total_rules: u32,
+    covered_rules: u32,
+    verified_rules: u32,
 }
 
 impl ImplStatus {
     /// Rules that have both an implementation reference and a verification reference.
-    pub fn both_count(&self) -> u32 {
+    fn both_count(&self) -> u32 {
         self.covered_rules.min(self.verified_rules)
     }
 }
 
-pub fn tracey_status() -> anyhow::Result<Option<TraceyStatus>> {
+fn tracey_status() -> anyhow::Result<Option<TraceyStatus>> {
     let output = match Command::new("tracey")
         .args(["query", "--json", "status"])
         .output()
@@ -51,7 +51,7 @@ pub fn tracey_status() -> anyhow::Result<Option<TraceyStatus>> {
     Ok(Some(status))
 }
 
-pub fn spec_badge(spec: &str, covered: u32, total: u32) -> String {
+fn spec_badge(spec: &str, covered: u32, total: u32) -> String {
     let pct = if total == 0 {
         0.0
     } else {
@@ -67,6 +67,33 @@ pub fn spec_badge(spec: &str, covered: u32, total: u32) -> String {
     )
 }
 
-pub fn find_spec<'a>(status: &'a TraceyStatus, spec: &str) -> Option<&'a ImplStatus> {
-    status.impls.iter().find(|i| i.spec == spec)
+pub fn coverage_badge(pct_str: &str) -> String {
+    let pct: f64 = pct_str.trim().parse().unwrap_or(0.0);
+    let color = badge_color(pct);
+    format!(
+        "![coverage: {:.1}%](https://img.shields.io/badge/coverage-{:.1}%25-{})",
+        pct, pct, color
+    )
+}
+
+pub fn write_spec_badges() -> anyhow::Result<()> {
+    let status =
+        tracey_status()?.ok_or_else(|| anyhow::anyhow!("tracey not available or failed"))?;
+
+    for s in &status.impls {
+        println!("{}", spec_badge(&s.spec, s.both_count(), s.total_rules));
+    }
+
+    Ok(())
+}
+
+/// Badge markdown for a single spec, or empty string if tracey unavailable.
+pub fn badge_for(spec: &str) -> String {
+    tracey_status()
+        .ok()
+        .flatten()
+        .as_ref()
+        .and_then(|status| status.impls.iter().find(|i| i.spec == spec))
+        .map(|i| spec_badge(&i.spec, i.both_count(), i.total_rules))
+        .unwrap_or_default()
 }

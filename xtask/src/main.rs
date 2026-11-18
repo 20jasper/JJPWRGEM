@@ -12,14 +12,13 @@ macro_rules! template {
     };
 }
 
-mod badge;
+mod badges;
 mod bench_table;
 mod generated;
 mod lsp_bench_report;
 mod npm;
 mod plot;
 mod settings_docs;
-mod spec_badges;
 mod template;
 mod vscode_settings;
 
@@ -70,6 +69,6 @@ fn main() -> anyhow::Result<()> {
         Commands::NpmPackage { check } => npm::npm_package(check),
         Commands::BenchTable => bench_table::write_bench_table(),
         Commands::LspBenchReport => lsp_bench_report::write_lsp_bench_report(),
-        Commands::SpecCoverageBadges => spec_badges::write_spec_badges(),
+        Commands::SpecCoverageBadges => badges::write_spec_badges(),
     }
 }
