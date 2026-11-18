@@ -3,6 +3,7 @@ use std::fs;
 use anyhow::{Context as _, Result};
 
 use crate::{
+    badges::{badge_for, coverage_badge},
     generated::{oxfmt_format, write_or_check},
     settings_docs::{helix_format_config, settings_reference},
 };
@@ -65,15 +66,6 @@ fn generate_lsp_bench_readme() -> Result<Option<String>> {
 
 const COVERAGE: &str = include_str!(repo_path!("benches/output/coverage.txt"));
 
-fn coverage_badge(pct_str: &str) -> String {
-    let pct: f64 = pct_str.trim().parse().unwrap_or(0.0);
-    let color = crate::badge::badge_color(pct);
-    format!(
-        "![coverage: {:.1}%](https://img.shields.io/badge/coverage-{:.1}%25-{})",
-        pct, pct, color
-    )
-}
-
 fn shared_replacements() -> Result<Vec<(&'static str, String)>> {
     let trimmed = |text: &str| text.trim().to_string();
     Ok(vec![
@@ -83,13 +75,10 @@ fn shared_replacements() -> Result<Vec<(&'static str, String)>> {
             strip_front_matter(CHECK_EXAMPLE)?.to_string(),
         ),
         ("{{INSTALL_QUICK}}", INSTALL_QUICK.trim().to_string()),
-        (
-            "{{UTF8_SPEC_BADGE}}",
-            trimmed(&crate::spec_badges::badge_for("utf8")),
-        ),
+        ("{{UTF8_SPEC_BADGE}}", trimmed(&badge_for("utf8"))),
         (
             "{{JSON_SCHEMA_V7_SPEC_BADGE}}",
-            trimmed(&crate::spec_badges::badge_for("json-schema-v7")),
+            trimmed(&badge_for("json-schema-v7")),
         ),
         ("{{LSP_PERF_CLAIM}}", LSP_PERF_CLAIM.to_string()),
         ("{{LSP_DEMO_ALT}}", LSP_DEMO_ALT.to_string()),
@@ -107,10 +96,7 @@ fn shared_replacements() -> Result<Vec<(&'static str, String)>> {
         ("{{FIXTURE_TWITTER}}", FIXTURE_TWITTER.to_string()),
         ("{{FIXTURE_SMALL}}", FIXTURE_SMALL.to_string()),
         ("{{COVERAGE_BADGE}}", trimmed(&coverage_badge(COVERAGE))),
-        (
-            "{{JSONLINES_SPEC_BADGE}}",
-            trimmed(&crate::spec_badges::badge_for("jsonlines")),
-        ),
+        ("{{JSONLINES_SPEC_BADGE}}", trimmed(&badge_for("jsonlines"))),
         (
             "{{BYTES2CHARS_BENCH_TABLE}}",
             trimmed(include_str!(repo_path!("benches/output/bytes2chars.md"))),
