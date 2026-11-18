@@ -9,10 +9,7 @@ use serde_json::{Value, json};
 
 const BIN_NAME: &str = "jjp";
 
-const TEMPLATE: &str = include_str!(concat!(
-    env!("CARGO_MANIFEST_DIR"),
-    "/../npm-packages/jjpwrgem/package.template.json"
-));
+const TEMPLATE: &str = include_str!(repo_path!("npm-packages/jjpwrgem/package.template.json"));
 
 #[derive(Deserialize)]
 struct ReleaseTarget {
@@ -22,15 +19,14 @@ struct ReleaseTarget {
 }
 
 fn release_targets() -> Result<Vec<ReleaseTarget>> {
-    Ok(serde_json::from_str(include_str!(concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/../.github/release-targets.json"
+    Ok(serde_json::from_str(include_str!(repo_path!(
+        ".github/release-targets.json"
     )))?)
 }
 
 fn root_package() -> Result<Package> {
     MetadataCommand::new()
-        .manifest_path(concat!(env!("CARGO_MANIFEST_DIR"), "/../Cargo.toml"))
+        .manifest_path(repo_path!("Cargo.toml"))
         .no_deps()
         .exec()?
         .root_package()
@@ -44,10 +40,7 @@ pub fn write_package_json() -> Result<()> {
     let ast = Document::parse(compact.as_str()).map_err(|err| anyhow!(err.to_string()))?;
     let formatted = jjpwrgem_parse::format::prettify_document(&ast, 80, LineEnding::Lf);
 
-    let out_path = concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/../npm-packages/jjpwrgem/package.json"
-    );
+    let out_path = repo_path!("npm-packages/jjpwrgem/package.json");
     fs::write(out_path, formatted)?;
 
     println!("generated package json");
