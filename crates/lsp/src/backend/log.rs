@@ -18,11 +18,11 @@ impl Backend {
         });
     }
 
-    pub(super) fn show_warning(&mut self, message: &str) {
+    pub(super) fn show_warning(&mut self, message: impl Into<String>) {
         self.out
             .notify::<ShowMessageNotification>(ShowMessageParams {
                 kind: MessageType::Warning,
-                message: format!("{SOURCE}: {message}"),
+                message: format!("{SOURCE}: {}", message.into()),
             });
     }
 }

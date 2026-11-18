@@ -105,10 +105,10 @@ impl Writer {
         })
     }
 
-    pub fn fail(&mut self, id: Id, code: ErrorCode, message: String) -> io::Result<()> {
+    pub fn fail(&mut self, id: Id, code: ErrorCode, message: impl Into<String>) -> io::Result<()> {
         let error = ResponseError {
             code: code as i32,
-            message,
+            message: message.into(),
             data: None,
         };
         self.send(&Failure {

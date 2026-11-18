@@ -1,5 +1,4 @@
 use std::{
-    any::Any,
     io,
     ops::ControlFlow,
     panic::{AssertUnwindSafe, catch_unwind},
@@ -21,12 +20,15 @@ fn parse_params<'a, P: Deserialize<'a>>(
     serde_json::from_str(params.map_or("null", RawValue::get))
 }
 
-fn panic_message(panic: &dyn Any) -> &str {
-    panic
-        .downcast_ref::<&str>()
-        .copied()
-        .or_else(|| panic.downcast_ref::<String>().map(String::as_str))
-        .unwrap_or("panic")
+fn guarded<T>(f: impl FnOnce() -> T) -> Result<T, String> {
+    catch_unwind(AssertUnwindSafe(f)).map_err(|panic| {
+        let message = panic
+            .downcast_ref::<&str>()
+            .copied()
+            .or_else(|| panic.downcast_ref::<String>().map(String::as_str))
+            .unwrap_or("panic");
+        format!("internal error: {message}")
+    })
 }
 
 impl Backend {
@@ -41,15 +43,9 @@ impl Backend {
 
     pub fn request(&mut self, id: Id, method: &str, params: Option<&RawValue>) -> io::Result<()> {
         let failed_id = id.clone();
-        match catch_unwind(AssertUnwindSafe(|| {
-            self.dispatch_request(id, method, params)
-        })) {
+        match guarded(|| self.dispatch_request(id, method, params)) {
             Ok(result) => result,
-            Err(panic) => self.out.fail(
-                failed_id,
-                ErrorCode::InternalError,
-                format!("internal error: {}", panic_message(&*panic)),
-            ),
+            Err(message) => self.out.fail(failed_id, ErrorCode::InternalError, message),
         }
     }
 
@@ -73,13 +69,12 @@ impl Backend {
             (Lifecycle::Uninitialized, _) => self.out.fail(
                 id,
                 ErrorCode::ServerNotInitialized,
-                "server not initialized".to_owned(),
+                "server not initialized",
             ),
-            (Lifecycle::ShutDown, _) => self.out.fail(
-                id,
-                ErrorCode::InvalidRequest,
-                "server is shut down".to_owned(),
-            ),
+            (Lifecycle::ShutDown, _) => {
+                self.out
+                    .fail(id, ErrorCode::InvalidRequest, "server is shut down")
+            }
             (Lifecycle::Running, LspRequestMethod::Shutdown) => {
                 self.lifecycle = Lifecycle::ShutDown;
                 self.out.respond::<ShutdownRequest>(id, ())
@@ -111,10 +106,8 @@ impl Backend {
         if LspNotificationMethod::from(method) == LspNotificationMethod::Exit {
             return ControlFlow::Break(());
         }
-        if let Err(panic) = catch_unwind(AssertUnwindSafe(|| {
-            self.dispatch_notification(method, params);
-        })) {
-            self.error(format!("internal error: {}", panic_message(&*panic)));
+        if let Err(message) = guarded(|| self.dispatch_notification(method, params)) {
+            self.error(message);
         }
         ControlFlow::Continue(())
     }
