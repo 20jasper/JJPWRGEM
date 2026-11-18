@@ -11,6 +11,7 @@ mod bench_table;
 mod criterion;
 mod generated;
 mod lsp_bench_report;
+mod markdown;
 mod npm;
 mod plot;
 mod settings_docs;

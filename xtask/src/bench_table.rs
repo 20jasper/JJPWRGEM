@@ -3,7 +3,10 @@ use std::{
     io::{self, BufRead as _},
 };
 
-use crate::criterion::{Message, format_time, markdown_table};
+use crate::{
+    criterion::{Message, format_time},
+    markdown::markdown_table,
+};
 
 fn parse_id(id: &str) -> Option<(&str, &str, &str)> {
     let mut parts = id.splitn(3, '/');

@@ -7,7 +7,10 @@ use std::{
 use anyhow::Context;
 use serde::Deserialize;
 
-use crate::criterion::{Message, format_time, markdown_table};
+use crate::{
+    criterion::{Message, format_time},
+    markdown::markdown_table,
+};
 
 const FIXTURES: &[&str] = &["small", "twitter", "citm_catalog", "canada"];
 
