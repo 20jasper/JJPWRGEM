@@ -55,10 +55,7 @@ fn main() -> anyhow::Result<()> {
     let cli = Cli::parse();
 
     match cli.cmd {
-        Commands::GenerateReadmes => {
-            template::write_readmes();
-            Ok(())
-        }
+        Commands::GenerateReadmes => template::write_readmes(),
         Commands::VerifyReadmes => template::are_readmes_updated(),
         Commands::GenerateVscodeSettings => vscode_settings::write_vscode_settings(),
         Commands::VerifyVscodeSettings => vscode_settings::are_vscode_settings_updated(),

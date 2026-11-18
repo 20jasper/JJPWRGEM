@@ -14,7 +14,7 @@
 
 Run `jjp lsp` as the language server for JSON files. See the [Helix](#helix) section for a full example configuration.
 
-{{SETTINGS_REFERENCE}}
+{{LSP_SETTINGS_REFERENCE}}
 
 ### Helix
 
