@@ -1,1 +1,1 @@
-[![crates.io](https://img.shields.io/crates/v/bytes2chars)](https://crates.io/crates/bytes2chars) [![docs.rs](https://img.shields.io/docsrs/bytes2chars)](https://docs.rs/bytes2chars) {{UTF8_SPEC_BADGE}}
+[![crates.io](https://img.shields.io/crates/v/bytes2chars)](https://crates.io/crates/bytes2chars) [![docs.rs](https://img.shields.io/docsrs/bytes2chars)](https://docs.rs/bytes2chars) {{ utf8_spec_badge }}

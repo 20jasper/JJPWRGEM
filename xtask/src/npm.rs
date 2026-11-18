@@ -1,11 +1,10 @@
-use anyhow::{Context, Result, anyhow, bail};
+use anyhow::{Context, Result, bail};
 use cargo_metadata::{MetadataCommand, Package};
 use itertools::Itertools as _;
-use jjpwrgem_parse::{ast::Document, format::LineEnding};
 use serde::Deserialize;
 use serde_json::{Value, json};
 
-use crate::generated::{oxfmt_format, write_or_check};
+use crate::generated::{oxfmt_format, pretty_json, write_or_check};
 
 const PACKAGE_JSON: &str = repo_path!("npm-packages/jjpwrgem/package.json");
 const BIN_NAME: &str = "jjp";
@@ -37,10 +36,7 @@ fn root_package() -> Result<Package> {
 
 pub fn npm_package(check: bool) -> Result<()> {
     let patched = patch_package_json(&root_package()?, &release_targets()?)?;
-    let compact = jjpwrgem_parse::format::serde::uglify_serializable(&patched)?;
-    let ast = Document::parse(compact.as_str()).map_err(|err| anyhow!(err.to_string()))?;
-    let pretty = jjpwrgem_parse::format::prettify_document(&ast, 80, LineEnding::Lf);
-    let formatted = oxfmt_format(&pretty, "package.json")?;
+    let formatted = oxfmt_format(&pretty_json(&patched)?, "package.json")?;
 
     write_or_check(PACKAGE_JSON, &formatted, "npm-package", check)
 }

@@ -1,54 +1,54 @@
 # jjpwrgem CLI formatter and minifier benchmarks
 
 Wall-clock timing against jq, prettier, dprint, and others via hyperfine. Run locally with `mise run bench-docker`
-{{BENCH_HARDWARE}}
+{% include "bench_hardware.md" %}
 
-{{BENCH_INPUTS}}
+{% include "bench_inputs.md" %}
 
 ## canada
 
-{{FIXTURE_CANADA}}
+{% include "fixture_canada.md" %}
 
 ### pretty canada
 
-![candlestick benchmark for pretty printing canada.json](/benches/docker/output/pretty-canada.png)
+![candlestick benchmark for pretty printing canada.json](/benches/docker/output/pretty-canada.svg)
 
-{{PRETTY_CANADA_TABLE}}
+{% include "benches/docker/output/pretty-canada.md" %}
 
 ### ugly canada
 
-![candlestick benchmark for ugly printing canada.json](/benches/docker/output/ugly-canada.png)
+![candlestick benchmark for ugly printing canada.json](/benches/docker/output/ugly-canada.svg)
 
-{{UGLY_CANADA_TABLE}}
+{% include "benches/docker/output/ugly-canada.md" %}
 
 ## citm catalog
 
-{{FIXTURE_CITM_CATALOG}}
+{% include "fixture_citm_catalog.md" %}
 
 ### pretty citm catalog
 
-![candlestick benchmark for pretty printing citm-catalog.json](/benches/docker/output/pretty-citm_catalog.png)
+![candlestick benchmark for pretty printing citm-catalog.json](/benches/docker/output/pretty-citm_catalog.svg)
 
-{{PRETTY_CITM_CATALOG_TABLE}}
+{% include "benches/docker/output/pretty-citm_catalog.md" %}
 
 ### ugly citm catalog
 
-![candlestick benchmark for ugly printing citm-catalog.json](/benches/docker/output/ugly-citm_catalog.png)
+![candlestick benchmark for ugly printing citm-catalog.json](/benches/docker/output/ugly-citm_catalog.svg)
 
-{{UGLY_CITM_CATALOG_TABLE}}
+{% include "benches/docker/output/ugly-citm_catalog.md" %}
 
 ## twitter
 
-{{FIXTURE_TWITTER}}
+{% include "fixture_twitter.md" %}
 
 ### pretty twitter
 
-![candlestick benchmark for pretty printing twitter.json](/benches/docker/output/pretty-twitter.png)
+![candlestick benchmark for pretty printing twitter.json](/benches/docker/output/pretty-twitter.svg)
 
-{{PRETTY_TWITTER_TABLE}}
+{% include "benches/docker/output/pretty-twitter.md" %}
 
 ### ugly twitter
 
-![candlestick benchmark for ugly printing twitter.json](/benches/docker/output/ugly-twitter.png)
+![candlestick benchmark for ugly printing twitter.json](/benches/docker/output/ugly-twitter.svg)
 
-{{UGLY_TWITTER_TABLE}}
+{% include "benches/docker/output/ugly-twitter.md" %}

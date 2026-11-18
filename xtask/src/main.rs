@@ -6,16 +6,12 @@ macro_rules! repo_path {
     };
 }
 
-macro_rules! template {
-    ($name:literal) => {
-        include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/templates/", $name))
-    };
-}
-
 mod badges;
 mod bench_table;
+mod criterion;
 mod generated;
 mod lsp_bench_report;
+mod markdown;
 mod npm;
 mod plot;
 mod settings_docs;
@@ -29,28 +25,23 @@ struct Cli {
     cmd: Commands,
 }
 
+#[derive(clap::Args)]
+struct CheckArgs {
+    /// Fail if the committed output differs instead of writing it
+    #[arg(long)]
+    check: bool,
+}
+
 #[derive(Subcommand)]
 enum Commands {
     /// Generate README.md files from templates
-    Readmes {
-        /// Fail if the committed files differ instead of writing them
-        #[arg(long)]
-        check: bool,
-    },
+    Readmes(#[command(flatten)] CheckArgs),
     /// Write the format settings into the VS Code extension package.json
-    VscodeSettings {
-        /// Fail if the committed file differs instead of writing it
-        #[arg(long)]
-        check: bool,
-    },
+    VscodeSettings(#[command(flatten)] CheckArgs),
     /// Generate candlestick charts for all benchmark datasets
     PlotBenchmarks,
     /// Generate the npm package.json
-    NpmPackage {
-        /// Fail if the committed file differs instead of writing it
-        #[arg(long)]
-        check: bool,
-    },
+    NpmPackage(#[command(flatten)] CheckArgs),
     /// Read criterion JSON from stdin and write a markdown table with time and throughput
     BenchTable,
     /// Read the lsp bench's criterion JSON from stdin plus its RSS sidecar and write per-fixture tables
@@ -63,10 +54,10 @@ fn main() -> anyhow::Result<()> {
     let cli = Cli::parse();
 
     match cli.cmd {
-        Commands::Readmes { check } => template::readmes(check),
-        Commands::VscodeSettings { check } => vscode_settings::vscode_settings(check),
+        Commands::Readmes(CheckArgs { check }) => template::readmes(check),
+        Commands::VscodeSettings(CheckArgs { check }) => vscode_settings::vscode_settings(check),
         Commands::PlotBenchmarks => plot::plot_all_benchmarks(),
-        Commands::NpmPackage { check } => npm::npm_package(check),
+        Commands::NpmPackage(CheckArgs { check }) => npm::npm_package(check),
         Commands::BenchTable => bench_table::write_bench_table(),
         Commands::LspBenchReport => lsp_bench_report::write_lsp_bench_report(),
         Commands::SpecCoverageBadges => badges::write_spec_badges(),

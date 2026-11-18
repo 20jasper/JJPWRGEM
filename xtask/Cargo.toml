@@ -7,19 +7,21 @@ include = ["src/**/*"]
 
 [dependencies]
 anyhow = "1"
-base64 = { version = "0.23", default-features = false, features = ["std"] }
 clap = { version = "4", features = ["derive"] }
 jjpwrgem-parse = { workspace = true, features = ["serde"] }
 plotters = { version = "0.3", default-features = false, features = [
-  "bitmap_backend",
-  "bitmap_encoder",
+  "svg_backend",
   "candlestick",
-  "ab_glyph",
 ] }
 cargo_metadata = "0.23.1"
 serde_json = { workspace = true, features = ["preserve_order"] }
 serde = { version = "1.0.228", features = ["derive"] }
 itertools = "0.15"
+minijinja = { version = "3.1.0", default-features = false, features = [
+  "builtins",
+  "multi_template",
+  "debug",
+] }
 
 [dev-dependencies]
 cargo_metadata = { version = "=0.23.1", features = ["builder"] }

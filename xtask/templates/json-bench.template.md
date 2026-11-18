@@ -1,6 +1,6 @@
 # jjpwrgem JSON benchmarks
 
-{{BENCH_SUMMARY}}
+{% include "bench_summary.md" %}
 
 Throughput benchmarks for deserializing into a syntax tree, serializing the syntax tree, and streaming serialization and deserialization
 
@@ -8,12 +8,12 @@ Run locally with `mise run bench-json` or individual `mise run bench json_deser`
 
 Throughput is normalized by input and output bytes and benchmarks do not measure initial buffer allocation
 
-{{BENCH_INPUTS}}
+{% include "bench_inputs.md" %}
 
-{{JSON_DESER_BENCH_TABLE}}
+{% include "benches/output/json_deser.md" %}
 
-{{JSON_PRETTIFY_BENCH_TABLE}}
+{% include "benches/output/json_prettify.md" %}
 
-{{JSON_UGLIFY_BENCH_TABLE}}
+{% include "benches/output/json_uglify.md" %}
 
-{{JSON_SERIALIZE_BENCH_TABLE}}
+{% include "benches/output/json_serialize.md" %}
