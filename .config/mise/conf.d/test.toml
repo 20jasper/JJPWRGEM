@@ -24,7 +24,7 @@ run = [
 
 [tasks.test-all.tools]
 "aqua:mitsuhiko/insta" = "1.49"
-"npm:prettier" = "3.9.10"
+"npm:prettier" = "3.10.1"
 
 [tasks.test-prettier-prop]
 description = "Run all prettier property tests with full case count (slow)"
@@ -32,7 +32,7 @@ env = { PROPTEST_CASES = "256" }
 run = "cargo test --test integration {{vars.test_flags}} -- prop_"
 
 [tasks.test-prettier-prop.tools]
-"npm:prettier" = "3.9.10"
+"npm:prettier" = "3.10.1"
 
 [tasks.test-prettier-large]
 description = "Run slow prettier property tests on large objects"
@@ -40,7 +40,7 @@ env = { PROPTEST_CASES = "256" }
 run = "cargo test --test integration {{vars.test_flags}} -- --include-ignored prop_large_object_expanded"
 
 [tasks.test-prettier-large.tools]
-"npm:prettier" = "3.9.10"
+"npm:prettier" = "3.10.1"
 
 [tasks.test-cov]
 description = "Compute and write line-coverage percentage to benches/output/coverage.txt"

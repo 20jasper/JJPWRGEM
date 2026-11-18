@@ -90,51 +90,51 @@ url = "https://github.com/EmbarkStudios/cargo-deny/releases/download/0.20.2/carg
 url_api = "https://api.github.com/repos/EmbarkStudios/cargo-deny/releases/assets/471599057"
 
 [[tools."aqua:crate-ci/typos"]]
-version = "1.52.0"
+version = "1.52.2"
 backend = "aqua:crate-ci/typos"
-specifiers = ["1.52.0"]
+specifiers = ["1.52.2"]
 
 [tools."aqua:crate-ci/typos"."platforms.linux-arm64"]
-checksum = "sha256:63b7d4478d467a61fe47cdb3162f720c6797856e61a04f7e125d1cdc282488b8"
+checksum = "sha256:f2f54b567f5f4688f000f1bf85c585ee22cce3b55befc9418bcdd4c5adc16595"
 checksum_source = "mise-versions"
-url = "https://github.com/crate-ci/typos/releases/download/v1.52.0/typos-v1.52.0-aarch64-unknown-linux-musl.tar.gz"
-url_api = "https://api.github.com/repos/crate-ci/typos/releases/assets/703151522"
+url = "https://github.com/crate-ci/typos/releases/download/v1.52.2/typos-v1.52.2-aarch64-unknown-linux-musl.tar.gz"
+url_api = "https://api.github.com/repos/crate-ci/typos/releases/assets/733786825"
 
 [tools."aqua:crate-ci/typos"."platforms.linux-arm64-musl"]
-checksum = "sha256:63b7d4478d467a61fe47cdb3162f720c6797856e61a04f7e125d1cdc282488b8"
+checksum = "sha256:f2f54b567f5f4688f000f1bf85c585ee22cce3b55befc9418bcdd4c5adc16595"
 checksum_source = "mise-versions"
-url = "https://github.com/crate-ci/typos/releases/download/v1.52.0/typos-v1.52.0-aarch64-unknown-linux-musl.tar.gz"
-url_api = "https://api.github.com/repos/crate-ci/typos/releases/assets/703151522"
+url = "https://github.com/crate-ci/typos/releases/download/v1.52.2/typos-v1.52.2-aarch64-unknown-linux-musl.tar.gz"
+url_api = "https://api.github.com/repos/crate-ci/typos/releases/assets/733786825"
 
 [tools."aqua:crate-ci/typos"."platforms.linux-x64"]
-checksum = "sha256:6155d4114f9a0f5b8f6d4fda96266c9d5f6add71df80da7f684ee5e72eb14588"
+checksum = "sha256:3b13d1291281d39d01822e54035636487a7a0f228e70097899b1e33aeb0e7e93"
 checksum_source = "mise-versions"
-url = "https://github.com/crate-ci/typos/releases/download/v1.52.0/typos-v1.52.0-x86_64-unknown-linux-musl.tar.gz"
-url_api = "https://api.github.com/repos/crate-ci/typos/releases/assets/703158772"
+url = "https://github.com/crate-ci/typos/releases/download/v1.52.2/typos-v1.52.2-x86_64-unknown-linux-musl.tar.gz"
+url_api = "https://api.github.com/repos/crate-ci/typos/releases/assets/733787189"
 
 [tools."aqua:crate-ci/typos"."platforms.linux-x64-musl"]
-checksum = "sha256:6155d4114f9a0f5b8f6d4fda96266c9d5f6add71df80da7f684ee5e72eb14588"
+checksum = "sha256:3b13d1291281d39d01822e54035636487a7a0f228e70097899b1e33aeb0e7e93"
 checksum_source = "mise-versions"
-url = "https://github.com/crate-ci/typos/releases/download/v1.52.0/typos-v1.52.0-x86_64-unknown-linux-musl.tar.gz"
-url_api = "https://api.github.com/repos/crate-ci/typos/releases/assets/703158772"
+url = "https://github.com/crate-ci/typos/releases/download/v1.52.2/typos-v1.52.2-x86_64-unknown-linux-musl.tar.gz"
+url_api = "https://api.github.com/repos/crate-ci/typos/releases/assets/733787189"
 
 [tools."aqua:crate-ci/typos"."platforms.macos-arm64"]
-checksum = "sha256:90724dd2905cb1ce033343c71ed60e52fe898674f882803e3110cd228e09e1c5"
+checksum = "sha256:b8e7b8b81f28cc808fd763b6d935536e15ba1ef72613bbb6d628b58a891da7ef"
 checksum_source = "mise-versions"
-url = "https://github.com/crate-ci/typos/releases/download/v1.52.0/typos-v1.52.0-aarch64-apple-darwin.tar.gz"
-url_api = "https://api.github.com/repos/crate-ci/typos/releases/assets/703166489"
+url = "https://github.com/crate-ci/typos/releases/download/v1.52.2/typos-v1.52.2-aarch64-apple-darwin.tar.gz"
+url_api = "https://api.github.com/repos/crate-ci/typos/releases/assets/733789873"
 
 [tools."aqua:crate-ci/typos"."platforms.macos-x64"]
-checksum = "sha256:8de057f425909b02c0184892539755d70ecc3244c4b214ae9382cedd691127e0"
+checksum = "sha256:2c1e5cd3be644005d27543d7d83a32dbba36eb285bc12678818709938a63a988"
 checksum_source = "mise-versions"
-url = "https://github.com/crate-ci/typos/releases/download/v1.52.0/typos-v1.52.0-x86_64-apple-darwin.tar.gz"
-url_api = "https://api.github.com/repos/crate-ci/typos/releases/assets/703158123"
+url = "https://github.com/crate-ci/typos/releases/download/v1.52.2/typos-v1.52.2-x86_64-apple-darwin.tar.gz"
+url_api = "https://api.github.com/repos/crate-ci/typos/releases/assets/733789561"
 
 [tools."aqua:crate-ci/typos"."platforms.windows-x64"]
-checksum = "sha256:7da6eb1932ad86921420a7198dbc9e62a10bcd995144704dc19b81d3fb802182"
+checksum = "sha256:ab79036832cea0f2a21aa947731d39512250cc0f7a6a2f6add26262738a8cc11"
 checksum_source = "mise-versions"
-url = "https://github.com/crate-ci/typos/releases/download/v1.52.0/typos-v1.52.0-x86_64-pc-windows-msvc.zip"
-url_api = "https://api.github.com/repos/crate-ci/typos/releases/assets/703159242"
+url = "https://github.com/crate-ci/typos/releases/download/v1.52.2/typos-v1.52.2-x86_64-pc-windows-msvc.zip"
+url_api = "https://api.github.com/repos/crate-ci/typos/releases/assets/733790297"
 
 [[tools."aqua:mitsuhiko/insta"]]
 version = "1.49.0"
@@ -214,50 +214,50 @@ url = "https://github.com/oxc-project/oxc/releases/download/oxlint_v1.90.0/oxlin
 url_api = "https://api.github.com/repos/oxc-project/oxc/releases/assets/680611045"
 
 [[tools."aqua:pnpm/pnpm"]]
-version = "12.18.0"
+version = "12.21.0"
 backend = "aqua:pnpm/pnpm"
-specifiers = ["12.18.0"]
+specifiers = ["12.21.0"]
 
 [tools."aqua:pnpm/pnpm"."platforms.linux-arm64"]
-checksum = "sha256:700bd1aa4028465b80e62b7c5bec8455be60bbafaf53a3262a4ab8e2057712ac"
-url = "https://github.com/pnpm/pnpm/releases/download/v12.18.0/pnpm-linux-arm64.tar.gz"
-url_api = "https://api.github.com/repos/pnpm/pnpm/releases/assets/711505548"
+checksum = "sha256:6c5913a48c93b3a556b71c3bd9bf12c6bf9fbfbbbd2dcbd1d52a85c539751b9e"
+url = "https://github.com/pnpm/pnpm/releases/download/v12.21.0/pnpm-linux-arm64.tar.gz"
+url_api = "https://api.github.com/repos/pnpm/pnpm/releases/assets/744357257"
 provenance = "github-attestations"
 
 [tools."aqua:pnpm/pnpm"."platforms.linux-arm64-musl"]
-checksum = "sha256:86c80eb744b1ff41ca7400bb1f8ca5fb522b2101da39ac93bd45f3bc652e5cfb"
-url = "https://github.com/pnpm/pnpm/releases/download/v12.18.0/pnpm-linux-arm64-musl.tar.gz"
-url_api = "https://api.github.com/repos/pnpm/pnpm/releases/assets/711505545"
+checksum = "sha256:4faedaaa333b44d940ce5e38c223e829124affdbe5a6d3f694a69dd979a5a8d8"
+url = "https://github.com/pnpm/pnpm/releases/download/v12.21.0/pnpm-linux-arm64-musl.tar.gz"
+url_api = "https://api.github.com/repos/pnpm/pnpm/releases/assets/744357263"
 provenance = "github-attestations"
 
 [tools."aqua:pnpm/pnpm"."platforms.linux-x64"]
-checksum = "sha256:3726060e236c0db3e7124c0a5af123c840ba0cb76682149b63ea0baf290017c2"
-url = "https://github.com/pnpm/pnpm/releases/download/v12.18.0/pnpm-linux-x64.tar.gz"
-url_api = "https://api.github.com/repos/pnpm/pnpm/releases/assets/711505542"
+checksum = "sha256:84c4773bcf4a217f4083cd7b2a91e4cee6103cf42426c1282ef37d308f55a410"
+url = "https://github.com/pnpm/pnpm/releases/download/v12.21.0/pnpm-linux-x64.tar.gz"
+url_api = "https://api.github.com/repos/pnpm/pnpm/releases/assets/744357264"
 provenance = "github-attestations"
 
 [tools."aqua:pnpm/pnpm"."platforms.linux-x64-musl"]
-checksum = "sha256:faaed5856527e4f1e8d5e16edf797c6e643cbe1521e3d15e2d791e8295489fb1"
-url = "https://github.com/pnpm/pnpm/releases/download/v12.18.0/pnpm-linux-x64-musl.tar.gz"
-url_api = "https://api.github.com/repos/pnpm/pnpm/releases/assets/711505536"
+checksum = "sha256:6dbcd9ea8ed37b5acbe279159ad0ed3a4ac614f5d7ae62d5ba51d32a85a589d7"
+url = "https://github.com/pnpm/pnpm/releases/download/v12.21.0/pnpm-linux-x64-musl.tar.gz"
+url_api = "https://api.github.com/repos/pnpm/pnpm/releases/assets/744357269"
 provenance = "github-attestations"
 
 [tools."aqua:pnpm/pnpm"."platforms.macos-arm64"]
-checksum = "sha256:9b647f634d7e8f23162c9d3d1d0e0950d1152402ca0f4c331583ed7c75cd3706"
-url = "https://github.com/pnpm/pnpm/releases/download/v12.18.0/pnpm-darwin-arm64.tar.gz"
-url_api = "https://api.github.com/repos/pnpm/pnpm/releases/assets/711505537"
+checksum = "sha256:5c4d73018e00dd602531ce714625594fb693cbe110e6719df2b043b0ae62ab1a"
+url = "https://github.com/pnpm/pnpm/releases/download/v12.21.0/pnpm-darwin-arm64.tar.gz"
+url_api = "https://api.github.com/repos/pnpm/pnpm/releases/assets/744357270"
 provenance = "github-attestations"
 
 [tools."aqua:pnpm/pnpm"."platforms.macos-x64"]
-checksum = "sha256:34cc90fbaa060c458b587fbdb1f3f9477e97e3fd3f8e9ffb2d43ca45c0c9b005"
-url = "https://github.com/pnpm/pnpm/releases/download/v12.18.0/pnpm-darwin-x64.tar.gz"
-url_api = "https://api.github.com/repos/pnpm/pnpm/releases/assets/711505550"
+checksum = "sha256:415c05ae4262c89b8f24ca58c693be5d969856ae909c086aa06996951fca30ea"
+url = "https://github.com/pnpm/pnpm/releases/download/v12.21.0/pnpm-darwin-x64.tar.gz"
+url_api = "https://api.github.com/repos/pnpm/pnpm/releases/assets/744357251"
 provenance = "github-attestations"
 
 [tools."aqua:pnpm/pnpm"."platforms.windows-x64"]
-checksum = "sha256:dfe2123affd2ed4be280ba7ab4678c0fae130b4936fabefa9b1675b60514ef7c"
-url = "https://github.com/pnpm/pnpm/releases/download/v12.18.0/pnpm-win32-x64.zip"
-url_api = "https://api.github.com/repos/pnpm/pnpm/releases/assets/711505547"
+checksum = "sha256:4fb64bb37e46c788309e0fd4ea93beb512546fdc7348121194fb704fbb72c09c"
+url = "https://github.com/pnpm/pnpm/releases/download/v12.21.0/pnpm-win32-x64.zip"
+url_api = "https://api.github.com/repos/pnpm/pnpm/releases/assets/744357265"
 provenance = "github-attestations"
 
 [[tools."aqua:taiki-e/cargo-llvm-cov"]]
@@ -328,50 +328,50 @@ backend = "cargo:rustfilt"
 specifiers = ["0.2.2"]
 
 [[tools."github:Boshen/cargo-shear"]]
-version = "1.14.0"
+version = "1.14.1"
 backend = "github:Boshen/cargo-shear"
 specifiers = ["1.14"]
 
 [tools."github:Boshen/cargo-shear"."platforms.linux-arm64"]
-checksum = "sha256:947d69177d812048452866d90b05d1bf95550f487522b922ebf0c0677a5698f8"
-url = "https://github.com/Boshen/cargo-shear/releases/download/v1.14.0/cargo-shear-aarch64-unknown-linux-gnu.tar.gz"
-url_api = "https://api.github.com/repos/Boshen/cargo-shear/releases/assets/580851818"
+checksum = "sha256:51da26427a4b0a488440a3d3627cad2337c2f1b527971afa5f6d53c76558be27"
+url = "https://github.com/Boshen/cargo-shear/releases/download/v1.14.1/cargo-shear-aarch64-unknown-linux-gnu.tar.gz"
+url_api = "https://api.github.com/repos/Boshen/cargo-shear/releases/assets/742156819"
 provenance = "github-attestations"
 
 [tools."github:Boshen/cargo-shear"."platforms.linux-arm64-musl"]
-checksum = "sha256:d83f7c5b02c4c237d0454697c12df041df0bd83ffecc1aba46c6e06315fd47e1"
-url = "https://github.com/Boshen/cargo-shear/releases/download/v1.14.0/cargo-shear-aarch64-unknown-linux-musl.tar.gz"
-url_api = "https://api.github.com/repos/Boshen/cargo-shear/releases/assets/580851819"
+checksum = "sha256:7b8c61cca4f2628cbc847ba4dfda37924b8dd2dba8ba19fe4107797f87e6b3ea"
+url = "https://github.com/Boshen/cargo-shear/releases/download/v1.14.1/cargo-shear-aarch64-unknown-linux-musl.tar.gz"
+url_api = "https://api.github.com/repos/Boshen/cargo-shear/releases/assets/742156829"
 provenance = "github-attestations"
 
 [tools."github:Boshen/cargo-shear"."platforms.linux-x64"]
-checksum = "sha256:1d7d860fdbd0d95857ff1f2643cc70d20c5d31236159ad51be7ce436eb3e5bf4"
-url = "https://github.com/Boshen/cargo-shear/releases/download/v1.14.0/cargo-shear-x86_64-unknown-linux-gnu.tar.gz"
-url_api = "https://api.github.com/repos/Boshen/cargo-shear/releases/assets/580851856"
+checksum = "sha256:282df08ba38e7fb2156d4e40bfd70bb9269c9c0563431d7865594ffcd422bb91"
+url = "https://github.com/Boshen/cargo-shear/releases/download/v1.14.1/cargo-shear-x86_64-unknown-linux-gnu.tar.gz"
+url_api = "https://api.github.com/repos/Boshen/cargo-shear/releases/assets/742156885"
 provenance = "github-attestations"
 
 [tools."github:Boshen/cargo-shear"."platforms.linux-x64-musl"]
-checksum = "sha256:9004df4eb031a456026c4326ae0d0ce545321527a67be90f4524c1be729dc40e"
-url = "https://github.com/Boshen/cargo-shear/releases/download/v1.14.0/cargo-shear-x86_64-unknown-linux-musl.tar.gz"
-url_api = "https://api.github.com/repos/Boshen/cargo-shear/releases/assets/580851857"
+checksum = "sha256:7b4cec5ec12e22717670721ace1edbd97a65cb9e08864466d292a3009bb85d1a"
+url = "https://github.com/Boshen/cargo-shear/releases/download/v1.14.1/cargo-shear-x86_64-unknown-linux-musl.tar.gz"
+url_api = "https://api.github.com/repos/Boshen/cargo-shear/releases/assets/742156892"
 provenance = "github-attestations"
 
 [tools."github:Boshen/cargo-shear"."platforms.macos-arm64"]
-checksum = "sha256:e50b9375b1e93d2293c803819c118337f1e8fce519e4188a93bb0f5e08041ca3"
-url = "https://github.com/Boshen/cargo-shear/releases/download/v1.14.0/cargo-shear-aarch64-apple-darwin.tar.gz"
-url_api = "https://api.github.com/repos/Boshen/cargo-shear/releases/assets/580851820"
+checksum = "sha256:925a8e005a4966ce1e3f63d70743dbc68dd16e3369eea9aa91cfcb3ba61727cf"
+url = "https://github.com/Boshen/cargo-shear/releases/download/v1.14.1/cargo-shear-aarch64-apple-darwin.tar.gz"
+url_api = "https://api.github.com/repos/Boshen/cargo-shear/releases/assets/742156822"
 provenance = "github-attestations"
 
 [tools."github:Boshen/cargo-shear"."platforms.macos-x64"]
-checksum = "sha256:ea0df899fecd1ae8116d588c97ebdeef8c1ed487ac7df2701ab39d05063a7930"
-url = "https://github.com/Boshen/cargo-shear/releases/download/v1.14.0/cargo-shear-x86_64-apple-darwin.tar.gz"
-url_api = "https://api.github.com/repos/Boshen/cargo-shear/releases/assets/580851834"
+checksum = "sha256:c414e63bdc08205c19b276456fc8ac5af6e33c3f2b40086a782fedb7c13e5567"
+url = "https://github.com/Boshen/cargo-shear/releases/download/v1.14.1/cargo-shear-x86_64-apple-darwin.tar.gz"
+url_api = "https://api.github.com/repos/Boshen/cargo-shear/releases/assets/742156852"
 provenance = "github-attestations"
 
 [tools."github:Boshen/cargo-shear"."platforms.windows-x64"]
-checksum = "sha256:1f81bdb905cb2cfbc95cb412ab4c1506136686b8d20b90b9ca1aa1ceded46760"
-url = "https://github.com/Boshen/cargo-shear/releases/download/v1.14.0/cargo-shear-x86_64-pc-windows-msvc.zip"
-url_api = "https://api.github.com/repos/Boshen/cargo-shear/releases/assets/580851837"
+checksum = "sha256:439a3c203c177b06c538e13cfb7260972738b9e9e8dc6433d4ace416cf40eb36"
+url = "https://github.com/Boshen/cargo-shear/releases/download/v1.14.1/cargo-shear-x86_64-pc-windows-msvc.zip"
+url_api = "https://api.github.com/repos/Boshen/cargo-shear/releases/assets/742156865"
 provenance = "github-attestations"
 
 [[tools."github:Byron/cargo-diet"]]
@@ -722,22 +722,22 @@ specifiers = ["2.0.5"]
 repository = "github.com/T1ckbase/vscode-langservers-extracted"
 
 [[tools."npm:knip"]]
-version = "6.44.2"
-aube = { path = "locks/npm-knip/6.44.2", digest = "sha256:5422a54db452bd96e6648c388fb58ac519cc1e863c5839d0b905316b6e37ef89" }
+version = "6.45.1"
+aube = { path = "locks/npm-knip/6.45.1", digest = "sha256:d8923b4964845c886bb6fe4678ee3ee6e4d30493cdb4fc84273bf51a98e4d263" }
 backend = "npm:knip"
-specifiers = ["6.44.2"]
+specifiers = ["6.45.1"]
 
 [[tools."npm:oxfmt"]]
-version = "0.77.0"
-aube = { path = "locks/npm-oxfmt/0.77.0", digest = "sha256:4739d3f16fce0c69c05833ef7722617f51e3e99182d239b0d5c21b35b579738a" }
+version = "0.78.0"
+aube = { path = "locks/npm-oxfmt/0.78.0", digest = "sha256:0da2508ef998e667c28c917c70d56e9d70b8513831de5663f0e0bdfae343bf2b" }
 backend = "npm:oxfmt"
-specifiers = ["0.77.0"]
+specifiers = ["0.78.0"]
 
 [[tools."npm:prettier"]]
-version = "3.9.10"
-aube = { path = "locks/npm-prettier/3.9.10", digest = "sha256:0a52cf3e98ebe971f9f0c338c08e668756d290a8d14fe3fd308251084fba1522" }
+version = "3.10.1"
+aube = { path = "locks/npm-prettier/3.10.1", digest = "sha256:2d1e8d35e9c42e9df167e305f2f8d5fc6fa8ab982cf1070a7e5148d73b5c5534" }
 backend = "npm:prettier"
-specifiers = ["3.9.10"]
+specifiers = ["3.10.1"]
 
 [[tools."npm:renovate"]]
 version = "44.222.4"
