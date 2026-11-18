@@ -76,7 +76,13 @@ run = 'cargo bench --bench json_iai "$@"'
 
 [tasks.plot-bench]
 description = "Plot docker bench results"
-run = "cargo xtask plot-benchmarks"
+run = [
+  "cargo xtask plot-benchmarks",
+  'for f in ./benches/docker/output/*.svg; do oxvg optimise "$f" -o "$f"; done',
+]
+
+[tasks.plot-bench.tools]
+"cargo:oxvg" = "0.0.9"
 
 [tasks.kcachegrind]
 description = "Open kcachegrind on a json_iai callgrind output (Linux only; requires kcachegrind on PATH)"
@@ -136,12 +142,14 @@ fi
 
 oxfmt --no-error-on-unmatched-pattern './benches/docker/output/*.md' --write
 cargo xtask plot-benchmarks
+for f in ./benches/docker/output/*.svg; do oxvg optimise "$f" -o "$f"; done
 cargo xtask readmes
 cargo rdme --workspace-project bytes2chars --force
 '''
 
 [tasks.bench-docker.tools]
 "npm:oxfmt" = "0.78.0"
+"cargo:oxvg" = "0.0.9"
 "github:orium/cargo-rdme" = "2.2"
 "github:bearcove/tracey" = "v1.4.0"
 
