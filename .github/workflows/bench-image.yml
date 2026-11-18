@@ -1,0 +1,29 @@
+name: bench-image
+
+on:
+  pull_request:
+    paths:
+      - Dockerfile
+      - benches/docker/**
+      - .config/mise/conf.d/bench.toml
+      - .github/workflows/bench-image.yml
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  bench-image:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: true
+      - uses: ./.github/actions/setup-mise
+      - name: Build the benchmark image
+        run: mise run bench-image
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
