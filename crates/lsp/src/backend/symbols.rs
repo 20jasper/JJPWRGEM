@@ -11,7 +11,7 @@ use crate::{
 const MAX_SYMBOLS: usize = 5000;
 const MAX_DETAIL_CHARS: usize = 100;
 
-pub(crate) fn document_symbols(
+fn document_symbols(
     document: &Document<String>,
     encoding: PositionEncoding,
 ) -> Vec<DocumentSymbol> {

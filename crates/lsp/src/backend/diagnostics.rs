@@ -11,13 +11,13 @@ use crate::{
     range::{PositionEncoding, span_to_range},
 };
 
-pub fn diagnostics_from_error(
+fn diagnostics_from_error(
     uri: &Uri,
     text: &str,
-    e: &jjpwrgem_parse::Error,
+    error: &jjpwrgem_parse::Error,
     encoding: PositionEncoding,
 ) -> Vec<Diagnostic> {
-    let related: Vec<_> = Vec::<Context<'_>>::from(e)
+    let related: Vec<_> = Vec::<Context<'_>>::from(error)
         .into_iter()
         .map(|ctx| DiagnosticRelatedInformation {
             location: Location {
@@ -29,26 +29,26 @@ pub fn diagnostics_from_error(
         .collect();
 
     vec![Diagnostic {
-        range: span_to_range(text, *e.range(), encoding),
+        range: span_to_range(text, *error.range(), encoding),
         severity: Some(DiagnosticSeverity::Error),
         source: Some(SOURCE.into()),
-        message: e.message().into(),
+        message: error.message().into(),
         related_information: (!related.is_empty()).then_some(related),
         ..Default::default()
     }]
 }
 
-pub fn build_code_actions(
+fn build_code_actions(
     uri: &Uri,
     document: &jjpwrgem_parse::Result<Document<String>>,
     encoding: PositionEncoding,
 ) -> Vec<CodeActionResponse> {
-    let Err(err) = document else {
+    let Err(error) = document else {
         return vec![];
     };
-    let text = err.source_text();
-    let diagnostics = Some(diagnostics_from_error(uri, text, err, encoding));
-    Vec::<Patch<'_>>::from(err)
+    let text = error.source_text();
+    let diagnostics = Some(diagnostics_from_error(uri, text, error, encoding));
+    Vec::<Patch<'_>>::from(error)
         .into_iter()
         .map(|patch| {
             let changes = HashMap::from([(
@@ -79,7 +79,7 @@ pub(super) fn diagnostics_for(
 ) -> Vec<Diagnostic> {
     match document {
         Ok(_) => vec![],
-        Err(e) => diagnostics_from_error(uri, e.source_text(), e, encoding),
+        Err(error) => diagnostics_from_error(uri, error.source_text(), error, encoding),
     }
 }
 

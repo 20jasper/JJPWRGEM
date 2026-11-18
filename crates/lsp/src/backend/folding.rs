@@ -10,10 +10,7 @@ use crate::{
 const CLOSING_BRACKET_LEN: usize = 1;
 const MAX_FOLDING_RANGES: usize = 5000;
 
-pub(crate) fn folding_ranges(
-    document: &Document<String>,
-    encoding: PositionEncoding,
-) -> Vec<FoldingRange> {
+fn folding_ranges(document: &Document<String>, encoding: PositionEncoding) -> Vec<FoldingRange> {
     let positions = Positions::new(document.source(), encoding);
     document
         .root()

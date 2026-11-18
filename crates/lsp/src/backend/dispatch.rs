@@ -5,7 +5,7 @@ use std::{
 };
 
 use gen_lsp_types::*;
-use serde::Deserialize;
+use serde::{Deserialize, de::DeserializeOwned};
 use serde_json::value::RawValue;
 
 use crate::{
@@ -153,7 +153,7 @@ impl Backend {
         )
     }
 
-    fn notify<P: for<'de> Deserialize<'de>>(
+    fn notify<P: DeserializeOwned>(
         &mut self,
         params: Option<&RawValue>,
         handler: impl FnOnce(&mut Self, P),

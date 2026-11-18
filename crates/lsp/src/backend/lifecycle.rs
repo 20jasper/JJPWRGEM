@@ -11,7 +11,7 @@ fn client_supports_pull_diagnostics(capabilities: &ClientCapabilities) -> bool {
     capabilities
         .text_document
         .as_ref()
-        .is_some_and(|t| t.diagnostic.is_some())
+        .is_some_and(|text_document| text_document.diagnostic.is_some())
 }
 
 impl Backend {
@@ -28,7 +28,7 @@ impl Backend {
             .capabilities
             .general
             .as_ref()
-            .and_then(|g| g.position_encodings.as_ref())
+            .and_then(|general| general.position_encodings.as_ref())
             .is_some_and(|encodings| encodings.contains(&PositionEncodingKind::UTF8));
 
         self.lifecycle = Lifecycle::Running;
