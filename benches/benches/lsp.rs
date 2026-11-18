@@ -216,8 +216,8 @@ fn bench_diagnostics(c: &mut Criterion) {
                         Range {
                             start: end,
                             end: Position {
-                                line: end.line,
-                                character: end.character + 1,
+                                line: end.line + 1,
+                                character: 0,
                             },
                         }
                     };
