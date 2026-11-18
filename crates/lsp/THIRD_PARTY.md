@@ -1,13 +1,4 @@
-# Third-party notices
-
-## lsp-server
-
-- Files: `crates/lsp/src/lsp_server/`
-- Origin: rust-lang/rust-analyzer, `lib/lsp-server` (version 0.10.0), adapted to our message types and loop
-- Copyright: rust-analyzer contributors
-- License: MIT OR Apache-2.0. The MIT text is reproduced below; the Apache-2.0 text is at https://github.com/rust-lang/rust-analyzer/blob/master/LICENSE-APACHE
-
-### MIT License
+`src/lsp_server/` is taken from [lsp-server](https://github.com/rust-lang/rust-analyzer/tree/master/lib/lsp-server) v0.10.0, used under the MIT license:
 
 Permission is hereby granted, free of charge, to any
 person obtaining a copy of this software and associated
