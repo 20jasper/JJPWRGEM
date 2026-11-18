@@ -3,7 +3,10 @@ use std::{
     io::{self, BufRead as _},
 };
 
-use crate::criterion::{Message, format_time};
+use crate::{
+    criterion::{Message, format_time},
+    markdown::markdown_table,
+};
 
 fn parse_id(id: &str) -> Option<(&str, &str, &str)> {
     let mut parts = id.splitn(3, '/');
@@ -85,42 +88,45 @@ pub fn write_bench_table() -> anyhow::Result<()> {
                 .unwrap_or(std::cmp::Ordering::Equal)
         });
 
-        let mut header = String::from("| |");
-        let mut sep = String::from("|:--|");
+        let mut header = vec![String::new()];
+        let mut separator = vec![":--"];
         for bench in &bench_names {
-            header.push_str(&format!(" `{bench}` |"));
-            sep.push_str(":--:|");
+            header.push(format!("`{bench}`"));
+            separator.push(":--:");
         }
 
-        println!("\n{header}");
-        println!("{sep}");
         let has_throughput = params
             .values()
             .flat_map(|benches| benches.values())
             .any(|&(_, bytes)| bytes.is_some());
 
+        let mut rows = Vec::new();
         for (param, benches) in params {
             let size = format_size(param);
-            let mut time_row = format!("| time ({size}) |");
-            let mut throughput_row = format!("| throughput ({size}) |");
+            let mut time_row = vec![format!("time ({size})")];
+            let mut throughput_row = vec![format!("throughput ({size})")];
             for bench in &bench_names {
                 if let Some(&(ns, bytes)) = benches.get(bench) {
-                    time_row.push_str(&format!(" {} |", format_time(ns, 2, " ", true)));
-                    if let Some(bytes) = bytes {
-                        throughput_row.push_str(&format!(" {} |", format_throughput(bytes, ns)));
-                    } else {
-                        throughput_row.push_str(" — |");
-                    }
+                    time_row.push(format_time(ns, 2, " ", true));
+                    throughput_row.push(match bytes {
+                        Some(bytes) => format_throughput(bytes, ns),
+                        None => "—".to_owned(),
+                    });
                 } else {
-                    time_row.push_str(" — |");
-                    throughput_row.push_str(" — |");
+                    time_row.push("—".to_owned());
+                    throughput_row.push("—".to_owned());
                 }
             }
-            println!("{time_row}");
+            rows.push(time_row);
             if has_throughput {
-                println!("{throughput_row}");
+                rows.push(throughput_row);
             }
         }
+
+        println!(
+            "\n{}",
+            markdown_table(&header, &separator, &rows).trim_end()
+        );
     }
 
     Ok(())
