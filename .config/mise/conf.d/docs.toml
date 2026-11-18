@@ -1,9 +1,8 @@
 [tasks.readmes]
 description = "Generate markdown files from templates"
 sources = [
+  "xtask/src/**/*.rs",
   "xtask/templates/**",
-  "xtask/src/template.rs",
-  "xtask/src/vscode_settings.rs",
   "crates/parse/src/settings.rs",
   "crates/parse/src/format/config.rs",
   "benches/docker/output/*.md",

@@ -5,6 +5,7 @@ use std::{
 };
 
 use anyhow::{Result, anyhow, bail};
+use jjpwrgem_parse::format::{DEFAULT_PREFERRED_WIDTH, LineEnding, prettify_str};
 
 pub fn oxfmt_format(input: &str, filepath: &str) -> Result<String> {
     let mut child = Command::new("oxfmt")
@@ -52,4 +53,12 @@ pub fn write_or_check(path: &str, generated: &str, command: &str, check: bool) -
         ),
     };
     bail!("{path} out of date, {detail}\nrun `cargo xtask {command}`")
+}
+
+pub fn pretty_json(value: &impl serde::Serialize) -> Result<String> {
+    let compact = jjpwrgem_parse::format::serde::uglify_serializable(value)
+        .map_err(|error| anyhow!("{error}"))?;
+    let pretty = prettify_str(&compact, DEFAULT_PREFERRED_WIDTH, LineEnding::Lf)
+        .map_err(|error| anyhow!("{error}"))?;
+    Ok(pretty + "\n")
 }
