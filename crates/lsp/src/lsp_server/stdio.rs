@@ -5,7 +5,7 @@ use std::{
     thread,
 };
 
-use crate::vendored::read_msg_text;
+use super::msg::read_msg_text;
 
 pub enum Event {
     Message(Vec<u8>),

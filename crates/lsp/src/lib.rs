@@ -1,14 +1,12 @@
 mod backend;
+mod lsp_server;
 mod range;
-mod req_queue;
-mod stdio;
 mod transport;
-mod vendored;
 
 use std::{error::Error, process::ExitCode};
 
 use backend::Backend;
-use stdio::Event;
+use lsp_server::stdio::Event;
 use transport::{Reader, Writer, decode};
 
 #[doc(hidden)]
@@ -20,7 +18,7 @@ pub fn decode_stream(bytes: &[u8]) {
 }
 
 pub fn run_blocking() -> Result<ExitCode, Box<dyn Error + Send + Sync>> {
-    let events = stdio::spawn_reader();
+    let events = lsp_server::stdio::spawn_reader();
     let mut backend = Backend::new(Writer::new());
     loop {
         let body = match events.recv() {

@@ -7,9 +7,9 @@ use gen_lsp_types::*;
 use serde::{Deserialize, Deserializer, Serialize, de::IgnoredAny};
 use serde_json::value::RawValue;
 
-use crate::{
+use crate::lsp_server::{
+    msg::{ErrorCode, ResponseError, read_msg_text, write_msg_text},
     req_queue::Id,
-    vendored::{ErrorCode, ResponseError, read_msg_text, write_msg_text},
 };
 
 const JSONRPC: &str = "2.0";

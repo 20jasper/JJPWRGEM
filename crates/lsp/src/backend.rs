@@ -22,10 +22,12 @@ use crate::{
         settings::format_settings,
         symbols::document_symbols,
     },
+    lsp_server::{
+        msg::ErrorCode,
+        req_queue::{Id, Outgoing},
+    },
     range::{FULL_DOCUMENT_RANGE, PositionEncoding, Positions},
-    req_queue::{Id, Outgoing},
     transport::{Rejection, Writer},
-    vendored::ErrorCode,
 };
 
 const SOURCE: &str = "jjpwrgem";
