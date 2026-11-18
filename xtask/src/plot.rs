@@ -5,7 +5,11 @@ use std::{
 
 use anyhow::{Context, Error, Result, anyhow, bail};
 use jjpwrgem_parse::ast::{self, Document, Value};
-use plotters::prelude::*;
+use plotters::{
+    element::DashedPathElement,
+    prelude::*,
+    style::text_anchor::{HPos, Pos, VPos},
+};
 
 const CHART_WIDTH: u32 = 1280;
 const CHART_HEIGHT: u32 = 720;
@@ -234,7 +238,7 @@ pub fn plot_benchmark_candlesticks(
         .with_context(|| format!("failed to parse benchmark data in {}", input.display()))?;
 
     let mut entries = Vec::new();
-    for result in results {
+    for result in results.into_iter().filter(|result| result.command != "sjq") {
         let seconds_to_ms: Vec<f64> = result.times.iter().map(|time| time * 1_000.0).collect();
         let Some(time) = compute_stats(&seconds_to_ms) else {
             bail!("benchmark '{}' is missing time samples", result.command);
@@ -279,6 +283,7 @@ fn draw_candlesticks(
     entries: &[SeriesEntry],
 ) -> Result<()> {
     let color = RGBColor(33, 150, 243);
+    let highlight = RGBColor(255, 112, 0);
     let grid_color = RGBColor(210, 210, 210);
     let label_color = RGBColor(30, 30, 30);
     let font = ("sans-serif", 20).into_font();
@@ -286,64 +291,115 @@ fn draw_candlesticks(
         .iter()
         .map(|entry| entry.time.max)
         .fold(f64::NEG_INFINITY, f64::max);
+    let rows = entries.len() as f64;
+    let row_center = |index: usize| rows - index as f64 - 0.5;
+    let half_height = 0.3;
+    let cap = 0.15;
 
     let mut chart = ChartBuilder::on(area)
         .margin(25)
-        .set_label_area_size(LabelAreaPosition::Left, 70)
-        .set_label_area_size(LabelAreaPosition::Bottom, 90)
-        .build_cartesian_2d(0..entries.len() as i32, linear_range(max))
+        .set_label_area_size(LabelAreaPosition::Left, 130)
+        .set_label_area_size(LabelAreaPosition::Bottom, 60)
+        .build_cartesian_2d(linear_range(max), 0.0..rows)
         .context("failed to build candlestick chart")?;
 
     chart
         .configure_mesh()
         .light_line_style(ShapeStyle::from(grid_color).stroke_width(1))
         .bold_line_style(ShapeStyle::from(grid_color).stroke_width(2))
-        .x_desc("Command")
-        .y_desc("Milliseconds")
+        .x_desc("Milliseconds")
+        .y_desc("Command")
         .axis_desc_style(font.clone())
         .label_style(font.clone())
-        .x_labels(entries.len())
-        .x_label_formatter(&|value| {
-            usize::try_from(*value)
-                .ok()
-                .and_then(|index| entries.get(index))
-                .map(|entry| entry.name.clone())
-                .unwrap_or_default()
-        })
-        .y_labels(8)
-        .y_label_formatter(&|value| format!("{value:.0}"))
+        .disable_y_mesh()
+        .y_labels(0)
+        .x_labels(8)
+        .x_label_formatter(&|value| format!("{value:.0}"))
         .draw()
         .context("failed to configure chart mesh")?;
 
-    let candle_style = ShapeStyle::from(color).filled().stroke_width(3);
-    let whisker_style = ShapeStyle::from(color.mix(0.7)).stroke_width(10);
+    if let Some(jjp_index) = entries.iter().position(|entry| entry.name == "jjp") {
+        let median = entries[jjp_index].time.median;
+        chart
+            .draw_series(std::iter::once(DashedPathElement::new(
+                [(median, 0.0), (median, rows)],
+                6,
+                4,
+                ShapeStyle::from(highlight.mix(0.8)).stroke_width(1),
+            )))
+            .context("failed to draw reference line")?;
+    }
 
-    chart
-        .draw_series(entries.iter().enumerate().map(|(index, entry)| {
-            let stats = entry.time;
-            CandleStick::new(
-                index as i32,
-                stats.q1,
-                stats.max,
-                stats.min,
-                stats.q3,
-                candle_style,
-                whisker_style,
-                28,
-            )
-        }))
-        .context("failed to draw candlestick series")?;
+    for (index, entry) in entries.iter().enumerate() {
+        let stats = entry.time;
+        let is_jjp = entry.name == "jjp";
+        let row_color = if is_jjp { highlight } else { color };
+        let y = row_center(index);
+        let weight = if is_jjp {
+            FontStyle::Bold
+        } else {
+            FontStyle::Normal
+        };
 
-    chart
-        .draw_series(entries.iter().enumerate().map(|(index, entry)| {
-            EmptyElement::at((index as i32, entry.time.max))
-                + Text::new(
-                    format!("{:.1} ms", entry.time.median),
-                    (0, -18),
-                    font.clone().color(&label_color),
-                )
-        }))
-        .context("failed to draw candlestick labels")?;
+        chart
+            .draw_series([
+                PathElement::new(
+                    vec![(stats.min, y), (stats.max, y)],
+                    ShapeStyle::from(row_color.mix(0.7)).stroke_width(2),
+                ),
+                PathElement::new(
+                    vec![(stats.min, y - cap), (stats.min, y + cap)],
+                    ShapeStyle::from(row_color.mix(0.7)).stroke_width(2),
+                ),
+                PathElement::new(
+                    vec![(stats.max, y - cap), (stats.max, y + cap)],
+                    ShapeStyle::from(row_color.mix(0.7)).stroke_width(2),
+                ),
+            ])
+            .context("failed to draw whiskers")?;
+
+        chart
+            .draw_series(std::iter::once(Rectangle::new(
+                [(stats.q1, y - half_height), (stats.q3, y + half_height)],
+                ShapeStyle::from(row_color).filled(),
+            )))
+            .context("failed to draw boxes")?;
+
+        chart
+            .draw_series(std::iter::once(PathElement::new(
+                vec![
+                    (stats.median, y - half_height),
+                    (stats.median, y + half_height),
+                ],
+                ShapeStyle::from(WHITE).stroke_width(2),
+            )))
+            .context("failed to draw medians")?;
+
+        let right_edge = stats.max.max(stats.q3);
+        chart
+            .draw_series(std::iter::once(
+                EmptyElement::at((right_edge, y))
+                    + Text::new(
+                        format!("{:.1} ms", stats.median),
+                        (10, 0),
+                        font.clone()
+                            .color(&label_color)
+                            .pos(Pos::new(HPos::Left, VPos::Center)),
+                    ),
+            ))
+            .context("failed to draw median labels")?;
+
+        let name_style = font
+            .clone()
+            .style(weight)
+            .color(&if is_jjp { highlight } else { label_color })
+            .pos(Pos::new(HPos::Right, VPos::Center));
+        chart
+            .draw_series(std::iter::once(
+                EmptyElement::at((0.0, y)) + Text::new(entry.name.clone(), (-10, 0), name_style),
+            ))
+            .context("failed to draw row labels")?;
+    }
 
     Ok(())
 }
@@ -390,7 +446,7 @@ fn percentile(sorted: &[f64], percentile: f64) -> f64 {
 fn linear_range(max: f64) -> std::ops::Range<f64> {
     let start = 0.0;
     let safe_max = max.max(0.0);
-    let padding = (safe_max * 0.1).max(10.0);
+    let padding = (safe_max * 0.15).max(10.0);
     let end = (safe_max + padding).max(start + 1.0);
     start..end
 }
