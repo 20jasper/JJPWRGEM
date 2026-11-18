@@ -322,6 +322,11 @@ version = "0.51.0"
 backend = "cargo:cargo-semver-checks"
 specifiers = ["0.51.0"]
 
+[[tools."cargo:oxvg"]]
+version = "0.0.9"
+backend = "cargo:oxvg"
+specifiers = ["0.0.9"]
+
 [[tools."cargo:rustfilt"]]
 version = "0.2.2"
 backend = "cargo:rustfilt"

@@ -19,43 +19,43 @@ The following JSON fixtures are used across benchmarks:
 
 ### pretty canada
 
-![candlestick benchmark for pretty printing canada.json](/benches/docker/output/pretty-canada.png)
+![candlestick benchmark for pretty printing canada.json](/benches/docker/output/pretty-canada.svg)
 
 | Command        | Mean Wall Time [ms] |   Change | Factor         |
 | :------------- | ------------------: | -------: | :------------- |
-| `jjp`          |          19.9 ± 0.4 |          |                |
-| `json-pp-rust` |          26.3 ± 1.2 |   +32.2% | (1.3x slower)  |
-| `jsonice`      |          24.4 ± 1.0 |   +22.4% |                |
-| `prettier`     |       1106.4 ± 27.6 | +5453.6% | (55.5x slower) |
-| `jq`           |        109.7 ± 10.4 |  +450.6% | (5.5x slower)  |
-| `gojq`         |          40.5 ± 3.4 |  +103.5% | (2.0x slower)  |
-| `jaq`          |          44.0 ± 3.8 |  +120.7% | (2.2x slower)  |
-| `sjq`          |         455.6 ± 7.7 | +2186.9% | (22.9x slower) |
-| `dprint`       |        449.1 ± 20.1 | +2154.1% | (22.5x slower) |
-| `python`       |         299.3 ± 2.7 | +1402.6% | (15.0x slower) |
-| `node`         |          76.8 ± 1.7 |  +285.5% | (3.9x slower)  |
-| `bun`          |          26.1 ± 0.7 |   +30.9% | (1.3x slower)  |
-| `jsonxf`       |          13.5 ± 0.3 |   -32.3% | (1.5x faster)  |
-| `jsonformat`   |          17.4 ± 0.7 |   -12.9% |                |
-| `oxfmt`        |         105.5 ± 3.0 |  +429.7% | (5.3x slower)  |
+| `jjp`          |          11.0 ± 1.7 |          |                |
+| `json-pp-rust` |          15.3 ± 1.3 |   +39.1% | (1.4x slower)  |
+| `jsonice`      |          15.1 ± 0.9 |   +37.4% | (1.4x slower)  |
+| `prettier`     |        775.4 ± 25.6 | +6933.8% | (70.3x slower) |
+| `jq`           |          68.0 ± 2.4 |  +516.7% | (6.2x slower)  |
+| `gojq`         |          32.5 ± 1.6 |  +194.9% | (2.9x slower)  |
+| `jaq`          |          26.3 ± 1.4 |  +138.5% | (2.4x slower)  |
+| `sjq`          |         202.5 ± 9.8 | +1736.6% | (18.4x slower) |
+| `dprint`       |        297.2 ± 12.8 | +2596.3% | (27.0x slower) |
+| `python`       |         209.8 ± 4.3 | +1803.0% | (19.0x slower) |
+| `node`         |          45.5 ± 4.5 |  +312.9% | (4.1x slower)  |
+| `bun`          |          15.8 ± 1.2 |   +42.9% | (1.4x slower)  |
+| `jsonxf`       |           8.1 ± 1.0 |   -26.7% |                |
+| `jsonformat`   |          10.2 ± 0.8 |    -7.7% |                |
+| `oxfmt`        |          61.6 ± 2.9 |  +459.0% | (5.6x slower)  |
 
 ### ugly canada
 
-![candlestick benchmark for ugly printing canada.json](/benches/docker/output/ugly-canada.png)
+![candlestick benchmark for ugly printing canada.json](/benches/docker/output/ugly-canada.svg)
 
 | Command       | Mean Wall Time [ms] |   Change | Factor         |
 | :------------ | ------------------: | -------: | :------------- |
-| `jjp`         |           9.6 ± 0.4 |          |                |
-| `json-minify` |          67.0 ± 1.6 |  +598.2% | (7.0x slower)  |
-| `jsonxf`      |          13.2 ± 0.4 |   +37.1% | (1.4x slower)  |
-| `jq`          |          77.5 ± 0.5 |  +707.4% | (8.1x slower)  |
-| `jaq`         |          35.0 ± 1.0 |  +264.0% | (3.6x slower)  |
-| `gojq`        |          37.0 ± 0.7 |  +285.7% | (3.9x slower)  |
-| `sjq`         |         370.4 ± 6.4 | +3758.0% | (38.6x slower) |
-| `python`      |         277.8 ± 2.2 | +2793.4% | (28.9x slower) |
-| `minify`      |          19.2 ± 0.6 |  +100.4% | (2.0x slower)  |
-| `node`        |          65.4 ± 2.6 |  +580.9% | (6.8x slower)  |
-| `bun`         |          19.0 ± 1.0 |   +97.7% | (2.0x slower)  |
+| `jjp`         |           5.4 ± 0.5 |          |                |
+| `json-minify` |          38.1 ± 2.0 |  +602.8% | (7.0x slower)  |
+| `jsonxf`      |           7.9 ± 0.6 |   +46.0% | (1.5x slower)  |
+| `jq`          |          46.7 ± 1.5 |  +761.8% | (8.6x slower)  |
+| `jaq`         |          19.8 ± 1.0 |  +265.6% | (3.7x slower)  |
+| `gojq`        |          31.1 ± 1.2 |  +474.0% | (5.7x slower)  |
+| `sjq`         |         162.2 ± 8.9 | +2893.8% | (29.9x slower) |
+| `python`      |         190.1 ± 6.0 | +3407.3% | (35.1x slower) |
+| `minify`      |           9.4 ± 0.9 |   +72.8% | (1.7x slower)  |
+| `node`        |          36.2 ± 2.2 |  +567.2% | (6.7x slower)  |
+| `bun`         |          11.3 ± 1.1 |  +107.7% | (2.1x slower)  |
 
 ## citm catalog
 
@@ -63,43 +63,43 @@ The following JSON fixtures are used across benchmarks:
 
 ### pretty citm catalog
 
-![candlestick benchmark for pretty printing citm-catalog.json](/benches/docker/output/pretty-citm_catalog.png)
+![candlestick benchmark for pretty printing citm-catalog.json](/benches/docker/output/pretty-citm_catalog.svg)
 
-| Command        | Mean Wall Time [ms] |   Change | Factor         |
-| :------------- | ------------------: | -------: | :------------- |
-| `jjp`          |           7.1 ± 0.7 |          |                |
-| `json-pp-rust` |          12.0 ± 0.4 |   +68.6% | (1.7x slower)  |
-| `jsonice`      |           6.9 ± 0.1 |    -2.7% |                |
-| `prettier`     |        560.8 ± 12.7 | +7810.1% | (79.1x slower) |
-| `jq`           |          34.2 ± 1.5 |  +381.9% | (4.8x slower)  |
-| `gojq`         |          21.3 ± 0.6 |  +201.1% | (3.0x slower)  |
-| `jaq`          |          16.0 ± 0.7 |  +125.5% | (2.3x slower)  |
-| `sjq`          |         114.4 ± 1.5 | +1513.0% | (16.1x slower) |
-| `dprint`       |         233.7 ± 4.3 | +3196.3% | (33.0x slower) |
-| `python`       |         168.3 ± 2.3 | +2273.4% | (23.7x slower) |
-| `node`         |          44.7 ± 2.3 |  +530.2% | (6.3x slower)  |
-| `bun`          |          14.8 ± 0.4 |  +109.2% | (2.1x slower)  |
-| `jsonxf`       |           3.6 ± 0.1 |   -49.8% | (2.0x faster)  |
-| `jsonformat`   |           5.6 ± 0.2 |   -21.5% |                |
-| `oxfmt`        |          55.3 ± 3.1 |  +679.7% | (7.8x slower)  |
+| Command        | Mean Wall Time [ms] |    Change | Factor          |
+| :------------- | ------------------: | --------: | :-------------- |
+| `jjp`          |           3.4 ± 0.5 |           |                 |
+| `json-pp-rust` |           5.8 ± 1.2 |    +70.6% | (1.7x slower)   |
+| `jsonice`      |           4.0 ± 0.3 |    +16.2% |                 |
+| `prettier`     |        383.2 ± 18.6 | +11095.8% | (112.0x slower) |
+| `jq`           |          21.8 ± 1.3 |   +536.7% | (6.4x slower)   |
+| `gojq`         |          13.4 ± 0.4 |   +290.7% | (3.9x slower)   |
+| `jaq`          |          10.3 ± 1.0 |   +201.7% | (3.0x slower)   |
+| `sjq`          |          61.6 ± 3.8 |  +1700.9% | (18.0x slower)  |
+| `dprint`       |         164.2 ± 8.3 |  +4695.9% | (48.0x slower)  |
+| `python`       |         122.1 ± 7.5 |  +3465.5% | (35.7x slower)  |
+| `node`         |          26.4 ± 3.5 |   +672.2% | (7.7x slower)   |
+| `bun`          |           7.7 ± 0.9 |   +123.6% | (2.2x slower)   |
+| `jsonxf`       |           1.8 ± 0.2 |    -46.1% | (1.9x faster)   |
+| `jsonformat`   |           3.1 ± 0.4 |    -10.3% |                 |
+| `oxfmt`        |          32.5 ± 2.2 |   +850.3% | (9.5x slower)   |
 
 ### ugly citm catalog
 
-![candlestick benchmark for ugly printing citm-catalog.json](/benches/docker/output/ugly-citm_catalog.png)
+![candlestick benchmark for ugly printing citm-catalog.json](/benches/docker/output/ugly-citm_catalog.svg)
 
 | Command       | Mean Wall Time [ms] |   Change | Factor         |
 | :------------ | ------------------: | -------: | :------------- |
-| `jjp`         |           4.0 ± 0.2 |          |                |
-| `json-minify` |          41.0 ± 2.1 |  +933.8% | (10.3x slower) |
-| `jsonxf`      |           3.4 ± 0.1 |   -13.2% |                |
-| `jq`          |          28.6 ± 0.6 |  +622.7% | (7.2x slower)  |
-| `jaq`         |          14.0 ± 0.4 |  +251.9% | (3.5x slower)  |
-| `gojq`        |          21.6 ± 1.0 |  +446.0% | (5.5x slower)  |
-| `sjq`         |          98.5 ± 3.8 | +2386.0% | (24.9x slower) |
-| `python`      |         163.1 ± 3.9 | +4014.7% | (41.1x slower) |
-| `minify`      |           8.1 ± 0.4 |  +103.3% | (2.0x slower)  |
-| `node`        |          38.5 ± 2.1 |  +870.4% | (9.7x slower)  |
-| `bun`         |          11.1 ± 0.3 |  +179.4% | (2.8x slower)  |
+| `jjp`         |           2.1 ± 0.4 |          |                |
+| `json-minify` |          22.6 ± 2.2 |  +964.4% | (10.6x slower) |
+| `jsonxf`      |           1.8 ± 0.3 |   -14.0% |                |
+| `jq`          |          17.3 ± 1.2 |  +716.8% | (8.2x slower)  |
+| `jaq`         |           8.5 ± 1.0 |  +301.6% | (4.0x slower)  |
+| `gojq`        |          13.1 ± 0.4 |  +516.1% | (6.2x slower)  |
+| `sjq`         |          55.2 ± 2.2 | +2502.9% | (26.0x slower) |
+| `python`      |         120.1 ± 6.4 | +5561.7% | (56.6x slower) |
+| `minify`      |           4.0 ± 0.5 |   +87.7% | (1.9x slower)  |
+| `node`        |          22.5 ± 2.0 |  +960.9% | (10.6x slower) |
+| `bun`         |           5.8 ± 0.8 |  +173.0% | (2.7x slower)  |
 
 ## twitter
 
@@ -107,40 +107,40 @@ The following JSON fixtures are used across benchmarks:
 
 ### pretty twitter
 
-![candlestick benchmark for pretty printing twitter.json](/benches/docker/output/pretty-twitter.png)
+![candlestick benchmark for pretty printing twitter.json](/benches/docker/output/pretty-twitter.svg)
 
-| Command        | Mean Wall Time [ms] |   Change | Factor         |
-| :------------- | ------------------: | -------: | :------------- |
-| `jjp`          |           3.4 ± 0.1 |          |                |
-| `json-pp-rust` |           5.5 ± 0.1 |   +62.7% | (1.6x slower)  |
-| `jsonice`      |           4.1 ± 0.1 |   +21.9% |                |
-| `prettier`     |         309.5 ± 6.5 | +9002.0% | (91.0x slower) |
-| `jq`           |          16.2 ± 0.2 |  +376.8% | (4.8x slower)  |
-| `gojq`         |          12.7 ± 0.8 |  +274.4% | (3.7x slower)  |
-| `jaq`          |           8.8 ± 0.2 |  +157.8% | (2.6x slower)  |
-| `sjq`          |          44.4 ± 0.6 | +1206.3% | (13.1x slower) |
-| `dprint`       |          47.4 ± 2.3 | +1293.7% | (13.9x slower) |
-| `python`       |         139.8 ± 1.9 | +4011.0% | (41.1x slower) |
-| `node`         |          36.1 ± 1.7 |  +960.9% | (10.6x slower) |
-| `bun`          |           8.9 ± 0.3 |  +163.2% | (2.6x slower)  |
-| `jsonxf`       |           1.8 ± 0.1 |   -46.8% | (1.9x faster)  |
-| `jsonformat`   |           3.4 ± 0.1 |    -1.2% |                |
-| `oxfmt`        |          49.0 ± 2.5 | +1341.2% | (14.4x slower) |
+| Command        | Mean Wall Time [ms] |    Change | Factor          |
+| :------------- | ------------------: | --------: | :-------------- |
+| `jjp`          |           1.7 ± 0.4 |           |                 |
+| `json-pp-rust` |           2.7 ± 0.7 |    +63.5% | (1.6x slower)   |
+| `jsonice`      |           2.4 ± 0.4 |    +42.6% | (1.4x slower)   |
+| `prettier`     |         203.7 ± 7.5 | +12054.3% | (121.5x slower) |
+| `jq`           |          10.4 ± 0.9 |   +523.6% | (6.2x slower)   |
+| `gojq`         |           8.2 ± 0.4 |   +389.5% | (4.9x slower)   |
+| `jaq`          |           5.3 ± 0.6 |   +214.6% | (3.1x slower)   |
+| `sjq`          |          27.7 ± 1.2 |  +1550.4% | (16.5x slower)  |
+| `dprint`       |          31.0 ± 1.6 |  +1747.7% | (18.5x slower)  |
+| `python`       |         101.8 ± 4.9 |  +5973.8% | (60.7x slower)  |
+| `node`         |          22.7 ± 3.0 |  +1256.6% | (13.6x slower)  |
+| `bun`          |           4.2 ± 0.6 |   +150.6% | (2.5x slower)   |
+| `jsonxf`       |           0.8 ± 0.2 |    -49.4% | (2.0x faster)   |
+| `jsonformat`   |           1.9 ± 0.2 |    +15.0% |                 |
+| `oxfmt`        |          28.8 ± 1.9 |  +1619.9% | (17.2x slower)  |
 
 ### ugly twitter
 
-![candlestick benchmark for ugly printing twitter.json](/benches/docker/output/ugly-twitter.png)
+![candlestick benchmark for ugly printing twitter.json](/benches/docker/output/ugly-twitter.svg)
 
 | Command       | Mean Wall Time [ms] |   Change | Factor         |
 | :------------ | ------------------: | -------: | :------------- |
-| `jjp`         |           2.5 ± 0.1 |          |                |
-| `json-minify` |          36.9 ± 2.2 | +1394.5% | (14.9x slower) |
-| `jsonxf`      |           1.8 ± 0.2 |   -25.3% |                |
-| `jq`          |          15.1 ± 1.3 |  +510.5% | (6.1x slower)  |
-| `jaq`         |           8.1 ± 0.4 |  +228.7% | (3.3x slower)  |
-| `gojq`        |          12.4 ± 0.5 |  +403.2% | (5.0x slower)  |
-| `sjq`         |          38.1 ± 0.7 | +1442.8% | (15.4x slower) |
-| `python`      |         135.4 ± 1.0 | +5381.9% | (54.8x slower) |
-| `minify`      |           5.9 ± 0.5 |  +137.6% | (2.4x slower)  |
-| `node`        |          33.7 ± 1.1 | +1263.4% | (13.6x slower) |
-| `bun`         |           8.1 ± 0.3 |  +227.8% | (3.3x slower)  |
+| `jjp`         |           1.2 ± 0.3 |          |                |
+| `json-minify` |          20.3 ± 1.7 | +1597.1% | (17.0x slower) |
+| `jsonxf`      |           0.9 ± 0.3 |   -22.6% |                |
+| `jq`          |           9.0 ± 0.7 |  +653.5% | (7.5x slower)  |
+| `jaq`         |           4.8 ± 0.6 |  +297.9% | (4.0x slower)  |
+| `gojq`        |           8.0 ± 0.5 |  +567.6% | (6.7x slower)  |
+| `sjq`         |          25.0 ± 1.0 | +1990.0% | (20.9x slower) |
+| `python`      |         100.2 ± 6.3 | +8264.0% | (83.6x slower) |
+| `minify`      |           3.0 ± 0.3 |  +152.2% | (2.5x slower)  |
+| `node`        |          21.4 ± 2.7 | +1685.3% | (17.9x slower) |
+| `bun`         |           5.6 ± 0.6 |  +363.9% | (4.6x slower)  |
