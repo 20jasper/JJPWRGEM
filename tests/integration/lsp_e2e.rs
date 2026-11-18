@@ -704,3 +704,70 @@ fn a_body_that_is_not_a_request_gets_invalid_request_and_the_server_keeps_workin
     assert_eq!(raw.error_code()?, (9.into(), INVALID_REQUEST));
     assert_still_serving(&mut raw)
 }
+
+const RAW_URI: &str = "file:///raw.json";
+
+fn open_raw() -> TestResult<Raw> {
+    let mut raw = Raw::initialized()?;
+    raw.notify(
+        "textDocument/didOpen",
+        &serde_json::json!({ "textDocument": {
+            "uri": RAW_URI, "languageId": "json", "version": 1, "text": r#"{"a": [1, 2], "b": 3}"#
+        } }),
+    )?;
+    Ok(raw)
+}
+
+fn symbol_params() -> serde_json::Value {
+    serde_json::json!({ "textDocument": { "uri": RAW_URI } })
+}
+
+#[test]
+fn pipelined_requests_are_answered_in_order() -> TestResult {
+    let mut raw = open_raw()?;
+    for id in 10..15 {
+        raw.request(id, "textDocument/documentSymbol", &symbol_params())?;
+    }
+    for id in 10..15 {
+        let reply = raw.reply()?;
+        assert_eq!(reply["id"], id);
+        assert_eq!(reply["result"].as_array().map(Vec::len), Some(2), "{reply}");
+    }
+    assert_still_serving(&mut raw)
+}
+
+#[test]
+fn a_message_written_in_pieces_is_answered() -> TestResult {
+    let mut raw = open_raw()?;
+    let body = serde_json::json!({
+        "jsonrpc": "2.0", "id": 20, "method": "textDocument/documentSymbol", "params": symbol_params()
+    })
+    .to_string();
+    let (first, second) = body.split_at(body.len() / 2);
+    let stdin = raw.stdin.as_mut().ok_or("stdin closed")?;
+    let pause = || thread::sleep(Duration::from_millis(50));
+    write!(stdin, "Content-Length: {}\r\n\r\n", body.len())?;
+    stdin.flush()?;
+    pause();
+    stdin.write_all(first.as_bytes())?;
+    stdin.flush()?;
+    pause();
+    stdin.write_all(second.as_bytes())?;
+    stdin.flush()?;
+    let reply = raw.reply()?;
+    assert_eq!(reply["id"], 20);
+    assert_eq!(reply["result"].as_array().map(Vec::len), Some(2), "{reply}");
+    assert_still_serving(&mut raw)
+}
+
+#[test]
+fn end_of_input_with_a_request_in_flight_still_gets_the_reply() -> TestResult {
+    let mut raw = open_raw()?;
+    raw.request(30, "textDocument/documentSymbol", &symbol_params())?;
+    raw.close_stdin();
+    let reply = raw.reply()?;
+    assert_eq!(reply["id"], 30);
+    assert_eq!(reply["result"].as_array().map(Vec::len), Some(2), "{reply}");
+    assert_eq!(raw.exit_code()?, Some(0));
+    Ok(())
+}
