@@ -1303,6 +1303,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cf8baf1c55e62ffcace7a9f06f4bd9cd3f0c4beb022d3b367256b91b87513d98"
 
 [[package]]
+name = "minijinja"
+version = "3.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "509eeb2603a84eccabb4d75f6ec8ba23b46bbf441aaeb863d6b83a5887fd51e4"
+
+[[package]]
 name = "munge"
 version = "0.4.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2629,6 +2635,7 @@ dependencies = [
  "insta",
  "itertools 0.15.0",
  "jjpwrgem-parse",
+ "minijinja",
  "plotters",
  "serde",
  "serde_json",

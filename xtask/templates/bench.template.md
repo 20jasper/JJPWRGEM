@@ -2,7 +2,7 @@
 
 [![See codspeed dashboard](https://img.shields.io/endpoint?url=https://codspeed.io/badge.json)](https://codspeed.io/20jasper/JJPWRGEM?utm_source=badge)
 
-{{BENCH_SUMMARY}}
+{% include "bench_summary.md" %}
 
 - [LSP memory and server processing time](lsp/lsp.md): against vscode-json and light-json-lsp
 - [CLI formatter and minifier speed](cli-formatter.md): wall-clock timing against jq, prettier, dprint, and others

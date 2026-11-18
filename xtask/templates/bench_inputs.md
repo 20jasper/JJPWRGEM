@@ -1,5 +1,7 @@
 The following JSON fixtures are used across benchmarks:
 
-- {{FIXTURE_CANADA}}
-- {{FIXTURE_CITM_CATALOG}}
-- {{FIXTURE_TWITTER}}
+- {% include "fixture_canada.md" %}
+
+- {% include "fixture_citm_catalog.md" %}
+
+- {% include "fixture_twitter.md" %}

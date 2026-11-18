@@ -6,32 +6,32 @@ Cells read `server / total (memory)`: server is time spent in the language serve
 
 Note: vscode sends a large amount of range edit responses, which inflates the time quite a lot
 
-{{BENCH_HARDWARE}}
+{% include "bench_hardware.md" %}
 
 Diagnostic timing is edit to diagnostics availability: an immediate `textDocument/diagnostic` pull where the server supports it, otherwise its pushed `publishDiagnostics`
 
 ## small
 
-{{FIXTURE_SMALL}}
+{% include "fixture_small.md" %}
 
 Baseline performance for minimal parsing work
 
-{{LSP_BENCH_SMALL_TABLE}}
+{% include "benches/lsp/results/small.md" %}
 
 ## twitter
 
-{{FIXTURE_TWITTER}}
+{% include "fixture_twitter.md" %}
 
-{{LSP_BENCH_TWITTER_TABLE}}
+{% include "benches/lsp/results/twitter.md" %}
 
 ## citm catalog
 
-{{FIXTURE_CITM_CATALOG}}
+{% include "fixture_citm_catalog.md" %}
 
-{{LSP_BENCH_CITM_CATALOG_TABLE}}
+{% include "benches/lsp/results/citm_catalog.md" %}
 
 ## canada
 
-{{FIXTURE_CANADA}}
+{% include "fixture_canada.md" %}
 
-{{LSP_BENCH_CANADA_TABLE}}
+{% include "benches/lsp/results/canada.md" %}
