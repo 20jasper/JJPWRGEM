@@ -6,12 +6,6 @@ macro_rules! repo_path {
     };
 }
 
-macro_rules! template {
-    ($name:literal) => {
-        include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/templates/", $name))
-    };
-}
-
 mod badges;
 mod bench_table;
 mod criterion;

@@ -1,6 +1,6 @@
-{{LSP_FEATURES}}
+{% filter trim %}{% include "lsp_features.md" %}{% endfilter %}
 
-![{{LSP_DEMO_ALT}}](https://raw.githubusercontent.com/20jasper/JJPWRGEM/main/crates/lsp/lsp-demo.gif)
+![{% filter trim %}{% include "lsp_demo_alt.md" %}{% endfilter %}](https://raw.githubusercontent.com/20jasper/JJPWRGEM/main/crates/lsp/lsp-demo.gif)
 
 ## Installation
 
@@ -14,7 +14,7 @@
 
 Run `jjp lsp` as the language server for JSON files. See the [Helix](#helix) section for a full example configuration.
 
-{{LSP_SETTINGS_REFERENCE}}
+{{ lsp_settings_reference }}
 
 ### Helix
 
@@ -24,7 +24,7 @@ Run `jjp lsp` as the language server for JSON files. See the [Helix](#helix) sec
 command = "jjp"
 args = ["lsp"]
 
-{{HELIX_FORMAT_CONFIG}}
+{{ helix_format_config }}
 
 [[language]]
 name = "json"
