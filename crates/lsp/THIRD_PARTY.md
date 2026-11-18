@@ -3,7 +3,7 @@
 ## lsp-server
 
 - Files: `crates/lsp/src/lsp_server/`
-- Origin: rust-lang/rust-analyzer, `lib/lsp-server` (version 0.10.0), adapted to our message types and a single-threaded loop
+- Origin: rust-lang/rust-analyzer, `lib/lsp-server` (version 0.10.0), adapted to our message types and loop
 - Copyright: rust-analyzer contributors
 - License: MIT OR Apache-2.0. The MIT text is reproduced below; the Apache-2.0 text is at https://github.com/rust-lang/rust-analyzer/blob/master/LICENSE-APACHE
 
