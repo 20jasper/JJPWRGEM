@@ -13,6 +13,11 @@ use plotters::{
 
 const CHART_WIDTH: u32 = 1280;
 const CHART_HEIGHT: u32 = 720;
+const TICK_CANDIDATES_MS: [f64; 10] = [
+    0.0, 5.0, 10.0, 25.0, 50.0, 100.0, 250.0, 500.0, 1000.0, 2500.0,
+];
+const PLOT_WIDTH_PX: f64 = 1100.0;
+const MIN_TICK_SPACING_PX: f64 = 80.0;
 
 struct BenchmarkResult {
     command: String,
@@ -292,6 +297,8 @@ fn draw_candlesticks(
         .map(|entry| entry.time.max)
         .fold(f64::NEG_INFINITY, f64::max);
     let rows = entries.len() as f64;
+    let x_end = sqrt_range_end(max);
+    let ticks = tick_positions(x_end);
     let row_center = |index: usize| rows - index as f64 - 0.5;
     let half_height = 0.3;
     let cap = 0.15;
@@ -299,27 +306,45 @@ fn draw_candlesticks(
     let mut chart = ChartBuilder::on(area)
         .margin(25)
         .set_label_area_size(LabelAreaPosition::Left, 130)
-        .set_label_area_size(LabelAreaPosition::Bottom, 60)
-        .build_cartesian_2d(linear_range(max), 0.0..rows)
+        .set_label_area_size(LabelAreaPosition::Bottom, 100)
+        .build_cartesian_2d(0.0..x_end, 0.0..rows)
         .context("failed to build candlestick chart")?;
 
     chart
         .configure_mesh()
         .light_line_style(ShapeStyle::from(grid_color).stroke_width(1))
         .bold_line_style(ShapeStyle::from(grid_color).stroke_width(2))
-        .x_desc("Milliseconds")
+        .x_desc("Milliseconds (square-root scale)")
         .y_desc("Command")
         .axis_desc_style(font.clone())
         .label_style(font.clone())
         .disable_y_mesh()
         .y_labels(0)
-        .x_labels(8)
-        .x_label_formatter(&|value| format!("{value:.0}"))
+        .disable_x_mesh()
+        .x_labels(0)
         .draw()
         .context("failed to configure chart mesh")?;
 
+    for tick in &ticks {
+        chart
+            .draw_series(std::iter::once(PathElement::new(
+                vec![(*tick, 0.0), (*tick, rows)],
+                ShapeStyle::from(grid_color).stroke_width(1),
+            )))
+            .context("failed to draw grid lines")?;
+        let (px, py) = chart.backend_coord(&(*tick, 0.0));
+        area.draw(&Text::new(
+            format!("{:.0}", tick * tick),
+            (px, py + 6),
+            font.clone()
+                .color(&label_color)
+                .pos(Pos::new(HPos::Center, VPos::Top)),
+        ))
+        .context("failed to draw tick labels")?;
+    }
+
     if let Some(jjp_index) = entries.iter().position(|entry| entry.name == "jjp") {
-        let median = entries[jjp_index].time.median;
+        let median = entries[jjp_index].time.median.sqrt();
         chart
             .draw_series(std::iter::once(DashedPathElement::new(
                 [(median, 0.0), (median, rows)],
@@ -331,7 +356,14 @@ fn draw_candlesticks(
     }
 
     for (index, entry) in entries.iter().enumerate() {
-        let stats = entry.time;
+        let raw = entry.time;
+        let stats = CandlestickStats {
+            min: raw.min.sqrt(),
+            q1: raw.q1.sqrt(),
+            median: raw.median.sqrt(),
+            q3: raw.q3.sqrt(),
+            max: raw.max.sqrt(),
+        };
         let is_jjp = entry.name == "jjp";
         let row_color = if is_jjp { highlight } else { color };
         let y = row_center(index);
@@ -380,7 +412,7 @@ fn draw_candlesticks(
             .draw_series(std::iter::once(
                 EmptyElement::at((right_edge, y))
                     + Text::new(
-                        format!("{:.1} ms", stats.median),
+                        format!("{:.1} ms", raw.median),
                         (10, 0),
                         font.clone()
                             .color(&label_color)
@@ -443,12 +475,24 @@ fn percentile(sorted: &[f64], percentile: f64) -> f64 {
     }
 }
 
-fn linear_range(max: f64) -> std::ops::Range<f64> {
-    let start = 0.0;
-    let safe_max = max.max(0.0);
-    let padding = (safe_max * 0.15).max(10.0);
-    let end = (safe_max + padding).max(start + 1.0);
-    start..end
+fn sqrt_range_end(max: f64) -> f64 {
+    (max.max(0.0).sqrt() * 1.15).max(1.0)
+}
+
+fn tick_positions(x_end: f64) -> Vec<f64> {
+    let mut kept: Vec<f64> = Vec::new();
+    for position in TICK_CANDIDATES_MS.iter().map(|ms| ms.sqrt()) {
+        if position > x_end {
+            break;
+        }
+        let far_enough = kept
+            .last()
+            .is_none_or(|last| (position - last) / x_end * PLOT_WIDTH_PX >= MIN_TICK_SPACING_PX);
+        if far_enough {
+            kept.push(position);
+        }
+    }
+    kept
 }
 
 #[cfg(test)]
