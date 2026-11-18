@@ -299,6 +299,8 @@ fn draw_candlesticks(
     let rows = entries.len() as f64;
     let x_end = sqrt_range_end(max);
     let ticks = tick_positions(x_end);
+    let minor_ticks = minor_tick_positions(&ticks, x_end);
+    let minor_grid_color = RGBColor(235, 235, 235);
     let row_center = |index: usize| rows - index as f64 - 0.5;
     let half_height = 0.3;
     let cap = 0.15;
@@ -324,6 +326,21 @@ fn draw_candlesticks(
         .x_labels(0)
         .draw()
         .context("failed to configure chart mesh")?;
+
+    for tick in &minor_ticks {
+        chart
+            .draw_series(std::iter::once(PathElement::new(
+                vec![(*tick, 0.0), (*tick, rows)],
+                ShapeStyle::from(minor_grid_color).stroke_width(1),
+            )))
+            .context("failed to draw minor grid lines")?;
+        let (px, py) = chart.backend_coord(&(*tick, 0.0));
+        area.draw(&PathElement::new(
+            vec![(px, py), (px, py + 3)],
+            ShapeStyle::from(grid_color).stroke_width(1),
+        ))
+        .context("failed to draw minor tick marks")?;
+    }
 
     for tick in &ticks {
         chart
@@ -495,6 +512,27 @@ fn tick_positions(x_end: f64) -> Vec<f64> {
     kept
 }
 
+fn minor_tick_positions(majors: &[f64], x_end: f64) -> Vec<f64> {
+    const MINORS_PER_GAP: usize = 4;
+    let mut ends: Vec<f64> = majors.iter().map(|position| position * position).collect();
+    if let Some(&last) = ends.last()
+        && let Some(&next) = TICK_CANDIDATES_MS.iter().find(|ms| **ms > last + 1e-9)
+    {
+        ends.push(next);
+    }
+    let mut minors = Vec::new();
+    for pair in ends.windows(2) {
+        let step = (pair[1] - pair[0]) / MINORS_PER_GAP as f64;
+        for index in 1..MINORS_PER_GAP {
+            let position = (pair[0] + step * index as f64).sqrt();
+            if position <= x_end {
+                minors.push(position);
+            }
+        }
+    }
+    minors
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -537,6 +575,21 @@ mod tests {
                 ("jq < data.json", [0.017, 0.018].as_slice()),
             ]
         );
+    }
+
+    #[test]
+    fn minor_ticks_split_each_gap_into_four() {
+        let majors = [100.0_f64.sqrt(), 250.0_f64.sqrt()];
+        let minors: Vec<f64> = minor_tick_positions(&majors, 25.0)
+            .iter()
+            .map(|position| position * position)
+            .collect();
+
+        let expected = [137.5, 175.0, 212.5, 312.5, 375.0, 437.5];
+        assert_eq!(minors.len(), expected.len());
+        for (actual, expected) in minors.iter().zip(expected) {
+            assert!((actual - expected).abs() < 1e-9);
+        }
     }
 
     #[test]
