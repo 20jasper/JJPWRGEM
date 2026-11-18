@@ -9,9 +9,16 @@
   "author": "",
   "repository": "https://github.com/20jasper/jjpwrgem",
   "bin": {
-    "jjp": "run-jjp.js"
+    "jjp": "bin/jjp.exe"
   },
-  "files": ["*.js", "README.md", "CHANGELOG.md", "LICENSE"],
+  "files": [
+    "bin/jjp.exe",
+    "*.js",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE",
+    "THIRD_PARTY.md"
+  ],
   "type": "",
   "main": "",
   "scripts": {

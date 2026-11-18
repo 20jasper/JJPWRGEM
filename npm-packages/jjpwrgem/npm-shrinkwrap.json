@@ -13,7 +13,7 @@
         "detect-libc": "^2.1.2"
       },
       "bin": {
-        "jjp": "run-jjp.js"
+        "jjp": "bin/jjp.exe"
       },
       "devDependencies": {},
       "engines": {

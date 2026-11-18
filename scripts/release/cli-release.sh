@@ -20,16 +20,12 @@ if [ "$state" = missing ]; then
     /^## / { if (found) exit; found = $0 ~ ENVIRON["heading"]; next }
     found
   ' CHANGELOG.md >notes.md
-  cat >>notes.md <<EOF
-
-## Install jjpwrgem $version
-
-\`\`\`bash
-mise use -g github:20jasper/jjpwrgem@$version
-npm install -g jjpwrgem@$version
-cargo install jjpwrgem --version $version --locked
-\`\`\`
-EOF
+  {
+    printf '\n## Install jjpwrgem %s\n\n' "$version"
+    sed -e "s/{{AT_VERSION}}/@$version/g" \
+      -e "s/{{CARGO_VERSION}}/ --version $version/g" \
+      xtask/templates/install.md
+  } >>notes.md
   prerelease=()
   [[ "$version" == *-* ]] && prerelease=(--prerelease)
   gh release create "$tag" --draft --verify-tag --title "jjpwrgem $version" \

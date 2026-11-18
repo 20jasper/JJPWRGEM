@@ -21,7 +21,7 @@ const CHECK_EXAMPLE: &str =
 
 const BANNER: &str = "<!-- GENERATED FILE - update the templates in the xtask -->\n\n";
 
-const INSTALL_QUICK: &str = template!("install_quick.md");
+const INSTALL: &str = template!("install.md");
 const LSP_PERF_CLAIM: &str = "[On large JSON files, diagnostics are up to ~5x faster and use ~20–25x less RAM than VSCode's LSP](https://github.com/20jasper/JJPWRGEM/blob/main/benches/lsp/lsp.md)";
 const LSP_DEMO_ALT: &str = "animation of JJPWRGEM's LSP in a 60,000 line file. file changes are made quickly and feedback is shown quickly. code actions fix common issues like missing colons";
 const LSP_DEMO_URL: &str = "https://raw.githubusercontent.com/20jasper/JJPWRGEM/main/npm-packages/jjpwrgem-vscode/vscode-jjp.gif";
@@ -103,7 +103,13 @@ fn shared_replacements() -> Vec<(&'static str, String)> {
             "{{CHECK_EXAMPLE}}",
             strip_front_matter(CHECK_EXAMPLE).to_string(),
         ),
-        ("{{INSTALL_QUICK}}", INSTALL_QUICK.trim().to_string()),
+        (
+            "{{INSTALL}}",
+            INSTALL
+                .trim()
+                .replace("{{AT_VERSION}}", "")
+                .replace("{{CARGO_VERSION}}", ""),
+        ),
         (
             "{{UTF8_SPEC_BADGE}}",
             trimmed(&crate::spec_badges::badge_for("utf8")),

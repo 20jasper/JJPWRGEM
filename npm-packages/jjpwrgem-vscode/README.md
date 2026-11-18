@@ -12,12 +12,27 @@ JSON language server with rich error messages
 
 Install `jjp`
 
+### mise
+
 ```bash
 mise use -g github:20jasper/jjpwrgem
 ```
 
-Or `npm install -g jjpwrgem`, `cargo install jjpwrgem --locked`, or download a binary
-from [releases](https://github.com/20jasper/JJPWRGEM/releases)
+### Cargo
+
+```bash
+cargo install jjpwrgem --locked
+```
+
+### npm
+
+```bash
+# script points jjp directly at a native binary, avoiding 30ms of node process startup
+npm install -g jjpwrgem --allow-scripts=jjpwrgem
+pnpm add -g jjpwrgem --allow-build=jjpwrgem
+```
+
+Or download a binary from [releases](https://github.com/20jasper/JJPWRGEM/releases).
 
 ## Features
 

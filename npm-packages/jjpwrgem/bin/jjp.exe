@@ -1,0 +1,11 @@
+echo "jjp is not installed: the jjpwrgem package's install script did not run." >&2
+echo >&2
+echo "Run the install script:" >&2
+echo "  node <path to the jjpwrgem package>/install.js" >&2
+echo >&2
+echo "Or reinstall with install scripts allowed:" >&2
+echo "  npm install -g jjpwrgem --allow-scripts=jjpwrgem" >&2
+echo "  pnpm add -g jjpwrgem --allow-build=jjpwrgem" >&2
+echo >&2
+echo "See https://github.com/20jasper/JJPWRGEM#installation" >&2
+exit 1
