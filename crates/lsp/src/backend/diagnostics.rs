@@ -7,7 +7,7 @@ use jjpwrgem_parse::{
 };
 
 use crate::{
-    backend::SOURCE,
+    backend::{Backend, SOURCE},
     range::{PositionEncoding, span_to_range},
 };
 
@@ -70,4 +70,85 @@ pub fn build_code_actions(
             })
         })
         .collect()
+}
+
+pub(super) fn diagnostics_for(
+    uri: &Uri,
+    document: &jjpwrgem_parse::Result<Document<String>>,
+    encoding: PositionEncoding,
+) -> Vec<Diagnostic> {
+    match document {
+        Ok(_) => vec![],
+        Err(e) => diagnostics_from_error(uri, e.source_text(), e, encoding),
+    }
+}
+
+impl Backend {
+    pub(super) fn diagnostic(&self, params: &DocumentDiagnosticParams) -> DocumentDiagnosticReport {
+        let uri = &params.text_document.uri;
+        let items = self.documents.get(uri).map_or_else(Vec::new, |document| {
+            diagnostics_for(uri, document, self.position_encoding)
+        });
+        DocumentDiagnosticReport::RelatedFullDocumentDiagnosticReport(
+            RelatedFullDocumentDiagnosticReport {
+                related_documents: None,
+                full_document_diagnostic_report: FullDocumentDiagnosticReport {
+                    result_id: None,
+                    items,
+                },
+            },
+        )
+    }
+
+    pub(super) fn code_action(&self, params: &CodeActionParams) -> Option<Vec<CodeActionResponse>> {
+        let uri = &params.text_document.uri;
+        let document = self.documents.get(uri)?;
+        Some(build_code_actions(uri, document, self.position_encoding))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn dummy_uri() -> Uri {
+        Uri::parse("file:///test.json".to_owned()).expect("valid uri")
+    }
+
+    fn parse(text: &str) -> jjpwrgem_parse::Result<Document<String>> {
+        Document::parse(text.to_owned())
+    }
+
+    #[test]
+    fn valid_json_produces_no_diagnostics() {
+        let diagnostics =
+            diagnostics_for(&dummy_uri(), &parse(r#"{"a": 1}"#), PositionEncoding::Utf16);
+        assert_eq!(diagnostics, Vec::new());
+    }
+
+    #[test]
+    fn invalid_json_produces_error_diagnostic() {
+        let diagnostics =
+            diagnostics_for(&dummy_uri(), &parse(r#"{"a": }"#), PositionEncoding::Utf16);
+        assert_eq!(diagnostics.len(), 1);
+        assert_eq!(diagnostics[0].severity, Some(DiagnosticSeverity::Error));
+        assert_eq!(diagnostics[0].source.as_deref(), Some(SOURCE));
+    }
+
+    #[test]
+    fn trailing_comma_produces_code_action() {
+        let actions = build_code_actions(
+            &dummy_uri(),
+            &parse(r#"{"a": 1,}"#),
+            PositionEncoding::Utf16,
+        );
+        assert_ne!(actions, Vec::new());
+    }
+
+    #[test]
+    fn valid_json_produces_no_code_actions() {
+        let actions =
+            build_code_actions(&dummy_uri(), &parse(r#"{"a": 1}"#), PositionEncoding::Utf16);
+        assert_eq!(actions, Vec::new());
+    }
 }

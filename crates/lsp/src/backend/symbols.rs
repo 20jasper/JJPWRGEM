@@ -3,7 +3,10 @@ use std::range::Range as Span;
 use gen_lsp_types::*;
 use jjpwrgem_parse::ast::{Document, Key, Value, quoted};
 
-use crate::range::{PositionEncoding, Positions};
+use crate::{
+    backend::Backend,
+    range::{PositionEncoding, Positions},
+};
 
 const MAX_SYMBOLS: usize = 5000;
 const MAX_DETAIL_CHARS: usize = 100;
@@ -87,5 +90,19 @@ fn truncated(text: &str) -> String {
     match text.char_indices().nth(MAX_DETAIL_CHARS) {
         Some((end, _)) => format!("{}…", &text[..end]),
         None => text.to_owned(),
+    }
+}
+
+impl Backend {
+    pub(super) fn document_symbol(
+        &self,
+        params: &DocumentSymbolParams,
+    ) -> Option<DocumentSymbolResponse> {
+        self.with_document(&params.text_document.uri, |document| {
+            DocumentSymbolResponse::DocumentSymbolList(document_symbols(
+                document,
+                self.position_encoding,
+            ))
+        })
     }
 }
