@@ -1,5 +1,3 @@
-use std::fs;
-
 use anyhow::{Context, Result, anyhow, bail};
 use cargo_metadata::{MetadataCommand, Package};
 use itertools::Itertools as _;
@@ -7,6 +5,9 @@ use jjpwrgem_parse::{ast::Document, format::LineEnding};
 use serde::Deserialize;
 use serde_json::{Value, json};
 
+use crate::generated::{oxfmt_format, write_or_check};
+
+const PACKAGE_JSON: &str = repo_path!("npm-packages/jjpwrgem/package.json");
 const BIN_NAME: &str = "jjp";
 
 const TEMPLATE: &str = include_str!(repo_path!("npm-packages/jjpwrgem/package.template.json"));
@@ -34,17 +35,14 @@ fn root_package() -> Result<Package> {
         .context("No root package found in cargo metadata")
 }
 
-pub fn write_package_json() -> Result<()> {
+pub fn npm_package(check: bool) -> Result<()> {
     let patched = patch_package_json(&root_package()?, &release_targets()?)?;
     let compact = jjpwrgem_parse::format::serde::uglify_serializable(&patched)?;
     let ast = Document::parse(compact.as_str()).map_err(|err| anyhow!(err.to_string()))?;
-    let formatted = jjpwrgem_parse::format::prettify_document(&ast, 80, LineEnding::Lf);
+    let pretty = jjpwrgem_parse::format::prettify_document(&ast, 80, LineEnding::Lf);
+    let formatted = oxfmt_format(&pretty, "package.json")?;
 
-    let out_path = repo_path!("npm-packages/jjpwrgem/package.json");
-    fs::write(out_path, formatted)?;
-
-    println!("generated package json");
-    Ok(())
+    write_or_check(PACKAGE_JSON, &formatted, "npm-package", check)
 }
 
 fn supported_platform(archive: &str) -> Result<Value> {

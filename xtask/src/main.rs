@@ -14,6 +14,7 @@ macro_rules! template {
 
 mod badge;
 mod bench_table;
+mod generated;
 mod lsp_bench_report;
 mod npm;
 mod plot;
@@ -32,17 +33,25 @@ struct Cli {
 #[derive(Subcommand)]
 enum Commands {
     /// Generate README.md files from templates
-    GenerateReadmes,
-    /// Verify generated READMEs match what's committed
-    VerifyReadmes,
+    Readmes {
+        /// Fail if the committed files differ instead of writing them
+        #[arg(long)]
+        check: bool,
+    },
     /// Write the format settings into the VS Code extension package.json
-    GenerateVscodeSettings,
-    /// Verify the VS Code extension package.json has up to date format settings
-    VerifyVscodeSettings,
+    VscodeSettings {
+        /// Fail if the committed file differs instead of writing it
+        #[arg(long)]
+        check: bool,
+    },
     /// Generate candlestick charts for all benchmark datasets
     PlotBenchmarks,
-    /// Generate npm package.json
-    GenerateNpmPackage,
+    /// Generate the npm package.json
+    NpmPackage {
+        /// Fail if the committed file differs instead of writing it
+        #[arg(long)]
+        check: bool,
+    },
     /// Read criterion JSON from stdin and write a markdown table with time and throughput
     BenchTable,
     /// Read the lsp bench's criterion JSON from stdin plus its RSS sidecar and write per-fixture tables
@@ -55,12 +64,10 @@ fn main() -> anyhow::Result<()> {
     let cli = Cli::parse();
 
     match cli.cmd {
-        Commands::GenerateReadmes => template::write_readmes(),
-        Commands::VerifyReadmes => template::are_readmes_updated(),
-        Commands::GenerateVscodeSettings => vscode_settings::write_vscode_settings(),
-        Commands::VerifyVscodeSettings => vscode_settings::are_vscode_settings_updated(),
+        Commands::Readmes { check } => template::readmes(check),
+        Commands::VscodeSettings { check } => vscode_settings::vscode_settings(check),
         Commands::PlotBenchmarks => plot::plot_all_benchmarks(),
-        Commands::GenerateNpmPackage => npm::write_package_json(),
+        Commands::NpmPackage { check } => npm::npm_package(check),
         Commands::BenchTable => bench_table::write_bench_table(),
         Commands::LspBenchReport => lsp_bench_report::write_lsp_bench_report(),
         Commands::SpecCoverageBadges => spec_badges::write_spec_badges(),

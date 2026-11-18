@@ -1,20 +1,19 @@
-use std::{
-    fs,
-    io::Write as _,
-    process::{Command, Stdio},
+use std::fs;
+
+use anyhow::{Context as _, Result};
+
+use crate::{
+    generated::{oxfmt_format, write_or_check},
+    settings_docs::{helix_format_config, settings_reference},
 };
-
-use anyhow::{Result, anyhow, bail};
-
-use crate::settings_docs::{helix_format_config, settings_reference};
 
 const RDME_START: &str = "<!-- cargo-rdme start -->";
 
-fn strip_front_matter(raw: &str) -> &str {
+fn strip_front_matter(raw: &str) -> Result<&str> {
     const FRONT_MATTER_SEP: &str = "\n---\n";
     raw.split_once(FRONT_MATTER_SEP)
-        .expect("snapshots should always have a separator")
-        .1
+        .map(|(_, body)| body)
+        .context("snapshots should always have a separator")
 }
 const CHECK_EXAMPLE: &str =
     include_str!(repo_path!("tests/integration/snapshots/check_failure.snap"));
@@ -39,14 +38,18 @@ const LSP_BENCH_TEMPLATE: &str = template!("lsp-bench.template.md");
 const LSP_BENCH_OUT_PATH_STR: &str = repo_path!("benches/lsp/lsp.md");
 const LSP_BENCH_RESULTS_DIR: &str = repo_path!("benches/lsp/results");
 
-fn generate_lsp_bench_readme() -> Option<String> {
-    let canada = fs::read_to_string(format!("{LSP_BENCH_RESULTS_DIR}/canada.md")).ok()?;
-    let twitter = fs::read_to_string(format!("{LSP_BENCH_RESULTS_DIR}/twitter.md")).ok()?;
-    let small = fs::read_to_string(format!("{LSP_BENCH_RESULTS_DIR}/small.md")).ok()?;
-    let citm_catalog =
-        fs::read_to_string(format!("{LSP_BENCH_RESULTS_DIR}/citm_catalog.md")).ok()?;
+fn generate_lsp_bench_readme() -> Result<Option<String>> {
+    let read = |name: &str| fs::read_to_string(format!("{LSP_BENCH_RESULTS_DIR}/{name}.md")).ok();
+    let (Some(canada), Some(twitter), Some(small), Some(citm_catalog)) = (
+        read("canada"),
+        read("twitter"),
+        read("small"),
+        read("citm_catalog"),
+    ) else {
+        return Ok(None);
+    };
 
-    let mut replacements = shared_replacements();
+    let mut replacements = shared_replacements()?;
     replacements.extend([
         ("{{LSP_BENCH_CANADA_TABLE}}", canada.trim().to_string()),
         ("{{LSP_BENCH_TWITTER_TABLE}}", twitter.trim().to_string()),
@@ -57,7 +60,7 @@ fn generate_lsp_bench_readme() -> Option<String> {
         ),
     ]);
 
-    render_template(LSP_BENCH_TEMPLATE, &replacements).ok()
+    render_template(LSP_BENCH_TEMPLATE, &replacements).map(Some)
 }
 
 const COVERAGE: &str = include_str!(repo_path!("benches/output/coverage.txt"));
@@ -71,37 +74,13 @@ fn coverage_badge(pct_str: &str) -> String {
     )
 }
 
-fn oxfmt_format(input: &str) -> Result<String> {
-    let mut child = Command::new("oxfmt")
-        .args(["--stdin-filepath", "file.md"])
-        .stdin(Stdio::piped())
-        .stdout(Stdio::piped())
-        .spawn()?;
-
-    {
-        let stdin = child
-            .stdin
-            .as_mut()
-            .ok_or_else(|| anyhow!("failed to open oxfmt stdin"))?;
-        stdin.write_all(input.as_bytes())?;
-    }
-
-    let output = child.wait_with_output()?;
-    if !output.status.success() {
-        bail!("oxfmt failed: {}", output.status);
-    }
-
-    let formatted = String::from_utf8(output.stdout)?;
-    Ok(formatted)
-}
-
-fn shared_replacements() -> Vec<(&'static str, String)> {
+fn shared_replacements() -> Result<Vec<(&'static str, String)>> {
     let trimmed = |text: &str| text.trim().to_string();
-    vec![
+    Ok(vec![
         ("{{IND}}", SHARED_FRAGMENT.to_string()),
         (
             "{{CHECK_EXAMPLE}}",
-            strip_front_matter(CHECK_EXAMPLE).to_string(),
+            strip_front_matter(CHECK_EXAMPLE)?.to_string(),
         ),
         ("{{INSTALL_QUICK}}", INSTALL_QUICK.trim().to_string()),
         (
@@ -196,7 +175,7 @@ fn shared_replacements() -> Vec<(&'static str, String)> {
             "{{LSP_SETTINGS_REFERENCE}}",
             trimmed(&settings_reference("")),
         ),
-    ]
+    ])
 }
 
 fn render_template(template: &str, replacements: &[(&str, String)]) -> Result<String> {
@@ -205,7 +184,7 @@ fn render_template(template: &str, replacements: &[(&str, String)]) -> Result<St
         processed = processed.replace(needle, replacement);
     }
 
-    oxfmt_format(&format!("{}{}", BANNER, processed))
+    oxfmt_format(&format!("{}{}", BANNER, processed), "file.md")
 }
 
 const GENERATED_READMES: &[(&str, &str)] = &[
@@ -249,7 +228,7 @@ const GENERATED_READMES: &[(&str, &str)] = &[
 ];
 
 fn generated_readmes() -> Result<Vec<(&'static str, String)>> {
-    let replacements = shared_replacements();
+    let replacements = shared_replacements()?;
 
     let mut readmes = Vec::new();
     for (path, template) in GENERATED_READMES {
@@ -262,44 +241,15 @@ fn generated_readmes() -> Result<Vec<(&'static str, String)>> {
         readmes.push((*path, rendered));
     }
 
-    if let Some(lsp_bench_rendered) = generate_lsp_bench_readme() {
+    if let Some(lsp_bench_rendered) = generate_lsp_bench_readme()? {
         readmes.push((LSP_BENCH_OUT_PATH_STR, lsp_bench_rendered));
     }
     Ok(readmes)
 }
 
-pub fn write_readmes() -> Result<()> {
-    for (path, contents) in generated_readmes()? {
-        fs::write(path, contents)?;
-    }
-    Ok(())
-}
-
-fn check_readme(path: &str, existing: &str, generated: &str) -> anyhow::Result<()> {
-    if existing == generated {
-        return Ok(());
-    }
-    let diff = existing
-        .lines()
-        .zip(generated.lines())
-        .enumerate()
-        .find(|(_, (a, b))| a != b);
-    if let Some((i, (a, b))) = diff {
-        bail!(
-            "{path} out of date — first diff at line {}\n  existing:  {a:?}\n  generated: {b:?}",
-            i + 1
-        );
-    }
-    bail!(
-        "{path} out of date — length differs: {} vs {} chars",
-        existing.len(),
-        generated.len()
-    );
-}
-
-pub fn are_readmes_updated() -> Result<()> {
+pub fn readmes(check: bool) -> Result<()> {
     for (path, generated) in generated_readmes()? {
-        check_readme(path, &fs::read_to_string(path)?, &generated)?;
+        write_or_check(path, &generated, "readmes", check)?;
     }
     Ok(())
 }

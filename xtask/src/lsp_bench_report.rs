@@ -101,7 +101,7 @@ fn table(
 
 /// Reads `cargo criterion --bench lsp --message-format=json` from stdin,
 /// joins it with the RSS sidecar the bench wrote, and writes one
-/// table per fixture to `benches/lsp/results/` for `generate-readmes` to
+/// table per fixture to `benches/lsp/results/` for `readmes` to
 /// stitch into `benches/lsp/lsp.md`.
 pub fn write_lsp_bench_report() -> anyhow::Result<()> {
     let mut times = BTreeMap::new();
