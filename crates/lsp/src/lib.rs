@@ -7,15 +7,7 @@ use std::{error::Error, process::ExitCode};
 
 use backend::Backend;
 use lsp_server::stdio::Event;
-use transport::{Reader, Writer, decode};
-
-#[doc(hidden)]
-pub fn decode_stream(bytes: &[u8]) {
-    let mut reader = Reader::from_input(bytes);
-    while reader.read_body().unwrap_or(false) {
-        drop(reader.message());
-    }
-}
+use transport::{Writer, decode};
 
 pub fn run_blocking() -> Result<ExitCode, Box<dyn Error + Send + Sync>> {
     let events = lsp_server::stdio::spawn_reader();

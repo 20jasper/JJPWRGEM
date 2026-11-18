@@ -1,6 +1,6 @@
 use std::{
     borrow::Cow,
-    io::{self, BufRead, BufWriter, StdoutLock, stdout},
+    io::{self, BufWriter, StdoutLock, stdout},
 };
 
 use gen_lsp_types::*;
@@ -8,7 +8,7 @@ use serde::{Deserialize, Deserializer, Serialize, de::IgnoredAny};
 use serde_json::value::RawValue;
 
 use crate::lsp_server::{
-    msg::{ErrorCode, ResponseError, read_msg_text, write_msg_text},
+    msg::{ErrorCode, ResponseError, write_msg_text},
     req_queue::Id,
 };
 
@@ -82,30 +82,6 @@ pub fn decode(body: &[u8]) -> Result<Incoming<'_>, Rejection> {
             }
         }
     })
-}
-
-pub struct Reader<R> {
-    input: R,
-    line: String,
-    body: Vec<u8>,
-}
-
-impl<R: BufRead> Reader<R> {
-    pub fn from_input(input: R) -> Self {
-        Self {
-            input,
-            line: String::new(),
-            body: Vec::new(),
-        }
-    }
-
-    pub fn message(&self) -> Result<Incoming<'_>, Rejection> {
-        decode(&self.body)
-    }
-
-    pub fn read_body(&mut self) -> io::Result<bool> {
-        read_msg_text(&mut self.input, &mut self.line, &mut self.body)
-    }
 }
 
 pub struct Writer {
