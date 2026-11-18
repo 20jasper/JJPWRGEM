@@ -250,7 +250,10 @@ impl Backend {
         if let Err(panic) = catch_unwind(AssertUnwindSafe(|| {
             self.dispatch_notification(method, params);
         })) {
-            self.log_message(format!("internal error: {}", panic_message(&*panic)));
+            self.log_message(
+                MessageType::Error,
+                format!("internal error: {}", panic_message(&*panic)),
+            );
         }
         ControlFlow::Continue(())
     }
@@ -303,13 +306,16 @@ impl Backend {
     ) {
         match parse_params(params) {
             Ok(params) => handler(self, params),
-            Err(error) => self.log_message(format!("invalid notification params: {error}")),
+            Err(error) => self.log_message(
+                MessageType::Warning,
+                format!("invalid notification params: {error}"),
+            ),
         }
     }
 
-    fn log_message(&mut self, message: impl Into<String>) {
+    fn log_message(&mut self, kind: MessageType, message: impl Into<String>) {
         self.out.notify::<LogMessageNotification>(LogMessageParams {
-            kind: MessageType::Warning,
+            kind,
             message: message.into(),
         });
     }
@@ -364,7 +370,10 @@ impl Backend {
     fn did_change(&mut self, params: DidChangeTextDocumentParams) {
         let uri = params.text_document.text_document_identifier.uri;
         let Some(document) = self.documents.remove(&uri) else {
-            self.log_message(format!("received change for unopened document: {uri:?}"));
+            self.log_message(
+                MessageType::Warning,
+                format!("received change for unopened document: {uri:?}"),
+            );
             return;
         };
 
@@ -375,7 +384,7 @@ impl Backend {
         for change in params.content_changes {
             let positions = Positions::new(&text, self.position_encoding);
             if !apply_change(&mut text, change, &positions) {
-                self.log_message("ignored invalid content change");
+                self.log_message(MessageType::Warning, "ignored invalid content change");
             }
         }
 
