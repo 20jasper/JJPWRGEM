@@ -1,14 +1,14 @@
 use std::fs;
 
-use anyhow::{Context, Result, anyhow};
+use anyhow::{Context, Result};
 use itertools::Itertools;
 use jjpwrgem_parse::{
-    format::{DEFAULT_PREFERRED_WIDTH, FormatOption, FormatSetting, LineEnding, prettify_str},
+    format::{FormatOption, FormatSetting},
     settings::{Setting, SettingKind},
 };
 use serde_json::{Map, Value, json};
 
-use crate::generated::write_or_check;
+use crate::generated::{pretty_json, write_or_check};
 
 const PACKAGE_JSON: &str = repo_path!("npm-packages/jjpwrgem-vscode/package.json");
 const SETTINGS_PREFIX: &str = "jjpwrgem.format.";
@@ -77,11 +77,7 @@ fn render(package_json: &str) -> Result<String> {
         .filter(|(key, _)| !key.starts_with(SETTINGS_PREFIX))
         .collect();
     *properties = kept.into_iter().chain(generated_properties()).collect();
-    let compact = jjpwrgem_parse::format::serde::uglify_serializable(&package)
-        .map_err(|error| anyhow!("{error}"))?;
-    let pretty = prettify_str(&compact, DEFAULT_PREFERRED_WIDTH, LineEnding::default())
-        .map_err(|error| anyhow!("{error}"))?;
-    Ok(pretty + "\n")
+    pretty_json(&package)
 }
 
 pub fn vscode_settings(check: bool) -> Result<()> {
