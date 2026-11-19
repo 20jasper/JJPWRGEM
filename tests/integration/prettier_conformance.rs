@@ -3,7 +3,7 @@
 use proptest::{prelude::*, prop_assert, prop_assert_eq, prop_assume, prop_oneof, proptest};
 
 use crate::{
-    common::{cli, exec_cmd, format_template},
+    common::{Output, cli, exec_cmd, format_template},
     test_json::*,
 };
 
@@ -39,6 +39,12 @@ fn prettier_cmd() -> std::process::Command {
     cmd
 }
 
+fn jjp_format(width: usize, input: &str) -> Output {
+    let mut jjp = cli();
+    jjp.args(["format", "--preferred-width", &width.to_string()]);
+    exec_cmd(&mut jjp, Some(input.as_bytes().to_vec()))
+}
+
 #[rstest_reuse::apply(format_template)]
 fn matches_prettier(#[case] (name, input): (&str, &str)) {
     let mut prettier = prettier_cmd();
@@ -50,9 +56,7 @@ fn matches_prettier(#[case] (name, input): (&str, &str)) {
         prettier_out.stderr
     );
 
-    let mut jjp = cli();
-    jjp.args(["format", "--preferred-width", &PRINT_WIDTH.to_string()]);
-    let jjp_out = exec_cmd(&mut jjp, Some(input.as_bytes().to_vec()));
+    let jjp_out = jjp_format(PRINT_WIDTH, input);
     assert!(
         jjp_out.status.success(),
         "jjp failed on {name}:\n{}",
@@ -408,12 +412,26 @@ fn arb_object_with_array_values() -> impl Strategy<Value = String> {
 }
 
 fn run_prop_comparison(input: &str) -> Result<(), proptest::test_runner::TestCaseError> {
+    run_prop_comparison_where(input, |_| true)
+}
+
+fn run_prop_expanded_object_comparison(
+    input: &str,
+) -> Result<(), proptest::test_runner::TestCaseError> {
+    run_prop_comparison_where(input, |prettier_stdout| {
+        prettier_stdout.matches('\n').count() > 2
+    })
+}
+
+fn run_prop_comparison_where(
+    input: &str,
+    keep: impl Fn(&str) -> bool,
+) -> Result<(), proptest::test_runner::TestCaseError> {
     let prettier_out = exec_cmd(&mut prettier_cmd(), Some(input.as_bytes().to_vec()));
     prop_assume!(prettier_out.status.success());
+    prop_assume!(keep(&prettier_out.stdout));
 
-    let mut jjp = cli();
-    jjp.args(["format", "--preferred-width", &PRINT_WIDTH.to_string()]);
-    let jjp_out = exec_cmd(&mut jjp, Some(input.as_bytes().to_vec()));
+    let jjp_out = jjp_format(PRINT_WIDTH, input);
     prop_assert!(jjp_out.status.success(), "jjp failed:\n{}", jjp_out.stderr);
     prop_assert_eq!(&prettier_out.stdout, &jjp_out.stdout, "input: {:?}", input);
     Ok(())
@@ -449,22 +467,6 @@ proptest! {
     fn prop_array_with_strings_matches_prettier(input in arb_safe_array_with_strings()) {
         run_prop_comparison(&input)?;
     }
-}
-
-fn run_prop_expanded_object_comparison(
-    input: &str,
-) -> Result<(), proptest::test_runner::TestCaseError> {
-    let prettier_out = exec_cmd(&mut prettier_cmd(), Some(input.as_bytes().to_vec()));
-    prop_assume!(prettier_out.status.success());
-    // Skip cases where prettier collapses (known difference)
-    prop_assume!(prettier_out.stdout.matches('\n').count() > 2);
-
-    let mut jjp = cli();
-    jjp.args(["format", "--preferred-width", &PRINT_WIDTH.to_string()]);
-    let jjp_out = exec_cmd(&mut jjp, Some(input.as_bytes().to_vec()));
-    prop_assert!(jjp_out.status.success(), "jjp failed:\n{}", jjp_out.stderr);
-    prop_assert_eq!(&prettier_out.stdout, &jjp_out.stdout, "input: {:?}", input);
-    Ok(())
 }
 
 proptest! {
