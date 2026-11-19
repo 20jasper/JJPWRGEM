@@ -51,7 +51,7 @@ impl Backend {
         for change in params.content_changes {
             let positions = Positions::new(&text, self.position_encoding);
             if !apply_change(&mut text, change, &positions) {
-                self.warn("ignored invalid content change");
+                self.warn("ignored invalid content change".into());
             }
         }
 
@@ -74,7 +74,7 @@ impl Backend {
         self.format = match format_settings(value) {
             Ok(settings) => settings,
             Err(error) => {
-                self.show_warning(format!("invalid format settings, using defaults: {error}"));
+                self.show_warning(&format!("invalid format settings, using defaults: {error}"));
                 FormatSettings::default()
             }
         };

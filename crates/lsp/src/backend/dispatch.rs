@@ -69,11 +69,11 @@ impl Backend {
             (Lifecycle::Uninitialized, _) => self.out.fail(
                 id,
                 ErrorCodes::ServerNotInitialized,
-                "server not initialized",
+                "server not initialized".into(),
             ),
             (Lifecycle::ShutDown, _) => {
                 self.out
-                    .fail(id, ErrorCodes::InvalidRequest, "server is shut down")
+                    .fail(id, ErrorCodes::InvalidRequest, "server is shut down".into())
             }
             (Lifecycle::Running, LspRequestMethod::Shutdown) => {
                 self.lifecycle = Lifecycle::ShutDown;
