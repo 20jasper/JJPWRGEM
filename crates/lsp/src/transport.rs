@@ -59,7 +59,7 @@ struct Failure {
 #[derive(Serialize)]
 struct Notify<P> {
     jsonrpc: &'static str,
-    method: String,
+    method: &'static str,
     params: P,
 }
 
@@ -121,7 +121,7 @@ impl Writer {
     pub fn notify<N: Notification>(&mut self, params: N::Params) {
         drop(self.send(&Notify {
             jsonrpc: JSONRPC,
-            method: N::METHOD.to_string(),
+            method: N::METHOD.as_str(),
             params,
         }));
     }
