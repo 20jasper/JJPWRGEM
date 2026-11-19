@@ -47,55 +47,6 @@ fn preferred_line_endings(#[case] args: &[&str], #[case] expected: &str) {
 }
 
 #[rstest::rstest]
-#[case(&["--preferred-width=-1"], "negative")]
-#[case(&["--preferred-width"], "missing")]
-#[case(&["--preferred-width=abc"], "letters")]
-fn preferred_width_invalid_args(#[case] args: &[&str], #[case] label: &str) {
-    crate::assert_cli_snapshot!(
-        format!("preferred_width_invalid_{label}"),
-        [&["format"], args].concat(),
-        None,
-        false
-    );
-}
-
-#[rstest::rstest]
-#[case(&["--eol"], "missing")]
-#[case(&["--eol=what"], "wrong")]
-#[case(&["--eol=899889"], "number")]
-fn eol_invalid_args(#[case] args: &[&str], #[case] label: &str) {
-    crate::assert_cli_snapshot!(
-        format!("eol_invalid_{label}"),
-        [&["format"], args].concat(),
-        None,
-        false
-    );
-}
-
-#[test]
-fn preferred_width_conflicts_with_uglify() {
-    crate::assert_cli_snapshot!(
-        "preferred_width_conflict",
-        ["format", "--uglify", "--preferred-width", "24"],
-        None,
-        false
-    );
-}
-
-#[rstest::rstest]
-#[case(&["--uglify", "--preferred-width", "24"], "uglify_then_width")]
-#[case(&["--preferred-width", "24", "--uglify"], "width_then_uglify")]
-#[case(&["--uglify", "--preferred-width", "80"], "uglify_then_default_width")]
-fn preferred_width_conflict_cases(#[case] args: &[&str], #[case] label: &str) {
-    crate::assert_cli_snapshot!(
-        format!("preferred_width_conflict_{label}"),
-        [&["format"], args].concat(),
-        None,
-        false
-    );
-}
-
-#[rstest::rstest]
 #[case(&["--mode", "uglify"], "{\"a\":[1,2]}")]
 #[case(&["--mode=uglify"], "{\"a\":[1,2]}")]
 #[case(&["--mode", "pretty"], "{ \"a\": [1, 2] }\n")]
@@ -110,18 +61,23 @@ fn mode(#[case] args: &[&str], #[case] expected: &str) {
 }
 
 #[rstest::rstest]
-#[case(&["-u", "--mode", "pretty"], "short_uglify_with_mode_pretty")]
-#[case(&["--uglify", "--mode", "uglify"], "uglify_twice")]
-#[case(&["--mode", "uglify", "--preferred-width", "80"], "uglify_with_preferred_width")]
-#[case(&["-u", "--preferred-width", "80"], "short_uglify_with_preferred_width")]
-#[case(&["--mode", "fancy"], "invalid")]
-fn mode_invalid_args(#[case] args: &[&str], #[case] label: &str) {
-    crate::assert_cli_snapshot!(
-        format!("mode_{label}"),
-        [&["format"], args].concat(),
-        None,
-        false
-    );
+#[case(&["--preferred-width=-1"], "preferred_width_invalid_negative")]
+#[case(&["--preferred-width"], "preferred_width_invalid_missing")]
+#[case(&["--preferred-width=abc"], "preferred_width_invalid_letters")]
+#[case(&["--eol"], "eol_invalid_missing")]
+#[case(&["--eol=what"], "eol_invalid_wrong")]
+#[case(&["--eol=899889"], "eol_invalid_number")]
+#[case(&["--uglify", "--preferred-width", "24"], "preferred_width_conflict")]
+#[case(&["--uglify", "--preferred-width", "24"], "preferred_width_conflict_uglify_then_width")]
+#[case(&["--preferred-width", "24", "--uglify"], "preferred_width_conflict_width_then_uglify")]
+#[case(&["--uglify", "--preferred-width", "80"], "preferred_width_conflict_uglify_then_default_width")]
+#[case(&["-u", "--mode", "pretty"], "mode_short_uglify_with_mode_pretty")]
+#[case(&["--uglify", "--mode", "uglify"], "mode_uglify_twice")]
+#[case(&["--mode", "uglify", "--preferred-width", "80"], "mode_uglify_with_preferred_width")]
+#[case(&["-u", "--preferred-width", "80"], "mode_short_uglify_with_preferred_width")]
+#[case(&["--mode", "fancy"], "mode_invalid")]
+fn invalid_args(#[case] args: &[&str], #[case] snapshot_name: &str) {
+    crate::assert_cli_snapshot!(snapshot_name, [&["format"], args].concat(), None, false);
 }
 
 #[test]

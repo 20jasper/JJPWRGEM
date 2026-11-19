@@ -42,54 +42,24 @@ fn format_line_endings(#[case] args: &[&str], #[case] expected: &str) {
     assert_eq!(expected, output.stdout);
 }
 
-#[test]
-fn json_lines_conflicts_with_uglify() {
+#[rstest]
+#[case(&["--parser", "jsonlines", "--uglify"], "json_lines_conflicts_with_uglify")]
+#[case(
+    &["--parser", "jsonlines", "--preferred-width", "100"],
+    "json_lines_conflicts_with_preferred_width"
+)]
+#[case(
+    &["--uglify", "--preferred-width", "24", "--parser", "jsonlines"],
+    "json_lines_with_uglify_and_preferred_width_reports_uglify_first"
+)]
+#[case(
+    &["--parser", "jsonlines", "--preferred-width", "80"],
+    "json_lines_conflicts_with_default_preferred_width"
+)]
+fn format_conflicts(#[case] args: &[&str], #[case] snapshot_name: &str) {
     crate::assert_cli_snapshot!(
-        "json_lines_conflicts_with_uglify",
-        ["format", "--parser", "jsonlines", "--uglify"],
-        Some(b"{}"),
-        false
-    );
-}
-
-#[test]
-fn json_lines_conflicts_with_preferred_width() {
-    crate::assert_cli_snapshot!(
-        "json_lines_conflicts_with_preferred_width",
-        [
-            "format",
-            "--parser",
-            "jsonlines",
-            "--preferred-width",
-            "100"
-        ],
-        Some(b"{}"),
-        false
-    );
-}
-
-#[test]
-fn json_lines_with_uglify_and_preferred_width_reports_uglify_first() {
-    crate::assert_cli_snapshot!(
-        "json_lines_with_uglify_and_preferred_width_reports_uglify_first",
-        [
-            "format",
-            "--uglify",
-            "--preferred-width",
-            "24",
-            "--parser",
-            "jsonlines",
-        ],
-        Some(b"{}"),
-        false
-    );
-}
-
-#[test]
-fn json_lines_conflicts_with_default_preferred_width() {
-    crate::assert_cli_snapshot!(
-        "json_lines_conflicts_with_default_preferred_width",
-        ["format", "--parser", "jsonlines", "--preferred-width", "80"],
+        snapshot_name,
+        [&["format"], args].concat(),
         Some(b"{}"),
         false
     );
