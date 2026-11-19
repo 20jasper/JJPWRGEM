@@ -1,16 +1,16 @@
 use crate::{
-    common::{cli, exec_cmd, format_template},
+    common::{assert_cli_snapshot, cli, cli_snapshot, exec_cmd, format_template},
     test_json::*,
 };
 
 #[rstest_reuse::apply(format_template)]
 fn prettify(#[case] (name, input): (&str, &str)) {
-    crate::assert_cli_snapshot!(name.to_string(), ["format"], Some(input.as_bytes()), true);
+    assert_cli_snapshot!(name.to_string(), ["format"], Some(input.as_bytes()), true);
 }
 
 #[rstest_reuse::apply(format_template)]
 fn uglify(#[case] (name, input): (&str, &str)) {
-    crate::assert_cli_snapshot!(
+    assert_cli_snapshot!(
         format!("uglify_{name}"),
         ["format", "--uglify"],
         Some(input.as_bytes()),
@@ -22,7 +22,7 @@ fn uglify(#[case] (name, input): (&str, &str)) {
 #[case(22, "below_threshold")]
 #[case(23, "above_threshold")]
 fn preferred_width_threshold(#[case] preferred_width: usize, #[case] label: &str) {
-    crate::assert_cli_snapshot!(
+    assert_cli_snapshot!(
         format!("preferred_width_{label}"),
         ["format", "--preferred-width", &preferred_width.to_string()],
         Some(ARRAY_WITH_LONG_STRING.as_bytes()),
@@ -77,12 +77,12 @@ fn mode(#[case] args: &[&str], #[case] expected: &str) {
 #[case(&["-u", "--preferred-width", "80"], "mode_short_uglify_with_preferred_width")]
 #[case(&["--mode", "fancy"], "mode_invalid")]
 fn invalid_args(#[case] args: &[&str], #[case] snapshot_name: &str) {
-    crate::assert_cli_snapshot!(snapshot_name, [&["format"], args].concat(), None, false);
+    assert_cli_snapshot!(snapshot_name, [&["format"], args].concat(), None, false);
 }
 
 #[test]
 fn help_subcommand() {
-    crate::assert_cli_snapshot!("format_help", ["format", "--help"], None, true);
+    assert_cli_snapshot!("format_help", ["format", "--help"], None, true);
 }
 
 #[rstest::rstest]
@@ -97,6 +97,6 @@ fn docs(#[case] args: &[&str], #[case] input: &str, #[case] postfix: &str) {
 
         let output = exec_cmd(&mut cmd, Some(input.as_bytes().to_vec()));
 
-        crate::cli_snapshot!(format!("format_{postfix}"), output.docs_display_stdin());
+        cli_snapshot!(format!("format_{postfix}"), output.docs_display_stdin());
     });
 }

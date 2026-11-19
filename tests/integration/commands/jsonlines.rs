@@ -1,12 +1,12 @@
 use rstest::rstest;
 
-use crate::common::{cli, exec_cmd};
+use crate::common::{assert_cli_snapshot, cli, exec_cmd};
 
 #[rstest]
 #[case("blank_line", "{\"a\":1}\n\n{\"b\":2}")]
 #[case("invalid_json", "{\"a\":1}\n{bad}")]
 fn check_invalid(#[case] name: &str, #[case] input: &str) {
-    crate::assert_cli_snapshot!(
+    assert_cli_snapshot!(
         name,
         ["check", "--parser", "jsonlines"],
         Some(input.as_bytes()),
@@ -19,7 +19,7 @@ fn check_invalid(#[case] name: &str, #[case] input: &str) {
 #[case("format_multi", "{ \"a\" : 1 }\n{ \"b\" : 2 }")]
 #[case("format_trailing_newline", "{ \"a\" : 1 }\n")]
 fn format_valid(#[case] name: &str, #[case] input: &str) {
-    crate::assert_cli_snapshot!(
+    assert_cli_snapshot!(
         name,
         ["format", "--parser", "jsonlines"],
         Some(input.as_bytes()),
@@ -57,7 +57,7 @@ fn format_line_endings(#[case] args: &[&str], #[case] expected: &str) {
     "json_lines_conflicts_with_default_preferred_width"
 )]
 fn format_conflicts(#[case] args: &[&str], #[case] snapshot_name: &str) {
-    crate::assert_cli_snapshot!(
+    assert_cli_snapshot!(
         snapshot_name,
         [&["format"], args].concat(),
         Some(b"{}"),
