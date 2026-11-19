@@ -3,17 +3,19 @@ use gen_lsp_types::*;
 use crate::backend::{Backend, SOURCE};
 
 impl Backend {
-    pub(super) fn error(&mut self, message: String) {
+    pub(super) fn error(&mut self, message: impl Into<String>) {
         self.log_message(MessageType::Error, message);
     }
 
-    pub(super) fn warn(&mut self, message: String) {
+    pub(super) fn warn(&mut self, message: impl Into<String>) {
         self.log_message(MessageType::Warning, message);
     }
 
-    fn log_message(&mut self, kind: MessageType, message: String) {
-        self.out
-            .notify::<LogMessageNotification>(LogMessageParams { kind, message });
+    fn log_message(&mut self, kind: MessageType, message: impl Into<String>) {
+        self.out.notify::<LogMessageNotification>(LogMessageParams {
+            kind,
+            message: message.into(),
+        });
     }
 
     pub(super) fn show_warning(&mut self, message: &str) {

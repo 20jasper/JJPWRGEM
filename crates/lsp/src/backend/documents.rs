@@ -51,7 +51,7 @@ impl Backend {
         for change in params.content_changes {
             let positions = Positions::new(&text, self.position_encoding);
             if !apply_change(&mut text, change, &positions) {
-                self.warn("ignored invalid content change".into());
+                self.warn("ignored invalid content change");
             }
         }
 
