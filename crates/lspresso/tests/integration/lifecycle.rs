@@ -247,6 +247,19 @@ fn a_response_nobody_asked_for_is_a_background_error() {
 }
 
 #[test]
+fn a_response_with_a_null_id_does_not_close_the_connection() {
+    let body = r#"{"jsonrpc":"2.0","id":null,"error":{"code":-32600,"message":"bad"}}"#;
+    let mut client = ScriptedServer::new()
+        .steps([
+            step::write_raw(&format!("Content-Length: {}\r\n\r\n{body}", body.len())),
+            step::respond(),
+        ])
+        .spawn_initialized();
+
+    workspace_symbol(&mut client).unwrap();
+}
+
+#[test]
 fn a_malformed_frame_is_reported_as_a_malformed_message() {
     let mut client = ScriptedServer::new()
         .steps([step::write_raw("Content-Length: 3\r\n\r\n{{{")])

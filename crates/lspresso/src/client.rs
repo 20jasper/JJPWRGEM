@@ -369,6 +369,7 @@ impl Client {
                 }
                 RecvOutcome::Handled
             }
+            Ok(Incoming::NullIdResponse) => RecvOutcome::Handled,
             // A closed stream outranks a timeout landing on the same pass.
             Ok(Incoming::Malformed(source)) => {
                 return RecvOutcome::Closed(CloseReason::Malformed(source));
