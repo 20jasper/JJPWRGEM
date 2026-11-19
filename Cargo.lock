@@ -1054,6 +1054,7 @@ dependencies = [
  "const_format",
  "displaydoc",
  "insta",
+ "itertools 0.15.0",
  "jjpwrgem-lsp",
  "jjpwrgem-parse",
  "jjpwrgem-ui",
