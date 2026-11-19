@@ -257,14 +257,10 @@ pub const ARRAY_NUMERIC_MATRIX_HETEROGENEOUS: &str =
     r#"[[1, null], [1, null], [null], [0], [false], [""]]"#;
 
 // valid subset of prettier's JSON format test suite
-pub const PRETTIER_KEY_VALUE: &str =
-    include_str!("../conformance/prettier/tests/format/json/json/key-value.json");
-pub const PRETTIER_MULTI_LINE: &str =
-    include_str!("../conformance/prettier/tests/format/json/json/multi-line.json");
-pub const PRETTIER_SINGLE_LINE: &str =
-    include_str!("../conformance/prettier/tests/format/json/json/single-line.json");
-pub const PRETTIER_PASS1: &str =
-    include_str!("../conformance/prettier/tests/format/json/json/pass1.json");
+pub const PRETTIER_KEY_VALUE: &str = include_str!("fixtures/prettier/key-value.json");
+pub const PRETTIER_MULTI_LINE: &str = include_str!("fixtures/prettier/multi-line.json");
+pub const PRETTIER_SINGLE_LINE: &str = include_str!("fixtures/prettier/single-line.json");
+pub const PRETTIER_PASS1: &str = include_str!("fixtures/prettier/pass1.json");
 pub const PRETTIER_ARRAY: &str = "[[1, null], [null], [0], [false], [\"\"]]";
 
 pub const STRING_MIXED_CASE_HEX_UNICODE: &str = r#""\u0123\u4567\u89AB\uCDEF\uabcd\uef4A""#;
