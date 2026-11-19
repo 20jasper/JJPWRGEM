@@ -1,27 +1,6 @@
 // vendored from lsp-server v0.10.0
 use std::io::{self, BufRead, Read, Write};
 
-use serde::Serialize;
-
-#[derive(Debug, Serialize, Clone)]
-pub struct ResponseError {
-    pub code: i32,
-    pub message: String,
-    #[serde(skip_serializing_if = "Option::is_none", default)]
-    pub data: Option<serde_json::Value>,
-}
-
-#[derive(Clone, Copy, Debug)]
-#[non_exhaustive]
-pub enum ErrorCode {
-    ParseError = -32700,
-    InvalidRequest = -32600,
-    MethodNotFound = -32601,
-    InvalidParams = -32602,
-    InternalError = -32603,
-    ServerNotInitialized = -32002,
-}
-
 fn invalid_data(error: impl Into<Box<dyn std::error::Error + Send + Sync>>) -> io::Error {
     io::Error::new(io::ErrorKind::InvalidData, error)
 }

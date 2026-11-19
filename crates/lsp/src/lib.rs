@@ -6,7 +6,8 @@ mod transport;
 use std::{error::Error, process::ExitCode};
 
 use backend::Backend;
-use lsp_server::{msg::ErrorCode, req_queue::Id, stdio::Event};
+use gen_lsp_types::ErrorCodes;
+use lsp_server::{req_queue::Id, stdio::Event};
 use transport::{Rejection, Writer, decode};
 
 pub fn run_blocking() -> Result<ExitCode, Box<dyn Error + Send + Sync>> {
@@ -36,7 +37,7 @@ pub fn run_blocking() -> Result<ExitCode, Box<dyn Error + Send + Sync>> {
             (Some(id), None) => backend.response(&id),
             (None, None) => backend.reject(Rejection {
                 id: Id::Null,
-                code: ErrorCode::InvalidRequest,
+                code: ErrorCodes::InvalidRequest,
                 message: "invalid request: missing field `method`".into(),
             })?,
         }

@@ -10,7 +10,7 @@ use serde_json::value::RawValue;
 
 use crate::{
     backend::{Backend, Lifecycle},
-    lsp_server::{msg::ErrorCode, req_queue::Id},
+    lsp_server::req_queue::Id,
     transport::Rejection,
 };
 
@@ -45,7 +45,7 @@ impl Backend {
         let failed_id = id.clone();
         match guarded(|| self.dispatch_request(id, method, params)) {
             Ok(result) => result,
-            Err(message) => self.out.fail(failed_id, ErrorCode::InternalError, message),
+            Err(message) => self.out.fail(failed_id, ErrorCodes::InternalError, message),
         }
     }
 
@@ -68,12 +68,12 @@ impl Backend {
             }
             (Lifecycle::Uninitialized, _) => self.out.fail(
                 id,
-                ErrorCode::ServerNotInitialized,
+                ErrorCodes::ServerNotInitialized,
                 "server not initialized",
             ),
             (Lifecycle::ShutDown, _) => {
                 self.out
-                    .fail(id, ErrorCode::InvalidRequest, "server is shut down")
+                    .fail(id, ErrorCodes::InvalidRequest, "server is shut down")
             }
             (Lifecycle::Running, LspRequestMethod::Shutdown) => {
                 self.lifecycle = Lifecycle::ShutDown;
@@ -96,7 +96,7 @@ impl Backend {
             }
             (Lifecycle::Running, method) => self.out.fail(
                 id,
-                ErrorCode::MethodNotFound,
+                ErrorCodes::MethodNotFound,
                 format!("method not found: {method}"),
             ),
         }
@@ -148,7 +148,7 @@ impl Backend {
     fn invalid_params(&mut self, id: Id, error: &serde_json::Error) -> io::Result<()> {
         self.out.fail(
             id,
-            ErrorCode::InvalidParams,
+            ErrorCodes::InvalidParams,
             format!("invalid params: {error}"),
         )
     }
