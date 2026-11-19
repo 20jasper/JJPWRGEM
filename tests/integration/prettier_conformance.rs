@@ -412,6 +412,21 @@ proptest! {
     }
 }
 
+proptest! {
+    #[test]
+    fn prop_zero_exponent_matches_prettier(
+        pre in arb_safe_ws(), val in arb_zero_exponent_scalar(), post in arb_safe_ws()
+    ) {
+        let input = format!("{pre}{val}{post}");
+        run_prop_comparison(&input)?;
+    }
+
+    #[test]
+    fn prop_array_fill_mode_matches_prettier(input in arb_fill_mode_array()) {
+        run_prop_comparison(&input)?;
+    }
+}
+
 // ── Known-difference tests (ignored until fixed) ───────────────────────────────
 
 proptest! {
@@ -457,24 +472,11 @@ proptest! {
     }
 
     #[test]
-    fn prop_zero_exponent_matches_prettier(
-        pre in arb_safe_ws(), val in arb_zero_exponent_scalar(), post in arb_safe_ws()
-    ) {
-        let input = format!("{pre}{val}{post}");
-        run_prop_comparison(&input)?;
-    }
-
-    #[test]
     #[ignore = "known: prettier normalizes floats/exponents differently from jjp"]
     fn prop_float_matches_prettier(
         pre in arb_safe_ws(), val in arb_float_scalar(), post in arb_safe_ws()
     ) {
         let input = format!("{pre}{val}{post}");
-        run_prop_comparison(&input)?;
-    }
-
-    #[test]
-    fn prop_array_fill_mode_matches_prettier(input in arb_fill_mode_array()) {
         run_prop_comparison(&input)?;
     }
 }
