@@ -3,7 +3,7 @@ use std::{
     io::{self, BufWriter, StdoutLock, stdout},
 };
 
-use gen_lsp_types::{json_rpc::Error, *};
+use gen_lsp_types::*;
 use serde::{Deserialize, Deserializer, Serialize, de::IgnoredAny};
 use serde_json::value::RawValue;
 
@@ -50,7 +50,7 @@ struct Success<T> {
 struct Failure {
     jsonrpc: &'static str,
     id: Id,
-    error: Error,
+    error: json_rpc::Error,
 }
 
 #[derive(Serialize)]
@@ -103,7 +103,7 @@ impl Writer {
     }
 
     pub fn fail(&mut self, id: Id, code: ErrorCodes, message: String) -> io::Result<()> {
-        let error = Error {
+        let error = json_rpc::Error {
             code,
             message,
             data: None,

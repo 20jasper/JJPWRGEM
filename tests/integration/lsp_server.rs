@@ -2,9 +2,6 @@ use lspresso::{ErrorKind, Protocol, capabilities, gen_lsp_types::*};
 
 use crate::lsp_e2e::{TestResult, client};
 
-const METHOD_NOT_FOUND: i32 = -32601;
-const INVALID_PARAMS: i32 = -32602;
-
 macro_rules! untyped_request {
     ($name:ident, $method:expr) => {
         struct $name;
@@ -58,7 +55,10 @@ fn an_unknown_request_gets_method_not_found_and_an_unknown_notification_is_ignor
     let error = client
         .request::<UnknownRequest>(serde_json::Value::Null)
         .unwrap_err();
-    assert_eq!(response_code(&error), Some(METHOD_NOT_FOUND));
+    assert_eq!(
+        response_code(&error),
+        Some(ErrorCodes::MethodNotFound.into())
+    );
     client.shutdown()?;
     Ok(())
 }
@@ -70,7 +70,10 @@ fn a_request_with_an_empty_method_gets_method_not_found_and_the_server_keeps_wor
     let error = client
         .request::<EmptyMethodRequest>(serde_json::Value::Null)
         .unwrap_err();
-    assert_eq!(response_code(&error), Some(METHOD_NOT_FOUND));
+    assert_eq!(
+        response_code(&error),
+        Some(ErrorCodes::MethodNotFound.into())
+    );
     client.shutdown()?;
     Ok(())
 }
@@ -81,7 +84,10 @@ fn invalid_params_get_invalid_params_and_the_server_keeps_working() -> TestResul
     let error = client
         .request::<UntypedDocumentSymbol>(serde_json::json!({}))
         .unwrap_err();
-    assert_eq!(response_code(&error), Some(INVALID_PARAMS));
+    assert_eq!(
+        response_code(&error),
+        Some(ErrorCodes::InvalidParams.into())
+    );
     client.shutdown()?;
     Ok(())
 }
