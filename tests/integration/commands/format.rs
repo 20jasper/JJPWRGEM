@@ -5,41 +5,28 @@ use crate::{
 
 #[rstest_reuse::apply(format_template)]
 fn prettify(#[case] (name, input): (&str, &str)) {
-    let mut cmd = cli();
-    cmd.args(["format"]);
-
-    let output = exec_cmd(&mut cmd, Some(input.as_bytes().to_vec()));
-
-    crate::cli_snapshot!(name.to_string(), output.snapshot_display());
-    assert!(output.status.success());
+    crate::assert_cli_snapshot!(name.to_string(), ["format"], Some(input.as_bytes()), true);
 }
 
 #[rstest_reuse::apply(format_template)]
 fn uglify(#[case] (name, input): (&str, &str)) {
-    let mut cmd = cli();
-    cmd.args(["format", "--uglify"]);
-
-    let output = exec_cmd(&mut cmd, Some(input.as_bytes().to_vec()));
-
-    crate::cli_snapshot!(format!("uglify_{name}"), output.snapshot_display());
-    assert!(output.status.success());
+    crate::assert_cli_snapshot!(
+        format!("uglify_{name}"),
+        ["format", "--uglify"],
+        Some(input.as_bytes()),
+        true
+    );
 }
 
 #[rstest::rstest]
 #[case(22, "below_threshold")]
 #[case(23, "above_threshold")]
 fn preferred_width_threshold(#[case] preferred_width: usize, #[case] label: &str) {
-    let mut cmd = cli();
-    cmd.args(["format", "--preferred-width"]);
-    let width_arg = preferred_width.to_string();
-    cmd.arg(&width_arg);
-
-    let output = exec_cmd(&mut cmd, Some(ARRAY_WITH_LONG_STRING.as_bytes().to_vec()));
-    assert!(output.status.success(), "{}", output.snapshot_display());
-
-    crate::cli_snapshot!(
+    crate::assert_cli_snapshot!(
         format!("preferred_width_{label}"),
-        output.snapshot_display()
+        ["format", "--preferred-width", &preferred_width.to_string()],
+        Some(ARRAY_WITH_LONG_STRING.as_bytes()),
+        true
     );
 }
 
@@ -64,15 +51,11 @@ fn preferred_line_endings(#[case] args: &[&str], #[case] expected: &str) {
 #[case(&["--preferred-width"], "missing")]
 #[case(&["--preferred-width=abc"], "letters")]
 fn preferred_width_invalid_args(#[case] args: &[&str], #[case] label: &str) {
-    let mut cmd = cli();
-    cmd.args(std::iter::once("format").chain(args.iter().copied()));
-
-    let output = exec_cmd(&mut cmd, None);
-    assert!(!output.status.success());
-
-    crate::cli_snapshot!(
+    crate::assert_cli_snapshot!(
         format!("preferred_width_invalid_{label}"),
-        output.snapshot_display()
+        [&["format"], args].concat(),
+        None,
+        false
     );
 }
 
@@ -81,24 +64,22 @@ fn preferred_width_invalid_args(#[case] args: &[&str], #[case] label: &str) {
 #[case(&["--eol=what"], "wrong")]
 #[case(&["--eol=899889"], "number")]
 fn eol_invalid_args(#[case] args: &[&str], #[case] label: &str) {
-    let mut cmd = cli();
-    cmd.args(std::iter::once("format").chain(args.iter().copied()));
-
-    let output = exec_cmd(&mut cmd, None);
-    assert!(!output.status.success());
-
-    crate::cli_snapshot!(format!("eol_invalid_{label}"), output.snapshot_display());
+    crate::assert_cli_snapshot!(
+        format!("eol_invalid_{label}"),
+        [&["format"], args].concat(),
+        None,
+        false
+    );
 }
 
 #[test]
 fn preferred_width_conflicts_with_uglify() {
-    let mut cmd = cli();
-    cmd.args(["format", "--uglify", "--preferred-width", "24"]);
-
-    let output = exec_cmd(&mut cmd, None);
-    assert!(!output.status.success());
-
-    crate::cli_snapshot!("preferred_width_conflict", output.snapshot_display());
+    crate::assert_cli_snapshot!(
+        "preferred_width_conflict",
+        ["format", "--uglify", "--preferred-width", "24"],
+        None,
+        false
+    );
 }
 
 #[rstest::rstest]
@@ -106,15 +87,11 @@ fn preferred_width_conflicts_with_uglify() {
 #[case(&["--preferred-width", "24", "--uglify"], "width_then_uglify")]
 #[case(&["--uglify", "--preferred-width", "80"], "uglify_then_default_width")]
 fn preferred_width_conflict_cases(#[case] args: &[&str], #[case] label: &str) {
-    let mut cmd = cli();
-    cmd.args(std::iter::once("format").chain(args.iter().copied()));
-
-    let output = exec_cmd(&mut cmd, None);
-    assert!(!output.status.success());
-
-    crate::cli_snapshot!(
+    crate::assert_cli_snapshot!(
         format!("preferred_width_conflict_{label}"),
-        output.snapshot_display()
+        [&["format"], args].concat(),
+        None,
+        false
     );
 }
 
@@ -139,24 +116,17 @@ fn mode(#[case] args: &[&str], #[case] expected: &str) {
 #[case(&["-u", "--preferred-width", "80"], "short_uglify_with_preferred_width")]
 #[case(&["--mode", "fancy"], "invalid")]
 fn mode_invalid_args(#[case] args: &[&str], #[case] label: &str) {
-    let mut cmd = cli();
-    cmd.args(std::iter::once("format").chain(args.iter().copied()));
-
-    let output = exec_cmd(&mut cmd, None);
-    assert!(!output.status.success());
-
-    crate::cli_snapshot!(format!("mode_{label}"), output.snapshot_display());
+    crate::assert_cli_snapshot!(
+        format!("mode_{label}"),
+        [&["format"], args].concat(),
+        None,
+        false
+    );
 }
 
 #[test]
 fn help_subcommand() {
-    let mut cmd = cli();
-    cmd.args(["format", "--help"]);
-
-    let output = exec_cmd(&mut cmd, None);
-    assert!(output.status.success(), "{}", output.snapshot_display());
-
-    crate::cli_snapshot!("format_help", output.snapshot_display());
+    crate::assert_cli_snapshot!("format_help", ["format", "--help"], None, true);
 }
 
 #[rstest::rstest]

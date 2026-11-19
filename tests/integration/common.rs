@@ -21,6 +21,22 @@ macro_rules! cli_snapshot {
     };
 }
 
+#[macro_export]
+macro_rules! assert_cli_snapshot {
+    ($name:expr, $args:expr, $stdin:expr, $success:expr) => {{
+        let stdin: Option<&[u8]> = $stdin;
+        let output =
+            $crate::common::exec_cmd($crate::common::cli().args($args), stdin.map(<[u8]>::to_vec));
+        assert_eq!(
+            output.status.success(),
+            $success,
+            "{}",
+            output.snapshot_display()
+        );
+        $crate::cli_snapshot!($name, output.snapshot_display());
+    }};
+}
+
 pub fn cli() -> Command {
     let exe = env!("CARGO_BIN_EXE_jjp");
     assert!(

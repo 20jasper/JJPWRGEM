@@ -6,12 +6,12 @@ use crate::common::{cli, exec_cmd};
 #[case("blank_line", "{\"a\":1}\n\n{\"b\":2}")]
 #[case("invalid_json", "{\"a\":1}\n{bad}")]
 fn check_invalid(#[case] name: &str, #[case] input: &str) {
-    let output = exec_cmd(
-        cli().args(["check", "--parser", "jsonlines"]),
-        Some(input.as_bytes().to_vec()),
+    crate::assert_cli_snapshot!(
+        name,
+        ["check", "--parser", "jsonlines"],
+        Some(input.as_bytes()),
+        false
     );
-    crate::cli_snapshot!(name, output.snapshot_display());
-    assert!(!output.status.success());
 }
 
 #[rstest]
@@ -19,12 +19,12 @@ fn check_invalid(#[case] name: &str, #[case] input: &str) {
 #[case("format_multi", "{ \"a\" : 1 }\n{ \"b\" : 2 }")]
 #[case("format_trailing_newline", "{ \"a\" : 1 }\n")]
 fn format_valid(#[case] name: &str, #[case] input: &str) {
-    let output = exec_cmd(
-        cli().args(["format", "--parser", "jsonlines"]),
-        Some(input.as_bytes().to_vec()),
+    crate::assert_cli_snapshot!(
+        name,
+        ["format", "--parser", "jsonlines"],
+        Some(input.as_bytes()),
+        true
     );
-    crate::cli_snapshot!(name, output.snapshot_display());
-    assert!(output.status.success());
 }
 
 #[rstest]
@@ -44,53 +44,53 @@ fn format_line_endings(#[case] args: &[&str], #[case] expected: &str) {
 
 #[test]
 fn json_lines_conflicts_with_uglify() {
-    let output = exec_cmd(
-        cli().args(["format", "--parser", "jsonlines", "--uglify"]),
-        Some(b"{}".to_vec()),
+    crate::assert_cli_snapshot!(
+        "json_lines_conflicts_with_uglify",
+        ["format", "--parser", "jsonlines", "--uglify"],
+        Some(b"{}"),
+        false
     );
-    crate::cli_snapshot!(output.snapshot_display());
-    assert!(!output.status.success());
 }
 
 #[test]
 fn json_lines_conflicts_with_preferred_width() {
-    let output = exec_cmd(
-        cli().args([
+    crate::assert_cli_snapshot!(
+        "json_lines_conflicts_with_preferred_width",
+        [
             "format",
             "--parser",
             "jsonlines",
             "--preferred-width",
-            "100",
-        ]),
-        Some(b"{}".to_vec()),
+            "100"
+        ],
+        Some(b"{}"),
+        false
     );
-    crate::cli_snapshot!(output.snapshot_display());
-    assert!(!output.status.success());
 }
 
 #[test]
 fn json_lines_with_uglify_and_preferred_width_reports_uglify_first() {
-    let output = exec_cmd(
-        cli().args([
+    crate::assert_cli_snapshot!(
+        "json_lines_with_uglify_and_preferred_width_reports_uglify_first",
+        [
             "format",
             "--uglify",
             "--preferred-width",
             "24",
             "--parser",
             "jsonlines",
-        ]),
-        Some(b"{}".to_vec()),
+        ],
+        Some(b"{}"),
+        false
     );
-    crate::cli_snapshot!(output.snapshot_display());
-    assert!(!output.status.success());
 }
 
 #[test]
 fn json_lines_conflicts_with_default_preferred_width() {
-    let output = exec_cmd(
-        cli().args(["format", "--parser", "jsonlines", "--preferred-width", "80"]),
-        Some(b"{}".to_vec()),
+    crate::assert_cli_snapshot!(
+        "json_lines_conflicts_with_default_preferred_width",
+        ["format", "--parser", "jsonlines", "--preferred-width", "80"],
+        Some(b"{}"),
+        false
     );
-    crate::cli_snapshot!(output.snapshot_display());
-    assert!(!output.status.success());
 }

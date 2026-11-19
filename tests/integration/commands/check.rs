@@ -43,31 +43,22 @@ use crate::{
 #[case(crate::fixture_tuple!(INVALID_HEX_DIGIT_IN_ESCAPE))]
 #[case(crate::fixture_tuple!(INVALID_ESCAPED_CURLY))]
 fn annotate_test_json_failure_snapshots(#[case] (name, json): (&str, &str)) {
-    let json_bytes = json.as_bytes().to_vec();
-
-    let output = exec_cmd(cli().arg("check"), Some(json_bytes));
-
-    crate::cli_snapshot!(name.to_ascii_lowercase(), output.snapshot_display());
+    crate::assert_cli_snapshot!(
+        name.to_ascii_lowercase(),
+        ["check"],
+        Some(json.as_bytes()),
+        false
+    );
 }
 
 #[test]
 fn check_help_snapshot() {
-    let mut cmd = cli();
-    cmd.args(["check", "--help"]);
-
-    let output = exec_cmd(&mut cmd, None);
-    crate::cli_snapshot!("check_help", output.snapshot_display());
+    crate::assert_cli_snapshot!("check_help", ["check", "--help"], None, true);
 }
 
 #[test]
 fn no_stdin() {
-    let mut cmd = cli();
-    cmd.args(["check"]);
-
-    let output = exec_cmd(&mut cmd, None);
-    assert!(!output.status.success(), "{}", output.snapshot_display());
-
-    crate::cli_snapshot!(output.snapshot_display());
+    crate::assert_cli_snapshot!("no_stdin", ["check"], None, false);
 }
 
 #[rstest::rstest]
