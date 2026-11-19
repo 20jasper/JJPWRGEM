@@ -24,25 +24,14 @@ impl Backend {
     }
 
     pub(super) fn initialize(&mut self, params: InitializeParams) -> InitializeResult {
-        let client_supports_utf8 = params
-            .capabilities
-            .general
-            .as_ref()
-            .and_then(|general| general.position_encodings.as_ref())
-            .is_some_and(|encodings| encodings.contains(&PositionEncodingKind::UTF8));
-
         self.lifecycle = Lifecycle::Running;
-        self.position_encoding = if client_supports_utf8 {
-            PositionEncoding::Utf8
-        } else {
-            PositionEncoding::Utf16
-        };
+        self.position_encoding = PositionEncoding::negotiate(&params.capabilities);
         self.client_pulls_diagnostics = client_supports_pull_diagnostics(&params.capabilities);
         if let Some(options) = params.initialization_options {
             self.update_format_settings(options);
         }
 
-        let position_encoding = client_supports_utf8.then_some(PositionEncodingKind::UTF8);
+        let position_encoding = self.position_encoding.advertised();
         InitializeResult {
             server_info: Some(ServerInfo {
                 name: SOURCE.into(),

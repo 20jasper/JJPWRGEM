@@ -22,6 +22,22 @@ pub enum PositionEncoding {
 }
 
 impl PositionEncoding {
+    pub fn negotiate(capabilities: &ClientCapabilities) -> Self {
+        let offers_utf8 = capabilities
+            .general
+            .as_ref()
+            .and_then(|general| general.position_encodings.as_ref())
+            .is_some_and(|encodings| encodings.contains(&PositionEncodingKind::UTF8));
+        if offers_utf8 { Self::Utf8 } else { Self::Utf16 }
+    }
+
+    pub fn advertised(self) -> Option<PositionEncodingKind> {
+        match self {
+            Self::Utf8 => Some(PositionEncodingKind::UTF8),
+            Self::Utf16 => None,
+        }
+    }
+
     fn character_count(self, s: &str) -> usize {
         match self {
             Self::Utf8 => s.len(),
