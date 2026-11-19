@@ -9,9 +9,7 @@ use serde_json::value::RawValue;
 
 use crate::lsp_server::{msg::write_msg_text, req_queue::Id};
 
-const JSONRPC: &str = "2.0";
-
-#[derive(Deserialize)]
+#[derive(Serialize, Deserialize)]
 enum Version {
     #[serde(rename = "2.0")]
     TwoPointZero,
@@ -41,21 +39,21 @@ fn some<'de, D: Deserializer<'de>>(deserializer: D) -> Result<Option<Id>, D::Err
 
 #[derive(Serialize)]
 struct Success<T> {
-    jsonrpc: &'static str,
+    jsonrpc: Version,
     id: Id,
     result: T,
 }
 
 #[derive(Serialize)]
 struct Failure {
-    jsonrpc: &'static str,
+    jsonrpc: Version,
     id: Id,
     error: json_rpc::Error,
 }
 
 #[derive(Serialize)]
 struct Notify<P> {
-    jsonrpc: &'static str,
+    jsonrpc: Version,
     method: &'static str,
     params: P,
 }
@@ -96,7 +94,7 @@ impl Writer {
 
     pub fn respond<R: Request>(&mut self, id: Id, result: R::Result) -> io::Result<()> {
         self.send(&Success {
-            jsonrpc: JSONRPC,
+            jsonrpc: Version::TwoPointZero,
             id,
             result,
         })
@@ -109,7 +107,7 @@ impl Writer {
             data: None,
         };
         self.send(&Failure {
-            jsonrpc: JSONRPC,
+            jsonrpc: Version::TwoPointZero,
             id,
             error,
         })
@@ -117,7 +115,7 @@ impl Writer {
 
     pub fn notify<N: Notification>(&mut self, params: N::Params) {
         drop(self.send(&Notify {
-            jsonrpc: JSONRPC,
+            jsonrpc: Version::TwoPointZero,
             method: N::METHOD.as_str(),
             params,
         }));
