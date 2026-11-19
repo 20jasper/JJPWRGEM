@@ -1,20 +1,17 @@
-use insta::assert_snapshot;
 use rstest::rstest;
 
-use crate::common::{cli, exec_cmd};
+use crate::common::{assert_cli_snapshot, cli, exec_cmd};
 
 #[rstest]
 #[case("blank_line", "{\"a\":1}\n\n{\"b\":2}")]
 #[case("invalid_json", "{\"a\":1}\n{bad}")]
 fn check_invalid(#[case] name: &str, #[case] input: &str) {
-    let output = exec_cmd(
-        cli().args(["check", "--parser", "jsonlines"]),
-        Some(input.as_bytes().to_vec()),
+    assert_cli_snapshot!(
+        name,
+        ["check", "--parser", "jsonlines"],
+        Some(input.as_bytes()),
+        false
     );
-    insta::with_settings!({snapshot_path => "../snapshots"}, {
-        assert_snapshot!(name, output.snapshot_display());
-    });
-    assert!(!output.status.success());
 }
 
 #[rstest]
@@ -22,14 +19,12 @@ fn check_invalid(#[case] name: &str, #[case] input: &str) {
 #[case("format_multi", "{ \"a\" : 1 }\n{ \"b\" : 2 }")]
 #[case("format_trailing_newline", "{ \"a\" : 1 }\n")]
 fn format_valid(#[case] name: &str, #[case] input: &str) {
-    let output = exec_cmd(
-        cli().args(["format", "--parser", "jsonlines"]),
-        Some(input.as_bytes().to_vec()),
+    assert_cli_snapshot!(
+        name,
+        ["format", "--parser", "jsonlines"],
+        Some(input.as_bytes()),
+        true
     );
-    insta::with_settings!({snapshot_path => "../snapshots"}, {
-        assert_snapshot!(name, output.snapshot_display());
-    });
-    assert!(output.status.success());
 }
 
 #[rstest]
@@ -47,63 +42,25 @@ fn format_line_endings(#[case] args: &[&str], #[case] expected: &str) {
     assert_eq!(expected, output.stdout);
 }
 
-#[test]
-fn json_lines_conflicts_with_uglify() {
-    let output = exec_cmd(
-        cli().args(["format", "--parser", "jsonlines", "--uglify"]),
-        Some(b"{}".to_vec()),
+#[rstest]
+#[case(&["--parser", "jsonlines", "--uglify"], "json_lines_conflicts_with_uglify")]
+#[case(
+    &["--parser", "jsonlines", "--preferred-width", "100"],
+    "json_lines_conflicts_with_preferred_width"
+)]
+#[case(
+    &["--uglify", "--preferred-width", "24", "--parser", "jsonlines"],
+    "json_lines_with_uglify_and_preferred_width_reports_uglify_first"
+)]
+#[case(
+    &["--parser", "jsonlines", "--preferred-width", "80"],
+    "json_lines_conflicts_with_default_preferred_width"
+)]
+fn format_conflicts(#[case] args: &[&str], #[case] snapshot_name: &str) {
+    assert_cli_snapshot!(
+        snapshot_name,
+        [&["format"], args].concat(),
+        Some(b"{}"),
+        false
     );
-    insta::with_settings!({snapshot_path => "../snapshots"}, {
-        assert_snapshot!(output.snapshot_display());
-    });
-    assert!(!output.status.success());
-}
-
-#[test]
-fn json_lines_conflicts_with_preferred_width() {
-    let output = exec_cmd(
-        cli().args([
-            "format",
-            "--parser",
-            "jsonlines",
-            "--preferred-width",
-            "100",
-        ]),
-        Some(b"{}".to_vec()),
-    );
-    insta::with_settings!({snapshot_path => "../snapshots"}, {
-        assert_snapshot!(output.snapshot_display());
-    });
-    assert!(!output.status.success());
-}
-
-#[test]
-fn json_lines_with_uglify_and_preferred_width_reports_uglify_first() {
-    let output = exec_cmd(
-        cli().args([
-            "format",
-            "--uglify",
-            "--preferred-width",
-            "24",
-            "--parser",
-            "jsonlines",
-        ]),
-        Some(b"{}".to_vec()),
-    );
-    insta::with_settings!({snapshot_path => "../snapshots"}, {
-        assert_snapshot!(output.snapshot_display());
-    });
-    assert!(!output.status.success());
-}
-
-#[test]
-fn json_lines_conflicts_with_default_preferred_width() {
-    let output = exec_cmd(
-        cli().args(["format", "--parser", "jsonlines", "--preferred-width", "80"]),
-        Some(b"{}".to_vec()),
-    );
-    insta::with_settings!({snapshot_path => "../snapshots"}, {
-        assert_snapshot!(output.snapshot_display());
-    });
-    assert!(!output.status.success());
 }
