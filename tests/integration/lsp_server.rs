@@ -1,4 +1,4 @@
-use lspresso::{ErrorKind, Protocol, capabilities, gen_lsp_types::*};
+use lspresso::{Client, ErrorKind, Protocol, capabilities, gen_lsp_types::*};
 
 use crate::lsp_e2e::{TestResult, client};
 
@@ -33,11 +33,22 @@ impl Notification for CustomNotification {
     const MESSAGE_DIRECTION: MessageDirection = MessageDirection::ClientToServer;
 }
 
-fn response_code(error: &lspresso::Error) -> Option<i32> {
-    match error.kind() {
+fn assert_code<R: Request>(client: &mut Client, params: R::Params, code: ErrorCodes) {
+    let Err(error) = client.request::<R>(params) else {
+        panic!("the request should be rejected");
+    };
+    let actual = match error.kind() {
         ErrorKind::Response { code, .. } => Some(*code),
         _ => None,
-    }
+    };
+    assert_eq!(actual, Some(code.into()));
+}
+
+fn assert_rejected<R: Request>(params: R::Params, code: ErrorCodes) -> TestResult {
+    let mut client = client(capabilities::vscode::latest)?;
+    assert_code::<R>(&mut client, params, code);
+    client.shutdown()?;
+    Ok(())
 }
 
 #[test]
@@ -52,12 +63,10 @@ fn exit_without_shutdown_exits_with_code_one() -> TestResult {
 fn an_unknown_request_gets_method_not_found_and_an_unknown_notification_is_ignored() -> TestResult {
     let mut client = client(capabilities::vscode::latest)?;
     client.notify::<CustomNotification>(serde_json::json!({ "a": 1 }))?;
-    let error = client
-        .request::<UnknownRequest>(serde_json::Value::Null)
-        .unwrap_err();
-    assert_eq!(
-        response_code(&error),
-        Some(ErrorCodes::MethodNotFound.into())
+    assert_code::<UnknownRequest>(
+        &mut client,
+        serde_json::Value::Null,
+        ErrorCodes::MethodNotFound,
     );
     client.shutdown()?;
     Ok(())
@@ -66,28 +75,10 @@ fn an_unknown_request_gets_method_not_found_and_an_unknown_notification_is_ignor
 #[test]
 fn a_request_with_an_empty_method_gets_method_not_found_and_the_server_keeps_working() -> TestResult
 {
-    let mut client = client(capabilities::vscode::latest)?;
-    let error = client
-        .request::<EmptyMethodRequest>(serde_json::Value::Null)
-        .unwrap_err();
-    assert_eq!(
-        response_code(&error),
-        Some(ErrorCodes::MethodNotFound.into())
-    );
-    client.shutdown()?;
-    Ok(())
+    assert_rejected::<EmptyMethodRequest>(serde_json::Value::Null, ErrorCodes::MethodNotFound)
 }
 
 #[test]
 fn invalid_params_get_invalid_params_and_the_server_keeps_working() -> TestResult {
-    let mut client = client(capabilities::vscode::latest)?;
-    let error = client
-        .request::<UntypedDocumentSymbol>(serde_json::json!({}))
-        .unwrap_err();
-    assert_eq!(
-        response_code(&error),
-        Some(ErrorCodes::InvalidParams.into())
-    );
-    client.shutdown()?;
-    Ok(())
+    assert_rejected::<UntypedDocumentSymbol>(serde_json::json!({}), ErrorCodes::InvalidParams)
 }
