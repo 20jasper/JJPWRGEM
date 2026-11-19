@@ -93,7 +93,6 @@ fn arb_safe_ws() -> impl Strategy<Value = String> {
                     }
                 } else {
                     out.push(c);
-                    saw_nl = false;
                 }
             }
             out
@@ -376,6 +375,10 @@ proptest! {
         run_prop_comparison(&input)?;
     }
 
+    #[test]
+    fn prop_array_with_strings_matches_prettier(input in arb_safe_array_with_strings()) {
+        run_prop_comparison(&input)?;
+    }
 }
 
 proptest! {
@@ -433,7 +436,7 @@ proptest! {
     }
 
     #[test]
-    #[ignore = "known: blank lines between object keys — jjp normalizes to one blank line, prettier strips all"]
+    #[ignore = "known: prettier keeps one blank line between members, jjp drops it"]
     fn prop_object_blank_lines_matches_prettier(
         input in prop::collection::vec(("[a-z]{1,8}".prop_map(|k| k), arb_safe_scalar()), 1..=5usize)
             .prop_flat_map(|entries| {
@@ -453,7 +456,7 @@ proptest! {
     }
 
     #[test]
-    #[ignore = "known: blank lines between array items"]
+    #[ignore = "known: prettier keeps one blank line between items, jjp drops it"]
     fn prop_array_blank_lines_matches_prettier(
         input in prop::collection::vec(arb_safe_scalar(), 0..=4_usize)
             .prop_flat_map(|items| {
@@ -465,12 +468,6 @@ proptest! {
                     .prop_map(|(items, gaps)| join_array(&items, "", "", &gaps))
             })
     ) {
-        run_prop_comparison(&input)?;
-    }
-
-    #[test]
-    #[ignore = "known: generated whitespace can contain blank lines"]
-    fn prop_array_with_strings_matches_prettier(input in arb_safe_array_with_strings()) {
         run_prop_comparison(&input)?;
     }
 
