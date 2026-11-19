@@ -6,9 +6,9 @@ use lspresso::{Client, ErrorKind, Initialize, capabilities, gen_lsp_types::*};
 use rstest::rstest;
 
 const TIMEOUT: Duration = Duration::from_secs(5);
-type TestResult<T = ()> = Result<T, Box<dyn Error>>;
+pub type TestResult<T = ()> = Result<T, Box<dyn Error>>;
 
-fn client(preset: fn() -> ClientCapabilities) -> TestResult<Client> {
+pub fn client(preset: fn() -> ClientCapabilities) -> TestResult<Client> {
     let mut command = Command::new(env!("CARGO_BIN_EXE_jjp"));
     command.arg("lsp");
     Ok(Client::spawn_initialized(command, preset())?.with_timeout(TIMEOUT))

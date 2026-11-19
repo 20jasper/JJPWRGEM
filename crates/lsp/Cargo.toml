@@ -10,20 +10,18 @@ repository.workspace = true
 documentation = "https://docs.rs/jjpwrgem-lsp"
 keywords = ["json", "lsp", "parser", "formatter", "diagnostics"]
 categories = ["development-tools", "parser-implementations", "text-processing"]
-include = ["src/**/*", "readme.md"]
+include = ["src/**/*", "readme.md", "THIRD_PARTY.md"]
 
 [dev-dependencies]
 rstest = { workspace = true }
 
 [dependencies]
-dashmap = "6.2"
+gen-lsp-types = { version = "0.11.0", features = ["fluent-uri"] }
 itertools = "0.15"
 jjpwrgem-parse = { workspace = true, features = ["serde"] }
 line-index = "0.1.2"
 serde = { workspace = true, features = ["derive"] }
-serde_json = { workspace = true }
-tokio = { version = "1.52", features = ["macros", "rt", "io-std"] }
-tower-lsp-server = "0.23"
+serde_json = { workspace = true, features = ["raw_value"] }
 
 [lints]
 workspace = true
