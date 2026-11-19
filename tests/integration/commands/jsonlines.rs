@@ -1,4 +1,3 @@
-use insta::assert_snapshot;
 use rstest::rstest;
 
 use crate::common::{cli, exec_cmd};
@@ -11,9 +10,7 @@ fn check_invalid(#[case] name: &str, #[case] input: &str) {
         cli().args(["check", "--parser", "jsonlines"]),
         Some(input.as_bytes().to_vec()),
     );
-    insta::with_settings!({snapshot_path => "../snapshots"}, {
-        assert_snapshot!(name, output.snapshot_display());
-    });
+    crate::cli_snapshot!(name, output.snapshot_display());
     assert!(!output.status.success());
 }
 
@@ -26,9 +23,7 @@ fn format_valid(#[case] name: &str, #[case] input: &str) {
         cli().args(["format", "--parser", "jsonlines"]),
         Some(input.as_bytes().to_vec()),
     );
-    insta::with_settings!({snapshot_path => "../snapshots"}, {
-        assert_snapshot!(name, output.snapshot_display());
-    });
+    crate::cli_snapshot!(name, output.snapshot_display());
     assert!(output.status.success());
 }
 
@@ -53,9 +48,7 @@ fn json_lines_conflicts_with_uglify() {
         cli().args(["format", "--parser", "jsonlines", "--uglify"]),
         Some(b"{}".to_vec()),
     );
-    insta::with_settings!({snapshot_path => "../snapshots"}, {
-        assert_snapshot!(output.snapshot_display());
-    });
+    crate::cli_snapshot!(output.snapshot_display());
     assert!(!output.status.success());
 }
 
@@ -71,9 +64,7 @@ fn json_lines_conflicts_with_preferred_width() {
         ]),
         Some(b"{}".to_vec()),
     );
-    insta::with_settings!({snapshot_path => "../snapshots"}, {
-        assert_snapshot!(output.snapshot_display());
-    });
+    crate::cli_snapshot!(output.snapshot_display());
     assert!(!output.status.success());
 }
 
@@ -90,9 +81,7 @@ fn json_lines_with_uglify_and_preferred_width_reports_uglify_first() {
         ]),
         Some(b"{}".to_vec()),
     );
-    insta::with_settings!({snapshot_path => "../snapshots"}, {
-        assert_snapshot!(output.snapshot_display());
-    });
+    crate::cli_snapshot!(output.snapshot_display());
     assert!(!output.status.success());
 }
 
@@ -102,8 +91,6 @@ fn json_lines_conflicts_with_default_preferred_width() {
         cli().args(["format", "--parser", "jsonlines", "--preferred-width", "80"]),
         Some(b"{}".to_vec()),
     );
-    insta::with_settings!({snapshot_path => "../snapshots"}, {
-        assert_snapshot!(output.snapshot_display());
-    });
+    crate::cli_snapshot!(output.snapshot_display());
     assert!(!output.status.success());
 }

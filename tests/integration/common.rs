@@ -12,6 +12,15 @@ macro_rules! fixture_tuple {
     };
 }
 
+#[macro_export]
+macro_rules! cli_snapshot {
+    ($($args:tt)*) => {
+        ::insta::with_settings!({snapshot_path => "../snapshots"}, {
+            ::insta::assert_snapshot!($($args)*);
+        })
+    };
+}
+
 pub fn cli() -> Command {
     let exe = env!("CARGO_BIN_EXE_jjp");
     assert!(

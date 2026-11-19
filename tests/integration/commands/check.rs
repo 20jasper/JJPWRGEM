@@ -1,4 +1,3 @@
-use insta::assert_snapshot;
 use rstest::rstest;
 
 use crate::{
@@ -48,9 +47,7 @@ fn annotate_test_json_failure_snapshots(#[case] (name, json): (&str, &str)) {
 
     let output = exec_cmd(cli().arg("check"), Some(json_bytes));
 
-    insta::with_settings!({snapshot_path => "../snapshots"}, {
-        assert_snapshot!(name.to_ascii_lowercase(), output.snapshot_display());
-    });
+    crate::cli_snapshot!(name.to_ascii_lowercase(), output.snapshot_display());
 }
 
 #[test]
@@ -59,9 +56,7 @@ fn check_help_snapshot() {
     cmd.args(["check", "--help"]);
 
     let output = exec_cmd(&mut cmd, None);
-    insta::with_settings!({snapshot_path => "../snapshots"}, {
-        assert_snapshot!("check_help", output.snapshot_display());
-    });
+    crate::cli_snapshot!("check_help", output.snapshot_display());
 }
 
 #[test]
@@ -72,9 +67,7 @@ fn no_stdin() {
     let output = exec_cmd(&mut cmd, None);
     assert!(!output.status.success(), "{}", output.snapshot_display());
 
-    insta::with_settings!({snapshot_path => "../snapshots"}, {
-        assert_snapshot!(output.snapshot_display());
-    });
+    crate::cli_snapshot!(output.snapshot_display());
 }
 
 #[rstest::rstest]
@@ -82,7 +75,6 @@ fn no_stdin() {
 #[case(r#"{"hello I am valid": null} "#, "success")]
 fn docs(#[case] input: &str, #[case] postfix: &str) {
     insta::with_settings!({
-        snapshot_path => "../snapshots",
         prepend_module_to_snapshot => false,
     }, {
         let mut cmd = cli();
@@ -90,6 +82,6 @@ fn docs(#[case] input: &str, #[case] postfix: &str) {
 
         let output = exec_cmd(&mut cmd, Some(input.as_bytes().to_vec()));
 
-        assert_snapshot!(format!("check_{postfix}"), output.docs_display_stdin());
+        crate::cli_snapshot!(format!("check_{postfix}"), output.docs_display_stdin());
     });
 }
