@@ -1,7 +1,7 @@
 use displaydoc::Display;
 use jjpwrgem_ui::BasicErrorMessage;
 
-use crate::{docs::strip_front_matter, get_docs_snapshot};
+use crate::docs::{get_docs_snapshot, strip_front_matter};
 
 pub type Result<T> = std::result::Result<T, Error>;
 

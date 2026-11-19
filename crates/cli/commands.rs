@@ -8,8 +8,7 @@ use jjpwrgem_parse::{
 };
 
 use crate::{
-    docs::{indent, strip_front_matter},
-    get_docs_snapshot,
+    docs::{get_docs_snapshot, indent, strip_front_matter},
     setting_args::{FromSettings, Help, shorthand_text},
 };
 

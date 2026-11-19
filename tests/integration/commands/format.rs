@@ -1,54 +1,33 @@
-use insta::assert_snapshot;
-
 use crate::{
-    common::{cli, exec_cmd, format_template},
+    common::{assert_cli_snapshot, cli, cli_snapshot, exec_cmd, format_template},
     test_json::*,
 };
 
 #[rstest_reuse::apply(format_template)]
 fn prettify(#[case] (name, input): (&str, &str)) {
-    let mut cmd = cli();
-    cmd.args(["format"]);
-
-    let output = exec_cmd(&mut cmd, Some(input.as_bytes().to_vec()));
-
-    insta::with_settings!({snapshot_path => "../snapshots"}, {
-        assert_snapshot!(name.to_string(), output.snapshot_display());
-    });
-    assert!(output.status.success());
+    assert_cli_snapshot!(name.to_string(), ["format"], Some(input.as_bytes()), true);
 }
 
 #[rstest_reuse::apply(format_template)]
 fn uglify(#[case] (name, input): (&str, &str)) {
-    let mut cmd = cli();
-    cmd.args(["format", "--uglify"]);
-
-    let output = exec_cmd(&mut cmd, Some(input.as_bytes().to_vec()));
-
-    insta::with_settings!({snapshot_path => "../snapshots"}, {
-        assert_snapshot!(format!("uglify_{name}"), output.snapshot_display());
-    });
-    assert!(output.status.success());
+    assert_cli_snapshot!(
+        format!("uglify_{name}"),
+        ["format", "--uglify"],
+        Some(input.as_bytes()),
+        true
+    );
 }
 
 #[rstest::rstest]
 #[case(22, "below_threshold")]
 #[case(23, "above_threshold")]
 fn preferred_width_threshold(#[case] preferred_width: usize, #[case] label: &str) {
-    let mut cmd = cli();
-    cmd.args(["format", "--preferred-width"]);
-    let width_arg = preferred_width.to_string();
-    cmd.arg(&width_arg);
-
-    let output = exec_cmd(&mut cmd, Some(ARRAY_WITH_LONG_STRING.as_bytes().to_vec()));
-    assert!(output.status.success(), "{}", output.snapshot_display());
-
-    insta::with_settings!({snapshot_path => "../snapshots"}, {
-        assert_snapshot!(
-            format!("preferred_width_{label}"),
-            output.snapshot_display()
-        );
-    });
+    assert_cli_snapshot!(
+        format!("preferred_width_{label}"),
+        ["format", "--preferred-width", &preferred_width.to_string()],
+        Some(ARRAY_WITH_LONG_STRING.as_bytes()),
+        true
+    );
 }
 
 // Snapshots normalize newlines to LF, so we assert directly to preserve each line ending.
@@ -68,73 +47,6 @@ fn preferred_line_endings(#[case] args: &[&str], #[case] expected: &str) {
 }
 
 #[rstest::rstest]
-#[case(&["--preferred-width=-1"], "negative")]
-#[case(&["--preferred-width"], "missing")]
-#[case(&["--preferred-width=abc"], "letters")]
-fn preferred_width_invalid_args(#[case] args: &[&str], #[case] label: &str) {
-    let mut cmd = cli();
-    cmd.args(std::iter::once("format").chain(args.iter().copied()));
-
-    let output = exec_cmd(&mut cmd, None);
-    assert!(!output.status.success());
-
-    insta::with_settings!({snapshot_path => "../snapshots"}, {
-        assert_snapshot!(
-            format!("preferred_width_invalid_{label}"),
-            output.snapshot_display()
-        );
-    });
-}
-
-#[rstest::rstest]
-#[case(&["--eol"], "missing")]
-#[case(&["--eol=what"], "wrong")]
-#[case(&["--eol=899889"], "number")]
-fn eol_invalid_args(#[case] args: &[&str], #[case] label: &str) {
-    let mut cmd = cli();
-    cmd.args(std::iter::once("format").chain(args.iter().copied()));
-
-    let output = exec_cmd(&mut cmd, None);
-    assert!(!output.status.success());
-
-    insta::with_settings!({snapshot_path => "../snapshots"}, {
-        assert_snapshot!(format!("eol_invalid_{label}"), output.snapshot_display());
-    });
-}
-
-#[test]
-fn preferred_width_conflicts_with_uglify() {
-    let mut cmd = cli();
-    cmd.args(["format", "--uglify", "--preferred-width", "24"]);
-
-    let output = exec_cmd(&mut cmd, None);
-    assert!(!output.status.success());
-
-    insta::with_settings!({snapshot_path => "../snapshots"}, {
-        assert_snapshot!("preferred_width_conflict", output.snapshot_display());
-    });
-}
-
-#[rstest::rstest]
-#[case(&["--uglify", "--preferred-width", "24"], "uglify_then_width")]
-#[case(&["--preferred-width", "24", "--uglify"], "width_then_uglify")]
-#[case(&["--uglify", "--preferred-width", "80"], "uglify_then_default_width")]
-fn preferred_width_conflict_cases(#[case] args: &[&str], #[case] label: &str) {
-    let mut cmd = cli();
-    cmd.args(std::iter::once("format").chain(args.iter().copied()));
-
-    let output = exec_cmd(&mut cmd, None);
-    assert!(!output.status.success());
-
-    insta::with_settings!({snapshot_path => "../snapshots"}, {
-        assert_snapshot!(
-            format!("preferred_width_conflict_{label}"),
-            output.snapshot_display()
-        );
-    });
-}
-
-#[rstest::rstest]
 #[case(&["--mode", "uglify"], "{\"a\":[1,2]}")]
 #[case(&["--mode=uglify"], "{\"a\":[1,2]}")]
 #[case(&["--mode", "pretty"], "{ \"a\": [1, 2] }\n")]
@@ -149,47 +61,28 @@ fn mode(#[case] args: &[&str], #[case] expected: &str) {
 }
 
 #[rstest::rstest]
-#[case(&["-u", "--mode", "pretty"], "short_uglify_with_mode_pretty")]
-#[case(&["--uglify", "--mode", "uglify"], "uglify_twice")]
-#[case(&["--mode", "uglify", "--preferred-width", "80"], "uglify_with_preferred_width")]
-#[case(&["-u", "--preferred-width", "80"], "short_uglify_with_preferred_width")]
-#[case(&["--mode", "fancy"], "invalid")]
-fn mode_invalid_args(#[case] args: &[&str], #[case] label: &str) {
-    let mut cmd = cli();
-    cmd.args(std::iter::once("format").chain(args.iter().copied()));
-
-    let output = exec_cmd(&mut cmd, None);
-    assert!(!output.status.success());
-
-    insta::with_settings!({snapshot_path => "../snapshots"}, {
-        assert_snapshot!(format!("mode_{label}"), output.snapshot_display());
-    });
+#[case(&["--preferred-width=-1"], "preferred_width_invalid_negative")]
+#[case(&["--preferred-width"], "preferred_width_invalid_missing")]
+#[case(&["--preferred-width=abc"], "preferred_width_invalid_letters")]
+#[case(&["--eol"], "eol_invalid_missing")]
+#[case(&["--eol=what"], "eol_invalid_wrong")]
+#[case(&["--eol=899889"], "eol_invalid_number")]
+#[case(&["--uglify", "--preferred-width", "24"], "preferred_width_conflict")]
+#[case(&["--uglify", "--preferred-width", "24"], "preferred_width_conflict_uglify_then_width")]
+#[case(&["--preferred-width", "24", "--uglify"], "preferred_width_conflict_width_then_uglify")]
+#[case(&["--uglify", "--preferred-width", "80"], "preferred_width_conflict_uglify_then_default_width")]
+#[case(&["-u", "--mode", "pretty"], "mode_short_uglify_with_mode_pretty")]
+#[case(&["--uglify", "--mode", "uglify"], "mode_uglify_twice")]
+#[case(&["--mode", "uglify", "--preferred-width", "80"], "mode_uglify_with_preferred_width")]
+#[case(&["-u", "--preferred-width", "80"], "mode_short_uglify_with_preferred_width")]
+#[case(&["--mode", "fancy"], "mode_invalid")]
+fn invalid_args(#[case] args: &[&str], #[case] snapshot_name: &str) {
+    assert_cli_snapshot!(snapshot_name, [&["format"], args].concat(), None, false);
 }
 
 #[test]
 fn help_subcommand() {
-    let mut cmd = cli();
-    cmd.args(["format", "--help"]);
-
-    let output = exec_cmd(&mut cmd, None);
-    assert!(output.status.success(), "{}", output.snapshot_display());
-
-    insta::with_settings!({snapshot_path => "../snapshots"}, {
-        assert_snapshot!("format_help", output.snapshot_display());
-    });
-}
-
-#[test]
-fn no_stdin() {
-    let mut cmd = cli();
-    cmd.args(["check"]);
-
-    let output = exec_cmd(&mut cmd, None);
-    assert!(!output.status.success(), "{}", output.snapshot_display());
-
-    insta::with_settings!({snapshot_path => "../snapshots"}, {
-        assert_snapshot!(output.snapshot_display());
-    });
+    assert_cli_snapshot!("format_help", ["format", "--help"], None, true);
 }
 
 #[rstest::rstest]
@@ -197,7 +90,6 @@ fn no_stdin() {
 #[case(&["--uglify"], r#"{ "shoppingList": ["cheese", "slushy machine"]   } "#, "uglify")]
 fn docs(#[case] args: &[&str], #[case] input: &str, #[case] postfix: &str) {
     insta::with_settings!({
-        snapshot_path => "../snapshots",
         prepend_module_to_snapshot => false,
     }, {
         let mut cmd = cli();
@@ -205,6 +97,6 @@ fn docs(#[case] args: &[&str], #[case] input: &str, #[case] postfix: &str) {
 
         let output = exec_cmd(&mut cmd, Some(input.as_bytes().to_vec()));
 
-        assert_snapshot!(format!("format_{postfix}"), output.docs_display_stdin());
+        cli_snapshot!(format!("format_{postfix}"), output.docs_display_stdin());
     });
 }

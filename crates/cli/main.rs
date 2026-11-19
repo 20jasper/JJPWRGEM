@@ -137,7 +137,6 @@ fn print_output(output: &mut Output) {
     }
 }
 mod docs {
-    #[macro_export]
     macro_rules! get_docs_snapshot {
         ($name:literal) => {
             include_str!(concat!(
@@ -148,6 +147,8 @@ mod docs {
             ))
         };
     }
+
+    pub(crate) use get_docs_snapshot;
 
     pub fn strip_front_matter(raw: &str) -> &str {
         const FRONT_MATTER_SEP: &str = "\n---\n";
