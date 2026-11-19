@@ -27,7 +27,7 @@ pub struct Incoming<'a> {
     #[serde(default, deserialize_with = "some")]
     pub id: Option<Id>,
     #[serde(default, borrow)]
-    pub method: Cow<'a, str>,
+    pub method: Option<Cow<'a, str>>,
     #[serde(default, borrow)]
     pub params: Option<&'a RawValue>,
 }

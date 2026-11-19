@@ -22,6 +22,7 @@ untyped_request!(
     UnknownRequest,
     LspRequestMethod::Custom("workspace/somethingNew")
 );
+untyped_request!(EmptyMethodRequest, LspRequestMethod::Custom(""));
 untyped_request!(
     UntypedDocumentSymbol,
     LspRequestMethod::TextDocumentDocumentSymbol
@@ -56,6 +57,18 @@ fn an_unknown_request_gets_method_not_found_and_an_unknown_notification_is_ignor
     client.notify::<CustomNotification>(serde_json::json!({ "a": 1 }))?;
     let error = client
         .request::<UnknownRequest>(serde_json::Value::Null)
+        .unwrap_err();
+    assert_eq!(response_code(&error), Some(METHOD_NOT_FOUND));
+    client.shutdown()?;
+    Ok(())
+}
+
+#[test]
+fn a_request_with_an_empty_method_gets_method_not_found_and_the_server_keeps_working() -> TestResult
+{
+    let mut client = client(capabilities::vscode::latest)?;
+    let error = client
+        .request::<EmptyMethodRequest>(serde_json::Value::Null)
         .unwrap_err();
     assert_eq!(response_code(&error), Some(METHOD_NOT_FOUND));
     client.shutdown()?;
