@@ -1,9 +1,10 @@
 //! check compatibility with prettier, a JavaScript formatter
 
+use itertools::interleave;
 use proptest::{prelude::*, prop_assert, prop_assert_eq, prop_assume, prop_oneof, proptest};
 
 use crate::{
-    common::{cli, exec_cmd, format_template},
+    common::{Output, cli, exec_cmd, format_template},
     test_json::*,
 };
 
@@ -39,6 +40,12 @@ fn prettier_cmd() -> std::process::Command {
     cmd
 }
 
+fn jjp_format(width: usize, input: &str) -> Output {
+    let mut jjp = cli();
+    jjp.args(["format", "--preferred-width", &width.to_string()]);
+    exec_cmd(&mut jjp, Some(input.as_bytes().to_vec()))
+}
+
 #[rstest_reuse::apply(format_template)]
 fn matches_prettier(#[case] (name, input): (&str, &str)) {
     let mut prettier = prettier_cmd();
@@ -50,9 +57,7 @@ fn matches_prettier(#[case] (name, input): (&str, &str)) {
         prettier_out.stderr
     );
 
-    let mut jjp = cli();
-    jjp.args(["format", "--preferred-width", &PRINT_WIDTH.to_string()]);
-    let jjp_out = exec_cmd(&mut jjp, Some(input.as_bytes().to_vec()));
+    let jjp_out = jjp_format(PRINT_WIDTH, input);
     assert!(
         jjp_out.status.success(),
         "jjp failed on {name}:\n{}",
@@ -144,33 +149,77 @@ fn arb_safe_string() -> impl Strategy<Value = String> {
     "[a-zA-Z0-9 ]{0,30}".prop_map(|s| format!("\"{s}\""))
 }
 
-/// Array of 0–4 safe short scalars. Kept small so total < 80 chars — both formatters inline.
-fn arb_safe_array() -> impl Strategy<Value = String> {
-    prop::collection::vec(arb_safe_scalar(), 0..=4_usize).prop_flat_map(|items| {
+fn join_delimited(
+    (open, close): (char, char),
+    items: &[String],
+    open_ws: &str,
+    close_ws: &str,
+    gaps: &[String],
+) -> String {
+    if items.is_empty() {
+        return format!("{open}{open_ws}{close}");
+    }
+    let body = interleave(
+        items.iter().cloned(),
+        gaps.iter()
+            .take(items.len() - 1)
+            .map(|gap| format!(",{gap}")),
+    )
+    .collect::<String>();
+    format!("{open}{open_ws}{body}{close_ws}{close}")
+}
+
+fn join_array(items: &[String], open_ws: &str, close_ws: &str, gaps: &[String]) -> String {
+    join_delimited(('[', ']'), items, open_ws, close_ws, gaps)
+}
+
+fn join_object(
+    entries: &[(String, String)],
+    open_ws: &str,
+    close_ws: &str,
+    gaps: &[String],
+    colon_ws: &[String],
+) -> String {
+    let members: Vec<String> = entries
+        .iter()
+        .zip(colon_ws)
+        .map(|((key, val), ws)| format!("\"{key}\":{ws}{val}"))
+        .collect();
+    join_delimited(('{', '}'), &members, open_ws, close_ws, gaps)
+}
+
+fn join_compact_object(entries: &[(String, String)]) -> String {
+    let members: Vec<String> = entries
+        .iter()
+        .map(|(key, val)| format!("\"{key}\":{val}"))
+        .collect();
+    format!("{{{}}}", members.join(","))
+}
+
+fn arb_ws_array<W: Strategy<Value = String>>(
+    items: impl Strategy<Value = Vec<String>>,
+    ws: fn() -> W,
+) -> impl Strategy<Value = String> {
+    items.prop_flat_map(move |items| {
         let gaps_len = items.len().saturating_sub(1).max(1);
         (
             Just(items),
-            arb_safe_ws(),
-            arb_safe_ws(),
-            prop::collection::vec(arb_safe_ws(), gaps_len..=gaps_len),
+            ws(),
+            ws(),
+            prop::collection::vec(ws(), gaps_len..=gaps_len),
         )
             .prop_map(|(items, open_ws, close_ws, gaps)| {
-                if items.is_empty() {
-                    return format!("[{open_ws}]");
-                }
-                let mut s = format!("[{open_ws}");
-                for (i, item) in items.iter().enumerate() {
-                    s.push_str(item);
-                    if i + 1 < items.len() {
-                        s.push(',');
-                        s.push_str(&gaps[i]);
-                    }
-                }
-                s.push_str(&close_ws);
-                s.push(']');
-                s
+                join_array(&items, &open_ws, &close_ws, &gaps)
             })
     })
+}
+
+/// Array of 0–4 safe short scalars. Kept small so total < 80 chars — both formatters inline.
+fn arb_safe_array() -> impl Strategy<Value = String> {
+    arb_ws_array(
+        prop::collection::vec(arb_safe_scalar(), 0..=4_usize),
+        arb_safe_ws,
+    )
 }
 
 /// Array of 0–4 items mixing scalars and short strings. Total < 80 chars — both formatters inline.
@@ -179,46 +228,13 @@ fn arb_safe_array_with_strings() -> impl Strategy<Value = String> {
         arb_safe_scalar(),
         "[a-zA-Z0-9]{0,10}".prop_map(|s| format!("\"{s}\"")),
     ];
-    prop::collection::vec(arb_item, 0..=4_usize).prop_flat_map(|items| {
-        let gaps_len = items.len().saturating_sub(1).max(1);
-        (
-            Just(items),
-            arb_safe_ws(),
-            arb_safe_ws(),
-            prop::collection::vec(arb_safe_ws(), gaps_len..=gaps_len),
-        )
-            .prop_map(|(items, open_ws, close_ws, gaps)| {
-                if items.is_empty() {
-                    return format!("[{open_ws}]");
-                }
-                let mut s = format!("[{open_ws}");
-                for (i, item) in items.iter().enumerate() {
-                    s.push_str(item);
-                    if i + 1 < items.len() {
-                        s.push(',');
-                        s.push_str(&gaps[i]);
-                    }
-                }
-                s.push_str(&close_ws);
-                s.push(']');
-                s
-            })
-    })
+    arb_ws_array(prop::collection::vec(arb_item, 0..=4_usize), arb_safe_ws)
 }
 
 /// Array of 1–5 small objects. Prettier expands each object; jjp collapses short ones.
 fn arb_array_of_objects() -> impl Strategy<Value = String> {
-    prop::collection::vec(arb_object(), 1..=5usize).prop_map(|items| {
-        let mut s = "[".to_string();
-        for (i, item) in items.iter().enumerate() {
-            if i > 0 {
-                s.push(',');
-            }
-            s.push_str(item);
-        }
-        s.push(']');
-        s
-    })
+    prop::collection::vec(arb_object(), 1..=5usize)
+        .prop_map(|items| format!("[{}]", items.join(",")))
 }
 
 /// Object of 0–5 entries with safe whitespace
@@ -239,25 +255,7 @@ fn arb_object() -> impl Strategy<Value = String> {
             prop::collection::vec(arb_safe_ws(), colon_ws_len..=colon_ws_len),
         )
             .prop_map(|(entries, open_ws, close_ws, gaps, colon_ws)| {
-                if entries.is_empty() {
-                    return format!("{{{open_ws}}}");
-                }
-                let mut s = format!("{{{open_ws}");
-                for (i, (key, val)) in entries.iter().enumerate() {
-                    s.push('"');
-                    s.push_str(key);
-                    s.push('"');
-                    s.push(':');
-                    s.push_str(&colon_ws[i]);
-                    s.push_str(val);
-                    if i + 1 < entries.len() {
-                        s.push(',');
-                        s.push_str(&gaps[i]);
-                    }
-                }
-                s.push_str(&close_ws);
-                s.push('}');
-                s
+                join_object(&entries, &open_ws, &close_ws, &gaps, &colon_ws)
             })
     })
 }
@@ -271,61 +269,19 @@ fn arb_ws_no_newlines() -> impl Strategy<Value = String> {
 
 /// Inner array with no-newline whitespace, used inside nested arrays
 fn arb_inner_array() -> impl Strategy<Value = String> {
-    prop::collection::vec(arb_safe_scalar(), 0..=4_usize).prop_flat_map(|items| {
-        let gaps_len = items.len().saturating_sub(1).max(1);
-        (
-            Just(items),
-            arb_ws_no_newlines(),
-            arb_ws_no_newlines(),
-            prop::collection::vec(arb_ws_no_newlines(), gaps_len..=gaps_len),
-        )
-            .prop_map(|(items, open_ws, close_ws, gaps)| {
-                if items.is_empty() {
-                    return format!("[{open_ws}]");
-                }
-                let mut s = format!("[{open_ws}");
-                for (i, item) in items.iter().enumerate() {
-                    s.push_str(item);
-                    if i + 1 < items.len() {
-                        s.push(',');
-                        s.push_str(&gaps[i]);
-                    }
-                }
-                s.push_str(&close_ws);
-                s.push(']');
-                s
-            })
-    })
+    arb_ws_array(
+        prop::collection::vec(arb_safe_scalar(), 0..=4_usize),
+        arb_ws_no_newlines,
+    )
 }
 
 /// Array of 0–3 inner arrays (no newlines in inner arrays).
 /// When the outer array must expand, each inner array stays inline in both formatters.
 fn arb_nested_array() -> impl Strategy<Value = String> {
-    prop::collection::vec(arb_inner_array(), 0..=3_usize).prop_flat_map(|items| {
-        let gaps_len = items.len().saturating_sub(1).max(1);
-        (
-            Just(items),
-            arb_safe_ws(),
-            arb_safe_ws(),
-            prop::collection::vec(arb_safe_ws(), gaps_len..=gaps_len),
-        )
-            .prop_map(|(items, open_ws, close_ws, gaps)| {
-                if items.is_empty() {
-                    return format!("[{open_ws}]");
-                }
-                let mut s = format!("[{open_ws}");
-                for (i, item) in items.iter().enumerate() {
-                    s.push_str(item);
-                    if i + 1 < items.len() {
-                        s.push(',');
-                        s.push_str(&gaps[i]);
-                    }
-                }
-                s.push_str(&close_ws);
-                s.push(']');
-                s
-            })
-    })
+    arb_ws_array(
+        prop::collection::vec(arb_inner_array(), 0..=3_usize),
+        arb_safe_ws,
+    )
 }
 
 /// Array of 20–40 short integers whose inline form exceeds print width, triggering
@@ -336,17 +292,7 @@ fn arb_fill_mode_array() -> impl Strategy<Value = String> {
             2 + items.iter().map(String::len).sum::<usize>() + items.len().saturating_sub(1) * 2
                 > PRINT_WIDTH
         })
-        .prop_map(|items| {
-            let mut s = "[".to_string();
-            for (i, item) in items.iter().enumerate() {
-                s.push_str(item);
-                if i + 1 < items.len() {
-                    s.push_str(", ");
-                }
-            }
-            s.push(']');
-            s
-        })
+        .prop_map(|items| format!("[{}]", items.join(", ")))
 }
 
 /// Any safe value: scalar or long ASCII string (1–150 chars)
@@ -359,23 +305,8 @@ fn arb_any_safe_value() -> impl Strategy<Value = String> {
 
 /// Large object: 1–150 entries, keys 1–150 chars, any safe value
 fn arb_large_object() -> impl Strategy<Value = String> {
-    prop::collection::vec(("[a-z]{1,150}", arb_any_safe_value()), 1..=150usize).prop_map(
-        |entries| {
-            let mut s = "{".to_string();
-            for (i, (key, val)) in entries.iter().enumerate() {
-                if i > 0 {
-                    s.push(',');
-                }
-                s.push('"');
-                s.push_str(key);
-                s.push('"');
-                s.push(':');
-                s.push_str(val);
-            }
-            s.push('}');
-            s
-        },
-    )
+    prop::collection::vec(("[a-z]{1,150}", arb_any_safe_value()), 1..=150usize)
+        .prop_map(|entries| join_compact_object(&entries))
 }
 
 /// Object with array values: 1–20 entries, each value is an array of 0–10 safe values
@@ -383,37 +314,35 @@ fn arb_object_with_array_values() -> impl Strategy<Value = String> {
     prop::collection::vec(
         (
             "[a-z]{1,50}",
-            prop::collection::vec(arb_any_safe_value(), 0..=10usize).prop_map(|items| {
-                let inner = items.join(",");
-                format!("[{inner}]")
-            }),
+            prop::collection::vec(arb_any_safe_value(), 0..=10usize)
+                .prop_map(|items| format!("[{}]", items.join(","))),
         ),
         1..=20usize,
     )
-    .prop_map(|entries| {
-        let mut s = "{".to_string();
-        for (i, (key, val)) in entries.iter().enumerate() {
-            if i > 0 {
-                s.push(',');
-            }
-            s.push('"');
-            s.push_str(key);
-            s.push('"');
-            s.push(':');
-            s.push_str(val);
-        }
-        s.push('}');
-        s
-    })
+    .prop_map(|entries| join_compact_object(&entries))
 }
 
 fn run_prop_comparison(input: &str) -> Result<(), proptest::test_runner::TestCaseError> {
+    run_prop_comparison_where(input, |_| true)
+}
+
+fn run_prop_expanded_object_comparison(
+    input: &str,
+) -> Result<(), proptest::test_runner::TestCaseError> {
+    run_prop_comparison_where(input, |prettier_stdout| {
+        prettier_stdout.matches('\n').count() > 2
+    })
+}
+
+fn run_prop_comparison_where(
+    input: &str,
+    keep: impl Fn(&str) -> bool,
+) -> Result<(), proptest::test_runner::TestCaseError> {
     let prettier_out = exec_cmd(&mut prettier_cmd(), Some(input.as_bytes().to_vec()));
     prop_assume!(prettier_out.status.success());
+    prop_assume!(keep(&prettier_out.stdout));
 
-    let mut jjp = cli();
-    jjp.args(["format", "--preferred-width", &PRINT_WIDTH.to_string()]);
-    let jjp_out = exec_cmd(&mut jjp, Some(input.as_bytes().to_vec()));
+    let jjp_out = jjp_format(PRINT_WIDTH, input);
     prop_assert!(jjp_out.status.success(), "jjp failed:\n{}", jjp_out.stderr);
     prop_assert_eq!(&prettier_out.stdout, &jjp_out.stdout, "input: {:?}", input);
     Ok(())
@@ -449,22 +378,6 @@ proptest! {
     fn prop_array_with_strings_matches_prettier(input in arb_safe_array_with_strings()) {
         run_prop_comparison(&input)?;
     }
-}
-
-fn run_prop_expanded_object_comparison(
-    input: &str,
-) -> Result<(), proptest::test_runner::TestCaseError> {
-    let prettier_out = exec_cmd(&mut prettier_cmd(), Some(input.as_bytes().to_vec()));
-    prop_assume!(prettier_out.status.success());
-    // Skip cases where prettier collapses (known difference)
-    prop_assume!(prettier_out.stdout.matches('\n').count() > 2);
-
-    let mut jjp = cli();
-    jjp.args(["format", "--preferred-width", &PRINT_WIDTH.to_string()]);
-    let jjp_out = exec_cmd(&mut jjp, Some(input.as_bytes().to_vec()));
-    prop_assert!(jjp_out.status.success(), "jjp failed:\n{}", jjp_out.stderr);
-    prop_assert_eq!(&prettier_out.stdout, &jjp_out.stdout, "input: {:?}", input);
-    Ok(())
 }
 
 proptest! {
@@ -518,20 +431,8 @@ proptest! {
                     prop::collection::vec(arb_ws_with_blanks(), gaps_len..=gaps_len),
                 )
                     .prop_map(|(entries, gaps)| {
-                        let mut s = "{".to_string();
-                        for (i, (key, val)) in entries.iter().enumerate() {
-                            s.push('"');
-                            s.push_str(key);
-                            s.push('"');
-                            s.push(':');
-                            s.push_str(val);
-                            if i + 1 < entries.len() {
-                                s.push(',');
-                                s.push_str(&gaps[i]);
-                            }
-                        }
-                        s.push('}');
-                        s
+                        let colon_ws = vec![String::new(); entries.len()];
+                        join_object(&entries, "", "", &gaps, &colon_ws)
                     })
             })
     ) {
@@ -547,19 +448,7 @@ proptest! {
                     Just(items),
                     prop::collection::vec(arb_ws_with_blanks(), gaps_len..=gaps_len),
                 )
-                    .prop_map(|(items, gaps)| {
-                        if items.is_empty() { return "[]".to_string(); }
-                        let mut s = "[".to_string();
-                        for (i, item) in items.iter().enumerate() {
-                            s.push_str(item);
-                            if i + 1 < items.len() {
-                                s.push(',');
-                                s.push_str(&gaps[i]);
-                            }
-                        }
-                        s.push(']');
-                        s
-                    })
+                    .prop_map(|(items, gaps)| join_array(&items, "", "", &gaps))
             })
     ) {
         run_prop_comparison(&input)?;
