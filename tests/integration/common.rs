@@ -12,6 +12,16 @@ macro_rules! fixture_tuple {
     };
 }
 
+pub fn conformance_data_available(path: &str, submodule: &str) -> bool {
+    if fs::exists(path).unwrap_or_default() {
+        return true;
+    }
+    let message = format!("{submodule} is missing, run git submodule update --init");
+    assert!(env::var_os("CI").is_none(), "{message}");
+    eprintln!("skipped: {message}");
+    false
+}
+
 pub fn cli() -> Command {
     let exe = env!("CARGO_BIN_EXE_jjp");
     assert!(
