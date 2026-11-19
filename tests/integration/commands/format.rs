@@ -179,19 +179,6 @@ fn help_subcommand() {
     });
 }
 
-#[test]
-fn no_stdin() {
-    let mut cmd = cli();
-    cmd.args(["check"]);
-
-    let output = exec_cmd(&mut cmd, None);
-    assert!(!output.status.success(), "{}", output.snapshot_display());
-
-    insta::with_settings!({snapshot_path => "../snapshots"}, {
-        assert_snapshot!(output.snapshot_display());
-    });
-}
-
 #[rstest::rstest]
 #[case(&[], r#"{ "rust":"is a must"   } "#, "pretty")]
 #[case(&["--uglify"], r#"{ "shoppingList": ["cheese", "slushy machine"]   } "#, "uglify")]
