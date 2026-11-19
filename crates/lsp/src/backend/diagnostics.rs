@@ -1,23 +1,23 @@
 use std::collections::HashMap;
 
+use gen_lsp_types::*;
 use jjpwrgem_parse::{
     ast::Document,
     diagnostics::{Context, Patch},
 };
-use tower_lsp_server::ls_types::*;
 
 use crate::{
-    backend::SOURCE,
+    backend::{Backend, SOURCE},
     range::{PositionEncoding, span_to_range},
 };
 
-pub fn diagnostics_from_error(
+fn diagnostics_from_error(
     uri: &Uri,
     text: &str,
-    e: &jjpwrgem_parse::Error,
+    error: &jjpwrgem_parse::Error,
     encoding: PositionEncoding,
 ) -> Vec<Diagnostic> {
-    let related: Vec<_> = Vec::<Context<'_>>::from(e)
+    let related: Vec<_> = Vec::<Context<'_>>::from(error)
         .into_iter()
         .map(|ctx| DiagnosticRelatedInformation {
             location: Location {
@@ -29,26 +29,26 @@ pub fn diagnostics_from_error(
         .collect();
 
     vec![Diagnostic {
-        range: span_to_range(text, *e.range(), encoding),
-        severity: Some(DiagnosticSeverity::ERROR),
+        range: span_to_range(text, *error.range(), encoding),
+        severity: Some(DiagnosticSeverity::Error),
         source: Some(SOURCE.into()),
-        message: e.message(),
+        message: error.message().into(),
         related_information: (!related.is_empty()).then_some(related),
         ..Default::default()
     }]
 }
 
-pub fn build_code_actions(
+fn build_code_actions(
     uri: &Uri,
     document: &jjpwrgem_parse::Result<Document<String>>,
     encoding: PositionEncoding,
-) -> CodeActionResponse {
-    let Err(err) = document else {
+) -> Vec<CodeActionResponse> {
+    let Err(error) = document else {
         return vec![];
     };
-    let text = err.source_text();
-    let diagnostics = Some(diagnostics_from_error(uri, text, err, encoding));
-    Vec::<Patch<'_>>::from(err)
+    let text = error.source_text();
+    let diagnostics = Some(diagnostics_from_error(uri, text, error, encoding));
+    Vec::<Patch<'_>>::from(error)
         .into_iter()
         .map(|patch| {
             let changes = HashMap::from([(
@@ -58,9 +58,9 @@ pub fn build_code_actions(
                     new_text: patch.replacement.into_owned(),
                 }],
             )]);
-            CodeActionOrCommand::CodeAction(CodeAction {
+            CodeActionResponse::CodeAction(CodeAction {
                 title: patch.message.into_owned(),
-                kind: Some(CodeActionKind::QUICKFIX),
+                kind: Some(CodeActionKind::QuickFix),
                 diagnostics: diagnostics.clone(),
                 edit: Some(WorkspaceEdit {
                     changes: Some(changes),
@@ -70,4 +70,85 @@ pub fn build_code_actions(
             })
         })
         .collect()
+}
+
+pub(super) fn diagnostics_for(
+    uri: &Uri,
+    document: &jjpwrgem_parse::Result<Document<String>>,
+    encoding: PositionEncoding,
+) -> Vec<Diagnostic> {
+    match document {
+        Ok(_) => vec![],
+        Err(error) => diagnostics_from_error(uri, error.source_text(), error, encoding),
+    }
+}
+
+impl Backend {
+    pub(super) fn diagnostic(&self, params: &DocumentDiagnosticParams) -> DocumentDiagnosticReport {
+        let uri = &params.text_document.uri;
+        let items = self.documents.get(uri).map_or_else(Vec::new, |document| {
+            diagnostics_for(uri, document, self.position_encoding)
+        });
+        DocumentDiagnosticReport::RelatedFullDocumentDiagnosticReport(
+            RelatedFullDocumentDiagnosticReport {
+                related_documents: None,
+                full_document_diagnostic_report: FullDocumentDiagnosticReport {
+                    result_id: None,
+                    items,
+                },
+            },
+        )
+    }
+
+    pub(super) fn code_action(&self, params: &CodeActionParams) -> Option<Vec<CodeActionResponse>> {
+        let uri = &params.text_document.uri;
+        let document = self.documents.get(uri)?;
+        Some(build_code_actions(uri, document, self.position_encoding))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn dummy_uri() -> Uri {
+        Uri::parse("file:///test.json".to_owned()).expect("valid uri")
+    }
+
+    fn parse(text: &str) -> jjpwrgem_parse::Result<Document<String>> {
+        Document::parse(text.to_owned())
+    }
+
+    #[test]
+    fn valid_json_produces_no_diagnostics() {
+        let diagnostics =
+            diagnostics_for(&dummy_uri(), &parse(r#"{"a": 1}"#), PositionEncoding::Utf16);
+        assert_eq!(diagnostics, Vec::new());
+    }
+
+    #[test]
+    fn invalid_json_produces_error_diagnostic() {
+        let diagnostics =
+            diagnostics_for(&dummy_uri(), &parse(r#"{"a": }"#), PositionEncoding::Utf16);
+        assert_eq!(diagnostics.len(), 1);
+        assert_eq!(diagnostics[0].severity, Some(DiagnosticSeverity::Error));
+        assert_eq!(diagnostics[0].source.as_deref(), Some(SOURCE));
+    }
+
+    #[test]
+    fn trailing_comma_produces_code_action() {
+        let actions = build_code_actions(
+            &dummy_uri(),
+            &parse(r#"{"a": 1,}"#),
+            PositionEncoding::Utf16,
+        );
+        assert_ne!(actions, Vec::new());
+    }
+
+    #[test]
+    fn valid_json_produces_no_code_actions() {
+        let actions =
+            build_code_actions(&dummy_uri(), &parse(r#"{"a": 1}"#), PositionEncoding::Utf16);
+        assert_eq!(actions, Vec::new());
+    }
 }
