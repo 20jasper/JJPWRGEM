@@ -6,6 +6,7 @@
     ".config/mise/locks/",
     "crates/bytes2chars/README.md",
     "tests/conformance",
+    "tests/integration/fixtures",
     "xtask/bench/data",
     "benches/data",
     "benches/docker/output/",
