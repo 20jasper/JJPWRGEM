@@ -56,49 +56,51 @@ impl Backend {
         params: Option<&RawValue>,
     ) -> io::Result<()> {
         let method = LspRequestMethod::from(method);
-        match (self.lifecycle, method) {
-            (Lifecycle::Uninitialized, LspRequestMethod::Initialize) => {
-                match parse_params::<InitializeParams>(params) {
+        match self.lifecycle {
+            Lifecycle::Uninitialized => match method {
+                LspRequestMethod::Initialize => match parse_params::<InitializeParams>(params) {
                     Ok(params) => {
                         let result = self.initialize(params);
                         self.out.respond::<InitializeRequest>(id, result)
                     }
                     Err(error) => self.invalid_params(id, &error),
-                }
-            }
-            (Lifecycle::Uninitialized, _) => self.out.fail(
-                id,
-                ErrorCodes::ServerNotInitialized,
-                "server not initialized",
-            ),
-            (Lifecycle::ShutDown, _) => {
+                },
+                _ => self.out.fail(
+                    id,
+                    ErrorCodes::ServerNotInitialized,
+                    "server not initialized",
+                ),
+            },
+            Lifecycle::ShutDown => {
                 self.out
                     .fail(id, ErrorCodes::InvalidRequest, "server is shut down")
             }
-            (Lifecycle::Running, LspRequestMethod::Shutdown) => {
-                self.lifecycle = Lifecycle::ShutDown;
-                self.out.respond::<ShutdownRequest>(id, ())
-            }
-            (Lifecycle::Running, LspRequestMethod::TextDocumentDiagnostic) => {
-                self.respond::<DocumentDiagnosticRequest>(id, params, Self::diagnostic)
-            }
-            (Lifecycle::Running, LspRequestMethod::TextDocumentFormatting) => {
-                self.respond::<DocumentFormattingRequest>(id, params, Self::formatting)
-            }
-            (Lifecycle::Running, LspRequestMethod::TextDocumentCodeAction) => {
-                self.respond::<CodeActionRequest>(id, params, Self::code_action)
-            }
-            (Lifecycle::Running, LspRequestMethod::TextDocumentDocumentSymbol) => {
-                self.respond::<DocumentSymbolRequest>(id, params, Self::document_symbol)
-            }
-            (Lifecycle::Running, LspRequestMethod::TextDocumentFoldingRange) => {
-                self.respond::<FoldingRangeRequest>(id, params, Self::folding_range)
-            }
-            (Lifecycle::Running, method) => self.out.fail(
-                id,
-                ErrorCodes::MethodNotFound,
-                format!("method not found: {method}"),
-            ),
+            Lifecycle::Running => match method {
+                LspRequestMethod::Shutdown => {
+                    self.lifecycle = Lifecycle::ShutDown;
+                    self.out.respond::<ShutdownRequest>(id, ())
+                }
+                LspRequestMethod::TextDocumentDiagnostic => {
+                    self.respond::<DocumentDiagnosticRequest>(id, params, Self::diagnostic)
+                }
+                LspRequestMethod::TextDocumentFormatting => {
+                    self.respond::<DocumentFormattingRequest>(id, params, Self::formatting)
+                }
+                LspRequestMethod::TextDocumentCodeAction => {
+                    self.respond::<CodeActionRequest>(id, params, Self::code_action)
+                }
+                LspRequestMethod::TextDocumentDocumentSymbol => {
+                    self.respond::<DocumentSymbolRequest>(id, params, Self::document_symbol)
+                }
+                LspRequestMethod::TextDocumentFoldingRange => {
+                    self.respond::<FoldingRangeRequest>(id, params, Self::folding_range)
+                }
+                method => self.out.fail(
+                    id,
+                    ErrorCodes::MethodNotFound,
+                    format!("method not found: {method}"),
+                ),
+            },
         }
     }
 
@@ -113,17 +115,20 @@ impl Backend {
     }
 
     fn dispatch_notification(&mut self, method: &str, params: Option<&RawValue>) {
-        match (self.lifecycle, LspNotificationMethod::from(method)) {
-            (Lifecycle::Running, LspNotificationMethod::TextDocumentDidOpen) => {
+        if self.lifecycle != Lifecycle::Running {
+            return;
+        }
+        match LspNotificationMethod::from(method) {
+            LspNotificationMethod::TextDocumentDidOpen => {
                 self.notify(params, Self::did_open);
             }
-            (Lifecycle::Running, LspNotificationMethod::TextDocumentDidChange) => {
+            LspNotificationMethod::TextDocumentDidChange => {
                 self.notify(params, Self::did_change);
             }
-            (Lifecycle::Running, LspNotificationMethod::TextDocumentDidClose) => {
+            LspNotificationMethod::TextDocumentDidClose => {
                 self.notify(params, Self::did_close);
             }
-            (Lifecycle::Running, LspNotificationMethod::WorkspaceDidChangeConfiguration) => {
+            LspNotificationMethod::WorkspaceDidChangeConfiguration => {
                 self.notify(params, Self::did_change_configuration);
             }
             _ => {}

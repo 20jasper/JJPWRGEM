@@ -118,72 +118,46 @@ mod tests {
         }
     }
 
-    fn range(start: (u32, u32), end: (u32, u32)) -> Range {
-        Range {
-            start: Position {
-                line: start.0,
-                character: start.1,
-            },
-            end: Position {
-                line: end.0,
-                character: end.1,
-            },
-        }
+    fn apply(text: &str, change: TextDocumentContentChangeEvent) -> (bool, String) {
+        let mut text = text.to_owned();
+        let positions = Positions::new(&text, PositionEncoding::Utf16);
+        let applied = apply_change(&mut text, change, &positions);
+        (applied, text)
     }
 
     #[test]
     fn applies_full_text_change() {
-        let mut text = r#"{"a":1}"#.to_owned();
-        let positions = Positions::new(&text, PositionEncoding::Utf16);
-        apply_change(&mut text, change(None, "true"), &positions);
+        let (_, text) = apply(r#"{"a":1}"#, change(None, "true"));
         assert_eq!(text, "true");
     }
 
     #[test]
     fn applies_incremental_text_change() {
-        let mut text = r#"{"a":1}"#.to_owned();
-        let positions = Positions::new(&text, PositionEncoding::Utf16);
-        apply_change(
-            &mut text,
-            change(Some(range((0, 5), (0, 6))), "2"),
-            &positions,
-        );
+        let range = Range::new(Position::new(0, 5), Position::new(0, 6));
+        let (_, text) = apply(r#"{"a":1}"#, change(Some(range), "2"));
         assert_eq!(text, r#"{"a":2}"#);
     }
 
     #[test]
     fn applies_incremental_change_with_utf16_surrogate_pair() {
-        let mut text = "\"😀\"".to_owned();
-        let positions = Positions::new(&text, PositionEncoding::Utf16);
-        apply_change(
-            &mut text,
-            change(Some(range((0, 1), (0, 3))), "x"),
-            &positions,
-        );
+        let range = Range::new(Position::new(0, 1), Position::new(0, 3));
+        let (_, text) = apply("\"😀\"", change(Some(range), "x"));
         assert_eq!(text, "\"x\"");
     }
 
     #[test]
     fn applies_insertion_at_end() {
-        let mut text = r#"{"a":1}"#.to_owned();
-        let positions = Positions::new(&text, PositionEncoding::Utf16);
-        assert!(apply_change(
-            &mut text,
-            change(Some(range((0, 7), (0, 7))), ","),
-            &positions,
-        ));
+        let range = Range::new(Position::new(0, 7), Position::new(0, 7));
+        let (applied, text) = apply(r#"{"a":1}"#, change(Some(range), ","));
+        assert!(applied);
         assert_eq!(text, r#"{"a":1},"#);
     }
 
     #[test]
     fn ignores_reversed_range() {
-        let mut text = r#"{"a":1}"#.to_owned();
-        let positions = Positions::new(&text, PositionEncoding::Utf16);
-        assert!(!apply_change(
-            &mut text,
-            change(Some(range((0, 5), (0, 2))), "x"),
-            &positions,
-        ));
+        let range = Range::new(Position::new(0, 5), Position::new(0, 2));
+        let (applied, text) = apply(r#"{"a":1}"#, change(Some(range), "x"));
+        assert!(!applied);
         assert_eq!(text, r#"{"a":1}"#);
     }
 }
