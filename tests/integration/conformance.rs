@@ -2,7 +2,7 @@ use std::{ffi::OsStr, fs};
 
 use insta::assert_snapshot;
 
-use crate::common::{cli, conformance_data_available, exec_cmd};
+use crate::common::{cli, exec_cmd};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum JsonResult {
@@ -82,9 +82,6 @@ mod common {}
 #[case(&["format"])]
 #[case(&["format", "--uglify"])]
 fn feature(#[case] args: &[&str]) {
-    if !conformance_data_available(CONFORMANCE_PATH, "tests/conformance/JSONTestSuite") {
-        return;
-    }
     let (mut cases, total, rest) = get_tests();
     assert_eq!(rest, 315);
     assert_eq!(total, 318);

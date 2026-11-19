@@ -53,9 +53,8 @@ run = '''cargo llvm-cov --exclude xtask {{vars.test_flags}} --json --summary-onl
 "aqua:mitsuhiko/insta" = "1.49"
 
 [tasks.test-snapshot]
-description = "Run insta snapshot tests (needs submodules, see mise run submodules); deletes unreferenced snapshots locally and rejects in CI"
+description = "Run insta snapshot tests; deletes unreferenced snapshots locally and rejects in CI"
 run = [
-  'test -d tests/conformance/JSONTestSuite/test_parsing && test -f tests/conformance/utf8tests/utf8tests.txt || { echo "submodules are missing, run mise run submodules" >&2; exit 1; }',
   "cargo insta test --unreferenced auto --all-features --workspace",
   "cargo insta review",
 ]

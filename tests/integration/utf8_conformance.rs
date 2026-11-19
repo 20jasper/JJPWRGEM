@@ -2,8 +2,6 @@ use std::sync::LazyLock;
 
 use bytes2chars::{ErrorKind, Utf8CharIndices};
 
-use crate::common::conformance_data_available;
-
 const UTF8TESTS_PATH: &str = "./tests/conformance/utf8tests/utf8tests.txt";
 
 enum CaseExpectation {
@@ -117,9 +115,6 @@ fn run_conformance_cases(cases: &[&Utf8Case]) {
 // utf8[verify encoding.four-byte]
 #[test]
 fn conformance_valid() {
-    if !conformance_data_available(UTF8TESTS_PATH, "tests/conformance/utf8tests") {
-        return;
-    }
     let cases: Vec<_> = CASES
         .iter()
         .filter(|c| matches!(c.expectation, CaseExpectation::Valid))
@@ -136,9 +131,6 @@ fn conformance_valid() {
 // utf8[verify validate.unfinished]
 #[test]
 fn conformance_invalid() {
-    if !conformance_data_available(UTF8TESTS_PATH, "tests/conformance/utf8tests") {
-        return;
-    }
     let cases: Vec<_> = CASES
         .iter()
         .filter(|c| matches!(c.expectation, CaseExpectation::Invalid))
