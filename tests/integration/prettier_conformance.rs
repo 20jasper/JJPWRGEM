@@ -1,5 +1,6 @@
 //! check compatibility with prettier, a JavaScript formatter
 
+use itertools::interleave;
 use proptest::{prelude::*, prop_assert, prop_assert_eq, prop_assume, prop_oneof, proptest};
 
 use crate::{
@@ -157,17 +158,14 @@ fn join_delimited(
     if items.is_empty() {
         return format!("{open}{open_ws}{close}");
     }
-    let mut s = format!("{open}{open_ws}");
-    for (i, item) in items.iter().enumerate() {
-        s.push_str(item);
-        if i + 1 < items.len() {
-            s.push(',');
-            s.push_str(&gaps[i]);
-        }
-    }
-    s.push_str(close_ws);
-    s.push(close);
-    s
+    let body = interleave(
+        items.iter().cloned(),
+        gaps.iter()
+            .take(items.len() - 1)
+            .map(|gap| format!(",{gap}")),
+    )
+    .collect::<String>();
+    format!("{open}{open_ws}{body}{close_ws}{close}")
 }
 
 fn join_array(items: &[String], open_ws: &str, close_ws: &str, gaps: &[String]) -> String {
