@@ -93,7 +93,7 @@ const getPackage = () => {
 const install = (suppressLogs) => {
   if (!artifactDownloadUrl || artifactDownloadUrl.length === 0) {
     console.warn("in demo mode, not installing binaries");
-    return;
+    return Promise.resolve();
   }
   const pkg = getPackage();
 

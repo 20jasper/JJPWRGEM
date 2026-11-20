@@ -1,4 +1,4 @@
 #!/usr/bin/env node
 
 const { install } = require("./binary");
-install(false);
+void install(false);
