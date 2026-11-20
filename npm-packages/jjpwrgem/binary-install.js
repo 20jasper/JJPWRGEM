@@ -148,12 +148,20 @@ function download(urlString, maxRedirects) {
   });
 }
 
+const isUrl = (value) => {
+  try {
+    return Boolean(new URL(value));
+  } catch {
+    return false;
+  }
+};
+
 class Package {
   constructor(platform, name, url, filename, zipExt, binaries) {
     let errors = [];
     if (typeof url !== "string") {
       errors.push("url must be a string");
-    } else if (!URL.canParse(url)) {
+    } else if (!isUrl(url)) {
       errors.push("url must be a valid URL");
     }
     if (name && typeof name !== "string") {
