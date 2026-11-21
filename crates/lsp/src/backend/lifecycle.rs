@@ -1,6 +1,3 @@
-#[cfg(not(target_arch = "wasm32"))]
-use std::process::ExitCode;
-
 use gen_lsp_types::*;
 
 use crate::{
@@ -17,13 +14,9 @@ fn client_supports_pull_diagnostics(capabilities: &ClientCapabilities) -> bool {
 }
 
 impl<S: Sink> Backend<S> {
-    #[cfg(not(target_arch = "wasm32"))]
-    pub fn exit_code(&self) -> ExitCode {
-        if self.lifecycle == Lifecycle::ShutDown {
-            ExitCode::SUCCESS
-        } else {
-            ExitCode::FAILURE
-        }
+    pub fn exit_code(&self) -> Option<u8> {
+        self.exited
+            .then_some(u8::from(self.lifecycle != Lifecycle::ShutDown))
     }
 
     pub(super) fn initialize(&mut self, params: InitializeParams) -> InitializeResult {
