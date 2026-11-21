@@ -1,7 +1,7 @@
 use core::range::Range;
 
 use crate::{
-    Result,
+    Result, SyntaxOptions,
     ast::Document,
     format::Emitter,
     tokens::TokenStream,
@@ -18,7 +18,13 @@ pub fn uglify_str_into(buf: &mut String, json: &str) -> Result<()> {
     let mut visitor = UglifyEmitVisitor {
         buf: std::mem::take(buf),
     };
-    parse_tokens(&mut TokenStream::new(json), json, true, &mut visitor)?;
+    parse_tokens(
+        &mut TokenStream::new(json),
+        SyntaxOptions::JSON,
+        json,
+        true,
+        &mut visitor,
+    )?;
     *buf = visitor.buf;
     Ok(())
 }
@@ -142,8 +148,8 @@ mod tests {
         };
 
         let mut visitor = UglifyEmitVisitor::default();
-        let mut tokens = TokenStream::new(json).with_options(options);
-        parse_tokens(&mut tokens, json, true, &mut visitor).unwrap();
+        let mut tokens = TokenStream::new(json);
+        parse_tokens(&mut tokens, options, json, true, &mut visitor).unwrap();
         assert_eq!(visitor.buf, uglified);
 
         let doc = Document::parse(json, options).unwrap();

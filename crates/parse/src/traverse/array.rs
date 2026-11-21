@@ -2,8 +2,8 @@ use core::range::Range;
 
 use crate::{
     error::{Error, ErrorKind, Result},
-    tokens::{Token, TokenStream, TokenWithContext, byte_range},
-    traverse::{Visitor, parse_tokens_at_depth, punctuation_at},
+    tokens::{Token, TokenWithContext, byte_range},
+    traverse::{Visitor, parse_tokens_at_depth, punctuation_at, syntax::SyntaxStream},
 };
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
@@ -57,7 +57,7 @@ fn array_error(
 }
 
 pub fn parse_array<'a>(
-    tokens: &mut TokenStream<'a>,
+    tokens: &mut SyntaxStream<'_, 'a>,
     text: &'a str,
     depth: usize,
     visitor: &mut impl Visitor<'a>,

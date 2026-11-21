@@ -1,7 +1,7 @@
 use core::{iter::Peekable, range::Range};
 
 use crate::{
-    Error, ErrorKind, Result, SyntaxOptions,
+    Error, ErrorKind, Result,
     tokens::{
         ByteWithContext, BytesWithContext, FALSE, NULL, TRUE, Token, TokenWithContext,
         current_byte_pos,
@@ -43,7 +43,6 @@ fn skip_whitespace(bytes: &[u8]) -> usize {
 struct TokenStreamInner<'a> {
     input: &'a str,
     pos: usize,
-    options: SyntaxOptions,
 }
 
 impl<'a> TokenStreamInner<'a> {
@@ -51,7 +50,6 @@ impl<'a> TokenStreamInner<'a> {
         Self {
             input: &full_source[..range.end],
             pos: range.start,
-            options: SyntaxOptions::JSON,
         }
     }
 
@@ -179,16 +177,6 @@ impl<'a> TokenStream<'a> {
             inner: TokenStreamInner::new_at_range(full_source, range),
             cached: None,
         }
-    }
-
-    pub(crate) fn with_options(mut self, options: SyntaxOptions) -> Self {
-        self.inner.options = options;
-        self
-    }
-
-    #[inline]
-    pub(crate) fn options(&self) -> SyntaxOptions {
-        self.inner.options
     }
 
     pub fn new(s: &'a str) -> Self {

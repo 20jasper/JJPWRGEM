@@ -1,12 +1,13 @@
 mod array;
 mod object;
+mod syntax;
 
 use core::range::Range;
 
 use crate::{
-    Error, ErrorKind, Result,
+    Error, ErrorKind, Result, SyntaxOptions,
     tokens::{ErrorToken, Token, TokenStream, TokenWithContext, byte_range, lexical::JsonByte},
-    traverse::{array::parse_array, object::parse_object},
+    traverse::{array::parse_array, object::parse_object, syntax::SyntaxStream},
 };
 
 pub trait Visitor<'a> {
@@ -28,15 +29,17 @@ const MAX_DEPTH: usize = 128;
 
 pub fn parse_tokens<'a>(
     tokens: &mut TokenStream<'a>,
+    options: SyntaxOptions,
     text: &'a str,
     fail_on_multiple_value: bool,
     visitor: &mut impl Visitor<'a>,
 ) -> Result<Range<usize>> {
-    parse_tokens_at_depth(tokens, text, fail_on_multiple_value, visitor, 0)
+    let mut tokens = SyntaxStream::new(tokens, options);
+    parse_tokens_at_depth(&mut tokens, text, fail_on_multiple_value, visitor, 0)
 }
 
 fn parse_tokens_at_depth<'a>(
-    tokens: &mut TokenStream<'a>,
+    tokens: &mut SyntaxStream<'_, 'a>,
     text: &'a str,
     fail_on_multiple_value: bool,
     visitor: &mut impl Visitor<'a>,
@@ -289,7 +292,14 @@ mod tests {
         ];
 
         let mut from_tokens: RecordingVisitor = RecordingVisitor::default();
-        parse_tokens(&mut TokenStream::new(json), json, true, &mut from_tokens).unwrap();
+        parse_tokens(
+            &mut TokenStream::new(json),
+            SyntaxOptions::JSON,
+            json,
+            true,
+            &mut from_tokens,
+        )
+        .unwrap();
 
         let doc = Document::parse(json, SyntaxOptions::JSON).unwrap();
         let mut from_ast = RecordingVisitor::default();

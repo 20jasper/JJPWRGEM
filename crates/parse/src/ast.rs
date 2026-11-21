@@ -171,7 +171,8 @@ pub(crate) fn parse_at(
 ) -> Result<Document<&str>> {
     let mut ast = AstVisitor::new();
     parse_tokens(
-        &mut TokenStream::new_at_range(full_source, range).with_options(options),
+        &mut TokenStream::new_at_range(full_source, range),
+        options,
         full_source,
         true,
         &mut ast,
