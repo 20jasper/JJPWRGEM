@@ -1,5 +1,5 @@
 use crate::{
-    Result,
+    Result, SyntaxOptions,
     ast::{Value, parse_at},
     format::{LineEnding, uglify_str_into},
 };
@@ -25,7 +25,7 @@ impl<S: AsRef<str>> JsonlinesDocument<S> {
             let r = offset..offset + line.len();
 
             // jsonlines[impl each-line-is-a-valid-json-value]
-            values.push(parse_at(text, r)?.root);
+            values.push(parse_at(text, r, SyntaxOptions::default())?.root);
 
             offset = r.end + 1;
         }

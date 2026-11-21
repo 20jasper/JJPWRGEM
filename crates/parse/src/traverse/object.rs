@@ -29,10 +29,13 @@ fn open_ctx(open_start: usize) -> TokenWithContext {
 }
 
 impl ObjectState {
-    fn process(self, next: Option<Token>) -> Option<Self> {
+    fn process(self, next: Option<Token>, trailing_commas: bool) -> Option<Self> {
         let next = next?;
         let state = match self {
             ObjectState::KeyOrEnd | ObjectState::CommaOrEnd if next == Token::ClosedCurlyBrace => {
+                ObjectState::End
+            }
+            ObjectState::Key if trailing_commas && next == Token::ClosedCurlyBrace => {
                 ObjectState::End
             }
             ObjectState::KeyOrEnd | ObjectState::Key if next == Token::String => ObjectState::Colon,
@@ -97,6 +100,7 @@ pub fn parse_object<'a>(
         key: open_start..open_start,
         last_pair: open_start..open_start,
     };
+    let trailing_commas = tokens.options().trailing_commas;
     let mut state = ObjectState::KeyOrEnd;
     while state != ObjectState::End {
         // a value is parsed from its first token, everything else is taken right away
@@ -105,17 +109,19 @@ pub fn parse_object<'a>(
         } else {
             tokens.next_token()?
         };
-        let Some(next) = state.process(found.map(|ctx| ctx.token)) else {
+        let Some(next) = state.process(found.map(|ctx| ctx.token), trailing_commas) else {
             return Err(object_error(state, text, &offsets, found));
         };
         let ctx = found.expect("the end of input is never accepted");
         match next {
             ObjectState::End => visitor.on_object_close(ctx.range),
             ObjectState::Key => {
-                visitor.on_item_delim();
                 offsets.delim = ctx.range.start;
             }
             ObjectState::Colon => {
+                if state == ObjectState::Key {
+                    visitor.on_item_delim();
+                }
                 let body = ctx.content_range();
                 visitor.on_object_key(body, &text[body]);
                 offsets.key = ctx.range;

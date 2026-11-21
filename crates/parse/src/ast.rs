@@ -2,7 +2,7 @@ use core::range::Range;
 
 use visitor::AstVisitor;
 
-use crate::{Result, tokens::TokenStream, traverse::parse_tokens};
+use crate::{Result, SyntaxOptions, tokens::TokenStream, traverse::parse_tokens};
 
 pub(crate) const QUOTE_LEN: usize = 1;
 
@@ -120,9 +120,13 @@ pub struct Document<S> {
 
 impl<S: AsRef<str>> Document<S> {
     pub fn parse(source: S) -> Result<Self> {
+        Self::parse_with(source, SyntaxOptions::default())
+    }
+
+    pub fn parse_with(source: S, options: SyntaxOptions) -> Result<Self> {
         let root = {
             let text = source.as_ref();
-            parse_at(text, 0..text.len())?.root
+            parse_at(text, 0..text.len(), options)?.root
         };
         Ok(Self { source, root })
     }
@@ -164,10 +168,14 @@ impl<S: AsRef<str>> Document<S> {
     }
 }
 
-pub(crate) fn parse_at(full_source: &str, range: Range<usize>) -> Result<Document<&str>> {
+pub(crate) fn parse_at(
+    full_source: &str,
+    range: Range<usize>,
+    options: SyntaxOptions,
+) -> Result<Document<&str>> {
     let mut ast = AstVisitor::new();
     parse_tokens(
-        &mut TokenStream::new_at_range(full_source, range),
+        &mut TokenStream::new_at_range(full_source, range).with_options(options),
         full_source,
         true,
         &mut ast,
@@ -361,6 +369,27 @@ mod visitor {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    // jsonc[verify trailing-commas]
+    #[rstest::rstest]
+    #[case("[1, 2,]", true)]
+    #[case("[1,]", true)]
+    #[case("[[1,],]", true)]
+    #[case(r#"{"a": 1,}"#, true)]
+    #[case(r#"{"a": 1, "b": [2,],}"#, true)]
+    #[case("[,]", false)]
+    #[case("[1,,]", false)]
+    #[case("[1,,2]", false)]
+    #[case("{,}", false)]
+    #[case(r#"{"a": 1,,}"#, false)]
+    #[case(r#"{"a",}"#, false)]
+    fn trailing_commas_are_accepted_only_when_allowed(#[case] json: &str, #[case] allowed: bool) {
+        let options = SyntaxOptions {
+            trailing_commas: true,
+        };
+        assert_eq!(Document::parse_with(json, options).is_ok(), allowed);
+        assert!(Document::parse(json).is_err());
+    }
 
     fn range_of(source: &str, needle: &str) -> Range<usize> {
         let start = source.find(needle).expect("needle in source");

@@ -1,7 +1,7 @@
 use core::range::Range;
 
 use crate::{
-    Result,
+    Result, SyntaxOptions,
     tokens::TokenStream,
     traverse::{Visitor, parse_tokens},
 };
@@ -37,7 +37,16 @@ impl<'a> Visitor<'a> for NoopVisitor {
 }
 
 pub fn validate_str(json: &str) -> Result<()> {
+    validate_str_with(json, SyntaxOptions::default())
+}
+
+pub fn validate_str_with(json: &str, options: SyntaxOptions) -> Result<()> {
     let mut visitor = NoopVisitor;
-    parse_tokens(&mut TokenStream::new(json), json, true, &mut visitor)?;
+    parse_tokens(
+        &mut TokenStream::new(json).with_options(options),
+        json,
+        true,
+        &mut visitor,
+    )?;
     Ok(())
 }

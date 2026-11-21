@@ -16,10 +16,14 @@ enum ArrayState {
 }
 
 impl ArrayState {
-    fn process(self, next: Option<Token>) -> Option<Self> {
+    fn process(self, next: Option<Token>, trailing_commas: bool) -> Option<Self> {
         let next = next?;
         let state = match self {
             ArrayState::ValueOrEnd if next == Token::ClosedSquareBracket => ArrayState::End,
+            // jsonc[impl trailing-commas]
+            ArrayState::Value if trailing_commas && next == Token::ClosedSquareBracket => {
+                ArrayState::End
+            }
             ArrayState::ValueOrEnd | ArrayState::Value if next.is_start_of_value() => {
                 ArrayState::CommaOrEnd
             }
@@ -83,10 +87,11 @@ pub fn parse_array<'a>(
     let open_start = open_range.start;
 
     let mut delim = open_start;
+    let trailing_commas = tokens.options().trailing_commas;
     let mut state = ArrayState::ValueOrEnd;
     while state != ArrayState::End {
         let peeked = tokens.peek_token()?.copied();
-        let Some(next) = state.process(peeked.map(|ctx| ctx.token)) else {
+        let Some(next) = state.process(peeked.map(|ctx| ctx.token), trailing_commas) else {
             return Err(array_error(state, text, open_start, delim, peeked));
         };
         let ctx = peeked.expect("the end of input is never accepted");
@@ -97,10 +102,12 @@ pub fn parse_array<'a>(
             }
             ArrayState::Value => {
                 tokens.next_token()?;
-                visitor.on_item_delim();
                 delim = ctx.range.start;
             }
             ArrayState::CommaOrEnd => {
+                if state == ArrayState::Value {
+                    visitor.on_item_delim();
+                }
                 parse_tokens_at_depth(tokens, text, false, visitor, depth + 1)?;
             }
             ArrayState::ValueOrEnd => unreachable!("only the starting state"),
