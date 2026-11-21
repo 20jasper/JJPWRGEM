@@ -65,7 +65,7 @@ jobs:
         env:
           HK: "0"
 
-  # whether the cli's tagged version still lacks its GitHub release or npm package
+  # whether the cli and lsp tags still lack a published GitHub release, and the cli its npm package
   plan:
     needs: release
     if: always() && contains(fromJSON('["success", "skipped"]'), needs.release.result)
@@ -89,18 +89,21 @@ jobs:
           metadata=$(cargo metadata --no-deps --format-version 1)
           version=$(jq -r '.packages[] | select(.name == "jjpwrgem") | .version' <<<"$metadata")
           tag="jjpwrgem-v$version"
-          cli=false
-          npm=false
-          if git ls-remote --exit-code --tags origin "refs/tags/$tag" >/dev/null; then
-            [ "$(gh release view "$tag" --json isDraft -q .isDraft 2>/dev/null || echo missing)" = false ] || cli=true
-            [ -n "$(npm view "jjpwrgem@$version" version 2>/dev/null)" ] || npm=true
-          fi
           lsp_version=$(jq -r '.packages[] | select(.name == "jjpwrgem-lsp") | .version' <<<"$metadata")
           lsp_tag="jjpwrgem-lsp-v$lsp_version"
+          # tagged on this commit, since its binaries build from it, and not published
+          unpublished() {
+            sha=$(git ls-remote --tags origin "refs/tags/$1" "refs/tags/$1^{}" | awk 'END { print $1 }')
+            [ "$sha" = "$GITHUB_SHA" ] &&
+              [ "$(gh release view "$1" --json isDraft -q .isDraft 2>/dev/null || echo missing)" != false ]
+          }
+          cli=false
           lsp=false
-          lsp_sha=$(git ls-remote --tags origin "refs/tags/$lsp_tag" "refs/tags/$lsp_tag^{}" | awk 'END { print $1 }')
-          if [ "$lsp_sha" = "$GITHUB_SHA" ]; then
-            gh release view "$lsp_tag" >/dev/null 2>&1 || lsp=true
+          npm=false
+          unpublished "$tag" && cli=true
+          unpublished "$lsp_tag" && lsp=true
+          if git ls-remote --exit-code --tags origin "refs/tags/$tag" >/dev/null; then
+            [ -n "$(npm view "jjpwrgem@$version" version 2>/dev/null)" ] || npm=true
           fi
           { echo "tag=$tag"; echo "cli=$cli"; echo "npm=$npm"; echo "lsp_tag=$lsp_tag"; echo "lsp=$lsp"; } >>"$GITHUB_OUTPUT"
         env:
@@ -152,7 +155,7 @@ jobs:
           subject-path: out/jjpwrgem-*
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: release-${{ matrix.target }}
+          name: release-jjpwrgem-cli-${{ matrix.target }}
           path: out/*
           if-no-files-found: error
 
@@ -184,16 +187,18 @@ jobs:
       - if: github.event_name == 'push'
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: release-wasm
+          name: release-jjpwrgem-lsp
           path: out/jjpwrgem-lsp-wasm-*
           if-no-files-found: error
 
-  library-releases:
-    needs: [release, plan, wasm]
+  # after every build that was needed, since a release takes its assets once
+  releases:
+    needs: [release, plan, build, wasm]
     if: >-
       always() && github.event_name == 'push' && needs.release.result == 'success'
       && needs.plan.result == 'success'
-      && (needs.plan.outputs.lsp != 'true' || needs.wasm.result == 'success')
+      && contains(fromJSON('["success", "skipped"]'), needs.build.result)
+      && contains(fromJSON('["success", "skipped"]'), needs.wasm.result)
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -201,41 +206,27 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+      - if: needs.plan.outputs.cli == 'true'
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: release-jjpwrgem-cli-*
+          path: assets/jjpwrgem
+          merge-multiple: true
       - if: needs.plan.outputs.lsp == 'true'
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
-          name: release-wasm
-          path: assets
-      - run: ./scripts/release/library-releases.sh assets
+          name: release-jjpwrgem-lsp
+          path: assets/jjpwrgem-lsp
+      - run: ./scripts/release/releases.sh assets
         env:
           GH_TOKEN: ${{ github.token }}
-
-  cli-release:
-    needs: [plan, build]
-    if: always() && github.event_name == 'push' && needs.plan.outputs.cli == 'true' && needs.build.result == 'success'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
-        with:
-          pattern: release-*
-          path: assets
-          merge-multiple: true
-      - run: ./scripts/release/cli-release.sh "$TAG" assets
-        env:
-          GH_TOKEN: ${{ github.token }}
-          TAG: ${{ needs.plan.outputs.tag }}
 
   # after the cli release, since the npm package downloads its binaries
   host-npm:
-    needs: [plan, cli-release]
+    needs: [plan, releases]
     if: >-
       always() && github.event_name == 'push' && needs.plan.outputs.npm == 'true'
-      && (needs.plan.outputs.cli == 'false' || needs.cli-release.result == 'success')
+      && needs.releases.result == 'success'
     uses: ./.github/workflows/host-npm.yml
     with:
       tag: ${{ needs.plan.outputs.tag }}
