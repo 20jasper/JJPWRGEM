@@ -15,6 +15,9 @@ include = ["src/**/*", "readme.md", "THIRD_PARTY.md"]
 [dev-dependencies]
 rstest = { workspace = true }
 
+[target.'cfg(target_arch = "wasm32")'.dev-dependencies]
+wasm-bindgen-test = "=0.3.80"
+
 [dependencies]
 gen-lsp-types = { version = "0.11.0", features = ["fluent-uri"] }
 itertools = { workspace = true }

@@ -62,6 +62,7 @@ jobs:
       - uses: ./.github/actions/setup-rust
       - uses: ./.github/actions/setup-mise
       - run: mise run build-wasm
+      - run: mise run test-wasm
 
   test-vscode:
     runs-on: ubuntu-latest

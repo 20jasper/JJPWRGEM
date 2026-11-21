@@ -11,3 +11,11 @@ run = [
 [tasks.build-wasm.tools]
 "cargo:wasm-bindgen-cli" = "0.2.130"
 "aqua:WebAssembly/binaryen" = "version_133"
+
+[tasks.test-wasm]
+description = "Run the wasm smoke test in Node"
+env = { CARGO_PROFILE_DIST_STRIP = "false", CARGO_TARGET_WASM32_UNKNOWN_UNKNOWN_RUNNER = "wasm-bindgen-test-runner" }
+run = "RUSTFLAGS=\"${RUSTFLAGS:-} -C target-feature=+simd128\" cargo test -p jjpwrgem-lsp --target wasm32-unknown-unknown --features wasm --profile dist --test wasm"
+
+[tasks.test-wasm.tools]
+"cargo:wasm-bindgen-cli" = "0.2.130"
