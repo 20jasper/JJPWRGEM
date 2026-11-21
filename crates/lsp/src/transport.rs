@@ -1,13 +1,10 @@
-use std::{
-    borrow::Cow,
-    io::{self, BufWriter, StdoutLock, stdout},
-};
+use std::{borrow::Cow, io};
 
 use gen_lsp_types::*;
 use serde::{Deserialize, Deserializer, Serialize, de::IgnoredAny};
 use serde_json::value::RawValue;
 
-use crate::lsp_server::{msg::write_msg_text, req_queue::Id};
+use crate::lsp_server::req_queue::Id;
 
 #[derive(Serialize, Deserialize)]
 enum Version {
@@ -79,17 +76,25 @@ pub fn decode(body: &[u8]) -> Result<Incoming<'_>, Rejection> {
     })
 }
 
-pub struct Writer {
-    out: BufWriter<StdoutLock<'static>>,
+pub trait Sink {
+    fn emit(&mut self, body: &[u8]) -> io::Result<()>;
+}
+
+pub struct Writer<S> {
+    out: S,
     body: Vec<u8>,
 }
 
-impl Writer {
-    pub fn new() -> Self {
+impl<S: Sink> Writer<S> {
+    pub fn new(out: S) -> Self {
         Self {
-            out: BufWriter::new(stdout().lock()),
+            out,
             body: Vec::new(),
         }
+    }
+
+    pub fn sink_mut(&mut self) -> &mut S {
+        &mut self.out
     }
 
     pub fn respond<R: Request>(&mut self, id: Id, result: R::Result) -> io::Result<()> {
@@ -124,6 +129,6 @@ impl Writer {
     fn send(&mut self, message: &impl Serialize) -> io::Result<()> {
         self.body.clear();
         serde_json::to_writer(&mut self.body, message)?;
-        write_msg_text(&mut self.out, &self.body)
+        self.out.emit(&self.body)
     }
 }

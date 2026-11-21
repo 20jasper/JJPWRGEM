@@ -9,6 +9,7 @@ use jjpwrgem_parse::{
 use crate::{
     backend::{Backend, SOURCE},
     range::{PositionEncoding, span_to_range},
+    transport::Sink,
 };
 
 fn diagnostics_from_error(
@@ -83,7 +84,7 @@ pub(super) fn diagnostics_for(
     }
 }
 
-impl Backend {
+impl<S: Sink> Backend<S> {
     pub(super) fn diagnostic(&self, params: &DocumentDiagnosticParams) -> DocumentDiagnosticReport {
         let uri = &params.text_document.uri;
         let items = self.documents.get(uri).map_or_else(Vec::new, |document| {

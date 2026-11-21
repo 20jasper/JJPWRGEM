@@ -5,6 +5,7 @@ use jjpwrgem_parse::ast::{Document, Value};
 use crate::{
     backend::Backend,
     range::{PositionEncoding, Positions},
+    transport::Sink,
 };
 
 const CLOSING_BRACKET_LEN: usize = 1;
@@ -33,7 +34,7 @@ fn folding_ranges(document: &Document<String>, encoding: PositionEncoding) -> Ve
         .collect()
 }
 
-impl Backend {
+impl<S: Sink> Backend<S> {
     pub(super) fn folding_range(&self, params: &FoldingRangeParams) -> Option<Vec<FoldingRange>> {
         self.with_document(&params.text_document.uri, |document| {
             folding_ranges(document, self.position_encoding)
