@@ -12,7 +12,6 @@ enum ObjectState {
     KeyOrEnd,
     CommaOrEnd,
     Key,
-    KeyOrTrailingEnd,
     Colon,
     Value,
     End,
@@ -30,10 +29,10 @@ fn open_ctx(open_start: usize) -> TokenWithContext {
 }
 
 impl ObjectState {
-    /// where a comma leads, which also accepts the closing brace when trailing commas are allowed
+    /// where a comma leads: trailing commas allow the closing brace right after it
     const fn after_comma(trailing_commas: bool) -> Self {
         if trailing_commas {
-            Self::KeyOrTrailingEnd
+            Self::KeyOrEnd
         } else {
             Self::Key
         }
@@ -42,14 +41,8 @@ impl ObjectState {
     fn process(self, next: Option<Token>, after_comma: Self) -> Option<Self> {
         let next = next?;
         let state = match self {
-            Self::KeyOrEnd | Self::CommaOrEnd | Self::KeyOrTrailingEnd
-                if next == Token::ClosedCurlyBrace =>
-            {
-                Self::End
-            }
-            Self::KeyOrEnd | Self::Key | Self::KeyOrTrailingEnd if next == Token::String => {
-                Self::Colon
-            }
+            Self::KeyOrEnd | Self::CommaOrEnd if next == Token::ClosedCurlyBrace => Self::End,
+            Self::KeyOrEnd | Self::Key if next == Token::String => Self::Colon,
             Self::CommaOrEnd if next == Token::Comma => after_comma,
             Self::Colon if next == Token::Colon => Self::Value,
             Self::Value if next.is_start_of_value() => Self::CommaOrEnd,
@@ -75,9 +68,7 @@ fn object_error(
                 open_ctx: open,
                 found: tok,
             },
-            ObjectState::Key | ObjectState::KeyOrTrailingEnd => {
-                ErrorKind::ExpectedKey(punctuation_at(text, offsets.delim), tok)
-            }
+            ObjectState::Key => ErrorKind::ExpectedKey(punctuation_at(text, offsets.delim), tok),
             ObjectState::Colon => {
                 ErrorKind::ExpectedColon(TokenWithContext::new(Token::String, offsets.key), tok)
             }
@@ -128,11 +119,11 @@ pub fn parse_object<'a>(
         let ctx = found.expect("the end of input is never accepted");
         match next {
             ObjectState::End => visitor.on_object_close(ctx.range),
-            ObjectState::Key | ObjectState::KeyOrTrailingEnd => {
+            ObjectState::Key | ObjectState::KeyOrEnd => {
                 offsets.delim = ctx.range.start;
             }
             ObjectState::Colon => {
-                if matches!(state, ObjectState::Key | ObjectState::KeyOrTrailingEnd) {
+                if offsets.delim != offsets.open_start {
                     visitor.on_item_delim();
                 }
                 let body = ctx.content_range();
@@ -147,7 +138,6 @@ pub fn parse_object<'a>(
                 let value_range = parse_tokens_at_depth(tokens, text, false, visitor, depth + 1)?;
                 offsets.last_pair = offsets.last_pair.start..value_range.end;
             }
-            ObjectState::KeyOrEnd => unreachable!("only the starting state"),
         }
         state = next;
     }

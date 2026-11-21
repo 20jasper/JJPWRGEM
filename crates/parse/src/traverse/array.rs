@@ -11,17 +11,16 @@ use crate::{
 enum ArrayState {
     ValueOrEnd,
     Value,
-    ValueOrTrailingEnd,
     CommaOrEnd,
     End,
 }
 
 impl ArrayState {
-    /// where a comma leads, which also accepts the closing bracket when trailing commas are allowed
+    /// where a comma leads: trailing commas allow the closing bracket right after it
     // jsonc[impl trailing-commas]
     const fn after_comma(trailing_commas: bool) -> Self {
         if trailing_commas {
-            Self::ValueOrTrailingEnd
+            Self::ValueOrEnd
         } else {
             Self::Value
         }
@@ -30,14 +29,8 @@ impl ArrayState {
     fn process(self, next: Option<Token>, after_comma: Self) -> Option<Self> {
         let next = next?;
         let state = match self {
-            Self::ValueOrEnd | Self::ValueOrTrailingEnd if next == Token::ClosedSquareBracket => {
-                Self::End
-            }
-            Self::ValueOrEnd | Self::Value | Self::ValueOrTrailingEnd
-                if next.is_start_of_value() =>
-            {
-                Self::CommaOrEnd
-            }
+            Self::ValueOrEnd if next == Token::ClosedSquareBracket => Self::End,
+            Self::ValueOrEnd | Self::Value if next.is_start_of_value() => Self::CommaOrEnd,
             Self::CommaOrEnd => match next {
                 Token::ClosedSquareBracket => Self::End,
                 Token::Comma => after_comma,
@@ -62,9 +55,7 @@ fn array_error(
 ) -> Error {
     Error::from_maybe_token_with_context(
         |tok| match state {
-            ArrayState::Value | ArrayState::ValueOrTrailingEnd => {
-                ErrorKind::ExpectedValue(Some(punctuation_at(text, delim)), tok)
-            }
+            ArrayState::Value => ErrorKind::ExpectedValue(Some(punctuation_at(text, delim)), tok),
             _ => ErrorKind::expected_entry_or_closed_delimiter(open_ctx(open_start), tok)
                 .expect("array should open with a square bracket"),
         },
@@ -113,17 +104,16 @@ pub fn parse_array<'a>(
                 tokens.next_token()?;
                 visitor.on_array_close(ctx.range);
             }
-            ArrayState::Value | ArrayState::ValueOrTrailingEnd => {
+            ArrayState::Value | ArrayState::ValueOrEnd => {
                 tokens.next_token()?;
                 delim = ctx.range.start;
             }
             ArrayState::CommaOrEnd => {
-                if matches!(state, ArrayState::Value | ArrayState::ValueOrTrailingEnd) {
+                if delim != open_start {
                     visitor.on_item_delim();
                 }
                 parse_tokens_at_depth(tokens, text, false, visitor, depth + 1)?;
             }
-            ArrayState::ValueOrEnd => unreachable!("only the starting state"),
         }
         state = next;
     }
