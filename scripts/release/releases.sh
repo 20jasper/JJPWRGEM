@@ -50,7 +50,6 @@ for entry in "${todo[@]}"; do
   latest=--latest=false
   [ "$dir" = "$root" ] && [ ${#prerelease[@]} -eq 0 ] && latest=--latest
 
-  # a draft is left over from a failed run
   [ "$state" = true ] && gh release delete "$tag" --yes
   gh release create "$tag" --verify-tag --title "$name $version" --notes-file notes.md \
     "$latest" "${prerelease[@]}" "${files[@]}"
