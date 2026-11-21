@@ -12,6 +12,7 @@ enum ObjectState {
     KeyOrEnd,
     CommaOrEnd,
     Key,
+    KeyOrTrailingEnd,
     Colon,
     Value,
     End,
@@ -29,19 +30,29 @@ fn open_ctx(open_start: usize) -> TokenWithContext {
 }
 
 impl ObjectState {
-    fn process(self, next: Option<Token>, trailing_commas: bool) -> Option<Self> {
+    /// where a comma leads, which also accepts the closing brace when trailing commas are allowed
+    const fn after_comma(trailing_commas: bool) -> Self {
+        if trailing_commas {
+            Self::KeyOrTrailingEnd
+        } else {
+            Self::Key
+        }
+    }
+
+    fn process(self, next: Option<Token>, after_comma: Self) -> Option<Self> {
         let next = next?;
         let state = match self {
-            ObjectState::KeyOrEnd | ObjectState::CommaOrEnd if next == Token::ClosedCurlyBrace => {
-                ObjectState::End
+            Self::KeyOrEnd | Self::CommaOrEnd | Self::KeyOrTrailingEnd
+                if next == Token::ClosedCurlyBrace =>
+            {
+                Self::End
             }
-            ObjectState::Key if trailing_commas && next == Token::ClosedCurlyBrace => {
-                ObjectState::End
+            Self::KeyOrEnd | Self::Key | Self::KeyOrTrailingEnd if next == Token::String => {
+                Self::Colon
             }
-            ObjectState::KeyOrEnd | ObjectState::Key if next == Token::String => ObjectState::Colon,
-            ObjectState::CommaOrEnd if next == Token::Comma => ObjectState::Key,
-            ObjectState::Colon if next == Token::Colon => ObjectState::Value,
-            ObjectState::Value if next.is_start_of_value() => ObjectState::CommaOrEnd,
+            Self::CommaOrEnd if next == Token::Comma => after_comma,
+            Self::Colon if next == Token::Colon => Self::Value,
+            Self::Value if next.is_start_of_value() => Self::CommaOrEnd,
             _ => return None,
         };
         Some(state)
@@ -64,7 +75,9 @@ fn object_error(
                 open_ctx: open,
                 found: tok,
             },
-            ObjectState::Key => ErrorKind::ExpectedKey(punctuation_at(text, offsets.delim), tok),
+            ObjectState::Key | ObjectState::KeyOrTrailingEnd => {
+                ErrorKind::ExpectedKey(punctuation_at(text, offsets.delim), tok)
+            }
             ObjectState::Colon => {
                 ErrorKind::ExpectedColon(TokenWithContext::new(Token::String, offsets.key), tok)
             }
@@ -100,7 +113,7 @@ pub fn parse_object<'a>(
         key: open_start..open_start,
         last_pair: open_start..open_start,
     };
-    let trailing_commas = tokens.options().trailing_commas;
+    let after_comma = ObjectState::after_comma(tokens.options().trailing_commas);
     let mut state = ObjectState::KeyOrEnd;
     while state != ObjectState::End {
         // a value is parsed from its first token, everything else is taken right away
@@ -109,17 +122,17 @@ pub fn parse_object<'a>(
         } else {
             tokens.next_token()?
         };
-        let Some(next) = state.process(found.map(|ctx| ctx.token), trailing_commas) else {
+        let Some(next) = state.process(found.map(|ctx| ctx.token), after_comma) else {
             return Err(object_error(state, text, &offsets, found));
         };
         let ctx = found.expect("the end of input is never accepted");
         match next {
             ObjectState::End => visitor.on_object_close(ctx.range),
-            ObjectState::Key => {
+            ObjectState::Key | ObjectState::KeyOrTrailingEnd => {
                 offsets.delim = ctx.range.start;
             }
             ObjectState::Colon => {
-                if state == ObjectState::Key {
+                if matches!(state, ObjectState::Key | ObjectState::KeyOrTrailingEnd) {
                     visitor.on_item_delim();
                 }
                 let body = ctx.content_range();
