@@ -5,6 +5,7 @@ use serde_json::Value;
 use crate::{
     backend::{Backend, diagnostics::diagnostics_for, settings::format_settings},
     range::Positions,
+    transport::Sink,
 };
 
 fn apply_change(
@@ -32,7 +33,7 @@ fn apply_change(
     true
 }
 
-impl Backend {
+impl<S: Sink> Backend<S> {
     pub(super) fn did_open(&mut self, params: DidOpenTextDocumentParams) {
         self.process_document(params.text_document.uri, params.text_document.text);
     }

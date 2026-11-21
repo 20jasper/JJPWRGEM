@@ -11,7 +11,7 @@ use serde_json::value::RawValue;
 use crate::{
     backend::{Backend, Lifecycle},
     lsp_server::req_queue::Id,
-    transport::Rejection,
+    transport::{Rejection, Sink},
 };
 
 fn parse_params<'a, P: Deserialize<'a>>(
@@ -31,7 +31,7 @@ fn guarded<T>(f: impl FnOnce() -> T) -> Result<T, String> {
     })
 }
 
-impl Backend {
+impl<S: Sink> Backend<S> {
     pub fn response(&mut self, id: &Id) {
         self.outgoing.complete(id);
     }

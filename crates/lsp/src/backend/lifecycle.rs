@@ -1,3 +1,4 @@
+#[cfg(not(target_arch = "wasm32"))]
 use std::process::ExitCode;
 
 use gen_lsp_types::*;
@@ -5,6 +6,7 @@ use gen_lsp_types::*;
 use crate::{
     backend::{Backend, Lifecycle, SOURCE},
     range::PositionEncoding,
+    transport::Sink,
 };
 
 fn client_supports_pull_diagnostics(capabilities: &ClientCapabilities) -> bool {
@@ -14,7 +16,8 @@ fn client_supports_pull_diagnostics(capabilities: &ClientCapabilities) -> bool {
         .is_some_and(|text_document| text_document.diagnostic.is_some())
 }
 
-impl Backend {
+impl<S: Sink> Backend<S> {
+    #[cfg(not(target_arch = "wasm32"))]
     pub fn exit_code(&self) -> ExitCode {
         if self.lifecycle == Lifecycle::ShutDown {
             ExitCode::SUCCESS
