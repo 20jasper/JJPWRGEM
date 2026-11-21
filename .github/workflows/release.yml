@@ -176,7 +176,7 @@ jobs:
       - run: rustup toolchain install --no-self-update
       - uses: ./.github/actions/setup-mise
       - run: mise run build-wasm
-      - run: ./scripts/release/package.sh wasm "${LSP_TAG#jjpwrgem-lsp-v}"
+      - run: ./scripts/release/package-wasm.sh "${LSP_TAG#jjpwrgem-lsp-v}"
         env:
           LSP_TAG: ${{ needs.plan.outputs.lsp_tag }}
       - if: github.event_name == 'push'
