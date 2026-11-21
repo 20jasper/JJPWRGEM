@@ -20,6 +20,17 @@ run = "cargo semver-checks check-release --workspace"
 [tasks.semver-check.tools]
 "cargo:cargo-semver-checks" = "0.51.0"
 
+[tasks.build-release]
+description = "Build the release binary for $TARGET, against glibc $GLIBC when it is set"
+shell = "bash -c"
+run = '''
+if [ -n "${GLIBC:-}" ]; then
+  mise run zigbuild
+else
+  cargo build --locked --profile dist --bin jjp --target "$TARGET"
+fi
+'''
+
 [tasks.zigbuild]
 description = "Build the release binary for $TARGET against glibc $GLIBC"
 run = [
