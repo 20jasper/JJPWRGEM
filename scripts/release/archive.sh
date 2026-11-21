@@ -1,8 +1,5 @@
 #!/usr/bin/env bash
-# Archive the files $2.. into ./out/$1 with a .sha256 beside it. The extension
-# of $1 picks the format: tar.xz and tar.gz hold a top level dir named after the
-# archive, and a zip is flat, like the cargo-dist releases that mise and the npm
-# installer download.
+# Archive the files $2.. into ./out/$1 (.tar.xz, .tar.gz or flat .zip) with a .sha256 beside it.
 set -euo pipefail
 
 archive=$1

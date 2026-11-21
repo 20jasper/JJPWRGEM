@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
-# Archive the jjp binary built for $1 into ./out with a .sha256 beside it.
-# Same names and layout as the cargo-dist releases, which mise and the npm
-# installer download.
+# Archive the jjp binary built for target $1 into ./out with a .sha256 beside it.
 set -euo pipefail
 
 target=$1
