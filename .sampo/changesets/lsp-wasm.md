@@ -1,5 +1,4 @@
 ---
-cargo/jjpwrgem: patch (Added)
 cargo/jjpwrgem-lsp: patch (Added)
 ---
 
