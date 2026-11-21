@@ -100,7 +100,8 @@ jobs:
           lsp_version=$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[] | select(.name == "jjpwrgem-lsp") | .version')
           lsp_tag="jjpwrgem-lsp-v$lsp_version"
           lsp=false
-          if git ls-remote --exit-code --tags origin "refs/tags/$lsp_tag" >/dev/null; then
+          lsp_sha=$(git ls-remote --tags origin "refs/tags/$lsp_tag" "refs/tags/$lsp_tag^{}" | awk 'END { print $1 }')
+          if [ "$lsp_sha" = "$GITHUB_SHA" ]; then
             gh release view "$lsp_tag" --json assets -q '.assets[].name' 2>/dev/null | grep -q '^jjpwrgem-lsp-wasm-' || lsp=true
           fi
           { echo "tag=$tag"; echo "cli=$cli"; echo "npm=$npm"; echo "lsp_tag=$lsp_tag"; echo "lsp=$lsp"; } >>"$GITHUB_OUTPUT"
