@@ -33,7 +33,7 @@ env = { RUSTFLAGS = "-Dwarnings" }
 run = [
   "! git grep -n 'gen_lsp_types::{' -- '*.rs'",
   "cargo clippy -q --all-targets --all-features --workspace",
-  "cargo clippy -q -p jjpwrgem-lsp-wasm --target wasm32-unknown-unknown",
+  "cargo clippy -q -p jjpwrgem-lsp --target wasm32-unknown-unknown --features wasm",
   "pnpm --filter jjpwrgem-vscode run check-types",
   "knip --workspace npm-packages/jjpwrgem-vscode",
   "actionlint",

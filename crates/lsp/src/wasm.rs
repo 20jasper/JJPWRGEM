@@ -1,14 +1,14 @@
 use wasm_bindgen::prelude::*;
 
-#[wasm_bindgen]
+#[wasm_bindgen(js_name = Server)]
 #[derive(Debug, Default)]
-pub struct Server(lsp::Server);
+pub struct WasmServer(crate::Server);
 
-#[wasm_bindgen]
-impl Server {
+#[wasm_bindgen(js_class = Server)]
+impl WasmServer {
     #[wasm_bindgen(constructor)]
     pub fn new() -> Self {
-        Self(lsp::Server::new())
+        Self(crate::Server::new())
     }
 
     pub fn handle(&mut self, message: &str) -> Vec<String> {

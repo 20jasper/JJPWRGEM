@@ -5,6 +5,8 @@ mod server;
 #[cfg(not(target_arch = "wasm32"))]
 mod stdio;
 mod transport;
+#[cfg(feature = "wasm")]
+mod wasm;
 
 pub use server::Server;
 #[cfg(not(target_arch = "wasm32"))]

@@ -1078,13 +1078,6 @@ dependencies = [
  "rstest",
  "serde",
  "serde_json",
-]
-
-[[package]]
-name = "jjpwrgem-lsp-wasm"
-version = "0.0.0"
-dependencies = [
- "jjpwrgem-lsp",
  "wasm-bindgen",
 ]
 
