@@ -9,3 +9,4 @@ components = [
   "rust-analyzer",
   "llvm-tools",
 ]
+targets = ["wasm32-unknown-unknown"]

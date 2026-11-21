@@ -1,2 +1,7 @@
 [alias]
 xtask = "run -p xtask -q --"
+
+[target.wasm32-unknown-unknown]
+# wasm simd128 is supported by Chrome, Firefox and Node since 2021 and Safari since 2023
+rustflags = ["-C", "target-feature=+simd128"]
+runner = "wasm-bindgen-test-runner"

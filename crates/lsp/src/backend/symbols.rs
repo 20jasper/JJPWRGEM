@@ -6,6 +6,7 @@ use jjpwrgem_parse::ast::{Document, Key, Value, quoted};
 use crate::{
     backend::Backend,
     range::{PositionEncoding, Positions},
+    transport::Sink,
 };
 
 const MAX_SYMBOLS: usize = 5000;
@@ -93,7 +94,7 @@ fn truncated(text: &str) -> String {
     }
 }
 
-impl Backend {
+impl<S: Sink> Backend<S> {
     pub(super) fn document_symbol(
         &self,
         params: &DocumentSymbolParams,

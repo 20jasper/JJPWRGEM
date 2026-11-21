@@ -3,7 +3,11 @@ use std::collections::HashMap;
 use gen_lsp_types::Uri;
 use jjpwrgem_parse::{ast::Document, format::FormatSettings};
 
-use crate::{lsp_server::req_queue::Outgoing, range::PositionEncoding, transport::Writer};
+use crate::{
+    lsp_server::req_queue::Outgoing,
+    range::PositionEncoding,
+    transport::{Sink, Writer},
+};
 
 mod diagnostics;
 mod dispatch;
@@ -12,6 +16,7 @@ mod folding;
 mod formatting;
 mod lifecycle;
 mod log;
+mod message;
 mod settings;
 mod symbols;
 
@@ -24,8 +29,8 @@ enum Lifecycle {
     ShutDown,
 }
 
-pub struct Backend {
-    out: Writer,
+pub struct Backend<S> {
+    out: Writer<S>,
     outgoing: Outgoing<()>,
     lifecycle: Lifecycle,
     documents: HashMap<Uri, jjpwrgem_parse::Result<Document<String>>>,
@@ -34,8 +39,8 @@ pub struct Backend {
     format: FormatSettings,
 }
 
-impl Backend {
-    pub fn new(out: Writer) -> Self {
+impl<S: Sink> Backend<S> {
+    pub fn new(out: Writer<S>) -> Self {
         Self {
             out,
             outgoing: Outgoing::new(),
@@ -45,6 +50,10 @@ impl Backend {
             client_pulls_diagnostics: false,
             format: FormatSettings::default(),
         }
+    }
+
+    pub fn sink_mut(&mut self) -> &mut S {
+        self.out.sink_mut()
     }
 
     fn with_document<T>(&self, uri: &Uri, f: impl FnOnce(&Document<String>) -> T) -> Option<T> {

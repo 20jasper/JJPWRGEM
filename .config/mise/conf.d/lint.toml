@@ -29,7 +29,7 @@ run = [
 "npm:oxfmt" = "0.78.0"
 
 [tasks.lint]
-env = { RUSTFLAGS = "-Dwarnings" }
+env = { CARGO_BUILD_WARNINGS = "deny" }
 run = [
   "! git grep -n 'gen_lsp_types::{' -- '*.rs'",
   "cargo clippy -q --all-targets --all-features --workspace",

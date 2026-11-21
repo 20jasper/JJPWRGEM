@@ -1,45 +1,13 @@
 mod backend;
 mod lsp_server;
 mod range;
+mod server;
+#[cfg(not(target_arch = "wasm32"))]
+mod stdio;
 mod transport;
+#[cfg(feature = "wasm")]
+mod wasm;
 
-use std::{error::Error, process::ExitCode};
-
-use backend::Backend;
-use gen_lsp_types::ErrorCodes;
-use lsp_server::{req_queue::Id, stdio::Event};
-use transport::{Rejection, Writer, decode};
-
-pub fn run_blocking() -> Result<ExitCode, Box<dyn Error + Send + Sync>> {
-    let events = lsp_server::stdio::spawn_reader();
-    let mut backend = Backend::new(Writer::new());
-    loop {
-        let body = match events.recv() {
-            Ok(Event::Message(body)) => body,
-            Ok(Event::ReadError(error)) => return Err(error.into()),
-            Ok(Event::Eof) => return Ok(ExitCode::SUCCESS),
-            Err(_) => return Ok(ExitCode::FAILURE),
-        };
-        let message = match decode(&body) {
-            Ok(message) => message,
-            Err(rejection) => {
-                backend.reject(rejection)?;
-                continue;
-            }
-        };
-        match (message.id, message.method) {
-            (Some(id), Some(method)) => backend.request(id, &method, message.params)?,
-            (None, Some(method)) => {
-                if backend.notification(&method, message.params).is_break() {
-                    return Ok(backend.exit_code());
-                }
-            }
-            (Some(id), None) => backend.response(&id),
-            (None, None) => backend.reject(Rejection {
-                id: Id::Null,
-                code: ErrorCodes::InvalidRequest,
-                message: "invalid request: missing field `method`".into(),
-            })?,
-        }
-    }
-}
+pub use server::Server;
+#[cfg(not(target_arch = "wasm32"))]
+pub use stdio::run_blocking;

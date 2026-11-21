@@ -1,8 +1,11 @@
 use gen_lsp_types::*;
 
-use crate::backend::{Backend, SOURCE};
+use crate::{
+    backend::{Backend, SOURCE},
+    transport::Sink,
+};
 
-impl Backend {
+impl<S: Sink> Backend<S> {
     pub(super) fn error(&mut self, message: impl Into<String>) {
         self.log_message(MessageType::Error, message);
     }
