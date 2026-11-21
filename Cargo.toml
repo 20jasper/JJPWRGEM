@@ -114,6 +114,10 @@ strip = true
 inherits = "dist"
 strip = false
 
+[profile.wasm]
+inherits = "dist"
+strip = false
+
 [lints]
 workspace = true
 

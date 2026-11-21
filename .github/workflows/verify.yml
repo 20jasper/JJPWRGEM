@@ -14,7 +14,7 @@ permissions:
   contents: read
 
 env:
-  RUSTFLAGS: "-Dwarnings"
+  CARGO_BUILD_WARNINGS: deny
   CARGO_TERM_COLOR: always
   CI: true
 

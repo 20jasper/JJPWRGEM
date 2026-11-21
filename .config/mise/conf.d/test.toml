@@ -16,7 +16,7 @@ run = [
 
 [tasks.test-all]
 description = "Run full test suite including snapshots and large prettier props"
-depends_post = ["test-snapshot", "test-prettier-large"]
+depends_post = ["test-snapshot", "test-prettier-large", "test-wasm"]
 run = [
   'cargo test {{vars.test_flags}} --tests --lib --bins --examples "$@" -- --skip matches_prettier > /dev/null',
   "echo 'tests passed!'",
