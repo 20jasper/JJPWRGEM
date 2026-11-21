@@ -1,5 +1,6 @@
 ---
 cargo/jjpwrgem: patch (Added)
+cargo/jjpwrgem-lsp: patch (Added)
 ---
 
-releases now include a wasm build of the language server.
+add wasm build target and wasm release binaries.
