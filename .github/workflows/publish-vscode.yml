@@ -22,8 +22,7 @@ permissions:
   contents: read
 
 jobs:
-  publish-marketplace:
-    if: github.event_name == 'push' || inputs.publish_marketplace
+  publish:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -32,20 +31,11 @@ jobs:
 
       - uses: ./.github/actions/setup-node
       - run: pnpm --filter jjpwrgem-vscode run vsce:pack
-      - run: pnpm --filter jjpwrgem-vscode run vsce:publish
+      - if: github.event_name == 'push' || inputs.publish_marketplace
+        run: pnpm --filter jjpwrgem-vscode run vsce:publish
         env:
           VSCE_PAT: ${{ secrets.VSCE_PAT }}
-
-  publish-ovsx:
-    if: github.event_name == 'push' || inputs.publish_ovsx
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-
-      - uses: ./.github/actions/setup-node
-      - run: pnpm --filter jjpwrgem-vscode run vsce:pack
-      - run: pnpm --filter jjpwrgem-vscode run ovsx:publish
+      - if: github.event_name == 'push' || inputs.publish_ovsx
+        run: pnpm --filter jjpwrgem-vscode run ovsx:publish
         env:
           OVSX_PAT: ${{ secrets.OVSX_TOKEN }}
