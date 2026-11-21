@@ -16,23 +16,15 @@ enum ArrayState {
 }
 
 impl ArrayState {
-    /// where a comma leads: trailing commas allow the closing bracket right after it
-    // jsonc[impl trailing-commas]
-    const fn after_comma(trailing_commas: bool) -> Self {
-        if trailing_commas {
-            Self::ValueOrEnd
-        } else {
-            Self::Value
-        }
-    }
-
     fn process(self, next: Option<Token>, after_comma: Self) -> Option<Self> {
         let next = next?;
         let state = match self {
-            Self::ValueOrEnd if next == Token::ClosedSquareBracket => Self::End,
-            Self::ValueOrEnd | Self::Value if next.is_start_of_value() => Self::CommaOrEnd,
-            Self::CommaOrEnd => match next {
-                Token::ClosedSquareBracket => Self::End,
+            ArrayState::ValueOrEnd if next == Token::ClosedSquareBracket => ArrayState::End,
+            ArrayState::ValueOrEnd | ArrayState::Value if next.is_start_of_value() => {
+                ArrayState::CommaOrEnd
+            }
+            ArrayState::CommaOrEnd => match next {
+                Token::ClosedSquareBracket => ArrayState::End,
                 Token::Comma => after_comma,
                 _ => return None,
             },
@@ -91,7 +83,12 @@ pub fn parse_array<'a>(
     let open_start = open_range.start;
 
     let mut delim = open_start;
-    let after_comma = ArrayState::after_comma(tokens.options().trailing_commas);
+    // jsonc[impl trailing-commas]
+    let after_comma = if tokens.options().trailing_commas {
+        ArrayState::ValueOrEnd
+    } else {
+        ArrayState::Value
+    };
     let mut state = ArrayState::ValueOrEnd;
     while state != ArrayState::End {
         let peeked = tokens.peek_token()?.copied();

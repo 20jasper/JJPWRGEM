@@ -29,23 +29,16 @@ fn open_ctx(open_start: usize) -> TokenWithContext {
 }
 
 impl ObjectState {
-    /// where a comma leads: trailing commas allow the closing brace right after it
-    const fn after_comma(trailing_commas: bool) -> Self {
-        if trailing_commas {
-            Self::KeyOrEnd
-        } else {
-            Self::Key
-        }
-    }
-
     fn process(self, next: Option<Token>, after_comma: Self) -> Option<Self> {
         let next = next?;
         let state = match self {
-            Self::KeyOrEnd | Self::CommaOrEnd if next == Token::ClosedCurlyBrace => Self::End,
-            Self::KeyOrEnd | Self::Key if next == Token::String => Self::Colon,
-            Self::CommaOrEnd if next == Token::Comma => after_comma,
-            Self::Colon if next == Token::Colon => Self::Value,
-            Self::Value if next.is_start_of_value() => Self::CommaOrEnd,
+            ObjectState::KeyOrEnd | ObjectState::CommaOrEnd if next == Token::ClosedCurlyBrace => {
+                ObjectState::End
+            }
+            ObjectState::KeyOrEnd | ObjectState::Key if next == Token::String => ObjectState::Colon,
+            ObjectState::CommaOrEnd if next == Token::Comma => after_comma,
+            ObjectState::Colon if next == Token::Colon => ObjectState::Value,
+            ObjectState::Value if next.is_start_of_value() => ObjectState::CommaOrEnd,
             _ => return None,
         };
         Some(state)
@@ -104,7 +97,11 @@ pub fn parse_object<'a>(
         key: open_start..open_start,
         last_pair: open_start..open_start,
     };
-    let after_comma = ObjectState::after_comma(tokens.options().trailing_commas);
+    let after_comma = if tokens.options().trailing_commas {
+        ObjectState::KeyOrEnd
+    } else {
+        ObjectState::Key
+    };
     let mut state = ObjectState::KeyOrEnd;
     while state != ObjectState::End {
         // a value is parsed from its first token, everything else is taken right away

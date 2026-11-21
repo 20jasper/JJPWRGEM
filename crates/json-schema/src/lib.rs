@@ -198,12 +198,7 @@ mod tests {
     #[case("true", Schema::Null)]
     #[case("false", Schema::Null)]
     fn it_doesnt_work(#[case] json: &str, #[case] schema: Schema) {
-        assert!(
-            validate(
-                &Document::parse(json, SyntaxOptions::JSON).unwrap(),
-                &schema
-            )
-            .is_err()
-        );
+        let doc = Document::parse(json, SyntaxOptions::JSON).unwrap();
+        assert!(validate(&doc, &schema).is_err());
     }
 }
