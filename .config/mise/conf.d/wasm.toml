@@ -2,7 +2,8 @@
 description = "Build the language server to wasm into target/wasm"
 env = { CARGO_PROFILE_DIST_STRIP = "false" }
 run = [
-  "cargo rustc -p jjpwrgem-lsp --profile dist --target wasm32-unknown-unknown --features wasm --crate-type cdylib",
+  # wasm simd128 is supported by Chrome, Firefox and Node since 2021 and Safari since 2023
+  "RUSTFLAGS=\"${RUSTFLAGS:-} -C target-feature=+simd128\" cargo rustc -p jjpwrgem-lsp --profile dist --target wasm32-unknown-unknown --features wasm --crate-type cdylib",
   "wasm-bindgen --target web --out-dir target/wasm --out-name jjpwrgem_lsp target/wasm32-unknown-unknown/dist/jjpwrgem_lsp.wasm",
   "wasm-opt -Os --enable-simd -o target/wasm/jjpwrgem_lsp_bg.wasm target/wasm/jjpwrgem_lsp_bg.wasm",
 ]
