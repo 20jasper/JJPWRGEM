@@ -13,5 +13,3 @@ tests/integration/proptest-regressions/
 !/benches/output/coverage.txt
 benches/docker/.mise-oci/
 /npm
-/out/
-/stage/

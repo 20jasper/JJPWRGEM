@@ -14,7 +14,6 @@
     "pnpm-lock.yaml",
     "npm-packages/jjpwrgem-vscode/package.json",
     "out",
-    "stage",
     "dist",
     ".vscode-test/",
     "*.vsix"
