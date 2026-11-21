@@ -18,4 +18,4 @@ exclude_acknowledgments = ["20jasper", "Jacob Asper"]
 [packages]
 bump_dependents = "out-of-range"
 ignore_unpublished = false
-ignore = ["cargo/benches", "cargo/xtask", "npm/root"]
+ignore = ["cargo/benches", "cargo/jjpwrgem-lsp-wasm", "cargo/xtask", "npm/root"]
