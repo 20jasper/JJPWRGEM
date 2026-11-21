@@ -25,7 +25,7 @@ impl<S: AsRef<str>> JsonlinesDocument<S> {
             let r = offset..offset + line.len();
 
             // jsonlines[impl each-line-is-a-valid-json-value]
-            values.push(parse_at(text, r, SyntaxOptions::default())?.root);
+            values.push(parse_at(text, r, SyntaxOptions::JSON)?.root);
 
             offset = r.end + 1;
         }

@@ -145,6 +145,8 @@ pub enum Schema {
 
 #[cfg(test)]
 mod tests {
+    use jjpwrgem_parse::SyntaxOptions;
+
     use super::*;
     use crate::primitive::PrimitiveType;
 
@@ -158,7 +160,7 @@ mod tests {
     #[case("[1,2,3]", Schema::Array)]
     #[case("{}", Schema::Object)]
     fn it_works(#[case] json: &str, #[case] schema: Schema) {
-        let doc = Document::parse(json).unwrap();
+        let doc = Document::parse(json, SyntaxOptions::JSON).unwrap();
         assert!(validate(&doc, &schema).is_ok());
     }
 
@@ -169,13 +171,13 @@ mod tests {
     #[case("123", Schema::Number)]
     #[case("123", Schema::Integer)]
     fn integer_is_subset_of_number(#[case] json: &str, #[case] schema: Schema) {
-        let doc = Document::parse(json).unwrap();
+        let doc = Document::parse(json, SyntaxOptions::JSON).unwrap();
         assert!(validate(&doc, &schema).is_ok());
     }
 
     #[test]
     fn number_is_not_subset_of_integer() {
-        let doc = Document::parse("123.5").unwrap();
+        let doc = Document::parse("123.5", SyntaxOptions::JSON).unwrap();
         assert_eq!(
             validate(&doc, &Schema::Integer),
             Err(Error::MismatchedTypes {
@@ -196,6 +198,12 @@ mod tests {
     #[case("true", Schema::Null)]
     #[case("false", Schema::Null)]
     fn it_doesnt_work(#[case] json: &str, #[case] schema: Schema) {
-        assert!(validate(&Document::parse(json).unwrap(), &schema).is_err());
+        assert!(
+            validate(
+                &Document::parse(json, SyntaxOptions::JSON).unwrap(),
+                &schema
+            )
+            .is_err()
+        );
     }
 }

@@ -119,11 +119,7 @@ pub struct Document<S> {
 }
 
 impl<S: AsRef<str>> Document<S> {
-    pub fn parse(source: S) -> Result<Self> {
-        Self::parse_with(source, SyntaxOptions::default())
-    }
-
-    pub fn parse_with(source: S, options: SyntaxOptions) -> Result<Self> {
+    pub fn parse(source: S, options: SyntaxOptions) -> Result<Self> {
         let root = {
             let text = source.as_ref();
             parse_at(text, 0..text.len(), options)?.root
@@ -387,8 +383,8 @@ mod tests {
         let options = SyntaxOptions {
             trailing_commas: true,
         };
-        assert_eq!(Document::parse_with(json, options).is_ok(), allowed);
-        assert!(Document::parse(json).is_err());
+        assert_eq!(Document::parse(json, options).is_ok(), allowed);
+        assert!(Document::parse(json, SyntaxOptions::JSON).is_err());
     }
 
     fn range_of(source: &str, needle: &str) -> Range<usize> {
@@ -406,14 +402,14 @@ mod tests {
 
     #[test]
     fn empty_object() {
-        let doc = Document::parse("{}").unwrap();
+        let doc = Document::parse("{}", SyntaxOptions::JSON).unwrap();
         assert_eq!(doc.root(), &Value::Object(0..2, ObjectEntries::default()));
     }
 
     #[test]
     fn one_key_value_pair() {
         let json = r#"{"hi":"bye"}"#;
-        let doc = Document::parse(json).unwrap();
+        let doc = Document::parse(json, SyntaxOptions::JSON).unwrap();
         assert_eq!(
             doc.root(),
             &make_obj(vec![("hi", Value::String(range_of(json, "bye")))], json)
@@ -422,7 +418,7 @@ mod tests {
 
     #[test]
     fn traverse_is_preorder() {
-        let doc = Document::parse(r#"{"a": [1, {"b": 2}], "c": 3}"#).unwrap();
+        let doc = Document::parse(r#"{"a": [1, {"b": 2}], "c": 3}"#, SyntaxOptions::JSON).unwrap();
         let slices = doc
             .root()
             .traverse()
@@ -456,14 +452,14 @@ mod tests {
                 "rust": {primitive}
             }}"#
         );
-        let doc = Document::parse(&json).unwrap();
+        let doc = Document::parse(&json, SyntaxOptions::JSON).unwrap();
         let want = make_obj(vec![("rust", expected(&json))], &json);
         assert_eq!(doc.root(), &want);
     }
 
     #[rstest_reuse::apply(primitive_template)]
     fn primitives(#[case] json: &str, #[case] expected: fn(&str) -> Value) {
-        let doc = Document::parse(json).unwrap();
+        let doc = Document::parse(json, SyntaxOptions::JSON).unwrap();
         assert_eq!(doc.root(), &expected(json));
     }
 }

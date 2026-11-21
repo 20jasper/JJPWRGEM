@@ -9,13 +9,20 @@ pub mod settings;
 pub mod tokens;
 mod traverse;
 
-pub use check::{validate_str, validate_str_with};
+pub use check::validate_str;
 
 pub use crate::error::{Error, ErrorKind, Result};
 
-#[derive(Default, Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct SyntaxOptions {
     pub trailing_commas: bool,
+}
+
+impl SyntaxOptions {
+    /// strict json
+    pub const JSON: Self = Self {
+        trailing_commas: false,
+    };
 }
 
 pub fn format_str(json: &str, request: &format::FormatRequest) -> Result<String> {

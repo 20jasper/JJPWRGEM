@@ -2,6 +2,7 @@ use std::hint::black_box;
 
 use criterion::{BenchmarkId, Criterion, Throughput, criterion_group, criterion_main};
 use jjpwrgem_parse::{
+    SyntaxOptions,
     ast::Document,
     format::{uglify_document_into, uglify_str},
 };
@@ -18,7 +19,7 @@ fn bench_uglify_ast(c: &mut Criterion, inputs: &[(&str, String)]) {
         // Normalize throughput by source size so all formatters are comparable.
         group.throughput(Throughput::Bytes(json.len() as u64));
 
-        let ast = Document::parse(json.as_str()).unwrap();
+        let ast = Document::parse(json.as_str(), SyntaxOptions::JSON).unwrap();
         if include_impl("jjpwrgem") {
             let mut probe = String::new();
             uglify_document_into(&mut probe, &ast);

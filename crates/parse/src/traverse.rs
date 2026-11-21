@@ -191,7 +191,7 @@ pub(crate) fn visit_value<'a>(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ast::Document;
+    use crate::{SyntaxOptions, ast::Document};
 
     #[derive(Debug, PartialEq, Eq)]
     enum Event {
@@ -291,7 +291,7 @@ mod tests {
         let mut from_tokens: RecordingVisitor = RecordingVisitor::default();
         parse_tokens(&mut TokenStream::new(json), json, true, &mut from_tokens).unwrap();
 
-        let doc = Document::parse(json).unwrap();
+        let doc = Document::parse(json, SyntaxOptions::JSON).unwrap();
         let mut from_ast = RecordingVisitor::default();
         visit_document(&doc, &mut from_ast);
 

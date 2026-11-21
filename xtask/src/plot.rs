@@ -5,7 +5,10 @@ use std::{
 };
 
 use anyhow::{Context, Result, anyhow, bail};
-use jjpwrgem_parse::ast::{Document, ObjectEntries, Value};
+use jjpwrgem_parse::{
+    SyntaxOptions,
+    ast::{Document, ObjectEntries, Value},
+};
 use plotters::{
     coord::ranged1d::{DefaultFormatting, KeyPointHint, KeyPointWeight},
     element::DashedPathElement,
@@ -78,7 +81,7 @@ fn parse_result(doc: &Document<&str>, item: &Value) -> Result<BenchmarkResult> {
 }
 
 fn parse_benchmark_results(raw: &str) -> Result<Vec<BenchmarkResult>> {
-    let doc = Document::parse(raw)
+    let doc = Document::parse(raw, SyntaxOptions::JSON)
         .map_err(|err| anyhow!("failed to parse JSON with jjpwrgem parser: {err}"))?;
     let entries = as_object(doc.root(), "benchmark data")?;
 

@@ -1,5 +1,5 @@
 ---
-cargo/jjpwrgem-parse: patch (Added)
+cargo/jjpwrgem-parse: minor (Changed)
 ---
 
-add `SyntaxOptions` with `trailing_commas`, `Document::parse_with` and `validate_str_with` to allow trailing commas.
+`Document::parse` and `validate_str` now take `SyntaxOptions`, which can allow trailing commas. `SyntaxOptions::JSON` keeps strict json.

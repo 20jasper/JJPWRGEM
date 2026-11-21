@@ -110,6 +110,8 @@ impl<S: Sink> Backend<S> {
 
 #[cfg(test)]
 mod tests {
+    use jjpwrgem_parse::SyntaxOptions;
+
     use super::*;
 
     fn dummy_uri() -> Uri {
@@ -117,7 +119,7 @@ mod tests {
     }
 
     fn parse(text: &str) -> jjpwrgem_parse::Result<Document<String>> {
-        Document::parse(text.to_owned())
+        Document::parse(text.to_owned(), SyntaxOptions::JSON)
     }
 
     #[test]

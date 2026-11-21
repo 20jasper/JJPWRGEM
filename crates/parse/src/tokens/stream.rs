@@ -51,7 +51,7 @@ impl<'a> TokenStreamInner<'a> {
         Self {
             input: &full_source[..range.end],
             pos: range.start,
-            options: SyntaxOptions::default(),
+            options: SyntaxOptions::JSON,
         }
     }
 

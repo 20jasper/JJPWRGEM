@@ -36,11 +36,7 @@ impl<'a> Visitor<'a> for NoopVisitor {
     fn on_item_delim(&mut self) {}
 }
 
-pub fn validate_str(json: &str) -> Result<()> {
-    validate_str_with(json, SyntaxOptions::default())
-}
-
-pub fn validate_str_with(json: &str, options: SyntaxOptions) -> Result<()> {
+pub fn validate_str(json: &str, options: SyntaxOptions) -> Result<()> {
     let mut visitor = NoopVisitor;
     parse_tokens(
         &mut TokenStream::new(json).with_options(options),

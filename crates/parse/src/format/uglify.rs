@@ -146,7 +146,7 @@ mod tests {
         parse_tokens(&mut tokens, json, true, &mut visitor).unwrap();
         assert_eq!(visitor.buf, uglified);
 
-        let doc = Document::parse_with(json, options).unwrap();
+        let doc = Document::parse(json, options).unwrap();
         assert_eq!(uglify_document(&doc), uglified);
         assert_eq!(prettify_document(&doc, 80, LineEnding::Lf), prettified);
     }

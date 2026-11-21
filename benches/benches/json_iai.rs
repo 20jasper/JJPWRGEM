@@ -5,6 +5,7 @@ use gungraun::{
     library_benchmark_group, main,
 };
 use jjpwrgem_parse::{
+    SyntaxOptions,
     ast::Document,
     format::{LineEnding, prettify_document_into, uglify_str},
     tokens::TokenStream,
@@ -28,7 +29,7 @@ fn branch_sim_config() -> LibraryBenchmarkConfig {
 #[bench::canada(CANADA)]
 #[bench::twitter(TWITTER)]
 fn bench_deser(json: &'static str) -> Document<&'static str> {
-    Document::parse(black_box(json)).unwrap()
+    Document::parse(black_box(json), SyntaxOptions::JSON).unwrap()
 }
 
 #[library_benchmark]
@@ -40,15 +41,15 @@ fn bench_uglify_tokens(json: &'static str) -> String {
 }
 
 fn setup_citm_ast() -> Document<&'static str> {
-    Document::parse(CITM).unwrap()
+    Document::parse(CITM, SyntaxOptions::JSON).unwrap()
 }
 
 fn setup_canada_ast() -> Document<&'static str> {
-    Document::parse(CANADA).unwrap()
+    Document::parse(CANADA, SyntaxOptions::JSON).unwrap()
 }
 
 fn setup_twitter_ast() -> Document<&'static str> {
-    Document::parse(TWITTER).unwrap()
+    Document::parse(TWITTER, SyntaxOptions::JSON).unwrap()
 }
 
 #[library_benchmark]
