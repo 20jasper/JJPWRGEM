@@ -2,7 +2,6 @@ use std::{fmt, io, mem};
 
 use crate::{
     backend::Backend,
-    dispatch,
     transport::{Sink, Writer},
 };
 
@@ -40,7 +39,7 @@ impl Server {
     }
 
     pub fn handle(&mut self, message: &str) -> Vec<String> {
-        drop(dispatch(&mut self.backend, message.as_bytes()));
+        drop(self.backend.handle(message.as_bytes()));
         mem::take(&mut self.backend.sink_mut().0)
     }
 }

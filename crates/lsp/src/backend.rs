@@ -16,6 +16,7 @@ mod folding;
 mod formatting;
 mod lifecycle;
 mod log;
+mod message;
 mod settings;
 mod symbols;
 
