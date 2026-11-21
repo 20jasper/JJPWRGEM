@@ -84,28 +84,7 @@ jobs:
         with:
           persist-credentials: false
       - id: plan
-        run: |
-          echo "matrix=$(jq -c '{include: .}' .github/release-targets.json)" >>"$GITHUB_OUTPUT"
-          metadata=$(cargo metadata --no-deps --format-version 1)
-          version=$(jq -r '.packages[] | select(.name == "jjpwrgem") | .version' <<<"$metadata")
-          tag="jjpwrgem-v$version"
-          lsp_version=$(jq -r '.packages[] | select(.name == "jjpwrgem-lsp") | .version' <<<"$metadata")
-          lsp_tag="jjpwrgem-lsp-v$lsp_version"
-          # tagged on this commit, since its binaries build from it, and not published
-          unpublished() {
-            sha=$(git ls-remote --tags origin "refs/tags/$1" "refs/tags/$1^{}" | awk 'END { print $1 }')
-            [ "$sha" = "$GITHUB_SHA" ] &&
-              [ "$(gh release view "$1" --json isDraft -q .isDraft 2>/dev/null || echo missing)" != false ]
-          }
-          cli=false
-          lsp=false
-          npm=false
-          unpublished "$tag" && cli=true
-          unpublished "$lsp_tag" && lsp=true
-          if git ls-remote --exit-code --tags origin "refs/tags/$tag" >/dev/null; then
-            [ -n "$(npm view "jjpwrgem@$version" version 2>/dev/null)" ] || npm=true
-          fi
-          { echo "tag=$tag"; echo "cli=$cli"; echo "npm=$npm"; echo "lsp_tag=$lsp_tag"; echo "lsp=$lsp"; } >>"$GITHUB_OUTPUT"
+        run: ./scripts/release/plan.sh
         env:
           GH_TOKEN: ${{ github.token }}
 
