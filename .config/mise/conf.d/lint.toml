@@ -55,10 +55,7 @@ run = "knip --workspace npm-packages/jjpwrgem-vscode"
 "npm:knip" = "6.45.1"
 
 [tasks.oxlint]
-run = "pnpm exec oxlint --deny-warnings --tsconfig npm-packages/jjpwrgem-vscode/tsconfig.json npm-packages/"
-
-[tasks.oxlint.tools]
-"aqua:oxc-project/oxc/oxlint" = "1.90.0"
+run = "pnpm run lint"
 
 [tasks.diet]
 description = "Trim publishable crate dirs before release"
