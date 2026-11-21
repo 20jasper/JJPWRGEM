@@ -38,11 +38,6 @@ impl Server {
         }
     }
 
-    /// Process exit code once `exit` has been received.
-    pub fn exit_code(&self) -> Option<u8> {
-        self.backend.exit_code()
-    }
-
     pub fn handle(&mut self, message: &str) -> Vec<String> {
         drop(self.backend.handle(message.as_bytes()));
         mem::take(&mut self.backend.sink_mut().0)

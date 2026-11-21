@@ -106,7 +106,6 @@ impl<S: Sink> Backend<S> {
 
     pub fn notification(&mut self, method: &str, params: Option<&RawValue>) -> ControlFlow<()> {
         if LspNotificationMethod::from(method) == LspNotificationMethod::Exit {
-            self.exited = true;
             return ControlFlow::Break(());
         }
         if let Err(message) = guarded(|| self.dispatch_notification(method, params)) {

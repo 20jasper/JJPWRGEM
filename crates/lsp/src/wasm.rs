@@ -11,10 +11,6 @@ impl WasmServer {
         Self(crate::Server::new())
     }
 
-    pub fn exit_code(&self) -> Option<u8> {
-        self.0.exit_code()
-    }
-
     pub fn handle(&mut self, message: &str) -> Vec<String> {
         self.0.handle(message)
     }

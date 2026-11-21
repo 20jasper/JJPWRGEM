@@ -29,7 +29,7 @@ pub fn run_blocking() -> Result<ExitCode, Box<dyn Error + Send + Sync>> {
             Err(_) => return Ok(ExitCode::FAILURE),
         };
         if backend.handle(&body)?.is_break() {
-            return Ok(ExitCode::from(backend.exit_code().unwrap_or(1)));
+            return Ok(backend.exit_code());
         }
     }
 }
