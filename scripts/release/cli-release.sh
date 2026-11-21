@@ -39,9 +39,9 @@ fi
 (cd "$assets" && cat ./*.sha256 >sha256.sum)
 gh release upload "$tag" "$assets"/* --clobber
 
-# every archive including the wasm one, its .sha256 and sha256.sum
+# every archive, its .sha256 and sha256.sum
 missing=$(comm -23 \
-  <({ { jq -r '.[].archive' .github/release-targets.json; echo "jjpwrgem-lsp-wasm-$version.tar.gz"; } | sed 'p; s/$/.sha256/'; echo sha256.sum; } | sort) \
+  <({ jq -r '.[].archive' .github/release-targets.json | sed 'p; s/$/.sha256/'; echo sha256.sum; } | sort) \
   <(gh release view "$tag" --json assets -q '.assets[].name' | sort))
 if [ -n "$missing" ]; then
   echo "$tag is missing assets: $missing" >&2

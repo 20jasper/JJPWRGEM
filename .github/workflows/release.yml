@@ -79,6 +79,8 @@ jobs:
       matrix: ${{ steps.plan.outputs.matrix }}
       tag: ${{ steps.plan.outputs.tag }}
       cli: ${{ steps.plan.outputs.cli }}
+      lsp_tag: ${{ steps.plan.outputs.lsp_tag }}
+      lsp: ${{ steps.plan.outputs.lsp }}
       npm: ${{ steps.plan.outputs.npm }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -95,7 +97,13 @@ jobs:
             [ "$(gh release view "$tag" --json isDraft -q .isDraft 2>/dev/null || echo missing)" = false ] || cli=true
             [ -n "$(npm view "jjpwrgem@$version" version 2>/dev/null)" ] || npm=true
           fi
-          { echo "tag=$tag"; echo "cli=$cli"; echo "npm=$npm"; } >>"$GITHUB_OUTPUT"
+          lsp_version=$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[] | select(.name == "jjpwrgem-lsp") | .version')
+          lsp_tag="jjpwrgem-lsp-v$lsp_version"
+          lsp=false
+          if git ls-remote --exit-code --tags origin "refs/tags/$lsp_tag" >/dev/null; then
+            gh release view "$lsp_tag" --json assets -q '.assets[].name' 2>/dev/null | grep -q '^jjpwrgem-lsp-wasm-' || lsp=true
+          fi
+          { echo "tag=$tag"; echo "cli=$cli"; echo "npm=$npm"; echo "lsp_tag=$lsp_tag"; echo "lsp=$lsp"; } >>"$GITHUB_OUTPUT"
         env:
           GH_TOKEN: ${{ github.token }}
 
@@ -151,10 +159,10 @@ jobs:
 
   wasm:
     needs: plan
-    if: always() && needs.plan.result == 'success' && (needs.plan.outputs.cli == 'true' || github.event_name == 'pull_request')
+    if: always() && needs.plan.result == 'success' && (needs.plan.outputs.lsp == 'true' || github.event_name == 'pull_request')
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
       id-token: write
       attestations: write
     env:
@@ -168,22 +176,22 @@ jobs:
       - run: rustup toolchain install --no-self-update
       - uses: ./.github/actions/setup-mise
       - run: mise run build-wasm
-      - run: ./scripts/release/package.sh wasm "${TAG#jjpwrgem-v}"
+      - run: ./scripts/release/package.sh wasm "${LSP_TAG#jjpwrgem-lsp-v}"
         env:
-          TAG: ${{ needs.plan.outputs.tag }}
+          LSP_TAG: ${{ needs.plan.outputs.lsp_tag }}
       - if: github.event_name == 'push'
         uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
           subject-path: out/jjpwrgem-*
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: release-wasm
-          path: out/*
-          if-no-files-found: error
+      - if: github.event_name == 'push'
+        run: gh release upload "$LSP_TAG" out/jjpwrgem-lsp-wasm-*
+        env:
+          GH_TOKEN: ${{ github.token }}
+          LSP_TAG: ${{ needs.plan.outputs.lsp_tag }}
 
   cli-release:
-    needs: [plan, build, wasm]
-    if: always() && github.event_name == 'push' && needs.plan.outputs.cli == 'true' && needs.build.result == 'success' && needs.wasm.result == 'success'
+    needs: [plan, build]
+    if: always() && github.event_name == 'push' && needs.plan.outputs.cli == 'true' && needs.build.result == 'success'
     runs-on: ubuntu-latest
     permissions:
       contents: write

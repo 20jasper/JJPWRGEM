@@ -9,14 +9,16 @@ target=$1
 if [ "$target" = wasm ]; then
   name=jjpwrgem-lsp-wasm-$2
   archive=$name.tar.gz
+  changelog=crates/lsp/CHANGELOG.md
 else
   archive=$(jq -er --arg target "$target" '.[] | select(.target == $target) | .archive' \
     .github/release-targets.json)
   name=${archive%%.*}
+  changelog=CHANGELOG.md
 fi
 
 mkdir -p out "stage/$name"
-cp LICENSE readme.md CHANGELOG.md "stage/$name/"
+cp LICENSE readme.md "$changelog" "stage/$name/"
 case "$archive" in
   *.zip)
     cp "target/$target/dist/jjp.exe" "stage/$name/"
