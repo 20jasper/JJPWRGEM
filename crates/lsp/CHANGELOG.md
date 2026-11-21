@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## 0.2.0 — 2026-11-21
+
+### Performance
+
+- [001e1c1](https://github.com/20jasper/JJPWRGEM/commit/001e1c175137ce8c4017dab2dc8b2b8b38b2cacc) migrate off of tower-lsp-server to a customized lsp-server, removing Tokio and avoiding intermediate deserialization. Uses 1.6x less RAM and benches are on average 1.7x faster. Binary is 31% smaller.
+
+### Added
+
+- [55fae27](https://github.com/20jasper/JJPWRGEM/commit/55fae27f10f2252bc6e1cbba2cd19c87be0ecc69) add wasm build target.
+- [062ef38](https://github.com/20jasper/JJPWRGEM/commit/062ef386b6cb6c82c5b0463a5c6f05faad2a3773) releases now include the wasm build.
+
 ## 0.1.6 — 2026-11-17
 
 ### Documentation
