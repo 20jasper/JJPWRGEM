@@ -148,17 +148,21 @@ function download(urlString, maxRedirects) {
   });
 }
 
+const isUrl = (value) => {
+  try {
+    return Boolean(new URL(value));
+  } catch {
+    return false;
+  }
+};
+
 class Package {
   constructor(platform, name, url, filename, zipExt, binaries) {
     let errors = [];
     if (typeof url !== "string") {
       errors.push("url must be a string");
-    } else {
-      try {
-        new URL(url);
-      } catch (e) {
-        errors.push(e);
-      }
+    } else if (!isUrl(url)) {
+      errors.push("url must be a valid URL");
     }
     if (name && typeof name !== "string") {
       errors.push("package name must be a string");
@@ -176,8 +180,8 @@ class Package {
     if (errors.length > 0) {
       let errorMsg =
         "One or more of the parameters you passed to the Binary constructor are invalid:\n";
-      errors.forEach((error) => {
-        errorMsg += error;
+      errors.forEach((message) => {
+        errorMsg += message;
       });
       errorMsg +=
         '\n\nCorrect usage: new Package("my-binary", "https://example.com/binary/download.tar.gz", {"my-binary": "my-binary"})';
@@ -237,7 +241,7 @@ class Package {
             if (err) return reject(err);
             let tempFile = join(directory, this.filename);
             const sink = res.pipe(createWriteStream(tempFile));
-            sink.on("error", (err) => reject(err));
+            sink.on("error", reject);
             sink.on("close", () => {
               if (/\.tar\.*/.test(this.zipExt)) {
                 const result = spawnSync("tar", [

@@ -3,9 +3,10 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "lint": "oxlint --tsconfig npm-packages/jjpwrgem-vscode/tsconfig.json npm-packages/"
+    "lint": "oxlint --deny-warnings --tsconfig npm-packages/jjpwrgem-vscode/tsconfig.json npm-packages/"
   },
   "devDependencies": {
+    "oxlint": "1.90.0",
     "oxlint-tsgolint": "7.0.2007"
   },
   "engines": {
