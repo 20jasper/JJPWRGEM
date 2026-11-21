@@ -71,7 +71,7 @@ run = "cargo shear --check-test-targets"
 "github:Boshen/cargo-shear" = "1.14"
 
 [tasks.shellcheck]
-run = "shellcheck --shell=bash $(git ls-files '*.sh' '*.bash')"
+run = "shellcheck -x -P SCRIPTDIR --shell=bash $(git ls-files '*.sh' '*.bash')"
 
 [tasks.shellcheck.tools]
 shellcheck = "0.11.0"
