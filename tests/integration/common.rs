@@ -5,6 +5,8 @@ use std::{
     process::{Command, ExitStatus, Stdio},
 };
 
+use jjpwrgem_parse::{SyntaxOptions, ast::Document, diagnostics::Patch};
+
 macro_rules! fixture_tuple {
     ($const:ident) => {
         (stringify!($const), $const)
@@ -39,6 +41,17 @@ macro_rules! assert_cli_snapshot {
 }
 
 pub(crate) use assert_cli_snapshot;
+
+pub fn apply_first_patch(json: &str, options: SyntaxOptions) -> String {
+    let error = Document::parse(json, options).unwrap_err();
+    let patches = Vec::<Patch<'_>>::from(&error);
+    let [patch] = patches.as_slice() else {
+        panic!("expected exactly one patch, got {patches:?}");
+    };
+    let mut fixed = json.to_string();
+    fixed.replace_range(patch.span, &patch.replacement);
+    fixed
+}
 
 pub fn cli() -> Command {
     let exe = env!("CARGO_BIN_EXE_jjp");

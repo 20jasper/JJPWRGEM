@@ -1,5 +1,7 @@
-use jjpwrgem_parse::{SyntaxOptions, ast::Document, diagnostics::Patch, validate_str};
+use jjpwrgem_parse::{SyntaxOptions, ast::Document, validate_str};
 use rstest::rstest;
+
+use crate::common::apply_first_patch;
 
 const COMMENT_MESSAGE: &str = "comments are not allowed in json";
 
@@ -58,12 +60,9 @@ fn unexpected_comment_patch_removes_comment_and_leading_whitespace(
     #[case] json: &str,
     #[case] expected: &str,
 ) {
-    let error = Document::parse(json, SyntaxOptions::JSON).unwrap_err();
-    let patches = Vec::<Patch<'_>>::from(&error);
-    let [patch] = patches.as_slice() else {
-        panic!("expected exactly one patch, got {patches:?}");
-    };
-    let mut fixed = json.to_string();
-    fixed.replace_range(patch.span, &patch.replacement);
-    assert_eq!(fixed, expected, "input: {json:?}");
+    assert_eq!(
+        apply_first_patch(json, SyntaxOptions::JSON),
+        expected,
+        "input: {json:?}"
+    );
 }

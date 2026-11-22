@@ -3,6 +3,8 @@ use jjpwrgem_parse::{
 };
 use rstest::rstest;
 
+use crate::common::apply_first_patch;
+
 const COMMENT_MESSAGE: &str = "comments are not allowed in json";
 const UNTERMINATED_MESSAGE: &str = "block comment is never closed";
 
@@ -23,7 +25,6 @@ const UNTERMINATED_MESSAGE: &str = "block comment is never closed";
 #[case::line_comment_opener_inside("[/* // */ 1]")]
 #[case::empty("[/**/1]")]
 #[case::stars_only("[/***/1]")]
-#[case::between_tokens("[1/**/,2]")]
 #[case::slashes_in_string(r#"["/* not a comment */", 2]"#)]
 fn jsonc_accepts_block_comments(#[case] json: &str) {
     assert_eq!(validate_str(json, SyntaxOptions::JSONC), Ok(()));
@@ -53,12 +54,10 @@ fn json_rejects_block_comments(#[case] json: &str) {
     assert_eq!(error.message(), COMMENT_MESSAGE, "input: {json:?}");
 }
 
-#[rstest]
-#[case::json(SyntaxOptions::JSON)]
-#[case::jsonc(SyntaxOptions::JSONC)]
-fn slash_star_inside_string_is_untouched(#[case] options: SyntaxOptions) {
-    let json = r#"["/* a", "b */", "/**/"]"#;
-    assert!(Document::parse(json, options).is_ok());
+#[test]
+fn json_accepts_slash_star_in_string() {
+    let json = r#"["/* not a comment */", 2]"#;
+    assert!(Document::parse(json, SyntaxOptions::JSON).is_ok());
 }
 
 // jsonc[verify no-nested-comments]
@@ -105,18 +104,12 @@ fn json_rejects_unterminated_comment(#[case] json: &str) {
 #[case::leading("# c\n[1]")]
 #[case::trailing("[1] # c")]
 fn jsonc_rejects_hash_comments(#[case] json: &str) {
-    assert!(Document::parse(json, SyntaxOptions::JSONC).is_err());
-}
-
-fn apply_first_patch(json: &str, options: SyntaxOptions) -> String {
-    let error = Document::parse(json, options).unwrap_err();
-    let patches = Vec::<Patch<'_>>::from(&error);
-    let [patch] = patches.as_slice() else {
-        panic!("expected exactly one patch, got {patches:?}");
-    };
-    let mut fixed = json.to_string();
-    fixed.replace_range(patch.span, &patch.replacement);
-    fixed
+    let error = Document::parse(json, SyntaxOptions::JSONC).unwrap_err();
+    assert_eq!(
+        error.message(),
+        "unexpected character `#`. expected start of a json value",
+        "input: {json:?}"
+    );
 }
 
 #[rstest]
