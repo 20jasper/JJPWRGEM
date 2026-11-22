@@ -2,11 +2,7 @@ use core::range::Range;
 
 use visitor::AstVisitor;
 
-use crate::{
-    Result, SyntaxOptions,
-    tokens::{Comments, TokenStream},
-    traverse::parse_tokens,
-};
+use crate::{Result, SyntaxOptions, tokens::TokenStream, traverse::parse_tokens};
 
 pub(crate) const QUOTE_LEN: usize = 1;
 
@@ -175,11 +171,7 @@ pub(crate) fn parse_at(
 ) -> Result<Document<&str>> {
     let mut ast = AstVisitor::new();
     parse_tokens(
-        &mut TokenStream::new_at_range(full_source, range).with_comments(if options.comments {
-            Comments::Skip
-        } else {
-            Comments::Reject
-        }),
+        &mut TokenStream::new_at_range(full_source, range, options),
         options,
         full_source,
         true,

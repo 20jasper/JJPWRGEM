@@ -26,7 +26,7 @@ impl SyntaxOptions {
         comments: false,
     };
 
-    /// json with trailing commas and comments
+    /// [JSONC](https://jsonc.org/) json: trailing commas and comments allowed
     pub const JSONC: Self = Self {
         trailing_commas: true,
         comments: true,

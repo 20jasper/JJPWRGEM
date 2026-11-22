@@ -19,7 +19,7 @@ pub fn uglify_str_into(buf: &mut String, json: &str) -> Result<()> {
         buf: std::mem::take(buf),
     };
     parse_tokens(
-        &mut TokenStream::new(json),
+        &mut TokenStream::new(json, SyntaxOptions::JSON),
         SyntaxOptions::JSON,
         json,
         true,

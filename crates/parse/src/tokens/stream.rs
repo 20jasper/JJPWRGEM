@@ -1,7 +1,7 @@
 use core::{iter::Peekable, range::Range};
 
 use crate::{
-    Error, ErrorKind, Result,
+    Error, ErrorKind, Result, SyntaxOptions,
     tokens::{
         ByteWithContext, BytesWithContext, FALSE, NULL, TRUE, Token, TokenWithContext,
         current_byte_pos,
@@ -39,7 +39,8 @@ fn skip_whitespace(bytes: &[u8]) -> usize {
         .unwrap_or(bytes.len().saturating_sub(i))
 }
 
-const LINE_COMMENT_OPEN: &[u8] = b"//";
+const COMMENT_START: u8 = b'/';
+const LINE_COMMENT_OPEN_LEN: usize = 2;
 
 /// How the lexer treats comments
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -64,11 +65,11 @@ struct TokenStreamInner<'a> {
 }
 
 impl<'a> TokenStreamInner<'a> {
-    fn new_at_range(full_source: &'a str, range: Range<usize>) -> Self {
+    fn new_at_range(full_source: &'a str, range: Range<usize>, comments: Comments) -> Self {
         Self {
             input: &full_source[..range.end],
             pos: range.start,
-            comments: Comments::Reject,
+            comments,
         }
     }
 
@@ -176,25 +177,28 @@ impl Iterator for TokenStreamInner<'_> {
                         self.unexpected_character()
                     }
                 }
-                b'/' if self.input.as_bytes()[self.pos..].starts_with(LINE_COMMENT_OPEN) => {
-                    // jsonc[impl single-line-comment]
-                    let end = self.pos
-                        + LINE_COMMENT_OPEN.len()
-                        + line_comment_len(
-                            &self.input.as_bytes()[self.pos + LINE_COMMENT_OPEN.len()..],
-                        );
-                    match self.comments {
-                        Comments::Skip => {
-                            self.pos = end;
-                            continue;
+                b'/' => match self.input.as_bytes().get(self.pos + 1) {
+                    Some(&COMMENT_START) => {
+                        // jsonc[impl single-line-comment]
+                        let end = self.pos
+                            + LINE_COMMENT_OPEN_LEN
+                            + line_comment_len(
+                                &self.input.as_bytes()[self.pos + LINE_COMMENT_OPEN_LEN..],
+                            );
+                        match self.comments {
+                            Comments::Skip => {
+                                self.pos = end;
+                                continue;
+                            }
+                            Comments::Reject => Err(Error::new(
+                                ErrorKind::UnexpectedComment,
+                                self.pos..end,
+                                self.input,
+                            )),
                         }
-                        Comments::Reject => Err(Error::new(
-                            ErrorKind::UnexpectedComment,
-                            self.pos..end,
-                            self.input,
-                        )),
                     }
-                }
+                    _ => self.unexpected_character(),
+                },
                 _ => self.unexpected_character(),
             };
 
@@ -210,21 +214,24 @@ pub struct TokenStream<'a> {
 }
 
 impl<'a> TokenStream<'a> {
-    pub(crate) fn new_at_range(full_source: &'a str, range: Range<usize>) -> Self {
+    pub(crate) fn new_at_range(
+        full_source: &'a str,
+        range: Range<usize>,
+        options: SyntaxOptions,
+    ) -> Self {
+        let comments = if options.comments {
+            Comments::Skip
+        } else {
+            Comments::Reject
+        };
         Self {
-            inner: TokenStreamInner::new_at_range(full_source, range),
+            inner: TokenStreamInner::new_at_range(full_source, range, comments),
             cached: None,
         }
     }
 
-    pub fn new(s: &'a str) -> Self {
-        Self::new_at_range(s, 0..s.len())
-    }
-
-    #[must_use]
-    pub(crate) fn with_comments(mut self, comments: Comments) -> Self {
-        self.inner.comments = comments;
-        self
+    pub fn new(s: &'a str, options: SyntaxOptions) -> Self {
+        Self::new_at_range(s, 0..s.len(), options)
     }
 
     #[inline]

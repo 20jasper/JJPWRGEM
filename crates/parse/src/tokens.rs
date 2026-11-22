@@ -6,7 +6,6 @@ pub(crate) mod string;
 use core::{fmt::Display, iter::Peekable, range::Range};
 
 pub use lexical::{JsonByte, JsonChar};
-pub(crate) use stream::Comments;
 pub use stream::TokenStream;
 
 #[repr(u8)]
@@ -255,10 +254,10 @@ impl From<bool> for Token {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{Error, ErrorKind, Result};
+    use crate::{Error, ErrorKind, Result, SyntaxOptions};
 
     fn str_to_tokens(s: &str) -> Result<Vec<TokenWithContext>> {
-        stream::TokenStream::new(s).collect()
+        stream::TokenStream::new(s, SyntaxOptions::JSON).collect()
     }
 
     fn ctx(token: Token, range: Range<usize>) -> TokenWithContext {
