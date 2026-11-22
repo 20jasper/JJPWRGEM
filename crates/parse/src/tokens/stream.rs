@@ -54,6 +54,10 @@ fn line_comment_len(rest: &[u8]) -> usize {
     memchr::memchr2(b'\n', b'\r', rest).unwrap_or(rest.len())
 }
 
+fn block_comment_len(rest: &[u8]) -> Option<usize> {
+    memchr::memmem::find(rest, BLOCK_COMMENT_CLOSE).map(|offset| offset + BLOCK_COMMENT_CLOSE.len())
+}
+
 #[derive(Debug, Clone)]
 struct TokenStreamInner<'a> {
     input: &'a str,
@@ -177,11 +181,8 @@ impl Iterator for TokenStreamInner<'_> {
                 b'/' => match self.input.as_bytes().get(self.pos + 1) {
                     Some(b'/') => {
                         // jsonc[impl single-line-comment]
-                        let end = self.pos
-                            + LINE_COMMENT_OPEN.len()
-                            + line_comment_len(
-                                &self.input.as_bytes()[self.pos + LINE_COMMENT_OPEN.len()..],
-                            );
+                        let body = self.pos + LINE_COMMENT_OPEN.len();
+                        let end = body + line_comment_len(&self.input.as_bytes()[body..]);
                         match self.comments {
                             Comments::Skip => {
                                 self.pos = end;
@@ -198,11 +199,8 @@ impl Iterator for TokenStreamInner<'_> {
                         // jsonc[impl multi-line-comment]
                         // jsonc[impl no-nested-comments]
                         let body = self.pos + BLOCK_COMMENT_OPEN.len();
-                        let closed = memchr::memmem::find(
-                            &self.input.as_bytes()[body..],
-                            BLOCK_COMMENT_CLOSE,
-                        )
-                        .map(|offset| body + offset + BLOCK_COMMENT_CLOSE.len());
+                        let closed =
+                            block_comment_len(&self.input.as_bytes()[body..]).map(|len| body + len);
                         match (self.comments, closed) {
                             (Comments::Skip, Some(end)) => {
                                 // jsonc[impl comments-ignored]

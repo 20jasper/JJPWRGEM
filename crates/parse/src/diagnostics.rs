@@ -15,6 +15,17 @@ pub(crate) const REMOVE_EXPONENT_HELP: &str = "remove the exponent";
 pub(crate) const INSERT_EXPONENT_PLACEHOLDER_DIGIT_HELP: &str = "insert a placeholder digit";
 pub(crate) const EXPONENT_PLACEHOLDER_DIGIT: &str = "5";
 
+fn needs_separator(source: &str, start: usize, end: usize) -> bool {
+    matches!(
+        (
+            source[..start].bytes().next_back(),
+            source[end..].bytes().next(),
+        ),
+        (Some(before), Some(after))
+            if !JsonByte(before).is_whitespace() && !JsonByte(after).is_whitespace()
+    )
+}
+
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Context<'a> {
     pub message: Cow<'a, str>,
@@ -233,19 +244,15 @@ impl<'a> From<&'a Error> for Vec<Patch<'a>> {
             )],
             ErrorKind::UnexpectedComment => {
                 let start = trim_end_whitespace(&error.source_text[..error.range.start]).len();
-                let joins_tokens = matches!(
-                    (
-                        error.source_text[..start].bytes().next_back(),
-                        error.source_text[error.range.end..].bytes().next(),
-                    ),
-                    (Some(before), Some(after))
-                        if !JsonByte(before).is_whitespace() && !JsonByte(after).is_whitespace()
-                );
                 vec![Patch::new(
                     "remove the comment",
                     start..error.range.end,
                     source,
-                    if joins_tokens { " " } else { "" },
+                    if needs_separator(&error.source_text, start, error.range.end) {
+                        " "
+                    } else {
+                        ""
+                    },
                 )]
             }
             ErrorKind::UnterminatedComment => vec![Patch::new(
