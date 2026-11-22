@@ -43,22 +43,11 @@ const LINE_COMMENT_OPEN: &[u8] = b"//";
 
 /// How the lexer treats comments
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Comments {
+pub(crate) enum Comments {
     /// a comment is an error
     Reject,
     /// a comment is skipped like whitespace
     Skip,
-}
-
-impl From<bool> for Comments {
-    #[inline]
-    fn from(allowed: bool) -> Self {
-        if allowed {
-            Comments::Skip
-        } else {
-            Comments::Reject
-        }
-    }
 }
 
 /// Length of the line comment body in `rest`, which excludes the line ending
@@ -233,7 +222,7 @@ impl<'a> TokenStream<'a> {
     }
 
     #[must_use]
-    pub fn with_comments(mut self, comments: Comments) -> Self {
+    pub(crate) fn with_comments(mut self, comments: Comments) -> Self {
         self.inner.comments = comments;
         self
     }
