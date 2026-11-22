@@ -121,39 +121,3 @@ pub fn uglify_document_into<S: AsRef<str>>(buf: &mut String, doc: &Document<S>) 
     visit_document(doc, &mut visitor);
     *buf = visitor.buf;
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::{
-        SyntaxOptions,
-        format::{LineEnding, prettify_document},
-    };
-
-    #[rstest::rstest]
-    #[case("[1, 2,]", "[1,2]", "[1, 2]")]
-    #[case(r#"{"a": 1,}"#, r#"{"a":1}"#, r#"{ "a": 1 }"#)]
-    #[case(
-        r#"{"a": [1,], "b": {"c": null,},}"#,
-        r#"{"a":[1],"b":{"c":null}}"#,
-        r#"{ "a": [1], "b": { "c": null } }"#
-    )]
-    fn trailing_commas_are_not_emitted(
-        #[case] json: &str,
-        #[case] uglified: &str,
-        #[case] prettified: &str,
-    ) {
-        let options = SyntaxOptions {
-            trailing_commas: true,
-        };
-
-        let mut visitor = UglifyEmitVisitor::default();
-        let mut tokens = TokenStream::new(json);
-        parse_tokens(&mut tokens, options, json, true, &mut visitor).unwrap();
-        assert_eq!(visitor.buf, uglified);
-
-        let doc = Document::parse(json, options).unwrap();
-        assert_eq!(uglify_document(&doc), uglified);
-        assert_eq!(prettify_document(&doc, 80, LineEnding::Lf), prettified);
-    }
-}

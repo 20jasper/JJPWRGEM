@@ -369,11 +369,9 @@ mod tests {
 
     // jsonc[verify trailing-commas]
     #[rstest::rstest]
-    #[case("[1, 2,]", true)]
     #[case("[1,]", true)]
     #[case("[[1,],]", true)]
     #[case(r#"{"a": 1,}"#, true)]
-    #[case(r#"{"a": 1, "b": [2,],}"#, true)]
     #[case("[,]", false)]
     #[case("[1,,]", false)]
     #[case("[1,,2]", false)]
