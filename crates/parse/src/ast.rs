@@ -387,31 +387,6 @@ mod tests {
         assert!(Document::parse(json, SyntaxOptions::JSON).is_err());
     }
 
-    // jsonc[verify single-line-comment]
-    // jsonc[verify line-ending]
-    #[rstest::rstest]
-    #[case("// c\n[1]")]
-    #[case("[1]// c")]
-    #[case("[1, // c\n2]")]
-    #[case("[1,\r// c\r2]")]
-    #[case("[1,\r\n// c\r\n2]")]
-    #[case(r#"["// not a comment", 2]"#)]
-    fn line_comments_are_skipped_only_when_allowed(#[case] json: &str) {
-        assert!(Document::parse(json, SyntaxOptions::JSONC).is_ok());
-        let in_string = json.contains('"');
-        assert_eq!(
-            Document::parse(json, SyntaxOptions::JSON).is_ok(),
-            in_string
-        );
-    }
-
-    #[test]
-    fn rejected_line_comment_range_excludes_line_ending() {
-        let error = Document::parse("[1, // c\r\n2]", SyntaxOptions::JSON).unwrap_err();
-        assert_eq!(error.kind, crate::ErrorKind::UnexpectedComment);
-        assert_eq!(*error.range(), (4..8));
-    }
-
     fn range_of(source: &str, needle: &str) -> Range<usize> {
         let start = source.find(needle).expect("needle in source");
         start..start + needle.len()

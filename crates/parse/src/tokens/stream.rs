@@ -41,16 +41,12 @@ fn skip_whitespace(bytes: &[u8]) -> usize {
 
 const LINE_COMMENT_OPEN: &[u8] = b"//";
 
-/// How the lexer treats comments
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum Comments {
-    /// a comment is an error
     Reject,
-    /// a comment is skipped like whitespace
     Skip,
 }
 
-/// Length of the line comment body in `rest`, which excludes the line ending
 fn line_comment_len(rest: &[u8]) -> usize {
     // jsonc[impl line-ending]
     memchr::memchr2(b'\n', b'\r', rest).unwrap_or(rest.len())

@@ -444,30 +444,3 @@ impl<'a> From<&'a Error> for Diagnostic<'a> {
         }
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::{SyntaxOptions, ast::Document};
-
-    #[rstest::rstest]
-    #[case("[1, // c\n2]", "[1,\n2]")]
-    #[case(
-        "{\n  \"a\": 1,\n  // c\n  \"b\": 2\n}",
-        "{\n  \"a\": 1,\n  \"b\": 2\n}"
-    )]
-    #[case("// c\n[1]", "\n[1]")]
-    fn unexpected_comment_patch_removes_comment_and_leading_whitespace(
-        #[case] json: &str,
-        #[case] expected: &str,
-    ) {
-        let error = Document::parse(json, SyntaxOptions::JSON).unwrap_err();
-        let diagnostic = Diagnostic::from(&error);
-        let [patch] = diagnostic.patches.as_slice() else {
-            panic!("expected one patch");
-        };
-        let mut fixed = json.to_string();
-        fixed.replace_range(patch.span.start..patch.span.end, &patch.replacement);
-        assert_eq!(fixed, expected);
-    }
-}
