@@ -4,7 +4,6 @@ use rstest::rstest;
 const COMMENT_MESSAGE: &str = "comments are not allowed in json";
 
 // jsonc[verify single-line-comment]
-// jsonc[verify line-ending]
 #[rstest]
 #[case::leading("// c\n[1]")]
 #[case::trailing_without_newline("[1]// c")]
@@ -17,7 +16,6 @@ fn jsonc_accepts_line_comments(#[case] json: &str) {
     assert!(Document::parse(json, SyntaxOptions::JSONC).is_ok());
 }
 
-// jsonc[verify single-line-comment]
 #[rstest]
 #[case::leading("// c\n[1]")]
 #[case::trailing_without_newline("[1]// c")]
@@ -29,7 +27,6 @@ fn json_rejects_line_comments(#[case] json: &str) {
     assert_eq!(error.message(), COMMENT_MESSAGE, "input: {json:?}");
 }
 
-// jsonc[verify single-line-comment]
 #[test]
 fn json_accepts_slashes_in_string() {
     let json = r#"["// not a comment", 2]"#;
@@ -50,7 +47,6 @@ fn rejected_line_comment_range_excludes_line_ending(
     assert_eq!(*error.range(), range.into(), "input: {json:?}");
 }
 
-// jsonc[verify single-line-comment]
 #[rstest]
 #[case::after_comma("[1, // c\n2]", "[1,\n2]")]
 #[case::own_line(
