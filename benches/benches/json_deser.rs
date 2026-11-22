@@ -9,6 +9,16 @@ use json_common::{include_impl, load_inputs};
 
 const COMMENT_AFTER_LINE: &str = " // comment\n";
 
+const LONG_COMMENT_LEN: usize = 5_000;
+const LONG_COMMENT_COUNT: usize = 20;
+const HUGE_COMMENT_LEN: usize = 1_000_000;
+
+fn long_comments(len: usize, count: usize) -> String {
+    let comment = format!("// {}\n", "x".repeat(len));
+    let items = vec![format!("{comment}1"); count].join(",\n");
+    format!("[\n{items}\n]")
+}
+
 fn load_jsonc_inputs() -> Vec<(&'static str, String)> {
     let data = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("data");
     let commented_citm = std::fs::read_to_string(data.join("citm_catalog.json"))
@@ -20,6 +30,11 @@ fn load_jsonc_inputs() -> Vec<(&'static str, String)> {
             std::fs::read_to_string(data.join("tsconfig.jsonc")).unwrap(),
         ),
         ("citm_catalog_commented", commented_citm),
+        (
+            "long_comments",
+            long_comments(LONG_COMMENT_LEN, LONG_COMMENT_COUNT),
+        ),
+        ("huge_comment", long_comments(HUGE_COMMENT_LEN, 1)),
     ]
     .into_iter()
     .filter(|(name, _)| match std::env::var("JJP_JSON_INPUT") {

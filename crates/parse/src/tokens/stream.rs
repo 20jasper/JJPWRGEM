@@ -64,9 +64,7 @@ impl From<bool> for Comments {
 /// Length of the line comment body in `rest`, which excludes the line ending
 fn line_comment_len(rest: &[u8]) -> usize {
     // jsonc[impl line-ending]
-    rest.iter()
-        .position(|&b| matches!(b, b'\n' | b'\r'))
-        .unwrap_or(rest.len())
+    memchr::memchr2(b'\n', b'\r', rest).unwrap_or(rest.len())
 }
 
 #[derive(Debug, Clone)]

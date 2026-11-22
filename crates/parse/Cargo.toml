@@ -17,6 +17,7 @@ bytes2chars = { workspace = true }
 const_format = { workspace = true }
 displaydoc = { workspace = true }
 itoa = { version = "1.0.18", optional = true }
+memchr = "2.8.3"
 serde = { version = "1.0.228", optional = true, features = ["derive"] }
 zmij = { version = "1.0.23", optional = true }
 
