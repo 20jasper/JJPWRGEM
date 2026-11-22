@@ -1,9 +1,10 @@
 use core::range::Range;
 
 use crate::{
+    SyntaxOptions,
     error::{Error, ErrorKind, Result},
-    tokens::{Token, TokenWithContext, byte_range},
-    traverse::{Visitor, parse_tokens_at_depth, punctuation_at, syntax::SyntaxStream},
+    tokens::{Token, TokenStream, TokenWithContext, byte_range},
+    traverse::{Visitor, parse_tokens_at_depth, punctuation_at},
 };
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
@@ -57,7 +58,8 @@ fn array_error(
 }
 
 pub fn parse_array<'a>(
-    tokens: &mut SyntaxStream<'a>,
+    tokens: &mut TokenStream<'a>,
+    options: SyntaxOptions,
     text: &'a str,
     depth: usize,
     visitor: &mut impl Visitor<'a>,
@@ -84,7 +86,7 @@ pub fn parse_array<'a>(
 
     let mut delim = open_start;
     // jsonc[impl trailing-commas]
-    let after_comma = if tokens.options().trailing_commas {
+    let after_comma = if options.trailing_commas {
         ArrayState::ValueOrEnd
     } else {
         ArrayState::Value
@@ -109,7 +111,7 @@ pub fn parse_array<'a>(
                 if delim != open_start {
                     visitor.on_item_delim();
                 }
-                parse_tokens_at_depth(tokens, text, false, visitor, depth + 1)?;
+                parse_tokens_at_depth(tokens, options, text, false, visitor, depth + 1)?;
             }
         }
         state = next;

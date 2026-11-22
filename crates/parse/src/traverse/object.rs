@@ -1,9 +1,9 @@
 use core::range::Range;
 
 use crate::{
-    Error, ErrorKind, Result,
-    tokens::{Token, TokenWithContext, byte_range},
-    traverse::{Visitor, parse_tokens_at_depth, punctuation_at, syntax::SyntaxStream},
+    Error, ErrorKind, Result, SyntaxOptions,
+    tokens::{Token, TokenStream, TokenWithContext, byte_range},
+    traverse::{Visitor, parse_tokens_at_depth, punctuation_at},
 };
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
@@ -76,7 +76,8 @@ fn object_error(
 }
 
 pub fn parse_object<'a>(
-    tokens: &mut SyntaxStream<'a>,
+    tokens: &mut TokenStream<'a>,
+    options: SyntaxOptions,
     text: &'a str,
     depth: usize,
     visitor: &mut impl Visitor<'a>,
@@ -97,7 +98,7 @@ pub fn parse_object<'a>(
         key: open_start..open_start,
         last_pair: open_start..open_start,
     };
-    let after_comma = if tokens.options().trailing_commas {
+    let after_comma = if options.trailing_commas {
         ObjectState::KeyOrEnd
     } else {
         ObjectState::Key
@@ -132,7 +133,8 @@ pub fn parse_object<'a>(
                 offsets.last_pair = ctx.range;
             }
             ObjectState::CommaOrEnd => {
-                let value_range = parse_tokens_at_depth(tokens, text, false, visitor, depth + 1)?;
+                let value_range =
+                    parse_tokens_at_depth(tokens, options, text, false, visitor, depth + 1)?;
                 offsets.last_pair = offsets.last_pair.start..value_range.end;
             }
         }

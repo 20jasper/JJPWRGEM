@@ -1,13 +1,12 @@
 mod array;
 mod object;
-mod syntax;
 
 use core::range::Range;
 
 use crate::{
     Error, ErrorKind, Result, SyntaxOptions,
     tokens::{ErrorToken, Token, TokenStream, TokenWithContext, byte_range, lexical::JsonByte},
-    traverse::{array::parse_array, object::parse_object, syntax::SyntaxStream},
+    traverse::{array::parse_array, object::parse_object},
 };
 
 pub trait Visitor<'a> {
@@ -28,18 +27,18 @@ pub trait Visitor<'a> {
 const MAX_DEPTH: usize = 128;
 
 pub fn parse_tokens<'a>(
-    tokens: TokenStream<'a>,
+    tokens: &mut TokenStream<'a>,
     options: SyntaxOptions,
     text: &'a str,
     fail_on_multiple_value: bool,
     visitor: &mut impl Visitor<'a>,
 ) -> Result<Range<usize>> {
-    let mut tokens = SyntaxStream::new(tokens, options);
-    parse_tokens_at_depth(&mut tokens, text, fail_on_multiple_value, visitor, 0)
+    parse_tokens_at_depth(tokens, options, text, fail_on_multiple_value, visitor, 0)
 }
 
 fn parse_tokens_at_depth<'a>(
-    tokens: &mut SyntaxStream<'a>,
+    tokens: &mut TokenStream<'a>,
+    options: SyntaxOptions,
     text: &'a str,
     fail_on_multiple_value: bool,
     visitor: &mut impl Visitor<'a>,
@@ -62,8 +61,8 @@ fn parse_tokens_at_depth<'a>(
         ));
     };
     let range = match peeked.token {
-        Token::OpenCurlyBrace => parse_object(tokens, text, depth, visitor)?,
-        Token::OpenSquareBracket => parse_array(tokens, text, depth, visitor)?,
+        Token::OpenCurlyBrace => parse_object(tokens, options, text, depth, visitor)?,
+        Token::OpenSquareBracket => parse_array(tokens, options, text, depth, visitor)?,
         t if t.is_scalar() => {
             let token_ctx = tokens
                 .next_token()?
@@ -293,7 +292,7 @@ mod tests {
 
         let mut from_tokens: RecordingVisitor = RecordingVisitor::default();
         parse_tokens(
-            TokenStream::new(json),
+            &mut TokenStream::new(json),
             SyntaxOptions::JSON,
             json,
             true,
