@@ -125,6 +125,54 @@ impl<'a> TokenStreamInner<'a> {
         ))
     }
 
+    #[cold]
+    #[inline(never)]
+    fn comment(&mut self) -> Option<Result<TokenWithContext>> {
+        Some(match self.input.as_bytes().get(self.pos + 1) {
+            Some(b'/') => {
+                // jsonc[impl single-line-comment]
+                let body = self.pos + LINE_COMMENT_OPEN.len();
+                let end = body + line_comment_len(&self.input.as_bytes()[body..]);
+                match self.comments {
+                    Comments::Skip => {
+                        self.pos = end;
+                        return None;
+                    }
+                    Comments::Reject => Err(Error::new(
+                        ErrorKind::UnexpectedComment,
+                        self.pos..end,
+                        self.input,
+                    )),
+                }
+            }
+            Some(b'*') => {
+                // jsonc[impl multi-line-comment]
+                // jsonc[impl no-nested-comments]
+                let body = self.pos + BLOCK_COMMENT_OPEN.len();
+                let closed =
+                    block_comment_len(&self.input.as_bytes()[body..]).map(|len| body + len);
+                match (self.comments, closed) {
+                    (Comments::Skip, Some(end)) => {
+                        // jsonc[impl comments-ignored]
+                        self.pos = end;
+                        return None;
+                    }
+                    (Comments::Reject, Some(end)) => Err(Error::new(
+                        ErrorKind::UnexpectedComment,
+                        self.pos..end,
+                        self.input,
+                    )),
+                    (_, None) => Err(Error::new(
+                        ErrorKind::UnterminatedComment,
+                        self.pos..self.input.len(),
+                        self.input,
+                    )),
+                }
+            }
+            _ => self.unexpected_character(),
+        })
+    }
+
     fn consume_whitespace(&mut self) {
         let Some(ByteWithContext(_, byte)) = self.peek_byte_with_context() else {
             return;
@@ -178,48 +226,9 @@ impl Iterator for TokenStreamInner<'_> {
                         self.unexpected_character()
                     }
                 }
-                b'/' => match self.input.as_bytes().get(self.pos + 1) {
-                    Some(b'/') => {
-                        // jsonc[impl single-line-comment]
-                        let body = self.pos + LINE_COMMENT_OPEN.len();
-                        let end = body + line_comment_len(&self.input.as_bytes()[body..]);
-                        match self.comments {
-                            Comments::Skip => {
-                                self.pos = end;
-                                continue;
-                            }
-                            Comments::Reject => Err(Error::new(
-                                ErrorKind::UnexpectedComment,
-                                self.pos..end,
-                                self.input,
-                            )),
-                        }
-                    }
-                    Some(b'*') => {
-                        // jsonc[impl multi-line-comment]
-                        // jsonc[impl no-nested-comments]
-                        let body = self.pos + BLOCK_COMMENT_OPEN.len();
-                        let closed =
-                            block_comment_len(&self.input.as_bytes()[body..]).map(|len| body + len);
-                        match (self.comments, closed) {
-                            (Comments::Skip, Some(end)) => {
-                                // jsonc[impl comments-ignored]
-                                self.pos = end;
-                                continue;
-                            }
-                            (Comments::Reject, Some(end)) => Err(Error::new(
-                                ErrorKind::UnexpectedComment,
-                                self.pos..end,
-                                self.input,
-                            )),
-                            (_, None) => Err(Error::new(
-                                ErrorKind::UnterminatedComment,
-                                self.pos..self.input.len(),
-                                self.input,
-                            )),
-                        }
-                    }
-                    _ => self.unexpected_character(),
+                b'/' => match self.comment() {
+                    None => continue,
+                    Some(err) => err,
                 },
                 _ => self.unexpected_character(),
             };
