@@ -19,7 +19,7 @@ pub struct SyntaxOptions {
 }
 
 impl SyntaxOptions {
-    /// strict json
+    /// [RFC 8259](https://datatracker.ietf.org/doc/html/rfc8259) compliant json: no trailing commas or comments
     pub const JSON: Self = Self {
         trailing_commas: false,
     };
