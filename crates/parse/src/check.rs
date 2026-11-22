@@ -39,7 +39,7 @@ impl<'a> Visitor<'a> for NoopVisitor {
 pub fn validate_str(json: &str, options: SyntaxOptions) -> Result<()> {
     let mut visitor = NoopVisitor;
     parse_tokens(
-        &mut TokenStream::new(json),
+        &mut TokenStream::new(json, options),
         options,
         json,
         true,

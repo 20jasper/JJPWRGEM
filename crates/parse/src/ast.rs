@@ -171,7 +171,7 @@ pub(crate) fn parse_at(
 ) -> Result<Document<&str>> {
     let mut ast = AstVisitor::new();
     parse_tokens(
-        &mut TokenStream::new_at_range(full_source, range),
+        &mut TokenStream::new_at_range(full_source, range, options),
         options,
         full_source,
         true,
@@ -381,6 +381,7 @@ mod tests {
     fn trailing_commas_are_accepted_only_when_allowed(#[case] json: &str, #[case] allowed: bool) {
         let options = SyntaxOptions {
             trailing_commas: true,
+            ..SyntaxOptions::JSON
         };
         assert_eq!(Document::parse(json, options).is_ok(), allowed);
         assert!(Document::parse(json, SyntaxOptions::JSON).is_err());

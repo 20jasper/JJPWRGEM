@@ -1,7 +1,7 @@
 use core::{iter::Peekable, range::Range};
 
 use crate::{
-    Error, ErrorKind, Result,
+    Error, ErrorKind, Result, SyntaxOptions,
     tokens::{
         ByteWithContext, BytesWithContext, FALSE, NULL, TRUE, Token, TokenWithContext,
         current_byte_pos,
@@ -39,17 +39,32 @@ fn skip_whitespace(bytes: &[u8]) -> usize {
         .unwrap_or(bytes.len().saturating_sub(i))
 }
 
+const LINE_COMMENT_OPEN: &[u8] = b"//";
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum Comments {
+    Reject,
+    Skip,
+}
+
+fn line_comment_len(rest: &[u8]) -> usize {
+    // jsonc[impl line-ending]
+    memchr::memchr2(b'\n', b'\r', rest).unwrap_or(rest.len())
+}
+
 #[derive(Debug, Clone)]
 struct TokenStreamInner<'a> {
     input: &'a str,
     pos: usize,
+    comments: Comments,
 }
 
 impl<'a> TokenStreamInner<'a> {
-    fn new_at_range(full_source: &'a str, range: Range<usize>) -> Self {
+    fn new_at_range(full_source: &'a str, range: Range<usize>, comments: Comments) -> Self {
         Self {
             input: &full_source[..range.end],
             pos: range.start,
+            comments,
         }
     }
 
@@ -157,6 +172,28 @@ impl Iterator for TokenStreamInner<'_> {
                         self.unexpected_character()
                     }
                 }
+                b'/' => match self.input.as_bytes().get(self.pos + 1) {
+                    Some(b'/') => {
+                        // jsonc[impl single-line-comment]
+                        let end = self.pos
+                            + LINE_COMMENT_OPEN.len()
+                            + line_comment_len(
+                                &self.input.as_bytes()[self.pos + LINE_COMMENT_OPEN.len()..],
+                            );
+                        match self.comments {
+                            Comments::Skip => {
+                                self.pos = end;
+                                continue;
+                            }
+                            Comments::Reject => Err(Error::new(
+                                ErrorKind::UnexpectedComment,
+                                self.pos..end,
+                                self.input,
+                            )),
+                        }
+                    }
+                    _ => self.unexpected_character(),
+                },
                 _ => self.unexpected_character(),
             };
 
@@ -172,15 +209,24 @@ pub struct TokenStream<'a> {
 }
 
 impl<'a> TokenStream<'a> {
-    pub(crate) fn new_at_range(full_source: &'a str, range: Range<usize>) -> Self {
+    pub(crate) fn new_at_range(
+        full_source: &'a str,
+        range: Range<usize>,
+        options: SyntaxOptions,
+    ) -> Self {
+        let comments = if options.comments {
+            Comments::Skip
+        } else {
+            Comments::Reject
+        };
         Self {
-            inner: TokenStreamInner::new_at_range(full_source, range),
+            inner: TokenStreamInner::new_at_range(full_source, range, comments),
             cached: None,
         }
     }
 
-    pub fn new(s: &'a str) -> Self {
-        Self::new_at_range(s, 0..s.len())
+    pub fn new(s: &'a str, options: SyntaxOptions) -> Self {
+        Self::new_at_range(s, 0..s.len(), options)
     }
 
     #[inline]

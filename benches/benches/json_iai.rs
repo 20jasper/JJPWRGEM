@@ -67,7 +67,7 @@ fn bench_prettify_ast(doc: Document<&'static str>) -> String {
 #[bench::canada(CANADA)]
 #[bench::twitter(TWITTER)]
 fn bench_tokens_plain(json: &'static str) {
-    TokenStream::new(black_box(json)).for_each(|token| {
+    TokenStream::new(black_box(json), SyntaxOptions::JSON).for_each(|token| {
         black_box(token.unwrap());
     })
 }

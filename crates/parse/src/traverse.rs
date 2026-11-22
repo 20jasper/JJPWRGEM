@@ -292,7 +292,7 @@ mod tests {
 
         let mut from_tokens: RecordingVisitor = RecordingVisitor::default();
         parse_tokens(
-            &mut TokenStream::new(json),
+            &mut TokenStream::new(json, SyntaxOptions::JSON),
             SyntaxOptions::JSON,
             json,
             true,

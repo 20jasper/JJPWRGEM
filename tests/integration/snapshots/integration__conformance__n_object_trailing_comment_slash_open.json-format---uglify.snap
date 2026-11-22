@@ -10,8 +10,14 @@ stdin ---
 stdout ---
 
 stderr ---
-error: unexpected character `/`. expected start of a json value
+error: comments are not allowed in json
  --> stdin:1:10
   |
 1 | {"a":"b"}//
-  |          ^
+  |          ^^
+  |
+help: remove the comment
+  |
+1 - {"a":"b"}//
+1 + {"a":"b"}
+  |

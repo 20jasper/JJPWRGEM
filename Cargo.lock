@@ -1091,6 +1091,7 @@ dependencies = [
  "const_format",
  "displaydoc",
  "itoa",
+ "memchr",
  "rstest",
  "rstest_reuse",
  "serde",

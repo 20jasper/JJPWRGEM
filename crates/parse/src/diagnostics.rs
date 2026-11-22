@@ -3,7 +3,10 @@ use std::{borrow::Cow, path::Path};
 
 use crate::{
     Error, ErrorKind,
-    tokens::{ErrorToken, JsonCharOption, Token, TokenOption, TokenWithContext, lexical::JsonChar},
+    tokens::{
+        ErrorToken, JsonCharOption, Token, TokenOption, TokenWithContext,
+        lexical::{JsonChar, trim_end_whitespace},
+    },
 };
 pub(crate) const EXPECTED_COMMA_OR_CLOSED_CURLY_MESSAGE: &str = "the preceding key/value pair";
 pub(crate) const INSERT_MISSING_CLOSED_BRACE_HELP: &str = "insert the missing closed brace";
@@ -227,6 +230,15 @@ impl<'a> From<&'a Error> for Vec<Patch<'a>> {
                 source,
                 escaped.to_string(),
             )],
+            ErrorKind::UnexpectedComment => {
+                let start = trim_end_whitespace(&error.source_text[..error.range.start]).len();
+                vec![Patch::new(
+                    "remove the comment",
+                    start..error.range.end,
+                    source,
+                    "",
+                )]
+            }
             ErrorKind::TokenAfterEnd(token) => vec![Patch::new(
                 format!("consider removing the trailing content (starting with {token})"),
                 error.range.start..error.source_text.len(),
@@ -412,6 +424,7 @@ impl<'a> From<&'a Error> for Vec<Context<'a>> {
             ErrorKind::UnexpectedCharacter(_) => Vec::new(),
             ErrorKind::UnexpectedControlCharacterInString(_) => Vec::new(),
             ErrorKind::TokenAfterEnd(_) => Vec::new(),
+            ErrorKind::UnexpectedComment => Vec::new(),
             ErrorKind::InvalidEncoding(_) => Vec::new(),
             ErrorKind::ExpectedMinusOrDigit(_) => Vec::new(),
             ErrorKind::ExpectedOpenBrace { context: None, .. } => Vec::new(),
