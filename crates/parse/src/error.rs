@@ -9,6 +9,21 @@ use crate::tokens::{
 
 pub type Result<T> = std::result::Result<T, Error>;
 
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+pub enum CommentEnd {
+    Closed,
+    Unterminated,
+}
+
+impl core::fmt::Display for CommentEnd {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            Self::Closed => Ok(()),
+            Self::Unterminated => f.write_str(" (and this block comment is never closed)"),
+        }
+    }
+}
+
 #[derive(Debug, PartialEq, Eq, Display, Clone)]
 pub enum ErrorKind {
     // array/object
@@ -96,8 +111,10 @@ pub enum ErrorKind {
     InvalidEncoding(bytes2chars::ErrorKind),
     /// unexpected character `{0}`. expected start of a json value
     UnexpectedCharacter(JsonChar),
-    /// comments are not allowed in json
-    UnexpectedComment,
+    /// comments are not allowed in json{0}
+    UnexpectedComment(CommentEnd),
+    /// block comment is never closed
+    UnterminatedComment,
     /// unexpected token {0} after json finished
     TokenAfterEnd(ErrorToken),
     /// json is nested too deeply (max depth: {0})

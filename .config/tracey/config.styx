@@ -40,6 +40,7 @@ specs (
                     crates/parse/src/format/uglify.rs
                     crates/cli/**/*.rs
                     tests/integration/jsonc_line_comments.rs
+                    tests/integration/jsonc_block_comments.rs
                 )
             }
         )

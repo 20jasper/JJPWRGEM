@@ -2,6 +2,7 @@ use core::{iter::Peekable, range::Range};
 
 use crate::{
     Error, ErrorKind, Result, SyntaxOptions,
+    error::CommentEnd,
     tokens::{
         ByteWithContext, BytesWithContext, FALSE, NULL, TRUE, Token, TokenWithContext,
         current_byte_pos,
@@ -40,6 +41,8 @@ fn skip_whitespace(bytes: &[u8]) -> usize {
 }
 
 const LINE_COMMENT_OPEN: &[u8] = b"//";
+const BLOCK_COMMENT_OPEN: &[u8] = b"/*";
+const BLOCK_COMMENT_CLOSE: &[u8] = b"*/";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum Comments {
@@ -186,8 +189,40 @@ impl Iterator for TokenStreamInner<'_> {
                                 continue;
                             }
                             Comments::Reject => Err(Error::new(
-                                ErrorKind::UnexpectedComment,
+                                ErrorKind::UnexpectedComment(CommentEnd::Closed),
                                 self.pos..end,
+                                self.input,
+                            )),
+                        }
+                    }
+                    Some(b'*') => {
+                        // jsonc[impl multi-line-comment]
+                        // jsonc[impl no-nested-comments]
+                        let body = self.pos + BLOCK_COMMENT_OPEN.len();
+                        let closed = memchr::memmem::find(
+                            &self.input.as_bytes()[body..],
+                            BLOCK_COMMENT_CLOSE,
+                        )
+                        .map(|offset| body + offset + BLOCK_COMMENT_CLOSE.len());
+                        match (self.comments, closed) {
+                            (Comments::Skip, Some(end)) => {
+                                // jsonc[impl comments-ignored]
+                                self.pos = end;
+                                continue;
+                            }
+                            (Comments::Skip, None) => Err(Error::new(
+                                ErrorKind::UnterminatedComment,
+                                self.pos..self.input.len(),
+                                self.input,
+                            )),
+                            (Comments::Reject, Some(end)) => Err(Error::new(
+                                ErrorKind::UnexpectedComment(CommentEnd::Closed),
+                                self.pos..end,
+                                self.input,
+                            )),
+                            (Comments::Reject, None) => Err(Error::new(
+                                ErrorKind::UnexpectedComment(CommentEnd::Unterminated),
+                                self.pos..self.input.len(),
                                 self.input,
                             )),
                         }

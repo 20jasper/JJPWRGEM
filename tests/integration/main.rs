@@ -2,6 +2,7 @@ mod commands;
 mod common;
 mod conformance;
 mod format_ast;
+mod jsonc_block_comments;
 mod jsonc_line_comments;
 mod lsp_e2e;
 mod lsp_server;
