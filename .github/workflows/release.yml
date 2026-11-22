@@ -29,11 +29,18 @@ jobs:
       pull-requests: write
       id-token: write
     steps:
-      # a PAT, so the release PR runs CI
+      - id: app-token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          client-id: ${{ vars.BOT_CLIENT_ID }}
+          private-key: ${{ secrets.BOT_PRIVATE_KEY }}
+          permission-contents: write
+          permission-pull-requests: write
+      # an app token, so the release PR runs CI
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1 # zizmor: ignore[artipacked]
         with:
           fetch-depth: 0
-          token: ${{ secrets.RELEASE_PLZ_TOKEN }}
+          token: ${{ steps.app-token.outputs.token }}
       - uses: ./.github/actions/setup-rust
       - uses: ./.github/actions/setup-node
       - uses: ./.github/actions/setup-mise
@@ -44,7 +51,7 @@ jobs:
         with:
           command: auto
           cargo-token: ${{ steps.crates-io.outputs.token }}
-          github-token: ${{ secrets.RELEASE_PLZ_TOKEN }}
+          github-token: ${{ steps.app-token.outputs.token }}
           pr-title: Release
           # handle releases via script since sampo doesn't handle binary assets or turning off releases granularity
           create-github-release: false
