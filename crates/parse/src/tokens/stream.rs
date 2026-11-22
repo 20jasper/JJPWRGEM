@@ -39,10 +39,41 @@ fn skip_whitespace(bytes: &[u8]) -> usize {
         .unwrap_or(bytes.len().saturating_sub(i))
 }
 
+const LINE_COMMENT_OPEN: &[u8] = b"//";
+
+/// How the lexer treats comments
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Comments {
+    /// a comment is an error
+    Reject,
+    /// a comment is skipped like whitespace
+    Skip,
+}
+
+impl From<bool> for Comments {
+    #[inline]
+    fn from(allowed: bool) -> Self {
+        if allowed {
+            Comments::Skip
+        } else {
+            Comments::Reject
+        }
+    }
+}
+
+/// Length of the line comment body in `rest`, which excludes the line ending
+fn line_comment_len(rest: &[u8]) -> usize {
+    // jsonc[impl line-ending]
+    rest.iter()
+        .position(|&b| matches!(b, b'\n' | b'\r'))
+        .unwrap_or(rest.len())
+}
+
 #[derive(Debug, Clone)]
 struct TokenStreamInner<'a> {
     input: &'a str,
     pos: usize,
+    comments: Comments,
 }
 
 impl<'a> TokenStreamInner<'a> {
@@ -50,6 +81,7 @@ impl<'a> TokenStreamInner<'a> {
         Self {
             input: &full_source[..range.end],
             pos: range.start,
+            comments: Comments::Reject,
         }
     }
 
@@ -157,6 +189,25 @@ impl Iterator for TokenStreamInner<'_> {
                         self.unexpected_character()
                     }
                 }
+                b'/' if self.input.as_bytes()[self.pos..].starts_with(LINE_COMMENT_OPEN) => {
+                    // jsonc[impl single-line-comment]
+                    let end = self.pos
+                        + LINE_COMMENT_OPEN.len()
+                        + line_comment_len(
+                            &self.input.as_bytes()[self.pos + LINE_COMMENT_OPEN.len()..],
+                        );
+                    match self.comments {
+                        Comments::Skip => {
+                            self.pos = end;
+                            continue;
+                        }
+                        Comments::Reject => Err(Error::new(
+                            ErrorKind::UnexpectedComment,
+                            self.pos..end,
+                            self.input,
+                        )),
+                    }
+                }
                 _ => self.unexpected_character(),
             };
 
@@ -181,6 +232,12 @@ impl<'a> TokenStream<'a> {
 
     pub fn new(s: &'a str) -> Self {
         Self::new_at_range(s, 0..s.len())
+    }
+
+    #[must_use]
+    pub fn with_comments(mut self, comments: Comments) -> Self {
+        self.inner.comments = comments;
+        self
     }
 
     #[inline]

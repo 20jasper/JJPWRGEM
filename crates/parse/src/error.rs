@@ -96,6 +96,8 @@ pub enum ErrorKind {
     InvalidEncoding(bytes2chars::ErrorKind),
     /// unexpected character `{0}`. expected start of a json value
     UnexpectedCharacter(JsonChar),
+    /// comments are not allowed in json
+    UnexpectedComment,
     /// unexpected token {0} after json finished
     TokenAfterEnd(ErrorToken),
     /// json is nested too deeply (max depth: {0})

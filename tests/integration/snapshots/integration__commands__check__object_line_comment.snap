@@ -1,0 +1,26 @@
+---
+source: tests/integration/commands/check.rs
+expression: output.snapshot_display()
+---
+args: ["check"]
+status: 1
+success: false
+stdin ---
+{
+  "hi": null, // greeting
+  "bye": null
+}
+stdout ---
+
+stderr ---
+error: comments are not allowed in json
+ --> stdin:2:15
+  |
+2 |   "hi": null, // greeting
+  |               ^^^^^^^^^^^
+  |
+help: remove the comment
+  |
+2 -   "hi": null, // greeting
+2 +   "hi": null,
+  |

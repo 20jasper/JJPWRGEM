@@ -227,6 +227,19 @@ impl<'a> From<&'a Error> for Vec<Patch<'a>> {
                 source,
                 escaped.to_string(),
             )],
+            ErrorKind::UnexpectedComment => {
+                let leading_blanks = error.source_text[..error.range.start]
+                    .bytes()
+                    .rev()
+                    .take_while(|b| matches!(b, b' ' | b'\t'))
+                    .count();
+                vec![Patch::new(
+                    "remove the comment",
+                    error.range.start - leading_blanks..error.range.end,
+                    source,
+                    "",
+                )]
+            }
             ErrorKind::TokenAfterEnd(token) => vec![Patch::new(
                 format!("consider removing the trailing content (starting with {token})"),
                 error.range.start..error.source_text.len(),
@@ -412,6 +425,7 @@ impl<'a> From<&'a Error> for Vec<Context<'a>> {
             ErrorKind::UnexpectedCharacter(_) => Vec::new(),
             ErrorKind::UnexpectedControlCharacterInString(_) => Vec::new(),
             ErrorKind::TokenAfterEnd(_) => Vec::new(),
+            ErrorKind::UnexpectedComment => Vec::new(),
             ErrorKind::InvalidEncoding(_) => Vec::new(),
             ErrorKind::ExpectedMinusOrDigit(_) => Vec::new(),
             ErrorKind::ExpectedOpenBrace { context: None, .. } => Vec::new(),

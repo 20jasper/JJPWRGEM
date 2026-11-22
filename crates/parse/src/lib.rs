@@ -16,12 +16,20 @@ pub use crate::error::{Error, ErrorKind, Result};
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct SyntaxOptions {
     pub trailing_commas: bool,
+    pub comments: bool,
 }
 
 impl SyntaxOptions {
     /// [RFC 8259](https://datatracker.ietf.org/doc/html/rfc8259) compliant json: no trailing commas or comments
     pub const JSON: Self = Self {
         trailing_commas: false,
+        comments: false,
+    };
+
+    /// json with trailing commas and comments
+    pub const JSONC: Self = Self {
+        trailing_commas: true,
+        comments: true,
     };
 }
 
