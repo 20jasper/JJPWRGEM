@@ -40,8 +40,8 @@ fn skip_whitespace(bytes: &[u8]) -> usize {
 }
 
 const LINE_COMMENT_OPEN: &[u8] = b"//";
-pub(crate) const BLOCK_COMMENT_OPEN: &[u8] = b"/*";
-pub(crate) const BLOCK_COMMENT_CLOSE: &[u8] = b"*/";
+const BLOCK_COMMENT_OPEN: &[u8] = b"/*";
+const BLOCK_COMMENT_CLOSE: &[u8] = b"*/";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum Comments {
@@ -209,14 +209,14 @@ impl Iterator for TokenStreamInner<'_> {
                                 self.pos = end;
                                 continue;
                             }
-                            (Comments::Skip, None) => Err(Error::new(
-                                ErrorKind::UnterminatedComment,
-                                self.pos..self.input.len(),
+                            (Comments::Reject, Some(end)) => Err(Error::new(
+                                ErrorKind::UnexpectedComment,
+                                self.pos..end,
                                 self.input,
                             )),
-                            (Comments::Reject, end) => Err(Error::new(
-                                ErrorKind::UnexpectedComment,
-                                self.pos..end.unwrap_or(self.input.len()),
+                            (_, None) => Err(Error::new(
+                                ErrorKind::UnterminatedComment,
+                                self.pos..self.input.len(),
                                 self.input,
                             )),
                         }

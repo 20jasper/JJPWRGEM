@@ -13,7 +13,7 @@ stdin ---
 stdout ---
 
 stderr ---
-error: comments are not allowed in json
+error: block comment is never closed
  --> stdin:2:15
   |
 2 |     "hi": null, /* greeting
@@ -21,3 +21,8 @@ error: comments are not allowed in json
 3 | |   "bye": null
 4 | | }
   | |_^
+  |
+help: close the comment
+  |
+4 | }*/
+  |  ++

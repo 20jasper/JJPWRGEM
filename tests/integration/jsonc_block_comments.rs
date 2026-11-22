@@ -1,6 +1,4 @@
-use jjpwrgem_parse::{
-    SyntaxOptions, ast::Document, diagnostics::Patch, format::uglify_document, validate_str,
-};
+use jjpwrgem_parse::{SyntaxOptions, ast::Document, format::uglify_document, validate_str};
 use rstest::rstest;
 
 use crate::common::apply_first_patch;
@@ -91,12 +89,15 @@ fn jsonc_rejects_unterminated_comment(#[case] json: &str) {
 #[case::just_opener("/*")]
 fn json_rejects_unterminated_comment(#[case] json: &str) {
     let error = Document::parse(json, SyntaxOptions::JSON).unwrap_err();
-    assert_eq!(error.message(), COMMENT_MESSAGE, "input: {json:?}");
+    assert_eq!(error.message(), UNTERMINATED_MESSAGE, "input: {json:?}");
     assert_eq!(
         *error.range(),
         (json.find("/*").unwrap()..json.len()).into()
     );
-    assert_eq!(Vec::<Patch<'_>>::from(&error), []);
+    assert_eq!(
+        apply_first_patch(json, SyntaxOptions::JSON),
+        format!("{json}*/")
+    );
 }
 
 // jsonc[verify no-hash-comments]
@@ -118,7 +119,7 @@ fn jsonc_rejects_hash_comments(#[case] json: &str) {
     "{\n  \"a\": 1,\n  /* c\n  d */\n  \"b\": 2\n}",
     "{\n  \"a\": 1,\n  \"b\": 2\n}"
 )]
-#[case::adjacent_to_punctuation("[1,/**/2]", "[1,2]")]
+#[case::adjacent_to_punctuation("[1,/**/2]", "[1, 2]")]
 #[case::joins_numbers("[1/*x*/2]", "[1 2]")]
 #[case::joins_literals("[true/**/false]", "[true false]")]
 #[case::joins_minus("[1/**/-2]", "[1 -2]")]

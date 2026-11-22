@@ -4,15 +4,10 @@ use std::{borrow::Cow, path::Path};
 use crate::{
     Error, ErrorKind,
     tokens::{
-        BLOCK_COMMENT_CLOSE, BLOCK_COMMENT_OPEN, ErrorToken, JsonCharOption, Token, TokenOption,
-        TokenWithContext,
+        ErrorToken, JsonByte, JsonCharOption, Token, TokenOption, TokenWithContext,
         lexical::{JsonChar, trim_end_whitespace},
     },
 };
-
-fn is_token_byte(byte: u8) -> bool {
-    byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'.' | b'+')
-}
 
 pub(crate) const EXPECTED_COMMA_OR_CLOSED_CURLY_MESSAGE: &str = "the preceding key/value pair";
 pub(crate) const INSERT_MISSING_CLOSED_BRACE_HELP: &str = "insert the missing closed brace";
@@ -237,20 +232,14 @@ impl<'a> From<&'a Error> for Vec<Patch<'a>> {
                 escaped.to_string(),
             )],
             ErrorKind::UnexpectedComment => {
-                let comment = &error.source_text.as_bytes()[error.range.start..error.range.end];
-                if comment.starts_with(BLOCK_COMMENT_OPEN)
-                    && (comment.len() < BLOCK_COMMENT_OPEN.len() + BLOCK_COMMENT_CLOSE.len()
-                        || !comment.ends_with(BLOCK_COMMENT_CLOSE))
-                {
-                    return Vec::new();
-                }
                 let start = trim_end_whitespace(&error.source_text[..error.range.start]).len();
                 let joins_tokens = matches!(
                     (
                         error.source_text[..start].bytes().next_back(),
                         error.source_text[error.range.end..].bytes().next(),
                     ),
-                    (Some(before), Some(after)) if is_token_byte(before) && is_token_byte(after)
+                    (Some(before), Some(after))
+                        if !JsonByte(before).is_whitespace() && !JsonByte(after).is_whitespace()
                 );
                 vec![Patch::new(
                     "remove the comment",
