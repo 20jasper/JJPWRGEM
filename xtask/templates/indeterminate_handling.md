@@ -10,5 +10,5 @@ How cases undefined by the spec are handled
 - parsing will fail if BOM is included
 - only utf8 encoding is supported
 - no limitations on nesting or length
-- extensions such as trailing commas or comments are not allowed
+- extensions are not allowed unless enabled with `SyntaxOptions`: trailing commas are not valid in json but are valid in jsonc, and comments are not supported
 - surrogates are not validated, eg a lone continuation byte is valid

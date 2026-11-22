@@ -1,7 +1,7 @@
 use core::range::Range;
 
 use crate::{
-    Error, ErrorKind, Result,
+    Error, ErrorKind, Result, SyntaxOptions,
     tokens::{Token, TokenStream, TokenWithContext, byte_range},
     traverse::{Visitor, parse_tokens_at_depth, punctuation_at},
 };
@@ -29,13 +29,16 @@ fn open_ctx(open_start: usize) -> TokenWithContext {
 }
 
 impl ObjectState {
-    fn process(self, next: Option<Token>) -> Option<Self> {
+    fn process(self, next: Option<Token>, options: SyntaxOptions) -> Option<Self> {
         let next = next?;
         let state = match self {
             ObjectState::KeyOrEnd | ObjectState::CommaOrEnd if next == Token::ClosedCurlyBrace => {
                 ObjectState::End
             }
             ObjectState::KeyOrEnd | ObjectState::Key if next == Token::String => ObjectState::Colon,
+            ObjectState::CommaOrEnd if next == Token::Comma && options.trailing_commas => {
+                ObjectState::KeyOrEnd
+            }
             ObjectState::CommaOrEnd if next == Token::Comma => ObjectState::Key,
             ObjectState::Colon if next == Token::Colon => ObjectState::Value,
             ObjectState::Value if next.is_start_of_value() => ObjectState::CommaOrEnd,
@@ -77,6 +80,7 @@ fn object_error(
 
 pub fn parse_object<'a>(
     tokens: &mut TokenStream<'a>,
+    options: SyntaxOptions,
     text: &'a str,
     depth: usize,
     visitor: &mut impl Visitor<'a>,
@@ -105,17 +109,19 @@ pub fn parse_object<'a>(
         } else {
             tokens.next_token()?
         };
-        let Some(next) = state.process(found.map(|ctx| ctx.token)) else {
+        let Some(next) = state.process(found.map(|ctx| ctx.token), options) else {
             return Err(object_error(state, text, &offsets, found));
         };
         let ctx = found.expect("the end of input is never accepted");
         match next {
             ObjectState::End => visitor.on_object_close(ctx.range),
-            ObjectState::Key => {
-                visitor.on_item_delim();
+            ObjectState::Key | ObjectState::KeyOrEnd => {
                 offsets.delim = ctx.range.start;
             }
             ObjectState::Colon => {
+                if offsets.delim != offsets.open_start {
+                    visitor.on_item_delim();
+                }
                 let body = ctx.content_range();
                 visitor.on_object_key(body, &text[body]);
                 offsets.key = ctx.range;
@@ -125,10 +131,10 @@ pub fn parse_object<'a>(
                 offsets.last_pair = ctx.range;
             }
             ObjectState::CommaOrEnd => {
-                let value_range = parse_tokens_at_depth(tokens, text, false, visitor, depth + 1)?;
+                let value_range =
+                    parse_tokens_at_depth(tokens, options, text, false, visitor, depth + 1)?;
                 offsets.last_pair = offsets.last_pair.start..value_range.end;
             }
-            ObjectState::KeyOrEnd => unreachable!("only the starting state"),
         }
         state = next;
     }

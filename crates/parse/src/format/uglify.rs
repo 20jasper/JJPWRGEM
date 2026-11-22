@@ -1,7 +1,7 @@
 use core::range::Range;
 
 use crate::{
-    Result,
+    Result, SyntaxOptions,
     ast::Document,
     format::Emitter,
     tokens::TokenStream,
@@ -18,7 +18,13 @@ pub fn uglify_str_into(buf: &mut String, json: &str) -> Result<()> {
     let mut visitor = UglifyEmitVisitor {
         buf: std::mem::take(buf),
     };
-    parse_tokens(&mut TokenStream::new(json), json, true, &mut visitor)?;
+    parse_tokens(
+        &mut TokenStream::new(json),
+        SyntaxOptions::JSON,
+        json,
+        true,
+        &mut visitor,
+    )?;
     *buf = visitor.buf;
     Ok(())
 }

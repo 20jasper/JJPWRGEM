@@ -19,6 +19,7 @@ use std::{
 
 pub use error::{Error, Result};
 use jjpwrgem_parse::{
+    SyntaxOptions,
     diagnostics::Diagnostic,
     format::{FormatRequest, Parser},
     format_str, validate_str,
@@ -109,7 +110,7 @@ fn format_input(json: &str, style: Style, request: &FormatRequest) -> Output {
 }
 
 pub fn check(json: &str, style: Style) -> Output {
-    match validate_str(json) {
+    match validate_str(json, SyntaxOptions::JSON) {
         Ok(()) => Output::success(""),
         Err(error) => Output::failure_diagnostic(Diagnostic::from(&error), style),
     }

@@ -2,7 +2,7 @@ use core::range::Range;
 
 use visitor::AstVisitor;
 
-use crate::{Result, tokens::TokenStream, traverse::parse_tokens};
+use crate::{Result, SyntaxOptions, tokens::TokenStream, traverse::parse_tokens};
 
 pub(crate) const QUOTE_LEN: usize = 1;
 
@@ -119,10 +119,10 @@ pub struct Document<S> {
 }
 
 impl<S: AsRef<str>> Document<S> {
-    pub fn parse(source: S) -> Result<Self> {
+    pub fn parse(source: S, options: SyntaxOptions) -> Result<Self> {
         let root = {
             let text = source.as_ref();
-            parse_at(text, 0..text.len())?.root
+            parse_at(text, 0..text.len(), options)?.root
         };
         Ok(Self { source, root })
     }
@@ -164,10 +164,15 @@ impl<S: AsRef<str>> Document<S> {
     }
 }
 
-pub(crate) fn parse_at(full_source: &str, range: Range<usize>) -> Result<Document<&str>> {
+pub(crate) fn parse_at(
+    full_source: &str,
+    range: Range<usize>,
+    options: SyntaxOptions,
+) -> Result<Document<&str>> {
     let mut ast = AstVisitor::new();
     parse_tokens(
         &mut TokenStream::new_at_range(full_source, range),
+        options,
         full_source,
         true,
         &mut ast,
@@ -362,6 +367,25 @@ mod visitor {
 mod tests {
     use super::*;
 
+    // jsonc[verify trailing-commas]
+    #[rstest::rstest]
+    #[case("[1,]", true)]
+    #[case("[[1,],]", true)]
+    #[case(r#"{"a": 1,}"#, true)]
+    #[case("[,]", false)]
+    #[case("[1,,]", false)]
+    #[case("[1,,2]", false)]
+    #[case("{,}", false)]
+    #[case(r#"{"a": 1,,}"#, false)]
+    #[case(r#"{"a",}"#, false)]
+    fn trailing_commas_are_accepted_only_when_allowed(#[case] json: &str, #[case] allowed: bool) {
+        let options = SyntaxOptions {
+            trailing_commas: true,
+        };
+        assert_eq!(Document::parse(json, options).is_ok(), allowed);
+        assert!(Document::parse(json, SyntaxOptions::JSON).is_err());
+    }
+
     fn range_of(source: &str, needle: &str) -> Range<usize> {
         let start = source.find(needle).expect("needle in source");
         start..start + needle.len()
@@ -377,14 +401,14 @@ mod tests {
 
     #[test]
     fn empty_object() {
-        let doc = Document::parse("{}").unwrap();
+        let doc = Document::parse("{}", SyntaxOptions::JSON).unwrap();
         assert_eq!(doc.root(), &Value::Object(0..2, ObjectEntries::default()));
     }
 
     #[test]
     fn one_key_value_pair() {
         let json = r#"{"hi":"bye"}"#;
-        let doc = Document::parse(json).unwrap();
+        let doc = Document::parse(json, SyntaxOptions::JSON).unwrap();
         assert_eq!(
             doc.root(),
             &make_obj(vec![("hi", Value::String(range_of(json, "bye")))], json)
@@ -393,7 +417,7 @@ mod tests {
 
     #[test]
     fn traverse_is_preorder() {
-        let doc = Document::parse(r#"{"a": [1, {"b": 2}], "c": 3}"#).unwrap();
+        let doc = Document::parse(r#"{"a": [1, {"b": 2}], "c": 3}"#, SyntaxOptions::JSON).unwrap();
         let slices = doc
             .root()
             .traverse()
@@ -427,14 +451,14 @@ mod tests {
                 "rust": {primitive}
             }}"#
         );
-        let doc = Document::parse(&json).unwrap();
+        let doc = Document::parse(&json, SyntaxOptions::JSON).unwrap();
         let want = make_obj(vec![("rust", expected(&json))], &json);
         assert_eq!(doc.root(), &want);
     }
 
     #[rstest_reuse::apply(primitive_template)]
     fn primitives(#[case] json: &str, #[case] expected: fn(&str) -> Value) {
-        let doc = Document::parse(json).unwrap();
+        let doc = Document::parse(json, SyntaxOptions::JSON).unwrap();
         assert_eq!(doc.root(), &expected(json));
     }
 }

@@ -1,5 +1,5 @@
 use gen_lsp_types::*;
-use jjpwrgem_parse::{ast::Document, format::FormatSettings};
+use jjpwrgem_parse::{SyntaxOptions, ast::Document, format::FormatSettings};
 use serde_json::Value;
 
 use crate::{
@@ -82,7 +82,7 @@ impl<S: Sink> Backend<S> {
     }
 
     fn process_document(&mut self, uri: Uri, text: String) {
-        let document = Document::parse(text);
+        let document = Document::parse(text, SyntaxOptions::JSON);
         let diagnostics = (!self.client_pulls_diagnostics)
             .then(|| diagnostics_for(&uri, &document, self.position_encoding));
         self.documents.insert(uri.clone(), document);

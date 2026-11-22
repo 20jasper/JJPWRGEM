@@ -2,6 +2,7 @@ use std::hint::black_box;
 
 use criterion::{BenchmarkId, Criterion, Throughput, criterion_group, criterion_main};
 use jjpwrgem_parse::{
+    SyntaxOptions,
     ast::Document,
     format::{LineEnding, prettify_document_into, uglify_document_into},
 };
@@ -33,7 +34,7 @@ fn bench_deser(c: &mut Criterion) {
     for (name, json) in INPUTS {
         group.throughput(Throughput::Bytes(json.len() as u64));
         group.bench_function(BenchmarkId::new("jjpwrgem", name), |b| {
-            b.iter(|| Document::parse(black_box(json)).unwrap());
+            b.iter(|| Document::parse(black_box(json), SyntaxOptions::JSON).unwrap());
         });
     }
 
@@ -46,7 +47,7 @@ fn bench_prettify(c: &mut Criterion) {
     for (name, json) in INPUTS {
         group.throughput(Throughput::Bytes(json.len() as u64));
 
-        let ast = Document::parse(*json).unwrap();
+        let ast = Document::parse(*json, SyntaxOptions::JSON).unwrap();
         let mut probe = String::new();
         prettify_document_into(&mut probe, &ast, 80, LineEnding::Lf);
         let mut buf = String::with_capacity(probe.len());
@@ -69,7 +70,7 @@ fn bench_uglify(c: &mut Criterion) {
     for (name, json) in INPUTS {
         group.throughput(Throughput::Bytes(json.len() as u64));
 
-        let ast = Document::parse(*json).unwrap();
+        let ast = Document::parse(*json, SyntaxOptions::JSON).unwrap();
         let mut probe = String::new();
         uglify_document_into(&mut probe, &ast);
         let mut buf = String::with_capacity(probe.len());
