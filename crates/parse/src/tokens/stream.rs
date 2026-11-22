@@ -127,8 +127,8 @@ impl<'a> TokenStreamInner<'a> {
 
     #[cold]
     #[inline(never)]
-    fn comment(&mut self) -> Option<Result<TokenWithContext>> {
-        Some(match self.input.as_bytes().get(self.pos + 1) {
+    fn consume_comment(&mut self) -> Result<()> {
+        match self.input.as_bytes().get(self.pos + 1) {
             Some(b'/') => {
                 // jsonc[impl single-line-comment]
                 let body = self.pos + LINE_COMMENT_OPEN.len();
@@ -136,7 +136,7 @@ impl<'a> TokenStreamInner<'a> {
                 match self.comments {
                     Comments::Skip => {
                         self.pos = end;
-                        return None;
+                        Ok(())
                     }
                     Comments::Reject => Err(Error::new(
                         ErrorKind::UnexpectedComment,
@@ -155,7 +155,7 @@ impl<'a> TokenStreamInner<'a> {
                     (Comments::Skip, Some(end)) => {
                         // jsonc[impl comments-ignored]
                         self.pos = end;
-                        return None;
+                        Ok(())
                     }
                     (Comments::Reject, Some(end)) => Err(Error::new(
                         ErrorKind::UnexpectedComment,
@@ -169,8 +169,8 @@ impl<'a> TokenStreamInner<'a> {
                     )),
                 }
             }
-            _ => self.unexpected_character(),
-        })
+            _ => self.unexpected_character().map(|_| ()),
+        }
     }
 
     fn consume_whitespace(&mut self) {
@@ -226,9 +226,9 @@ impl Iterator for TokenStreamInner<'_> {
                         self.unexpected_character()
                     }
                 }
-                b'/' => match self.comment() {
-                    None => continue,
-                    Some(err) => err,
+                b'/' => match self.consume_comment() {
+                    Ok(()) => continue,
+                    Err(err) => Err(err),
                 },
                 _ => self.unexpected_character(),
             };
