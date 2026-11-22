@@ -29,14 +29,17 @@ fn open_ctx(open_start: usize) -> TokenWithContext {
 }
 
 impl ObjectState {
-    fn process(self, next: Option<Token>, after_comma: Self) -> Option<Self> {
+    fn process(self, next: Option<Token>, options: SyntaxOptions) -> Option<Self> {
         let next = next?;
         let state = match self {
             ObjectState::KeyOrEnd | ObjectState::CommaOrEnd if next == Token::ClosedCurlyBrace => {
                 ObjectState::End
             }
             ObjectState::KeyOrEnd | ObjectState::Key if next == Token::String => ObjectState::Colon,
-            ObjectState::CommaOrEnd if next == Token::Comma => after_comma,
+            ObjectState::CommaOrEnd if next == Token::Comma && options.trailing_commas => {
+                ObjectState::KeyOrEnd
+            }
+            ObjectState::CommaOrEnd if next == Token::Comma => ObjectState::Key,
             ObjectState::Colon if next == Token::Colon => ObjectState::Value,
             ObjectState::Value if next.is_start_of_value() => ObjectState::CommaOrEnd,
             _ => return None,
@@ -98,11 +101,6 @@ pub fn parse_object<'a>(
         key: open_start..open_start,
         last_pair: open_start..open_start,
     };
-    let after_comma = if options.trailing_commas {
-        ObjectState::KeyOrEnd
-    } else {
-        ObjectState::Key
-    };
     let mut state = ObjectState::KeyOrEnd;
     while state != ObjectState::End {
         // a value is parsed from its first token, everything else is taken right away
@@ -111,7 +109,7 @@ pub fn parse_object<'a>(
         } else {
             tokens.next_token()?
         };
-        let Some(next) = state.process(found.map(|ctx| ctx.token), after_comma) else {
+        let Some(next) = state.process(found.map(|ctx| ctx.token), options) else {
             return Err(object_error(state, text, &offsets, found));
         };
         let ctx = found.expect("the end of input is never accepted");

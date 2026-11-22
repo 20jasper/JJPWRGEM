@@ -17,7 +17,7 @@ enum ArrayState {
 }
 
 impl ArrayState {
-    fn process(self, next: Option<Token>, after_comma: Self) -> Option<Self> {
+    fn process(self, next: Option<Token>, options: SyntaxOptions) -> Option<Self> {
         let next = next?;
         let state = match self {
             ArrayState::ValueOrEnd if next == Token::ClosedSquareBracket => ArrayState::End,
@@ -26,7 +26,9 @@ impl ArrayState {
             }
             ArrayState::CommaOrEnd => match next {
                 Token::ClosedSquareBracket => ArrayState::End,
-                Token::Comma => after_comma,
+                // jsonc[impl trailing-commas]
+                Token::Comma if options.trailing_commas => ArrayState::ValueOrEnd,
+                Token::Comma => ArrayState::Value,
                 _ => return None,
             },
             _ => return None,
@@ -85,16 +87,10 @@ pub fn parse_array<'a>(
     let open_start = open_range.start;
 
     let mut delim = open_start;
-    // jsonc[impl trailing-commas]
-    let after_comma = if options.trailing_commas {
-        ArrayState::ValueOrEnd
-    } else {
-        ArrayState::Value
-    };
     let mut state = ArrayState::ValueOrEnd;
     while state != ArrayState::End {
         let peeked = tokens.peek_token()?.copied();
-        let Some(next) = state.process(peeked.map(|ctx| ctx.token), after_comma) else {
+        let Some(next) = state.process(peeked.map(|ctx| ctx.token), options) else {
             return Err(array_error(state, text, open_start, delim, peeked));
         };
         let ctx = peeked.expect("the end of input is never accepted");
