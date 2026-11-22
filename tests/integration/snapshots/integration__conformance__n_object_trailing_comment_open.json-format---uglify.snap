@@ -19,5 +19,5 @@ error: comments are not allowed in json
 help: remove the comment
   |
 1 - {"a":"b"}/**//
-1 + {"a":"b"}/
+1 + {"a":"b"} /
   |
