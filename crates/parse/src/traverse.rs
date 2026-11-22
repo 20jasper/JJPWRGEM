@@ -28,7 +28,7 @@ pub trait Visitor<'a> {
 const MAX_DEPTH: usize = 128;
 
 pub fn parse_tokens<'a>(
-    tokens: &mut TokenStream<'a>,
+    tokens: TokenStream<'a>,
     options: SyntaxOptions,
     text: &'a str,
     fail_on_multiple_value: bool,
@@ -39,7 +39,7 @@ pub fn parse_tokens<'a>(
 }
 
 fn parse_tokens_at_depth<'a>(
-    tokens: &mut SyntaxStream<'_, 'a>,
+    tokens: &mut SyntaxStream<'a>,
     text: &'a str,
     fail_on_multiple_value: bool,
     visitor: &mut impl Visitor<'a>,
@@ -293,7 +293,7 @@ mod tests {
 
         let mut from_tokens: RecordingVisitor = RecordingVisitor::default();
         parse_tokens(
-            &mut TokenStream::new(json),
+            TokenStream::new(json),
             SyntaxOptions::JSON,
             json,
             true,

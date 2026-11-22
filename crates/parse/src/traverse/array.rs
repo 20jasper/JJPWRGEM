@@ -57,7 +57,7 @@ fn array_error(
 }
 
 pub fn parse_array<'a>(
-    tokens: &mut SyntaxStream<'_, 'a>,
+    tokens: &mut SyntaxStream<'a>,
     text: &'a str,
     depth: usize,
     visitor: &mut impl Visitor<'a>,

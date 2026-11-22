@@ -19,7 +19,7 @@ pub fn uglify_str_into(buf: &mut String, json: &str) -> Result<()> {
         buf: std::mem::take(buf),
     };
     parse_tokens(
-        &mut TokenStream::new(json),
+        TokenStream::new(json),
         SyntaxOptions::JSON,
         json,
         true,
@@ -148,8 +148,8 @@ mod tests {
         };
 
         let mut visitor = UglifyEmitVisitor::default();
-        let mut tokens = TokenStream::new(json);
-        parse_tokens(&mut tokens, options, json, true, &mut visitor).unwrap();
+        let tokens = TokenStream::new(json);
+        parse_tokens(tokens, options, json, true, &mut visitor).unwrap();
         assert_eq!(visitor.buf, uglified);
 
         let doc = Document::parse(json, options).unwrap();

@@ -4,13 +4,13 @@ use crate::{
 };
 
 /// Tokens read under the syntax a document is allowed to use
-pub(crate) struct SyntaxStream<'s, 'a> {
-    tokens: &'s mut TokenStream<'a>,
+pub(crate) struct SyntaxStream<'a> {
+    tokens: TokenStream<'a>,
     options: SyntaxOptions,
 }
 
-impl<'s, 'a> SyntaxStream<'s, 'a> {
-    pub(crate) fn new(tokens: &'s mut TokenStream<'a>, options: SyntaxOptions) -> Self {
+impl<'a> SyntaxStream<'a> {
+    pub(crate) fn new(tokens: TokenStream<'a>, options: SyntaxOptions) -> Self {
         Self { tokens, options }
     }
 
