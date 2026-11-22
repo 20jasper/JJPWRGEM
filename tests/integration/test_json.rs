@@ -11,6 +11,9 @@ pub const OBJECT_MISSING_COMMA_OR_CLOSING_WITH_WHITESPACE: &str = r#"{"hi": null
 pub const OBJECT_TRAILING_COMMA_WITH_CLOSED: &str = r#"{"hi": null, }"#;
 pub const OBJECT_TRAILING_COMMA: &str = r#"{"hi": null, "#;
 pub const OBJECT_LINE_COMMENT: &str = "{\n  \"hi\": null, // greeting\n  \"bye\": null\n}";
+pub const OBJECT_BLOCK_COMMENT: &str = "{\n  \"hi\": null, /* greeting */\n  \"bye\": null\n}";
+pub const OBJECT_UNCLOSED_BLOCK_COMMENT: &str =
+    "{\n  \"hi\": null, /* greeting\n  \"bye\": null\n}";
 pub const OBJECT_DOUBLE_OPEN_CURLY: &str = r"{{";
 pub const OBJECT_OPEN_CURLY: &str = r"{";
 pub const CLOSED_CURLY: &str = r"}";

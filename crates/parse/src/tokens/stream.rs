@@ -40,6 +40,8 @@ fn skip_whitespace(bytes: &[u8]) -> usize {
 }
 
 const LINE_COMMENT_OPEN: &[u8] = b"//";
+const BLOCK_COMMENT_OPEN: &[u8] = b"/*";
+const BLOCK_COMMENT_CLOSE: &[u8] = b"*/";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum Comments {
@@ -50,6 +52,10 @@ pub(crate) enum Comments {
 fn line_comment_len(rest: &[u8]) -> usize {
     // jsonc[impl line-ending]
     memchr::memchr2(b'\n', b'\r', rest).unwrap_or(rest.len())
+}
+
+fn block_comment_len(rest: &[u8]) -> Option<usize> {
+    memchr::memmem::find(rest, BLOCK_COMMENT_CLOSE).map(|offset| offset + BLOCK_COMMENT_CLOSE.len())
 }
 
 #[derive(Debug, Clone)]
@@ -119,6 +125,54 @@ impl<'a> TokenStreamInner<'a> {
         ))
     }
 
+    #[cold]
+    #[inline(never)]
+    fn consume_comment(&mut self) -> Result<()> {
+        match self.input.as_bytes().get(self.pos + 1) {
+            Some(b'/') => {
+                // jsonc[impl single-line-comment]
+                let body = self.pos + LINE_COMMENT_OPEN.len();
+                let end = body + line_comment_len(&self.input.as_bytes()[body..]);
+                match self.comments {
+                    Comments::Skip => {
+                        self.pos = end;
+                        Ok(())
+                    }
+                    Comments::Reject => Err(Error::new(
+                        ErrorKind::UnexpectedComment,
+                        self.pos..end,
+                        self.input,
+                    )),
+                }
+            }
+            Some(b'*') => {
+                // jsonc[impl multi-line-comment]
+                // jsonc[impl no-nested-comments]
+                let body = self.pos + BLOCK_COMMENT_OPEN.len();
+                let closed =
+                    block_comment_len(&self.input.as_bytes()[body..]).map(|len| body + len);
+                match (self.comments, closed) {
+                    (Comments::Skip, Some(end)) => {
+                        // jsonc[impl comments-ignored]
+                        self.pos = end;
+                        Ok(())
+                    }
+                    (Comments::Reject, Some(end)) => Err(Error::new(
+                        ErrorKind::UnexpectedComment,
+                        self.pos..end,
+                        self.input,
+                    )),
+                    (_, None) => Err(Error::new(
+                        ErrorKind::UnterminatedComment,
+                        self.pos..self.input.len(),
+                        self.input,
+                    )),
+                }
+            }
+            _ => self.unexpected_character().map(|_| ()),
+        }
+    }
+
     fn consume_whitespace(&mut self) {
         let Some(ByteWithContext(_, byte)) = self.peek_byte_with_context() else {
             return;
@@ -172,27 +226,9 @@ impl Iterator for TokenStreamInner<'_> {
                         self.unexpected_character()
                     }
                 }
-                b'/' => match self.input.as_bytes().get(self.pos + 1) {
-                    Some(b'/') => {
-                        // jsonc[impl single-line-comment]
-                        let end = self.pos
-                            + LINE_COMMENT_OPEN.len()
-                            + line_comment_len(
-                                &self.input.as_bytes()[self.pos + LINE_COMMENT_OPEN.len()..],
-                            );
-                        match self.comments {
-                            Comments::Skip => {
-                                self.pos = end;
-                                continue;
-                            }
-                            Comments::Reject => Err(Error::new(
-                                ErrorKind::UnexpectedComment,
-                                self.pos..end,
-                                self.input,
-                            )),
-                        }
-                    }
-                    _ => self.unexpected_character(),
+                b'/' => match self.consume_comment() {
+                    Ok(()) => continue,
+                    Err(err) => Err(err),
                 },
                 _ => self.unexpected_character(),
             };

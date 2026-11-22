@@ -98,6 +98,8 @@ pub enum ErrorKind {
     UnexpectedCharacter(JsonChar),
     /// comments are not allowed in json
     UnexpectedComment,
+    /// block comment is never closed
+    UnterminatedComment,
     /// unexpected token {0} after json finished
     TokenAfterEnd(ErrorToken),
     /// json is nested too deeply (max depth: {0})

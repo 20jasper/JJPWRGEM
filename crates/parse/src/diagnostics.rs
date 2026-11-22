@@ -4,15 +4,27 @@ use std::{borrow::Cow, path::Path};
 use crate::{
     Error, ErrorKind,
     tokens::{
-        ErrorToken, JsonCharOption, Token, TokenOption, TokenWithContext,
+        ErrorToken, JsonByte, JsonCharOption, Token, TokenOption, TokenWithContext,
         lexical::{JsonChar, trim_end_whitespace},
     },
 };
+
 pub(crate) const EXPECTED_COMMA_OR_CLOSED_CURLY_MESSAGE: &str = "the preceding key/value pair";
 pub(crate) const INSERT_MISSING_CLOSED_BRACE_HELP: &str = "insert the missing closed brace";
 pub(crate) const REMOVE_EXPONENT_HELP: &str = "remove the exponent";
 pub(crate) const INSERT_EXPONENT_PLACEHOLDER_DIGIT_HELP: &str = "insert a placeholder digit";
 pub(crate) const EXPONENT_PLACEHOLDER_DIGIT: &str = "5";
+
+fn needs_separator(source: &str, start: usize, end: usize) -> bool {
+    matches!(
+        (
+            source[..start].bytes().next_back(),
+            source[end..].bytes().next(),
+        ),
+        (Some(before), Some(after))
+            if !JsonByte(before).is_whitespace() && !JsonByte(after).is_whitespace()
+    )
+}
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Context<'a> {
@@ -236,9 +248,19 @@ impl<'a> From<&'a Error> for Vec<Patch<'a>> {
                     "remove the comment",
                     start..error.range.end,
                     source,
-                    "",
+                    if needs_separator(&error.source_text, start, error.range.end) {
+                        " "
+                    } else {
+                        ""
+                    },
                 )]
             }
+            ErrorKind::UnterminatedComment => vec![Patch::new(
+                "close the comment",
+                error.range.end..error.range.end,
+                source,
+                "*/",
+            )],
             ErrorKind::TokenAfterEnd(token) => vec![Patch::new(
                 format!("consider removing the trailing content (starting with {token})"),
                 error.range.start..error.source_text.len(),
@@ -425,6 +447,7 @@ impl<'a> From<&'a Error> for Vec<Context<'a>> {
             ErrorKind::UnexpectedControlCharacterInString(_) => Vec::new(),
             ErrorKind::TokenAfterEnd(_) => Vec::new(),
             ErrorKind::UnexpectedComment => Vec::new(),
+            ErrorKind::UnterminatedComment => Vec::new(),
             ErrorKind::InvalidEncoding(_) => Vec::new(),
             ErrorKind::ExpectedMinusOrDigit(_) => Vec::new(),
             ErrorKind::ExpectedOpenBrace { context: None, .. } => Vec::new(),

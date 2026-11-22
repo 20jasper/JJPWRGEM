@@ -17,6 +17,8 @@ use crate::{
 #[case(crate::common::fixture_tuple!(OBJECT_TRAILING_COMMA_WITH_CLOSED))]
 #[case(crate::common::fixture_tuple!(OBJECT_TRAILING_COMMA))]
 #[case(crate::common::fixture_tuple!(OBJECT_LINE_COMMENT))]
+#[case(crate::common::fixture_tuple!(OBJECT_BLOCK_COMMENT))]
+#[case(crate::common::fixture_tuple!(OBJECT_UNCLOSED_BLOCK_COMMENT))]
 #[case(crate::common::fixture_tuple!(OBJECT_DOUBLE_OPEN_CURLY))]
 #[case(crate::common::fixture_tuple!(OBJECT_OPEN_CURLY))]
 #[case(crate::common::fixture_tuple!(CLOSED_CURLY))]
