@@ -7,6 +7,7 @@ use core::{fmt::Display, iter::Peekable, range::Range};
 
 pub use lexical::{JsonByte, JsonChar};
 pub use stream::TokenStream;
+pub(crate) use stream::{BLOCK_COMMENT_CLOSE, BLOCK_COMMENT_OPEN};
 
 #[repr(u8)]
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]

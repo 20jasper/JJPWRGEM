@@ -4,8 +4,6 @@ use jjpwrgem_parse::{
 use rstest::rstest;
 
 const COMMENT_MESSAGE: &str = "comments are not allowed in json";
-const UNCLOSED_JSON_MESSAGE: &str =
-    "comments are not allowed in json (and this block comment is never closed)";
 const UNTERMINATED_MESSAGE: &str = "block comment is never closed";
 
 // jsonc[verify multi-line-comment]
@@ -94,11 +92,12 @@ fn jsonc_rejects_unterminated_comment(#[case] json: &str) {
 #[case::just_opener("/*")]
 fn json_rejects_unterminated_comment(#[case] json: &str) {
     let error = Document::parse(json, SyntaxOptions::JSON).unwrap_err();
-    assert_eq!(error.message(), UNCLOSED_JSON_MESSAGE, "input: {json:?}");
+    assert_eq!(error.message(), COMMENT_MESSAGE, "input: {json:?}");
     assert_eq!(
         *error.range(),
         (json.find("/*").unwrap()..json.len()).into()
     );
+    assert_eq!(Vec::<Patch<'_>>::from(&error), []);
 }
 
 // jsonc[verify no-hash-comments]

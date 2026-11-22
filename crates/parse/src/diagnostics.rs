@@ -3,9 +3,9 @@ use std::{borrow::Cow, path::Path};
 
 use crate::{
     Error, ErrorKind,
-    error::CommentEnd,
     tokens::{
-        ErrorToken, JsonCharOption, Token, TokenOption, TokenWithContext,
+        BLOCK_COMMENT_CLOSE, BLOCK_COMMENT_OPEN, ErrorToken, JsonCharOption, Token, TokenOption,
+        TokenWithContext,
         lexical::{JsonChar, trim_end_whitespace},
     },
 };
@@ -236,7 +236,14 @@ impl<'a> From<&'a Error> for Vec<Patch<'a>> {
                 source,
                 escaped.to_string(),
             )],
-            ErrorKind::UnexpectedComment(CommentEnd::Closed) => {
+            ErrorKind::UnexpectedComment => {
+                let comment = &error.source_text.as_bytes()[error.range.start..error.range.end];
+                if comment.starts_with(BLOCK_COMMENT_OPEN)
+                    && (comment.len() < BLOCK_COMMENT_OPEN.len() + BLOCK_COMMENT_CLOSE.len()
+                        || !comment.ends_with(BLOCK_COMMENT_CLOSE))
+                {
+                    return Vec::new();
+                }
                 let start = trim_end_whitespace(&error.source_text[..error.range.start]).len();
                 let joins_tokens = matches!(
                     (
@@ -252,7 +259,6 @@ impl<'a> From<&'a Error> for Vec<Patch<'a>> {
                     if joins_tokens { " " } else { "" },
                 )]
             }
-            ErrorKind::UnexpectedComment(CommentEnd::Unterminated) => Vec::new(),
             ErrorKind::UnterminatedComment => vec![Patch::new(
                 "close the comment",
                 error.range.end..error.range.end,
@@ -444,7 +450,7 @@ impl<'a> From<&'a Error> for Vec<Context<'a>> {
             ErrorKind::UnexpectedCharacter(_) => Vec::new(),
             ErrorKind::UnexpectedControlCharacterInString(_) => Vec::new(),
             ErrorKind::TokenAfterEnd(_) => Vec::new(),
-            ErrorKind::UnexpectedComment(_) => Vec::new(),
+            ErrorKind::UnexpectedComment => Vec::new(),
             ErrorKind::UnterminatedComment => Vec::new(),
             ErrorKind::InvalidEncoding(_) => Vec::new(),
             ErrorKind::ExpectedMinusOrDigit(_) => Vec::new(),

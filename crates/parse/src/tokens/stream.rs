@@ -2,7 +2,6 @@ use core::{iter::Peekable, range::Range};
 
 use crate::{
     Error, ErrorKind, Result, SyntaxOptions,
-    error::CommentEnd,
     tokens::{
         ByteWithContext, BytesWithContext, FALSE, NULL, TRUE, Token, TokenWithContext,
         current_byte_pos,
@@ -41,8 +40,8 @@ fn skip_whitespace(bytes: &[u8]) -> usize {
 }
 
 const LINE_COMMENT_OPEN: &[u8] = b"//";
-const BLOCK_COMMENT_OPEN: &[u8] = b"/*";
-const BLOCK_COMMENT_CLOSE: &[u8] = b"*/";
+pub(crate) const BLOCK_COMMENT_OPEN: &[u8] = b"/*";
+pub(crate) const BLOCK_COMMENT_CLOSE: &[u8] = b"*/";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum Comments {
@@ -189,7 +188,7 @@ impl Iterator for TokenStreamInner<'_> {
                                 continue;
                             }
                             Comments::Reject => Err(Error::new(
-                                ErrorKind::UnexpectedComment(CommentEnd::Closed),
+                                ErrorKind::UnexpectedComment,
                                 self.pos..end,
                                 self.input,
                             )),
@@ -215,14 +214,9 @@ impl Iterator for TokenStreamInner<'_> {
                                 self.pos..self.input.len(),
                                 self.input,
                             )),
-                            (Comments::Reject, Some(end)) => Err(Error::new(
-                                ErrorKind::UnexpectedComment(CommentEnd::Closed),
-                                self.pos..end,
-                                self.input,
-                            )),
-                            (Comments::Reject, None) => Err(Error::new(
-                                ErrorKind::UnexpectedComment(CommentEnd::Unterminated),
-                                self.pos..self.input.len(),
+                            (Comments::Reject, end) => Err(Error::new(
+                                ErrorKind::UnexpectedComment,
+                                self.pos..end.unwrap_or(self.input.len()),
                                 self.input,
                             )),
                         }
