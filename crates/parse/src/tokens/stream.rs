@@ -39,8 +39,7 @@ fn skip_whitespace(bytes: &[u8]) -> usize {
         .unwrap_or(bytes.len().saturating_sub(i))
 }
 
-const COMMENT_START: u8 = b'/';
-const LINE_COMMENT_OPEN_LEN: usize = 2;
+const LINE_COMMENT_OPEN: &[u8] = b"//";
 
 /// How the lexer treats comments
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -178,12 +177,12 @@ impl Iterator for TokenStreamInner<'_> {
                     }
                 }
                 b'/' => match self.input.as_bytes().get(self.pos + 1) {
-                    Some(&COMMENT_START) => {
+                    Some(b'/') => {
                         // jsonc[impl single-line-comment]
                         let end = self.pos
-                            + LINE_COMMENT_OPEN_LEN
+                            + LINE_COMMENT_OPEN.len()
                             + line_comment_len(
-                                &self.input.as_bytes()[self.pos + LINE_COMMENT_OPEN_LEN..],
+                                &self.input.as_bytes()[self.pos + LINE_COMMENT_OPEN.len()..],
                             );
                         match self.comments {
                             Comments::Skip => {
