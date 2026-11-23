@@ -1,0 +1,16 @@
+---
+source: tests/integration/commands/check.rs
+expression: output.snapshot_display()
+---
+args: ["check", "--parser", "jsonc"]
+status: 0
+success: true
+stdin ---
+{
+  "hi": null, /* greeting */
+  "bye": null
+}
+stdout ---
+
+
+stderr ---

@@ -79,3 +79,32 @@ fn docs(#[case] input: &str, #[case] postfix: &str) {
         cli_snapshot!(format!("check_{postfix}"), output.docs_display_stdin());
     });
 }
+
+#[rstest]
+#[case("jsonc_accepts_line_comment", OBJECT_LINE_COMMENT, true)]
+#[case("jsonc_accepts_block_comment", OBJECT_BLOCK_COMMENT, true)]
+#[case("jsonc_accepts_trailing_commas", r#"{"a": [1, 2,], }"#, true)]
+#[case("jsonc_rejects_missing_colon", OBJECT_MISSING_COLON, false)]
+#[case(
+    "jsonc_rejects_unclosed_block_comment",
+    OBJECT_UNCLOSED_BLOCK_COMMENT,
+    false
+)]
+fn jsonc(#[case] name: &str, #[case] input: &str, #[case] success: bool) {
+    assert_cli_snapshot!(
+        name,
+        ["check", "--parser", "jsonc"],
+        Some(input.as_bytes()),
+        success
+    );
+}
+
+#[test]
+fn json_rejects_comments() {
+    assert_cli_snapshot!(
+        "json_rejects_comments",
+        ["check", "--parser", "json"],
+        Some(OBJECT_LINE_COMMENT.as_bytes()),
+        false
+    );
+}

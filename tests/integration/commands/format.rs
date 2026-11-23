@@ -3,6 +3,16 @@ use crate::{
     test_json::*,
 };
 
+#[test]
+fn rejects_jsonc_parser() {
+    assert_cli_snapshot!(
+        "rejects_jsonc_parser",
+        ["format", "--parser", "jsonc"],
+        Some(b"{}"),
+        false
+    );
+}
+
 #[rstest_reuse::apply(format_template)]
 fn prettify(#[case] (name, input): (&str, &str)) {
     assert_cli_snapshot!(name.to_string(), ["format"], Some(input.as_bytes()), true);

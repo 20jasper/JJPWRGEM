@@ -19,10 +19,8 @@ use std::{
 
 pub use error::{Error, Result};
 use jjpwrgem_parse::{
-    SyntaxOptions,
-    diagnostics::Diagnostic,
-    format::{FormatRequest, Parser},
-    format_str, validate_str,
+    CheckParser, SyntaxOptions, diagnostics::Diagnostic, format::FormatRequest, format_str,
+    validate_str,
 };
 use jjpwrgem_ui::{Color, Style};
 
@@ -39,8 +37,13 @@ fn main() -> ExitCode {
                 ExitCode::FAILURE
             }
         },
-        Action::Check(Parser::Jsonlines) => run_on_stdin(style, check_jsonlines),
-        Action::Check(Parser::Json) => run_on_stdin(style, check),
+        Action::Check(CheckParser::Jsonlines) => run_on_stdin(style, check_jsonlines),
+        Action::Check(CheckParser::Json) => {
+            run_on_stdin(style, |json, style| check(json, style, SyntaxOptions::JSON))
+        }
+        Action::Check(CheckParser::Jsonc) => run_on_stdin(style, |json, style| {
+            check(json, style, SyntaxOptions::JSONC)
+        }),
         Action::Format(request) => {
             run_on_stdin(style, |json, style| format_input(json, style, &request))
         }
@@ -109,8 +112,8 @@ fn format_input(json: &str, style: Style, request: &FormatRequest) -> Output {
     }
 }
 
-pub fn check(json: &str, style: Style) -> Output {
-    match validate_str(json, SyntaxOptions::JSON) {
+pub fn check(json: &str, style: Style, syntax: SyntaxOptions) -> Output {
+    match validate_str(json, syntax) {
         Ok(()) => Output::success(""),
         Err(error) => Output::failure_diagnostic(Diagnostic::from(&error), style),
     }

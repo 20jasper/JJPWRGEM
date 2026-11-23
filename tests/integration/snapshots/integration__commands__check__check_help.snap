@@ -18,6 +18,7 @@ Options:
 
           Possible values:
           - json:      A single json document
+          - jsonc:     A single json document with comments and trailing commas
           - jsonlines: One json document per line
           
           [default: json]
