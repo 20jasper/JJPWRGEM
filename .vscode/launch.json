@@ -21,7 +21,10 @@
       "outFiles": [
         "${workspaceFolder}/npm-packages/jjpwrgem-vscode/dist/**/*.js"
       ],
-      "preLaunchTask": "build jjpwrgem-vscode"
+      "env": {
+        "PATH": "${workspaceFolder}/target/debug:${env:PATH}"
+      },
+      "preLaunchTask": "build dev host"
     },
     {
       "name": "Run JJPWRGEM VS Code Extension (Dev Profile)",
@@ -44,7 +47,10 @@
       "outFiles": [
         "${workspaceFolder}/npm-packages/jjpwrgem-vscode/dist/**/*.js"
       ],
-      "preLaunchTask": "build jjpwrgem-vscode"
+      "env": {
+        "PATH": "${workspaceFolder}/target/debug:${env:PATH}"
+      },
+      "preLaunchTask": "build dev host"
     }
   ]
 }
