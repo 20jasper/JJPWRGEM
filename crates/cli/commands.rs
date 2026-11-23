@@ -1,8 +1,9 @@
 use clap::{Args, Command, CommandFactory, FromArgMatches, Parser, Subcommand, error::ErrorKind};
 use jjpwrgem_parse::{
+    CheckInputSettings, CheckParser,
     format::{
         ConfigError, FormatConfig, FormatOption, FormatRequest, FormatSettings, InputSettings,
-        Parser as ParseParser, rule_clause,
+        rule_clause,
     },
     settings::{Setting, Shorthand},
 };
@@ -65,7 +66,7 @@ pub struct FormatArgs {
 #[derive(Args, Debug)]
 pub struct CheckArgs {
     #[command(flatten)]
-    input: FromSettings<InputSettings>,
+    input: FromSettings<CheckInputSettings>,
 }
 
 impl From<FormatArgs> for FormatConfig {
@@ -95,7 +96,7 @@ impl Help for FormatHelp {
 
 pub enum Action {
     Lsp,
-    Check(ParseParser),
+    Check(CheckParser),
     Format(FormatRequest),
 }
 

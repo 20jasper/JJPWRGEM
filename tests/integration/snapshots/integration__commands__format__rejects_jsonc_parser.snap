@@ -1,0 +1,18 @@
+---
+source: tests/integration/commands/format.rs
+expression: output.snapshot_display()
+---
+args: ["format", "--parser", "jsonc"]
+status: 2
+success: false
+stdin ---
+{}
+stdout ---
+
+stderr ---
+error: invalid value 'jsonc' for '--parser <PARSER>'
+  [possible values: json, jsonlines]
+
+  tip: a similar value exists: 'json'
+
+For more information, try '--help'.
