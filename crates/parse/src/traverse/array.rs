@@ -24,10 +24,12 @@ impl ArrayState {
             ArrayState::ValueOrEnd | ArrayState::Value if next.is_start_of_value() => {
                 ArrayState::CommaOrEnd
             }
+            // jsonc[impl trailing-commas]
+            ArrayState::Value if next == Token::ClosedSquareBracket && options.trailing_commas => {
+                ArrayState::End
+            }
             ArrayState::CommaOrEnd => match next {
                 Token::ClosedSquareBracket => ArrayState::End,
-                // jsonc[impl trailing-commas]
-                Token::Comma if options.trailing_commas => ArrayState::ValueOrEnd,
                 Token::Comma => ArrayState::Value,
                 _ => return None,
             },

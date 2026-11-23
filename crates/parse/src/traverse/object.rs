@@ -36,8 +36,9 @@ impl ObjectState {
                 ObjectState::End
             }
             ObjectState::KeyOrEnd | ObjectState::Key if next == Token::String => ObjectState::Colon,
-            ObjectState::CommaOrEnd if next == Token::Comma && options.trailing_commas => {
-                ObjectState::KeyOrEnd
+            // jsonc[impl trailing-commas]
+            ObjectState::Key if next == Token::ClosedCurlyBrace && options.trailing_commas => {
+                ObjectState::End
             }
             ObjectState::CommaOrEnd if next == Token::Comma => ObjectState::Key,
             ObjectState::Colon if next == Token::Colon => ObjectState::Value,
