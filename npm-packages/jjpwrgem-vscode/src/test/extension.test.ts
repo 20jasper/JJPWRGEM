@@ -105,11 +105,24 @@ suite("Extension Smoke Tests", function () {
         .getDiagnostics(uri)
         .filter((d) => d.source === "jjpwrgem");
 
-    let diagnostics = getJjpDiagnostics();
-    for (let i = 0; i < 100 && diagnostics.length === 0; i++) {
-      await new Promise((resolve) => setTimeout(resolve, 100));
-      diagnostics = getJjpDiagnostics();
-    }
+    const diagnostics = await new Promise<vscode.Diagnostic[]>(
+      (resolve, reject) => {
+        const check = () => {
+          const found = getJjpDiagnostics();
+          if (found.length > 0) {
+            clearTimeout(timer);
+            subscription.dispose();
+            resolve(found);
+          }
+        };
+        const timer = setTimeout(() => {
+          subscription.dispose();
+          reject(new Error("no jjpwrgem diagnostics"));
+        }, 10000);
+        const subscription = vscode.languages.onDidChangeDiagnostics(check);
+        check();
+      },
+    );
 
     assert.strictEqual(
       diagnostics.length,
