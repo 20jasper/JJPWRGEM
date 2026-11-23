@@ -96,7 +96,7 @@ fn truncated(text: &str) -> String {
 
 impl<S: Sink> Backend<S> {
     pub(super) fn document_symbol(
-        &self,
+        &mut self,
         params: &DocumentSymbolParams,
     ) -> Option<DocumentSymbolResponse> {
         self.with_document(&params.text_document.uri, |document| {

@@ -33,6 +33,13 @@ fn apply_change(
     true
 }
 
+fn syntax_for(language_id: &LanguageKind) -> SyntaxOptions {
+    match language_id.as_str() {
+        "jsonc" => SyntaxOptions::JSONC,
+        _ => SyntaxOptions::JSON,
+    }
+}
+
 impl<S: Sink> Backend<S> {
     pub(super) fn did_open(&mut self, params: DidOpenTextDocumentParams) {
         let TextDocumentItem {
@@ -41,11 +48,7 @@ impl<S: Sink> Backend<S> {
             text,
             ..
         } = params.text_document;
-        let syntax = if language_id.as_str() == "jsonc" {
-            SyntaxOptions::JSONC
-        } else {
-            SyntaxOptions::JSON
-        };
+        let syntax = syntax_for(&language_id);
         let parsed = self.parse_document(&uri, text, syntax);
         self.documents.insert(
             uri,

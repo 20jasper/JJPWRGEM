@@ -84,7 +84,7 @@ impl<S: Sink> Backend<S> {
                     self.respond::<DocumentDiagnosticRequest>(id, params, Self::diagnostic)
                 }
                 LspRequestMethod::TextDocumentFormatting => {
-                    self.respond_mut::<DocumentFormattingRequest>(id, params, Self::formatting)
+                    self.respond::<DocumentFormattingRequest>(id, params, Self::formatting)
                 }
                 LspRequestMethod::TextDocumentCodeAction => {
                     self.respond::<CodeActionRequest>(id, params, Self::code_action)
@@ -136,15 +136,6 @@ impl<S: Sink> Backend<S> {
     }
 
     fn respond<R: Request>(
-        &mut self,
-        id: Id,
-        params: Option<&RawValue>,
-        handler: impl FnOnce(&Self, &R::Params) -> R::Result,
-    ) -> io::Result<()> {
-        self.respond_mut::<R>(id, params, |this, params| handler(this, params))
-    }
-
-    fn respond_mut<R: Request>(
         &mut self,
         id: Id,
         params: Option<&RawValue>,
