@@ -27,6 +27,14 @@ suite("Extension Smoke Tests", function () {
     assert.ok(extension.isActive, "Extension should be active");
   });
 
+  test("Built-in JSON language features should be disabled", async () => {
+    assert.strictEqual(
+      vscode.extensions.getExtension("vscode.json-language-features"),
+      undefined,
+      "built-in json extension should be disabled",
+    );
+  });
+
   test("Open a JSON file on disk and format it", async () => {
     await whenReady;
 
@@ -111,6 +119,12 @@ suite("Extension Smoke Tests", function () {
     assert.strictEqual(
       diagnostics[0]!.message,
       "expected json value, found `,`",
+    );
+
+    assert.strictEqual(
+      vscode.languages.getDiagnostics(uri).length,
+      1,
+      "No diagnostics besides jjpwrgem's should be present",
     );
 
     await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
