@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use gen_lsp_types::Uri;
-use jjpwrgem_parse::{ast::Document, format::FormatSettings};
+use jjpwrgem_parse::{SyntaxOptions, ast::Document, format::FormatSettings};
 
 use crate::{
     lsp_server::req_queue::Outgoing,
@@ -29,11 +29,17 @@ enum Lifecycle {
     ShutDown,
 }
 
+struct OpenDocument {
+    parsed: jjpwrgem_parse::Result<Document<String>>,
+    syntax: SyntaxOptions,
+    warned_formatting: bool,
+}
+
 pub struct Backend<S> {
     out: Writer<S>,
     outgoing: Outgoing<()>,
     lifecycle: Lifecycle,
-    documents: HashMap<Uri, jjpwrgem_parse::Result<Document<String>>>,
+    documents: HashMap<Uri, OpenDocument>,
     position_encoding: PositionEncoding,
     client_pulls_diagnostics: bool,
     format: FormatSettings,
@@ -57,6 +63,6 @@ impl<S: Sink> Backend<S> {
     }
 
     fn with_document<T>(&self, uri: &Uri, f: impl FnOnce(&Document<String>) -> T) -> Option<T> {
-        self.documents.get(uri)?.as_ref().ok().map(f)
+        self.documents.get(uri)?.parsed.as_ref().ok().map(f)
     }
 }

@@ -178,6 +178,92 @@ fn formatting_is_none_for_invalid_json() -> TestResult {
     Ok(())
 }
 
+const JSONC: &str = "{\n  // comment\n  \"a\": 1, /* block */\n}";
+
+fn open_jsonc(client: &mut Client, text: &str) -> TestResult<Uri> {
+    let uri: Uri = "file:///e2e.jsonc".parse()?;
+    client.did_open(uri.clone(), text, LanguageKind::Custom("jsonc".into()))?;
+    Ok(uri)
+}
+
+#[test]
+fn jsonc_documents_accept_comments_and_trailing_commas() -> TestResult {
+    let mut client = client(capabilities::vscode::latest)?;
+    let uri = open_jsonc(&mut client, JSONC)?;
+
+    assert_eq!(client.diagnostics(&uri)?, []);
+    Ok(())
+}
+
+#[test]
+fn json_documents_still_reject_comments() -> TestResult {
+    let mut client = client(capabilities::vscode::latest)?;
+    let uri = open(&mut client, JSONC)?;
+
+    let diagnostics = client.diagnostics(&uri)?;
+    assert_eq!(diagnostics.len(), 1);
+    assert_eq!(
+        diagnostics[0].message,
+        "comments are not allowed in json".into()
+    );
+    Ok(())
+}
+
+#[test]
+fn a_changed_jsonc_document_stays_jsonc() -> TestResult {
+    let mut client = client(capabilities::vscode::latest)?;
+    let uri = open_jsonc(&mut client, r#"{"a": }"#)?;
+    assert_eq!(client.diagnostics(&uri)?.len(), 1);
+
+    client.did_change_full(&uri, JSONC)?;
+    assert_eq!(client.diagnostics(&uri)?, []);
+    Ok(())
+}
+
+fn format_jsonc(client: &mut Client, uri: &Uri) -> TestResult {
+    assert_eq!(client.formatting(uri, FormattingOptions::default())?, None);
+    Ok(())
+}
+
+#[test]
+fn formatting_jsonc_is_none_and_warns_once_per_document() -> TestResult {
+    let mut client = client(capabilities::vscode::latest)?;
+    let uri = open_jsonc(&mut client, JSONC)?;
+
+    format_jsonc(&mut client, &uri)?;
+    let warning = client.wait_for_notification::<ShowMessageNotification>()?;
+    assert_eq!(warning.kind, MessageType::Warning);
+    assert_eq!(
+        warning.message,
+        "jjpwrgem: formatting jsonc is not supported yet"
+    );
+
+    format_jsonc(&mut client, &uri)?;
+    let mut client = client.with_timeout(Duration::from_millis(200));
+    let err = client
+        .wait_for_notification::<ShowMessageNotification>()
+        .unwrap_err();
+    assert!(
+        matches!(err.kind(), ErrorKind::NotificationTimeout { .. }),
+        "{err:?}"
+    );
+    Ok(())
+}
+
+#[test]
+fn a_reopened_jsonc_document_warns_again() -> TestResult {
+    let mut client = client(capabilities::vscode::latest)?;
+    let uri = open_jsonc(&mut client, JSONC)?;
+    format_jsonc(&mut client, &uri)?;
+    client.wait_for_notification::<ShowMessageNotification>()?;
+
+    client.did_close(&uri)?;
+    let uri = open_jsonc(&mut client, JSONC)?;
+    format_jsonc(&mut client, &uri)?;
+    client.wait_for_notification::<ShowMessageNotification>()?;
+    Ok(())
+}
+
 #[test]
 fn code_action_fixes_a_trailing_comma() -> TestResult {
     let mut client = client(capabilities::vscode::latest)?;

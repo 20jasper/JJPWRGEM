@@ -91,7 +91,7 @@
       }
     }
   },
-  "activationEvents": ["onLanguage:json"],
+  "activationEvents": ["onLanguage:json", "onLanguage:jsonc"],
   "extensionKind": ["workspace"],
   "icon": "axolotl-thumb.png",
   "engines": { "vscode": "^1.82.0" },

@@ -88,7 +88,7 @@ impl<S: Sink> Backend<S> {
     pub(super) fn diagnostic(&self, params: &DocumentDiagnosticParams) -> DocumentDiagnosticReport {
         let uri = &params.text_document.uri;
         let items = self.documents.get(uri).map_or_else(Vec::new, |document| {
-            diagnostics_for(uri, document, self.position_encoding)
+            diagnostics_for(uri, &document.parsed, self.position_encoding)
         });
         DocumentDiagnosticReport::RelatedFullDocumentDiagnosticReport(
             RelatedFullDocumentDiagnosticReport {
@@ -104,7 +104,11 @@ impl<S: Sink> Backend<S> {
     pub(super) fn code_action(&self, params: &CodeActionParams) -> Option<Vec<CodeActionResponse>> {
         let uri = &params.text_document.uri;
         let document = self.documents.get(uri)?;
-        Some(build_code_actions(uri, document, self.position_encoding))
+        Some(build_code_actions(
+            uri,
+            &document.parsed,
+            self.position_encoding,
+        ))
     }
 }
 
