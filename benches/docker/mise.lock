@@ -399,6 +399,11 @@ url_api = "https://api.github.com/repos/tdewolff/minify/releases/assets/70690867
 [[tools."github:tidwall/jj"]]
 version = "1.9.2"
 backend = "github:tidwall/jj"
+unsupported_platforms = [
+    "linux-arm64",
+    "linux-arm64-musl",
+    "macos-arm64",
+]
 
 [tools."github:tidwall/jj"."platforms.linux-x64"]
 checksum = "sha256:839928cd38453e6c5f06220e51e7fe3c5a9c13a72f48787d57ebb0fe1656fb09"
