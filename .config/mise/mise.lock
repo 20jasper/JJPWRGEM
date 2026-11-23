@@ -93,6 +93,10 @@ url_api = "https://api.github.com/repos/EmbarkStudios/cargo-deny/releases/assets
 version = "version_133"
 backend = "aqua:WebAssembly/binaryen"
 specifiers = ["version_133"]
+unsupported_platforms = [
+    "linux-arm64",
+    "linux-arm64-musl",
+]
 
 [tools."aqua:WebAssembly/binaryen"."platforms.linux-x64"]
 checksum = "sha256:2dc9c7813f5375db93d96ead4b78222fcc3e2677bbb832297af4797782a37489"
@@ -175,6 +179,10 @@ url_api = "https://api.github.com/repos/crate-ci/typos/releases/assets/733790297
 version = "1.49.0"
 backend = "aqua:mitsuhiko/insta"
 specifiers = ["1.49"]
+unsupported_platforms = [
+    "linux-arm64",
+    "linux-arm64-musl",
+]
 
 [tools."aqua:mitsuhiko/insta"."platforms.linux-x64"]
 checksum = "sha256:18879f4e7280c2eb87bb1037ddb9d48af697511fb0d8113edfc39ab8bade4d4e"
@@ -249,50 +257,50 @@ url_api = "https://api.github.com/repos/pnpm/pnpm/releases/assets/744357265"
 provenance = "github-attestations"
 
 [[tools."aqua:taiki-e/cargo-llvm-cov"]]
-version = "0.9.1"
+version = "0.9.2"
 backend = "aqua:taiki-e/cargo-llvm-cov"
 specifiers = ["0.9"]
 
 [tools."aqua:taiki-e/cargo-llvm-cov"."platforms.linux-arm64"]
-checksum = "sha256:abf5f13c1520f8756d2192bfaaeadb0208f5b7eaa8cadc15bf847befa42b7360"
-url = "https://github.com/taiki-e/cargo-llvm-cov/releases/download/v0.9.1/cargo-llvm-cov-aarch64-unknown-linux-gnu.tar.gz"
-url_api = "https://api.github.com/repos/taiki-e/cargo-llvm-cov/releases/assets/547403281"
+checksum = "sha256:150331cd34177e52ec9aed2e32dfe624714030752b5436595281af15c778e38e"
+url = "https://github.com/taiki-e/cargo-llvm-cov/releases/download/v0.9.2/cargo-llvm-cov-aarch64-unknown-linux-gnu.tar.gz"
+url_api = "https://api.github.com/repos/taiki-e/cargo-llvm-cov/releases/assets/772452233"
 provenance = "github-attestations"
 
 [tools."aqua:taiki-e/cargo-llvm-cov"."platforms.linux-arm64-musl"]
-checksum = "sha256:49c0085628392a8d727c4464d91ec417c613c5015f5197cd16d5c05aa3fb5ad1"
-url = "https://github.com/taiki-e/cargo-llvm-cov/releases/download/v0.9.1/cargo-llvm-cov-aarch64-unknown-linux-musl.tar.gz"
-url_api = "https://api.github.com/repos/taiki-e/cargo-llvm-cov/releases/assets/547403283"
+checksum = "sha256:dab1bfd1f25f7fcd3d6fc6abf9d71b40217a7a103e1da88c1a23111960aa4a40"
+url = "https://github.com/taiki-e/cargo-llvm-cov/releases/download/v0.9.2/cargo-llvm-cov-aarch64-unknown-linux-musl.tar.gz"
+url_api = "https://api.github.com/repos/taiki-e/cargo-llvm-cov/releases/assets/772451340"
 provenance = "github-attestations"
 
 [tools."aqua:taiki-e/cargo-llvm-cov"."platforms.linux-x64"]
-checksum = "sha256:b3f68e625481fed9b16444174f3fa5ebcdbde4a1878803a35eabe2dcefcdc41a"
-url = "https://github.com/taiki-e/cargo-llvm-cov/releases/download/v0.9.1/cargo-llvm-cov-x86_64-unknown-linux-gnu.tar.gz"
-url_api = "https://api.github.com/repos/taiki-e/cargo-llvm-cov/releases/assets/547403171"
+checksum = "sha256:1e0ed5c64f11e9217f7b9d7c776b3125eab26f27d49313919c909881a2fc7cff"
+url = "https://github.com/taiki-e/cargo-llvm-cov/releases/download/v0.9.2/cargo-llvm-cov-x86_64-unknown-linux-gnu.tar.gz"
+url_api = "https://api.github.com/repos/taiki-e/cargo-llvm-cov/releases/assets/772448594"
 provenance = "github-attestations"
 
 [tools."aqua:taiki-e/cargo-llvm-cov"."platforms.linux-x64-musl"]
-checksum = "sha256:3fca950394a3c49457657c158b1619cec8dfd2647ae5b48746734c0ab969a522"
-url = "https://github.com/taiki-e/cargo-llvm-cov/releases/download/v0.9.1/cargo-llvm-cov-x86_64-unknown-linux-musl.tar.gz"
-url_api = "https://api.github.com/repos/taiki-e/cargo-llvm-cov/releases/assets/547403186"
+checksum = "sha256:8d863ab2df1fb53d4f41052b3fa4627ac003d00c46a6388ce037d17472c504ef"
+url = "https://github.com/taiki-e/cargo-llvm-cov/releases/download/v0.9.2/cargo-llvm-cov-x86_64-unknown-linux-musl.tar.gz"
+url_api = "https://api.github.com/repos/taiki-e/cargo-llvm-cov/releases/assets/772450232"
 provenance = "github-attestations"
 
 [tools."aqua:taiki-e/cargo-llvm-cov"."platforms.macos-arm64"]
-checksum = "sha256:7e821a6c90c0884f79f759f5d9be50799ade67bb82515186d922f26032ef43b8"
-url = "https://github.com/taiki-e/cargo-llvm-cov/releases/download/v0.9.1/cargo-llvm-cov-aarch64-apple-darwin.tar.gz"
-url_api = "https://api.github.com/repos/taiki-e/cargo-llvm-cov/releases/assets/547403359"
+checksum = "sha256:5cd0bf7da3ccedd8cfbd7bf4eaad9083d3f1d47e6633e0c5fab2aeae3d1b2d2e"
+url = "https://github.com/taiki-e/cargo-llvm-cov/releases/download/v0.9.2/cargo-llvm-cov-aarch64-apple-darwin.tar.gz"
+url_api = "https://api.github.com/repos/taiki-e/cargo-llvm-cov/releases/assets/772450818"
 provenance = "github-attestations"
 
 [tools."aqua:taiki-e/cargo-llvm-cov"."platforms.macos-x64"]
-checksum = "sha256:ddf949b82a63017441ea76aa068bdd7e2dde8055f47cd3ef736fdbbd633bc33e"
-url = "https://github.com/taiki-e/cargo-llvm-cov/releases/download/v0.9.1/cargo-llvm-cov-x86_64-apple-darwin.tar.gz"
-url_api = "https://api.github.com/repos/taiki-e/cargo-llvm-cov/releases/assets/547403156"
+checksum = "sha256:07dbf196c2ad47ca6b30af993c19a6f487989c4986dc963d347d256bf814acd5"
+url = "https://github.com/taiki-e/cargo-llvm-cov/releases/download/v0.9.2/cargo-llvm-cov-x86_64-apple-darwin.tar.gz"
+url_api = "https://api.github.com/repos/taiki-e/cargo-llvm-cov/releases/assets/772450883"
 provenance = "github-attestations"
 
 [tools."aqua:taiki-e/cargo-llvm-cov"."platforms.windows-x64"]
-checksum = "sha256:15eefd5b90fcdd4006b727c6e710d70a61aff509fcd7bb37f9c2a35c4f024948"
-url = "https://github.com/taiki-e/cargo-llvm-cov/releases/download/v0.9.1/cargo-llvm-cov-x86_64-pc-windows-msvc.tar.gz"
-url_api = "https://api.github.com/repos/taiki-e/cargo-llvm-cov/releases/assets/547404213"
+checksum = "sha256:5525084e4f6a4fa771c1055e6d260a7cee40939f0f624265e92c16bffb777956"
+url = "https://github.com/taiki-e/cargo-llvm-cov/releases/download/v0.9.2/cargo-llvm-cov-x86_64-pc-windows-msvc.tar.gz"
+url_api = "https://api.github.com/repos/taiki-e/cargo-llvm-cov/releases/assets/772457132"
 provenance = "github-attestations"
 
 [[tools."cargo:bacon"]]
@@ -376,6 +384,7 @@ provenance = "github-attestations"
 version = "1.4.2"
 backend = "github:Byron/cargo-diet"
 specifiers = ["1.4.2"]
+unsupported_platforms = ["macos-arm64"]
 
 [tools."github:Byron/cargo-diet"."platforms.linux-arm64"]
 checksum = "sha256:1de586656183bf2eeb67616dae3f9767d675fff25840e094d9be1e4b48f0b3b3"
@@ -411,6 +420,10 @@ url_api = "https://api.github.com/repos/Byron/cargo-diet/releases/assets/6965018
 version = "6.0.0"
 backend = "github:CodSpeedHQ/codspeed-rust"
 specifiers = ["6.0.0"]
+unsupported_platforms = [
+    "macos-x64",
+    "windows-x64",
+]
 
 [tools."github:CodSpeedHQ/codspeed-rust"."platforms.linux-arm64"]
 checksum = "sha256:eb82a5114d754099fcaf91155c3ee29e64a070953d4065ea315fe33d95a1371c"
@@ -441,6 +454,10 @@ url_api = "https://api.github.com/repos/CodSpeedHQ/codspeed-rust/releases/assets
 version = "1.4.0"
 backend = "github:bearcove/tracey"
 specifiers = ["v1.4.0"]
+unsupported_platforms = [
+    "macos-x64",
+    "windows-x64",
+]
 
 [tools."github:bearcove/tracey"."platforms.linux-arm64"]
 checksum = "sha256:c0cebdcd76c1255b0251075c6828755bb142e41012d0d7d868b32237a027a8dd"
@@ -519,6 +536,7 @@ url_api = "https://api.github.com/repos/bruits/sampo/releases/assets/698768810"
 version = "0.20.0"
 backend = "github:gungraun/gungraun"
 specifiers = ["0.20.0"]
+unsupported_platforms = ["macos-arm64"]
 
 [tools."github:gungraun/gungraun"."platforms.linux-arm64"]
 checksum = "sha256:30ddf6737e486d1d3c11746eb603d8a228afeb1614dcf84ebe9ee1442f59d2f3"
@@ -554,6 +572,7 @@ url_api = "https://api.github.com/repos/gungraun/gungraun/releases/assets/591084
 version = "0.1.0"
 backend = "github:libkakashi/light-json-lsp"
 specifiers = ["0.1.0"]
+unsupported_platforms = ["windows-x64"]
 
 [tools."github:libkakashi/light-json-lsp"."platforms.linux-arm64"]
 checksum = "sha256:b4ecbce6fcdeeec263e400f9cb4d95439931e681f70c51047a67f183f79a49d6"
@@ -595,6 +614,11 @@ url_api = "https://api.github.com/repos/libkakashi/light-json-lsp/releases/asset
 version = "2.2.3"
 backend = "github:orium/cargo-rdme"
 specifiers = ["2.2"]
+unsupported_platforms = [
+    "linux-arm64",
+    "linux-arm64-musl",
+    "macos-x64",
+]
 
 [tools."github:orium/cargo-rdme"."platforms.linux-x64"]
 checksum = "sha256:f93a18f22bf35587c629c83469f6437cb2e342864b6a92fa79ed2de9a70fbf5f"
@@ -712,7 +736,7 @@ provenance = "github-attestations"
 
 [[tools."npm:@t1ckbase/vscode-langservers-extracted"]]
 version = "2.0.5"
-aube = { path = "locks/npm-t1ckbase-vscode-langservers-extracted/2.0.5", digest = "sha256:06477821ae4b998e6cd01cc06e4e16ae5f8bc4c67ecc0805156e6b7385a61741" }
+aube = { path = "locks/npm-t1ckbase-vscode-langservers-extracted/2.0.5", digest = "sha256:98c960296b916eb71603ff900227861b7bddbf3f2f74ed3bc63d5d3463dff586" }
 backend = "npm:@t1ckbase/vscode-langservers-extracted"
 specifiers = ["2.0.5"]
 
@@ -739,7 +763,7 @@ specifiers = ["3.10.1"]
 
 [[tools."npm:renovate"]]
 version = "44.240.0"
-aube = { path = "locks/npm-renovate/44.240.0~aa673d8d", digest = "sha256:6a6af9d29513540d59676bdec0cde5fad97bc4c6f9b9bb91346aa985a2e784db" }
+aube = { path = "locks/npm-renovate/44.240.0~aa673d8d", digest = "sha256:d4493569e2a91aead92f136ed69017b6675f5bc7459916c4b69c80533bb48b2d" }
 backend = "npm:renovate"
 specifiers = ["44.240.0"]
 
@@ -750,6 +774,7 @@ trust_policy_excludes = '["@yarnpkg/libzip@3.2.2"]'
 version = "2.10.0"
 backend = "packslip:github.com/jdx/hk"
 specifiers = ["2.10.0"]
+unsupported_platforms = ["macos-x64"]
 
 [tools."packslip:github.com/jdx/hk"."platforms.linux-arm64"]
 checksum = "sha256:98772b6290cad5ba5fe77a203fd717c82f47bde2a9aa5b295bea22139ba4f602"
