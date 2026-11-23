@@ -24,11 +24,14 @@ jobs:
         with:
           client-id: ${{ vars.BOT_CLIENT_ID }}
           private-key: ${{ secrets.BOT_PRIVATE_KEY }}
-          permission-checks: read
+          permission-actions: read
+          permission-administration: read
+          permission-checks: write
           permission-contents: write
           permission-issues: write
           permission-pull-requests: write
-          permission-statuses: read
+          permission-statuses: write
+          permission-vulnerability-alerts: read
           permission-workflows: write
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
