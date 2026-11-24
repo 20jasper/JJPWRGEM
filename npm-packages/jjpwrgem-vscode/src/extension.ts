@@ -17,7 +17,10 @@ export function activate(context: vscode.ExtensionContext): {
   };
 
   const clientOptions: LanguageClientOptions = {
-    documentSelector: [{ scheme: "file", language: "json" }],
+    documentSelector: [
+      { scheme: "file", language: "json" },
+      { scheme: "file", language: "jsonc" },
+    ],
     synchronize: { configurationSection: "jjpwrgem" },
     initializationOptions: {
       format: vscode.workspace.getConfiguration("jjpwrgem").get("format"),

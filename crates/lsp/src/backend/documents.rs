@@ -3,7 +3,7 @@ use jjpwrgem_parse::{SyntaxOptions, ast::Document, format::FormatSettings};
 use serde_json::Value;
 
 use crate::{
-    backend::{Backend, diagnostics::diagnostics_for, settings::format_settings},
+    backend::{Backend, OpenDocument, diagnostics::diagnostics_for, settings::format_settings},
     range::Positions,
     transport::Sink,
 };
@@ -33,19 +33,41 @@ fn apply_change(
     true
 }
 
+fn syntax_for(language_id: &LanguageKind) -> SyntaxOptions {
+    match language_id.as_str() {
+        "jsonc" => SyntaxOptions::JSONC,
+        _ => SyntaxOptions::JSON,
+    }
+}
+
 impl<S: Sink> Backend<S> {
     pub(super) fn did_open(&mut self, params: DidOpenTextDocumentParams) {
-        self.process_document(params.text_document.uri, params.text_document.text);
+        let TextDocumentItem {
+            uri,
+            language_id,
+            text,
+            ..
+        } = params.text_document;
+        let syntax = syntax_for(&language_id);
+        let parsed = self.parse_document(&uri, text, syntax);
+        self.documents.insert(
+            uri,
+            OpenDocument {
+                parsed,
+                syntax,
+                warned_formatting: false,
+            },
+        );
     }
 
     pub(super) fn did_change(&mut self, params: DidChangeTextDocumentParams) {
         let uri = params.text_document.text_document_identifier.uri;
-        let Some(document) = self.documents.remove(&uri) else {
+        let Some(mut open) = self.documents.remove(&uri) else {
             self.warn(format!("received change for unopened document: {uri:?}"));
             return;
         };
 
-        let mut text = match document {
+        let mut text = match open.parsed {
             Ok(document) => document.into_source(),
             Err(error) => error.into_source_text(),
         };
@@ -56,7 +78,8 @@ impl<S: Sink> Backend<S> {
             }
         }
 
-        self.process_document(uri, text);
+        open.parsed = self.parse_document(&uri, text, open.syntax);
+        self.documents.insert(uri, open);
     }
 
     pub(super) fn did_close(&mut self, params: DidCloseTextDocumentParams) {
@@ -81,14 +104,18 @@ impl<S: Sink> Backend<S> {
         };
     }
 
-    fn process_document(&mut self, uri: Uri, text: String) {
-        let document = Document::parse(text, SyntaxOptions::JSON);
-        let diagnostics = (!self.client_pulls_diagnostics)
-            .then(|| diagnostics_for(&uri, &document, self.position_encoding));
-        self.documents.insert(uri.clone(), document);
-        if let Some(diagnostics) = diagnostics {
-            self.publish_diagnostics(uri, diagnostics);
+    fn parse_document(
+        &mut self,
+        uri: &Uri,
+        text: String,
+        syntax: SyntaxOptions,
+    ) -> jjpwrgem_parse::Result<Document<String>> {
+        let parsed = Document::parse(text, syntax);
+        if !self.client_pulls_diagnostics {
+            let diagnostics = diagnostics_for(uri, &parsed, self.position_encoding);
+            self.publish_diagnostics(uri.clone(), diagnostics);
         }
+        parsed
     }
 
     fn publish_diagnostics(&mut self, uri: Uri, diagnostics: Vec<Diagnostic>) {

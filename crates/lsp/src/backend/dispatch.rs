@@ -139,7 +139,7 @@ impl<S: Sink> Backend<S> {
         &mut self,
         id: Id,
         params: Option<&RawValue>,
-        handler: impl FnOnce(&Self, &R::Params) -> R::Result,
+        handler: impl FnOnce(&mut Self, &R::Params) -> R::Result,
     ) -> io::Result<()> {
         match parse_params(params) {
             Ok(params) => {

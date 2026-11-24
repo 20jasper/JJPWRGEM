@@ -2,6 +2,25 @@
   "version": "2.0.0",
   "tasks": [
     {
+      "label": "build jjp",
+      "type": "shell",
+      "command": "cargo",
+      "args": ["build", "-p", "jjpwrgem"],
+      "presentation": {
+        "reveal": "never"
+      },
+      "problemMatcher": ["$rustc"]
+    },
+    {
+      "label": "build dev host",
+      "dependsOn": ["build jjp", "build jjpwrgem-vscode"],
+      "dependsOrder": "parallel",
+      "presentation": {
+        "reveal": "never"
+      },
+      "problemMatcher": []
+    },
+    {
       "label": "build jjpwrgem-vscode",
       "type": "shell",
       "command": "pnpm",

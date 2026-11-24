@@ -35,7 +35,10 @@ fn folding_ranges(document: &Document<String>, encoding: PositionEncoding) -> Ve
 }
 
 impl<S: Sink> Backend<S> {
-    pub(super) fn folding_range(&self, params: &FoldingRangeParams) -> Option<Vec<FoldingRange>> {
+    pub(super) fn folding_range(
+        &mut self,
+        params: &FoldingRangeParams,
+    ) -> Option<Vec<FoldingRange>> {
         self.with_document(&params.text_document.uri, |document| {
             folding_ranges(document, self.position_encoding)
         })
