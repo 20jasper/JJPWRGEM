@@ -11,17 +11,19 @@
       "request": "launch",
       "args": [
         "--extensionDevelopmentPath=${workspaceFolder}/npm-packages/jjpwrgem-vscode",
-        "--disable-extensions",
         "--disable-extension=vscode.json-language-features",
-        "--folder-uri",
-        "vscode-remote://wsl+Ubuntu/home/jacob/coding/json-parser-lsp-min",
-        "--file-uri",
-        "vscode-remote://wsl+Ubuntu/home/jacob/coding/json-parser-lsp-min/benches/data/twitter.json"
+        "${workspaceFolder}",
+        "${workspaceFolder}/npm-packages/jjpwrgem-vscode/tsconfig.json",
+        "${workspaceFolder}/npm-packages/jjpwrgem-vscode/package.json",
+        "${workspaceFolder}/benches/data/twitter.json"
       ],
       "outFiles": [
         "${workspaceFolder}/npm-packages/jjpwrgem-vscode/dist/**/*.js"
       ],
-      "preLaunchTask": "build jjpwrgem-vscode"
+      "env": {
+        "PATH": "${workspaceFolder}/target/debug:${env:PATH}"
+      },
+      "preLaunchTask": "build dev host"
     },
     {
       "name": "Run JJPWRGEM VS Code Extension (Dev Profile)",
@@ -36,15 +38,18 @@
         "JJPWRGEM Dev",
         "--extensionDevelopmentPath=${workspaceFolder}/npm-packages/jjpwrgem-vscode",
         "--disable-extension=vscode.json-language-features",
-        "--folder-uri",
-        "vscode-remote://wsl+Ubuntu/home/jacob/coding/json-parser-lsp-min",
-        "--file-uri",
-        "vscode-remote://wsl+Ubuntu/home/jacob/coding/json-parser-lsp-min/benches/data/twitter.json"
+        "${workspaceFolder}",
+        "${workspaceFolder}/npm-packages/jjpwrgem-vscode/tsconfig.json",
+        "${workspaceFolder}/npm-packages/jjpwrgem-vscode/package.json",
+        "${workspaceFolder}/benches/data/twitter.json"
       ],
       "outFiles": [
         "${workspaceFolder}/npm-packages/jjpwrgem-vscode/dist/**/*.js"
       ],
-      "preLaunchTask": "build jjpwrgem-vscode"
+      "env": {
+        "PATH": "${workspaceFolder}/target/debug:${env:PATH}"
+      },
+      "preLaunchTask": "build dev host"
     }
   ]
 }

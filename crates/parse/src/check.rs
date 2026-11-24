@@ -1,10 +1,29 @@
 use core::range::Range;
 
 use crate::{
-    Result,
+    Result, SyntaxOptions,
+    settings::{choice, choice_enum, settings},
     tokens::TokenStream,
     traverse::{Visitor, parse_tokens},
 };
+
+choice_enum! {
+    pub enum CheckParser default Json {
+        /// A single json document
+        Json = "json",
+        /// A single json document with comments and trailing commas
+        Jsonc = "jsonc",
+        /// One json document per line
+        Jsonlines = "jsonlines",
+    }
+}
+
+settings! {
+    struct CheckInputSettings, table CHECK_INPUT_SETTINGS, id CheckInputSetting {
+        /// Parser to use for input
+        Parser parser: CheckParser = choice(),
+    }
+}
 
 #[derive(Debug)]
 pub struct NoopVisitor;
@@ -36,8 +55,14 @@ impl<'a> Visitor<'a> for NoopVisitor {
     fn on_item_delim(&mut self) {}
 }
 
-pub fn validate_str(json: &str) -> Result<()> {
+pub fn validate_str(json: &str, options: SyntaxOptions) -> Result<()> {
     let mut visitor = NoopVisitor;
-    parse_tokens(&mut TokenStream::new(json), json, true, &mut visitor)?;
+    parse_tokens(
+        &mut TokenStream::new(json, options),
+        options,
+        json,
+        true,
+        &mut visitor,
+    )?;
     Ok(())
 }

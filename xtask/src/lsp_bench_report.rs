@@ -7,32 +7,15 @@ use std::{
 use anyhow::Context;
 use serde::Deserialize;
 
+use crate::{
+    criterion::{Message, format_time},
+    markdown::markdown_table,
+};
+
 const FIXTURES: &[&str] = &["small", "twitter", "citm_catalog", "canada"];
-
-#[derive(Deserialize)]
-struct Estimate {
-    estimate: f64,
-}
-
-#[derive(Deserialize)]
-#[serde(tag = "reason")]
-enum Message {
-    #[serde(rename = "benchmark-complete")]
-    BenchmarkComplete { id: String, typical: Estimate },
-    #[serde(other)]
-    Other,
-}
 
 #[derive(Clone, Copy, Deserialize)]
 struct Sums(f64, f64);
-
-fn duration(ns: f64) -> String {
-    if ns < 1_000_000.0 {
-        format!("{:.1}µs", ns / 1_000.0)
-    } else {
-        format!("{:.1}ms", ns / 1_000_000.0)
-    }
-}
 
 fn cell(ns: Option<f64>, sums: Option<Sums>, rss_bytes: Option<u64>) -> String {
     let Some(ns) = ns else {
@@ -40,21 +23,18 @@ fn cell(ns: Option<f64>, sums: Option<Sums>, rss_bytes: Option<u64>) -> String {
     };
     let timing = match sums {
         Some(Sums(server, total)) if server > 0.0 => {
-            format!("{} / {}", duration(ns), duration(ns * total / server))
+            format!(
+                "{} / {}",
+                format_time(ns, 1, "", false),
+                format_time(ns * total / server, 1, "", false)
+            )
         }
-        _ => duration(ns),
+        _ => format_time(ns, 1, "", false),
     };
     match rss_bytes {
         Some(bytes) => format!("{timing} ({:.1} MB)", bytes as f64 / (1024.0 * 1024.0)),
         None => timing,
     }
-}
-
-fn row(label: &str, cells: impl IntoIterator<Item = String>) -> String {
-    format!(
-        "| {label} | {} |\n",
-        cells.into_iter().collect::<Vec<_>>().join(" | ")
-    )
 }
 
 /// `times`, `sums` and `memory` are all keyed by criterion's benchmark id
@@ -66,52 +46,50 @@ fn table(
     memory: &BTreeMap<String, u64>,
 ) -> String {
     let method = |label: &str, id: &dyn Fn(&str) -> String| {
-        row(
-            label,
-            profiles.iter().map(|p| {
+        std::iter::once(label.to_owned())
+            .chain(profiles.iter().map(|p| {
                 let id = id(p);
                 cell(
                     times.get(&id).copied(),
                     sums.get(&id).copied(),
                     memory.get(&id).copied(),
                 )
-            }),
-        )
+            }))
+            .collect::<Vec<_>>()
     };
 
-    let mut out =
-        String::from("Note: memory values are RSS (resident set size), shown in megabytes.\n\n");
-    out.push_str(&row("method", profiles.iter().cloned()));
-    out.push_str(&row("---", profiles.iter().map(|_| "---".to_owned())));
-    out.push_str(&method("initialize", &|p| format!("initialize/{p}")));
-    out.push_str(&method("diagnostic", &|p| {
-        format!("diagnostics/{p}/{fixture}")
-    }));
-    out.push_str(&method("formatting", &|p| {
-        format!("formatting/{p}/{fixture}")
-    }));
-    out.push_str(&method("document symbols", &|p| {
-        format!("document_symbols/{p}/{fixture}")
-    }));
-    out.push_str(&method("folding ranges", &|p| {
-        format!("folding_ranges/{p}/{fixture}")
-    }));
-    out.push_str(&method("selection ranges", &|p| {
-        format!("selection_ranges/{p}/{fixture}")
-    }));
-    out
+    let header: Vec<String> = std::iter::once("method".to_owned())
+        .chain(profiles.iter().cloned())
+        .collect();
+    let separator = vec![" --- "; header.len()];
+    let rows = vec![
+        method("initialize", &|p| format!("initialize/{p}")),
+        method("diagnostic", &|p| format!("diagnostics/{p}/{fixture}")),
+        method("formatting", &|p| format!("formatting/{p}/{fixture}")),
+        method("document symbols", &|p| {
+            format!("document_symbols/{p}/{fixture}")
+        }),
+        method("folding ranges", &|p| {
+            format!("folding_ranges/{p}/{fixture}")
+        }),
+        method("selection ranges", &|p| {
+            format!("selection_ranges/{p}/{fixture}")
+        }),
+    ];
+    format!(
+        "Note: memory values are RSS (resident set size), shown in megabytes.\n\n{}",
+        markdown_table(&header, &separator, &rows)
+    )
 }
 
 /// Reads `cargo criterion --bench lsp --message-format=json` from stdin,
 /// joins it with the RSS sidecar the bench wrote, and writes one
-/// table per fixture to `benches/lsp/results/` for `generate-readmes` to
+/// table per fixture to `benches/lsp/results/` for `readmes` to
 /// stitch into `benches/lsp/lsp.md`.
 pub fn write_lsp_bench_report() -> anyhow::Result<()> {
-    let manifest_dir = env!("CARGO_MANIFEST_DIR");
-
     let mut times = BTreeMap::new();
     for line in io::stdin().lock().lines() {
-        if let Ok(Message::BenchmarkComplete { id, typical }) = serde_json::from_str(&line?) {
+        if let Ok(Message::BenchmarkComplete { id, typical, .. }) = serde_json::from_str(&line?) {
             times.insert(id, typical.estimate);
         }
     }
@@ -120,15 +98,15 @@ pub fn write_lsp_bench_report() -> anyhow::Result<()> {
         "no benchmark-complete messages on stdin -- pipe in `cargo criterion --bench lsp --message-format=json`"
     );
 
-    let sidecar_path = format!("{manifest_dir}/../target/bench/lsp-memory.json");
+    let sidecar_path = repo_path!("target/bench/lsp-memory.json");
     let memory: BTreeMap<String, u64> = serde_json::from_str(
-        &fs::read_to_string(&sidecar_path).with_context(|| format!("reading {sidecar_path}"))?,
+        &fs::read_to_string(sidecar_path).with_context(|| format!("reading {sidecar_path}"))?,
     )
     .with_context(|| format!("parsing {sidecar_path}"))?;
 
-    let timings_path = format!("{manifest_dir}/../target/bench/lsp-timings.json");
+    let timings_path = repo_path!("target/bench/lsp-timings.json");
     let sums: BTreeMap<String, Sums> = serde_json::from_str(
-        &fs::read_to_string(&timings_path).with_context(|| format!("reading {timings_path}"))?,
+        &fs::read_to_string(timings_path).with_context(|| format!("reading {timings_path}"))?,
     )
     .with_context(|| format!("parsing {timings_path}"))?;
 
@@ -145,8 +123,8 @@ pub fn write_lsp_bench_report() -> anyhow::Result<()> {
         })
         .collect();
 
-    let results_dir = format!("{manifest_dir}/../benches/lsp/results");
-    fs::create_dir_all(&results_dir).with_context(|| format!("creating {results_dir}"))?;
+    let results_dir = repo_path!("benches/lsp/results");
+    fs::create_dir_all(results_dir).with_context(|| format!("creating {results_dir}"))?;
     for fixture in FIXTURES {
         let path = format!("{results_dir}/{fixture}.md");
         fs::write(&path, table(fixture, &profiles, &times, &sums, &memory))

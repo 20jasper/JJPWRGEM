@@ -1,0 +1,39 @@
+{
+  // https://www.typescriptlang.org/tsconfig
+  "compilerOptions": {
+    // language and environment
+    "target": "es2022",
+    "lib": ["es2023", "dom", "dom.iterable"],
+    "jsx": "react-jsx",
+
+    // modules
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "allowImportingTsExtensions": true,
+
+    // emit
+    "noEmit": true,
+    "sourceMap": true,
+
+    // interop constraints
+    "esModuleInterop": true,
+    "isolatedModules": true,
+    "forceConsistentCasingInFileNames": true,
+
+    // type checking
+    "strict": true, // enables every strict family flag
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "skipLibCheck": true,
+
+    "paths": {
+      "@/*": ["./src/*"],
+      "~/*": ["./*"], // trailing comma allowed in jsonc
+    },
+  },
+  // files to compile
+  "include": ["src", "tests"],
+  "exclude": ["node_modules", "dist"],
+}

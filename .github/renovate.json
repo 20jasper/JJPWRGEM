@@ -164,6 +164,11 @@
         "npm:renovate"
       ],
       "groupName": "renovate tooling"
+    },
+    {
+      "matchPackageNames": ["/wasm-bindgen/"],
+      "groupName": "wasm-bindgen",
+      "automerge": false
     }
   ],
   "ignorePaths": ["npm-packages/jjpwrgem/package.json"],

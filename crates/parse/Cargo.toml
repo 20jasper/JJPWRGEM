@@ -1,6 +1,6 @@
 [package]
 name = "jjpwrgem-parse"
-version = "0.14.3"
+version = "0.14.4"
 edition.workspace = true
 authors.workspace = true
 description = "JSON parser and formatter with rich errors"
@@ -17,6 +17,7 @@ bytes2chars = { workspace = true }
 const_format = { workspace = true }
 displaydoc = { workspace = true }
 itoa = { version = "1.0.18", optional = true }
+memchr = "2.8.3"
 serde = { version = "1.0.228", optional = true, features = ["derive"] }
 zmij = { version = "1.0.23", optional = true }
 

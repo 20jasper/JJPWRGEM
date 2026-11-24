@@ -1,14 +1,18 @@
 use std::range::Range as Span;
 
+use gen_lsp_types::*;
 use jjpwrgem_parse::ast::{Document, Key, Value, quoted};
-use tower_lsp_server::ls_types::{DocumentSymbol, SymbolKind};
 
-use crate::range::{PositionEncoding, Positions};
+use crate::{
+    backend::Backend,
+    range::{PositionEncoding, Positions},
+    transport::Sink,
+};
 
 const MAX_SYMBOLS: usize = 5000;
 const MAX_DETAIL_CHARS: usize = 100;
 
-pub(crate) fn document_symbols(
+fn document_symbols(
     document: &Document<String>,
     encoding: PositionEncoding,
 ) -> Vec<DocumentSymbol> {
@@ -54,12 +58,12 @@ impl Source<'_> {
         };
         let full = Span::from(selection.start..value.span().end);
         let (kind, detail) = match value {
-            Value::Object(..) => (SymbolKind::OBJECT, None),
-            Value::Array(..) => (SymbolKind::ARRAY, None),
-            Value::String(..) => (SymbolKind::STRING, Some(value.range())),
-            Value::Number { .. } => (SymbolKind::NUMBER, Some(value.range())),
-            Value::Boolean(..) => (SymbolKind::BOOLEAN, Some(value.range())),
-            Value::Null(..) => (SymbolKind::NULL, Some(value.range())),
+            Value::Object(..) => (SymbolKind::Object, None),
+            Value::Array(..) => (SymbolKind::Array, None),
+            Value::String(..) => (SymbolKind::String, Some(value.range())),
+            Value::Number { .. } => (SymbolKind::Number, Some(value.range())),
+            Value::Boolean(..) => (SymbolKind::Boolean, Some(value.range())),
+            Value::Null(..) => (SymbolKind::Null, Some(value.range())),
         };
         #[expect(deprecated, reason = "the field is required to build the struct")]
         DocumentSymbol {
@@ -87,5 +91,19 @@ fn truncated(text: &str) -> String {
     match text.char_indices().nth(MAX_DETAIL_CHARS) {
         Some((end, _)) => format!("{}…", &text[..end]),
         None => text.to_owned(),
+    }
+}
+
+impl<S: Sink> Backend<S> {
+    pub(super) fn document_symbol(
+        &mut self,
+        params: &DocumentSymbolParams,
+    ) -> Option<DocumentSymbolResponse> {
+        self.with_document(&params.text_document.uri, |document| {
+            DocumentSymbolResponse::DocumentSymbolList(document_symbols(
+                document,
+                self.position_encoding,
+            ))
+        })
     }
 }

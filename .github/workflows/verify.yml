@@ -14,7 +14,7 @@ permissions:
   contents: read
 
 env:
-  RUSTFLAGS: "-Dwarnings"
+  CARGO_BUILD_WARNINGS: deny
   CARGO_TERM_COLOR: always
   CI: true
 
@@ -49,6 +49,17 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup-rust
       - run: cargo build --release --verbose
+
+  build-wasm:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup-rust
+      - uses: ./.github/actions/setup-mise
+      - run: mise run build-wasm
+      - run: mise run test-wasm
 
   test-vscode:
     runs-on: ubuntu-latest

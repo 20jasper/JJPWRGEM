@@ -1,0 +1,28 @@
+---
+source: tests/integration/commands/check.rs
+expression: output.snapshot_display()
+---
+args: ["check", "--parser", "jsonc"]
+status: 1
+success: false
+stdin ---
+{
+  "hi": null, /* greeting
+  "bye": null
+}
+stdout ---
+
+stderr ---
+error: block comment is never closed
+ --> stdin:2:15
+  |
+2 |     "hi": null, /* greeting
+  |  _______________^
+3 | |   "bye": null
+4 | | }
+  | |_^
+  |
+help: close the comment
+  |
+4 | }*/
+  |  ++

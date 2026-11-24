@@ -1,6 +1,6 @@
 ARG APP_NAME=jjp
 
-FROM rustlang/rust:nightly-slim@sha256:6d71a55d31002914a2460e0a1a39fd2694c4c1b632c1e651aa3981063b5bd500 AS build
+FROM docker.io/rustlang/rust:nightly-slim@sha256:28d4eebad341342ebbd0e432245138ea2b4d7c4aaaa42796d0e469cf902e1cf4 AS build
 ARG APP_NAME
 WORKDIR /app
 
@@ -28,7 +28,7 @@ RUN --mount=type=bind,source=crates,target=crates \
     cargo build --locked --profile dist && \
     install -Dm755 ./target/dist/$APP_NAME /usr/local/cargo/bin/$APP_NAME
 
-FROM mise-tools AS final
+FROM localhost/jjp-mise-tools AS final
 
 ARG BENCHMARK_PATH="./benches/docker"
 

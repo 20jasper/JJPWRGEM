@@ -1,22 +1,13 @@
 mod backend;
+mod lsp_server;
 mod range;
+mod server;
+#[cfg(not(target_arch = "wasm32"))]
+mod stdio;
+mod transport;
+#[cfg(feature = "wasm")]
+mod wasm;
 
-use backend::Backend;
-use tower_lsp_server::{LspService, Server};
-
-pub async fn run() {
-    let stdin = tokio::io::stdin();
-    let stdout = tokio::io::stdout();
-
-    let (service, socket) = LspService::new(Backend::new);
-
-    Server::new(stdin, stdout, socket).serve(service).await;
-}
-
-pub fn run_blocking() {
-    tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .expect("failed to build tokio runtime")
-        .block_on(run());
-}
+pub use server::Server;
+#[cfg(not(target_arch = "wasm32"))]
+pub use stdio::run_blocking;

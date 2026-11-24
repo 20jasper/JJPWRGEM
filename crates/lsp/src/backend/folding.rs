@@ -1,16 +1,17 @@
+use gen_lsp_types::*;
 use itertools::Itertools;
 use jjpwrgem_parse::ast::{Document, Value};
-use tower_lsp_server::ls_types::FoldingRange;
 
-use crate::range::{PositionEncoding, Positions};
+use crate::{
+    backend::Backend,
+    range::{PositionEncoding, Positions},
+    transport::Sink,
+};
 
 const CLOSING_BRACKET_LEN: usize = 1;
 const MAX_FOLDING_RANGES: usize = 5000;
 
-pub(crate) fn folding_ranges(
-    document: &Document<String>,
-    encoding: PositionEncoding,
-) -> Vec<FoldingRange> {
+fn folding_ranges(document: &Document<String>, encoding: PositionEncoding) -> Vec<FoldingRange> {
     let positions = Positions::new(document.source(), encoding);
     document
         .root()
@@ -31,4 +32,15 @@ pub(crate) fn folding_ranges(
             ..Default::default()
         })
         .collect()
+}
+
+impl<S: Sink> Backend<S> {
+    pub(super) fn folding_range(
+        &mut self,
+        params: &FoldingRangeParams,
+    ) -> Option<Vec<FoldingRange>> {
+        self.with_document(&params.text_document.uri, |document| {
+            folding_ranges(document, self.position_encoding)
+        })
+    }
 }

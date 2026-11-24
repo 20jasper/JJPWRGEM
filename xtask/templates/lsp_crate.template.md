@@ -1,10 +1,10 @@
-{{LSP_FEATURES}}
+{% include "lsp_features.md" %}
 
-![{{LSP_DEMO_ALT}}](./lsp-demo.gif)
+![{% include "lsp_demo_alt.md" %}](https://raw.githubusercontent.com/20jasper/JJPWRGEM/main/crates/lsp/lsp-demo.gif)
 
 ## Installation
 
-[Install `jjp`](../../readme.md#installation), then configure based on your editor
+[Install `jjp`](https://github.com/20jasper/JJPWRGEM/blob/main/readme.md#installation), then configure based on your editor
 
 ### VSCode
 
@@ -14,7 +14,7 @@
 
 Run `jjp lsp` as the language server for JSON files. See the [Helix](#helix) section for a full example configuration.
 
-{{SETTINGS_REFERENCE}}
+{{ lsp_settings_reference }}
 
 ### Helix
 
@@ -24,7 +24,7 @@ Run `jjp lsp` as the language server for JSON files. See the [Helix](#helix) sec
 command = "jjp"
 args = ["lsp"]
 
-{{HELIX_FORMAT_CONFIG}}
+{{ helix_format_config }}
 
 [[language]]
 name = "json"

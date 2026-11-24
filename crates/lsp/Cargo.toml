@@ -1,6 +1,6 @@
 [package]
 name = "jjpwrgem-lsp"
-version = "0.1.5"
+version = "0.2.0"
 edition.workspace = true
 authors.workspace = true
 description = "JSON language server with rich errors"
@@ -10,20 +10,25 @@ repository.workspace = true
 documentation = "https://docs.rs/jjpwrgem-lsp"
 keywords = ["json", "lsp", "parser", "formatter", "diagnostics"]
 categories = ["development-tools", "parser-implementations", "text-processing"]
-include = ["src/**/*", "readme.md"]
+include = ["src/**/*", "readme.md", "THIRD_PARTY.md"]
 
 [dev-dependencies]
 rstest = { workspace = true }
 
+[target.'cfg(target_arch = "wasm32")'.dev-dependencies]
+wasm-bindgen-test = "=0.3.80"
+
 [dependencies]
-dashmap = "6.2"
-itertools = "0.15"
+gen-lsp-types = { version = "0.11.0", features = ["fluent-uri"] }
+itertools = { workspace = true }
 jjpwrgem-parse = { workspace = true, features = ["serde"] }
 line-index = "0.1.2"
 serde = { workspace = true, features = ["derive"] }
-serde_json = { workspace = true }
-tokio = { version = "1.52", features = ["macros", "rt", "io-std"] }
-tower-lsp-server = "0.23"
+serde_json = { workspace = true, features = ["raw_value"] }
+wasm-bindgen = { version = "=0.2.130", optional = true }
+
+[features]
+wasm = ["dep:wasm-bindgen"]
 
 [lints]
 workspace = true

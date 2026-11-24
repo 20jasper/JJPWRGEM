@@ -16,9 +16,9 @@ lspresso = { path = "../crates/lspresso" }
 serde = { version = "=1.0.229", features = ["derive"] }
 serde_json = { workspace = true }
 simd-json = "=0.19.0"
-sonic-rs = "=0.5.10"
+sonic-rs = "=0.5.12"
 utf8-decode = "=2.0.0"
-bstr = "=1.13.1"
+bstr = "=1.14.0"
 
 [[bench]]
 name = "bytes2chars"

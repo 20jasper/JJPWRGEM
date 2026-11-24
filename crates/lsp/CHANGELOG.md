@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## 0.2.0 — 2026-11-21
+
+### Performance
+
+- [001e1c1](https://github.com/20jasper/JJPWRGEM/commit/001e1c175137ce8c4017dab2dc8b2b8b38b2cacc) migrate off of tower-lsp-server to a customized lsp-server, removing Tokio and avoiding intermediate deserialization. Uses 1.6x less RAM and benches are on average 1.7x faster. Binary is 31% smaller.
+
+### Added
+
+- [55fae27](https://github.com/20jasper/JJPWRGEM/commit/55fae27f10f2252bc6e1cbba2cd19c87be0ecc69) add wasm build target.
+- [062ef38](https://github.com/20jasper/JJPWRGEM/commit/062ef386b6cb6c82c5b0463a5c6f05faad2a3773) releases now include the wasm build.
+
+## 0.1.6 — 2026-11-17
+
+### Documentation
+
+- [4ee81fa](https://github.com/20jasper/JJPWRGEM/commit/4ee81fa8e591e767287bd3831b88316bb5ef6350) docs: document the format settings in the extension and language server readmes, with a Helix example
+
+### Fixed
+
+- [d209a12](https://github.com/20jasper/JJPWRGEM/commit/d209a12ee24961da18226ec88b7228b10b4bd9fd) fix broken doc links
+
+### Added
+
+- [83336de](https://github.com/20jasper/JJPWRGEM/commit/83336de3065bd62a2ec970b787e1373900d4d9ac) the language server and VS Code extension read `jjpwrgem.format` settings (`mode`, `preferredWidth`, `endOfLine`) from initialization options and `workspace/didChangeConfiguration`. Settings that do not apply are ignored instead of failing
+
 ## 0.1.5 — 2026-11-13
 
 ### Added

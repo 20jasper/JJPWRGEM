@@ -312,10 +312,10 @@ mod tests {
     use rstest::rstest;
 
     use super::*;
-    use crate::tokens::stream;
+    use crate::{SyntaxOptions, tokens::stream};
 
     fn str_to_tokens(s: &str) -> Result<Vec<TokenWithContext>> {
-        stream::TokenStream::new(s).collect()
+        stream::TokenStream::new(s, SyntaxOptions::JSON).collect()
     }
 
     #[rstest]

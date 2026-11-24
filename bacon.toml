@@ -3,7 +3,7 @@
 # Docs: https://dystroy.org/bacon/
 
 default_job = "clippy"
-env.RUSTFLAGS = "-Dwarnings"
+env.CARGO_BUILD_WARNINGS = "deny"
 
 [jobs.clippy]
 command = ["cargo", "clippy", "--all-targets", "--all-features", "--workspace"]

@@ -3,10 +3,14 @@
 
 use std::range::Range as Span;
 
+use gen_lsp_types::*;
 use jjpwrgem_parse::ast::{Document, Key, Value, quoted};
-use tower_lsp_server::ls_types::{Position, Range, SelectionRange};
 
-use crate::range::{PositionEncoding, Positions};
+use crate::{
+    backend::Backend,
+    range::{PositionEncoding, Positions},
+    transport::Sink,
+};
 
 const BRACKET_LEN: usize = 1;
 
@@ -42,7 +46,10 @@ fn selection_range(
             parent: Some(Box::new(parent)),
         });
     chain.unwrap_or(SelectionRange {
-        range: Range::new(position, position),
+        range: Range {
+            start: position,
+            end: position,
+        },
         parent: None,
     })
 }
@@ -96,4 +103,15 @@ fn steps(root: &Value, offset: usize) -> Vec<Span<usize>> {
 
     spans.dedup();
     spans
+}
+
+impl<S: Sink> Backend<S> {
+    pub(super) fn selection_range(
+        &mut self,
+        params: &SelectionRangeParams,
+    ) -> Option<Vec<SelectionRange>> {
+        self.with_document(&params.text_document.uri, |document| {
+            selection_ranges(document, self.position_encoding, &params.positions)
+        })
+    }
 }

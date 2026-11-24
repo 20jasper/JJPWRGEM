@@ -18,9 +18,6 @@ const {
   glibcMinimum,
 } = require("./package.json");
 
-const builderGlibcMajorVersion = glibcMinimum.major;
-const builderGlibcMinorVersion = glibcMinimum.series;
-
 const getPlatform = () => {
   const rawOsType = os.type();
   const rawArchitecture = os.arch();
@@ -51,28 +48,18 @@ const getPlatform = () => {
   }
 
   if (rawOsType === "Linux") {
-    if (libc.familySync() == "musl") {
-      osType = "unknown-linux-musl-dynamic";
-    } else if (libc.isNonGlibcLinuxSync()) {
-      console.warn(
-        "Your libc is neither glibc nor musl; trying static musl binary instead",
+    const family = libc.familySync();
+    if (family !== "glibc") {
+      error(
+        `jjp only supports glibc on Linux, found ${family || "an unknown libc"}.`,
       );
-      osType = "unknown-linux-musl-static";
-    } else {
-      let libcVersion = libc.versionSync();
-      let splitLibcVersion = libcVersion.split(".");
-      let libcMajorVersion = splitLibcVersion[0];
-      let libcMinorVersion = splitLibcVersion[1];
-      if (
-        libcMajorVersion != builderGlibcMajorVersion ||
-        libcMinorVersion < builderGlibcMinorVersion
-      ) {
-        // We can't run the glibc binaries, but we can run the static musl ones
-        // if they exist
-        console.warn(
-          "Your glibc isn't compatible; trying static musl binary instead",
-        );
-        osType = "unknown-linux-musl-static";
+    }
+    const version = libc.versionSync();
+    if (version) {
+      const [major, minor] = version.split(".").map(Number);
+      const [minMajor, minMinor] = glibcMinimum.split(".").map(Number);
+      if (major < minMajor || (major === minMajor && minor < minMinor)) {
+        error(`jjp needs glibc ${glibcMinimum} or newer, found ${version}.`);
       }
     }
   }
@@ -106,7 +93,7 @@ const getPackage = () => {
 const install = (suppressLogs) => {
   if (!artifactDownloadUrl || artifactDownloadUrl.length === 0) {
     console.warn("in demo mode, not installing binaries");
-    return;
+    return Promise.resolve();
   }
   const pkg = getPackage();
 

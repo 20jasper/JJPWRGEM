@@ -1,6 +1,7 @@
 use core::range::Range;
 
 use crate::{
+    SyntaxOptions,
     error::{Error, ErrorKind, Result},
     tokens::{Token, TokenStream, TokenWithContext, byte_range},
     traverse::{Visitor, parse_tokens_at_depth, punctuation_at},
@@ -16,12 +17,16 @@ enum ArrayState {
 }
 
 impl ArrayState {
-    fn process(self, next: Option<Token>) -> Option<Self> {
+    fn process(self, next: Option<Token>, options: SyntaxOptions) -> Option<Self> {
         let next = next?;
         let state = match self {
             ArrayState::ValueOrEnd if next == Token::ClosedSquareBracket => ArrayState::End,
             ArrayState::ValueOrEnd | ArrayState::Value if next.is_start_of_value() => {
                 ArrayState::CommaOrEnd
+            }
+            // jsonc[impl trailing-commas]
+            ArrayState::Value if next == Token::ClosedSquareBracket && options.trailing_commas => {
+                ArrayState::End
             }
             ArrayState::CommaOrEnd => match next {
                 Token::ClosedSquareBracket => ArrayState::End,
@@ -58,6 +63,7 @@ fn array_error(
 
 pub fn parse_array<'a>(
     tokens: &mut TokenStream<'a>,
+    options: SyntaxOptions,
     text: &'a str,
     depth: usize,
     visitor: &mut impl Visitor<'a>,
@@ -86,7 +92,7 @@ pub fn parse_array<'a>(
     let mut state = ArrayState::ValueOrEnd;
     while state != ArrayState::End {
         let peeked = tokens.peek_token()?.copied();
-        let Some(next) = state.process(peeked.map(|ctx| ctx.token)) else {
+        let Some(next) = state.process(peeked.map(|ctx| ctx.token), options) else {
             return Err(array_error(state, text, open_start, delim, peeked));
         };
         let ctx = peeked.expect("the end of input is never accepted");
@@ -95,15 +101,16 @@ pub fn parse_array<'a>(
                 tokens.next_token()?;
                 visitor.on_array_close(ctx.range);
             }
-            ArrayState::Value => {
+            ArrayState::Value | ArrayState::ValueOrEnd => {
                 tokens.next_token()?;
-                visitor.on_item_delim();
                 delim = ctx.range.start;
             }
             ArrayState::CommaOrEnd => {
-                parse_tokens_at_depth(tokens, text, false, visitor, depth + 1)?;
+                if delim != open_start {
+                    visitor.on_item_delim();
+                }
+                parse_tokens_at_depth(tokens, options, text, false, visitor, depth + 1)?;
             }
-            ArrayState::ValueOrEnd => unreachable!("only the starting state"),
         }
         state = next;
     }

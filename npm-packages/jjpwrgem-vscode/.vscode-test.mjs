@@ -3,9 +3,7 @@ import { defineConfig } from "@vscode/test-cli";
 
 const launchArgs = [
   "--skip-welcome",
-  "--disable-extensions",
-  "--disable-extension",
-  "vscode.json-language-features",
+  "--disable-extension=vscode.json-language-features",
   "--skip-release-notes",
 ];
 

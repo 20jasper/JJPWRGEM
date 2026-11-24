@@ -1,6 +1,7 @@
 #![no_main]
 
 use jjpwrgem_parse::{
+    SyntaxOptions,
     diagnostics::Diagnostic,
     format::{LineEnding, prettify_str, uglify_str},
     validate_str,
@@ -20,7 +21,7 @@ fuzz_target!(|data: &[u8]| {
         Ok(s) => s,
     };
 
-    match validate_str(s) {
+    match validate_str(s, SyntaxOptions::JSON) {
         Ok(()) => {}
         Err(err) => {
             let _ = style.render_diagnostic(Diagnostic::from(&err));

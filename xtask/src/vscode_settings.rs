@@ -1,17 +1,16 @@
 use std::fs;
 
-use anyhow::{Context, Result, anyhow, bail};
+use anyhow::{Context, Result};
 use itertools::Itertools;
 use jjpwrgem_parse::{
-    format::{DEFAULT_PREFERRED_WIDTH, FormatOption, FormatSetting, LineEnding, prettify_str},
+    format::{FormatOption, FormatSetting},
     settings::{Setting, SettingKind},
 };
 use serde_json::{Map, Value, json};
 
-const PACKAGE_JSON: &str = concat!(
-    env!("CARGO_MANIFEST_DIR"),
-    "/../npm-packages/jjpwrgem-vscode/package.json"
-);
+use crate::generated::{pretty_json, write_or_check};
+
+const PACKAGE_JSON: &str = repo_path!("npm-packages/jjpwrgem-vscode/package.json");
 const SETTINGS_PREFIX: &str = "jjpwrgem.format.";
 const PROPERTIES_POINTER: &str = "/contributes/configuration/properties";
 
@@ -78,25 +77,12 @@ fn render(package_json: &str) -> Result<String> {
         .filter(|(key, _)| !key.starts_with(SETTINGS_PREFIX))
         .collect();
     *properties = kept.into_iter().chain(generated_properties()).collect();
-    let compact = jjpwrgem_parse::format::serde::uglify_serializable(&package)
-        .map_err(|error| anyhow!("{error}"))?;
-    let pretty = prettify_str(&compact, DEFAULT_PREFERRED_WIDTH, LineEnding::default())
-        .map_err(|error| anyhow!("{error}"))?;
-    Ok(pretty + "\n")
+    pretty_json(&package)
 }
 
-pub fn write_vscode_settings() -> Result<()> {
-    fs::write(PACKAGE_JSON, render(&fs::read_to_string(PACKAGE_JSON)?)?)?;
-    println!("generated vscode settings");
-    Ok(())
-}
-
-pub fn are_vscode_settings_updated() -> Result<()> {
-    let current = fs::read_to_string(PACKAGE_JSON)?;
-    if render(&current)? != current {
-        bail!("vscode settings are out of date, run `cargo xtask generate-vscode-settings`");
-    }
-    Ok(())
+pub fn vscode_settings(check: bool) -> Result<()> {
+    let generated = render(&fs::read_to_string(PACKAGE_JSON)?)?;
+    write_or_check(PACKAGE_JSON, &generated, "vscode-settings", check)
 }
 
 #[cfg(test)]

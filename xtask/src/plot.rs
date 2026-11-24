@@ -1,114 +1,99 @@
 use std::{
     cmp::Ordering,
+    ops::Range,
     path::{Path, PathBuf},
-    sync::OnceLock,
 };
 
-use anyhow::{Context, Error, Result, anyhow, bail};
-use base64::{Engine as _, engine::general_purpose::STANDARD};
-use jjpwrgem_parse::ast::{self, Document, Value};
+use anyhow::{Context, Result, anyhow, bail};
+use jjpwrgem_parse::{
+    SyntaxOptions,
+    ast::{Document, ObjectEntries, Value},
+};
 use plotters::{
-    coord::Shift,
+    coord::ranged1d::{DefaultFormatting, KeyPointHint, KeyPointWeight},
+    element::DashedPathElement,
     prelude::*,
-    style::{FontStyle, register_font},
+    style::text_anchor::{HPos, Pos, VPos},
 };
 
-const CHART_WIDTH: u32 = 1280;
-const CHART_HEIGHT: u32 = 720;
-// Liberation Sans Narrow Regular is licensed under the SIL Open Font License 1.1.
-const EMBEDDED_FONT_BASE64: &str =
-    include_str!("../assets/fonts/liberation_sans_narrow_regular.ttf.base64");
+mod config;
 
-static FONT_BYTES: OnceLock<&'static [u8]> = OnceLock::new();
+use config::{
+    AXIS_HEADROOM, BASE, BENCHMARK_DATASETS, BOX_HEIGHT_PX, CAP_PX, CHART_HEIGHT, CHART_MARGIN,
+    CHART_WIDTH, EXCLUDED_COMMANDS, GRID, HIGHLIGHT, HIGHLIGHT_COMMAND, LABEL_AREA_BOTTOM_PX,
+    LABEL_AREA_LEFT_PX, MIN_TICK_SPACING_PX, MINOR_GRID, MINORS_PER_GAP, PLOT_WIDTH_PX, TEXT,
+    TICK_CANDIDATES_MS,
+};
 
 struct BenchmarkResult {
     command: String,
     times: Vec<f64>,
 }
 
-impl TryFrom<(&Document<&str>, &Value)> for BenchmarkResult {
-    type Error = Error;
+fn field<'a>(doc: &Document<&str>, entries: &'a ObjectEntries, name: &str) -> Result<&'a Value> {
+    doc.get_object_value(entries, name)
+        .ok_or_else(|| anyhow!("missing '{name}' field"))
+}
 
-    fn try_from((doc, item): (&Document<&str>, &Value)) -> std::result::Result<Self, Self::Error> {
-        let ast::Value::Object(_, entry) = item else {
-            bail!("must be a JSON object");
-        };
-
-        let command_value = doc
-            .get_object_value(entry, "command")
-            .with_context(|| "missing 'command' field")?;
-        let command = doc
-            .as_str(command_value)
-            .with_context(|| "command must be a string")?;
-        // `name` holds the `--command-name` label, `command` the full command line
-        let command = doc
-            .get_object_value(entry, "name")
-            .and_then(|name| doc.as_str(name))
-            .unwrap_or(command)
-            .to_owned();
-
-        let measurements_value = doc
-            .get_object_value(entry, "measurements")
-            .with_context(|| "missing 'measurements' field")?;
-        let ast::Value::Array(_, measurements) = measurements_value else {
-            bail!("'measurements' must be an array");
-        };
-
-        let times = measurements
-            .iter()
-            .enumerate()
-            .map(|(index, measurement)| -> Result<f64> {
-                let ast::Value::Object(_, fields) = measurement else {
-                    bail!("measurements[{index}] must be an object");
-                };
-                let wall_clock = doc
-                    .get_object_value(fields, "time_wall_clock")
-                    .with_context(|| format!("measurements[{index}] missing 'time_wall_clock'"))?;
-                let ast::Value::Object(_, wall_clock_fields) = wall_clock else {
-                    bail!("measurements[{index}].time_wall_clock must be an object");
-                };
-                let value = doc
-                    .get_object_value(wall_clock_fields, "value")
-                    .with_context(|| {
-                        format!("measurements[{index}].time_wall_clock missing 'value'")
-                    })?;
-                doc.parse_f64(value).with_context(|| {
-                    format!("measurements[{index}].time_wall_clock.value must be a number")
-                })
-            })
-            .collect::<Result<Vec<_>>>()?;
-
-        Ok(BenchmarkResult { command, times })
+fn as_object<'a>(value: &'a Value, what: &str) -> Result<&'a ObjectEntries> {
+    match value {
+        Value::Object(_, entries) => Ok(entries),
+        _ => bail!("{what} must be an object"),
     }
 }
 
-fn parse_benchmark_results(raw: &str) -> Result<Vec<BenchmarkResult>> {
-    let doc = Document::parse(raw)
-        .map_err(|err| anyhow!("failed to parse JSON with jjpwrgem parser: {err}"))?;
-    let ast::Value::Object(_, entries) = doc.root() else {
-        bail!("benchmark data must be a JSON object");
-    };
+fn as_array<'a>(value: &'a Value, what: &str) -> Result<&'a [Value]> {
+    match value {
+        Value::Array(_, items) => Ok(items),
+        _ => bail!("{what} must be an array"),
+    }
+}
 
-    let results_value = doc
-        .get_object_value(entries, "results")
-        .context("benchmark data missing 'results' field")?;
-    let ast::Value::Array(_, items) = results_value else {
-        bail!("'results' field must be an array");
-    };
+fn parse_result(doc: &Document<&str>, item: &Value) -> Result<BenchmarkResult> {
+    let entries = as_object(item, "result")?;
 
-    items
+    let command = doc
+        .as_str(field(doc, entries, "command")?)
+        .ok_or_else(|| anyhow!("'command' must be a string"))?;
+    // `name` holds the `--command-name` label, `command` the full command line
+    let command = field(doc, entries, "name")
+        .ok()
+        .and_then(|name| doc.as_str(name))
+        .unwrap_or(command)
+        .to_owned();
+
+    let times = as_array(field(doc, entries, "measurements")?, "'measurements'")?
         .iter()
         .enumerate()
-        .map(|(index, item)| -> Result<BenchmarkResult> {
-            (&doc, item)
-                .try_into()
-                .with_context(|| format!("index: {index}"))
+        .map(|(index, measurement)| {
+            let what = format!("measurements[{index}]");
+            let fields = as_object(measurement, &what)?;
+            let wall_clock = as_object(
+                field(doc, fields, "time_wall_clock").with_context(|| what.clone())?,
+                &format!("{what}.time_wall_clock"),
+            )?;
+            doc.parse_f64(field(doc, wall_clock, "value").with_context(|| what.clone())?)
+                .ok_or_else(|| anyhow!("{what}.time_wall_clock.value must be a number"))
         })
+        .collect::<Result<Vec<_>>>()?;
+
+    Ok(BenchmarkResult { command, times })
+}
+
+fn parse_benchmark_results(raw: &str) -> Result<Vec<BenchmarkResult>> {
+    let doc = Document::parse(raw, SyntaxOptions::JSON)
+        .map_err(|err| anyhow!("failed to parse JSON with jjpwrgem parser: {err}"))?;
+    let entries = as_object(doc.root(), "benchmark data")?;
+
+    as_array(field(&doc, entries, "results")?, "'results'")?
+        .iter()
+        .enumerate()
+        .map(|(index, item)| parse_result(&doc, item).with_context(|| format!("index: {index}")))
         .collect()
 }
 
-#[derive(Clone, Copy)]
-struct CandlestickStats {
+struct Series {
+    name: String,
     min: f64,
     q1: f64,
     median: f64,
@@ -116,112 +101,8 @@ struct CandlestickStats {
     max: f64,
 }
 
-struct SeriesEntry {
-    name: String,
-    time: CandlestickStats,
-}
-
-struct BenchmarkDataset {
-    stem: &'static str,
-    action: BenchmarkAction,
-    info: &'static DatasetInfo,
-}
-
-struct DatasetInfo {
-    display_name: &'static str,
-    description: &'static str,
-}
-
-#[derive(Clone, Copy)]
-enum BenchmarkAction {
-    Pretty,
-    Minify,
-}
-
-impl BenchmarkDataset {
-    fn title(&self) -> String {
-        format!(
-            "JSON {} {} Benchmark - Execution Time",
-            self.action.title_label(),
-            self.info.display_name
-        )
-    }
-
-    fn subtitle(&self) -> String {
-        format!(
-            "{} a {}",
-            self.action.subtitle_prefix(),
-            self.info.description
-        )
-    }
-}
-
-impl BenchmarkAction {
-    fn title_label(self) -> &'static str {
-        match self {
-            Self::Pretty => "pretty print",
-            Self::Minify => "minify",
-        }
-    }
-
-    fn subtitle_prefix(self) -> &'static str {
-        match self {
-            Self::Pretty => "Parsing and stringifying",
-            Self::Minify => "Parsing and stringifying",
-        }
-    }
-}
-
-const CANADA_INFO: DatasetInfo = DatasetInfo {
-    display_name: "Canada",
-    description: "2.2MB JSON file with lots of lightly nested arrays",
-};
-
-const CITM_CATALOG_INFO: DatasetInfo = DatasetInfo {
-    display_name: "CITM catalog",
-    description: "1.7MB JSON file with lots of lightly nested, long objects",
-};
-
-const TWITTER_INFO: DatasetInfo = DatasetInfo {
-    display_name: "Twitter",
-    description: ".6MB JSON file with lots of lightly nested, short objects",
-};
-
-const BENCHMARK_DATASETS: &[BenchmarkDataset] = &[
-    BenchmarkDataset {
-        stem: "pretty-canada",
-        action: BenchmarkAction::Pretty,
-        info: &CANADA_INFO,
-    },
-    BenchmarkDataset {
-        stem: "pretty-citm_catalog",
-        action: BenchmarkAction::Pretty,
-        info: &CITM_CATALOG_INFO,
-    },
-    BenchmarkDataset {
-        stem: "pretty-twitter",
-        action: BenchmarkAction::Pretty,
-        info: &TWITTER_INFO,
-    },
-    BenchmarkDataset {
-        stem: "ugly-canada",
-        action: BenchmarkAction::Minify,
-        info: &CANADA_INFO,
-    },
-    BenchmarkDataset {
-        stem: "ugly-citm_catalog",
-        action: BenchmarkAction::Minify,
-        info: &CITM_CATALOG_INFO,
-    },
-    BenchmarkDataset {
-        stem: "ugly-twitter",
-        action: BenchmarkAction::Minify,
-        info: &TWITTER_INFO,
-    },
-];
-
 fn bench_output_dir() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../benches/docker/output")
+    PathBuf::from(repo_path!("benches/docker/output"))
 }
 
 pub fn plot_all_benchmarks() -> Result<()> {
@@ -230,7 +111,7 @@ pub fn plot_all_benchmarks() -> Result<()> {
 
     for dataset in BENCHMARK_DATASETS {
         let input = output_dir.join(format!("{}.json", dataset.stem));
-        let output = output_dir.join(format!("{}.png", dataset.stem));
+        let output = output_dir.join(format!("{}.svg", dataset.stem));
         if let Err(err) =
             plot_benchmark_candlesticks(&input, &output, &dataset.title(), &dataset.subtitle())
         {
@@ -250,41 +131,27 @@ pub fn plot_all_benchmarks() -> Result<()> {
     }
 }
 
-impl CandlestickStats {
-    fn scaled(&self, factor: f64) -> Self {
-        Self {
-            min: self.min * factor,
-            q1: self.q1 * factor,
-            median: self.median * factor,
-            q3: self.q3 * factor,
-            max: self.max * factor,
-        }
-    }
-}
-
 pub fn plot_benchmark_candlesticks(
     input: &Path,
     output: &Path,
     title: &str,
     subtitle: &str,
 ) -> Result<()> {
-    ensure_font_registered()?;
-
     let raw = std::fs::read_to_string(input)
         .with_context(|| format!("failed to read input file {}", input.display()))?;
     let results = parse_benchmark_results(&raw)
         .with_context(|| format!("failed to parse benchmark data in {}", input.display()))?;
 
     let mut entries = Vec::new();
-    for result in results {
-        let Some(time_stats) = compute_stats(&result.times) else {
+    for result in results
+        .into_iter()
+        .filter(|result| !EXCLUDED_COMMANDS.contains(&result.command.as_str()))
+    {
+        let seconds_to_ms: Vec<f64> = result.times.iter().map(|time| time * 1_000.0).collect();
+        let Some(series) = compute_stats(result.command.clone(), &seconds_to_ms) else {
             bail!("benchmark '{}' is missing time samples", result.command);
         };
-
-        entries.push(SeriesEntry {
-            name: result.command,
-            time: time_stats,
-        });
+        entries.push(series);
     }
 
     if entries.is_empty() {
@@ -292,9 +159,8 @@ pub fn plot_benchmark_candlesticks(
     }
 
     entries.sort_by(|left, right| {
-        left.time
-            .median
-            .partial_cmp(&right.time.median)
+        left.median
+            .partial_cmp(&right.median)
             .unwrap_or(Ordering::Equal)
     });
 
@@ -302,138 +168,166 @@ pub fn plot_benchmark_candlesticks(
         std::fs::create_dir_all(parent)?;
     }
 
-    let root = BitMapBackend::new(output, (CHART_WIDTH, CHART_HEIGHT)).into_drawing_area();
-    let background = RGBColor(255, 255, 255);
-    root.fill(&background)
-        .map_err(|err| anyhow!("failed to clear drawing area: {err}"))?;
-
-    let names: Vec<String> = entries.iter().map(|entry| entry.name.clone()).collect();
-    let raw_max = entries
-        .iter()
-        .map(|entry| entry.time.max * 1_000.0)
-        .fold(f64::NEG_INFINITY, |acc, value| acc.max(value));
-    let time_color = RGBColor(33, 150, 243);
+    let root = SVGBackend::new(output, (CHART_WIDTH, CHART_HEIGHT)).into_drawing_area();
+    root.fill(&WHITE).context("failed to clear drawing area")?;
     let chart_area = root
         .titled(title, ("sans-serif", 28).into_font())
-        .map_err(|err| anyhow!("failed to render chart title: {err}"))?;
-    let chart_area = chart_area
+        .context("failed to render chart title")?
         .titled(subtitle, ("sans-serif", 22).into_font())
-        .map_err(|err| anyhow!("failed to render chart subtitle: {err}"))?;
+        .context("failed to render chart subtitle")?;
 
-    let time_range = linear_range(raw_max);
-    draw_candlesticks(
-        &chart_area,
-        "Milliseconds",
-        &names,
-        &entries,
-        |entry| entry.time.scaled(1_000.0),
-        time_range,
-        time_color,
-        |_entry, stats| format!("{:.1} ms", stats.median),
-    )?;
+    draw_candlesticks(&chart_area, &entries)?;
 
-    root.present()
-        .map_err(|err| anyhow!("failed to write chart image: {err}"))?;
+    root.present().context("failed to write chart image")?;
     Ok(())
 }
 
-fn ensure_font_registered() -> Result<()> {
-    if FONT_BYTES.get().is_some() {
-        return Ok(());
+type RowKey = SegmentValue<usize>;
+
+struct SqrtRange {
+    end_ms: f64,
+}
+
+impl SqrtRange {
+    fn covering(max_ms: f64) -> Self {
+        Self {
+            end_ms: (max_ms * AXIS_HEADROOM * AXIS_HEADROOM).max(1.0),
+        }
+    }
+}
+
+impl Ranged for SqrtRange {
+    type FormatOption = DefaultFormatting;
+    type ValueType = f64;
+
+    fn map(&self, value: &f64, limit: (i32, i32)) -> i32 {
+        let fraction = value.max(0.0).sqrt() / self.end_ms.sqrt();
+        limit.0 + (fraction * f64::from(limit.1 - limit.0)).round() as i32
     }
 
-    let sanitized: String = EMBEDDED_FONT_BASE64.split_whitespace().collect();
-    let decoded = STANDARD
-        .decode(sanitized)
-        .context("failed to decode embedded font data")?;
-    let leaked: &'static [u8] = Box::leak(decoded.into_boxed_slice());
-    register_font("sans-serif", FontStyle::Normal, leaked)
-        .map_err(|_| anyhow!("embedded font registration failed"))?;
-    let _ = FONT_BYTES.set(leaked);
-    Ok(())
+    fn key_points<Hint: KeyPointHint>(&self, hint: Hint) -> Vec<f64> {
+        let majors = major_ticks(self.end_ms);
+        match hint.weight() {
+            KeyPointWeight::Bold => majors,
+            KeyPointWeight::Any => {
+                let minors = minor_ticks(&majors, self.end_ms);
+                majors.into_iter().chain(minors).collect()
+            }
+        }
+    }
+
+    fn range(&self) -> Range<f64> {
+        0.0..self.end_ms
+    }
 }
 
-type SeriesAccessor = fn(&SeriesEntry) -> CandlestickStats;
-type LabelFormatter = fn(&SeriesEntry, CandlestickStats) -> String;
-
-#[allow(clippy::too_many_arguments)]
 fn draw_candlesticks(
-    area: &DrawingArea<BitMapBackend, Shift>,
-    y_label: &str,
-    names: &[String],
-    entries: &[SeriesEntry],
-    accessor: SeriesAccessor,
-    y_range: std::ops::Range<f64>,
-    color: RGBColor,
-    label_formatter: LabelFormatter,
+    area: &DrawingArea<SVGBackend, plotters::coord::Shift>,
+    entries: &[Series],
 ) -> Result<()> {
-    let x_range = 0..(entries.len() as i32);
-    let grid_color = RGBColor(210, 210, 210);
-    let label_count = 8;
-    let candle_width: u32 = 28;
-    let mut chart = ChartBuilder::on(area)
-        .margin(25)
-        .set_label_area_size(LabelAreaPosition::Left, 70)
-        .set_label_area_size(LabelAreaPosition::Bottom, 90)
-        .build_cartesian_2d(x_range.clone(), y_range.clone())
-        .map_err(|err| anyhow!("failed to build candlestick chart: {err}"))?;
+    let font = ("sans-serif", 20).into_font();
+    let max = entries.iter().map(|entry| entry.max).fold(0.0, f64::max);
+    let rows = entries.len();
 
-    let axis_font = ("sans-serif", 20).into_font();
+    let mut chart = ChartBuilder::on(area)
+        .margin(CHART_MARGIN)
+        .set_label_area_size(LabelAreaPosition::Left, LABEL_AREA_LEFT_PX)
+        .set_label_area_size(LabelAreaPosition::Bottom, LABEL_AREA_BOTTOM_PX)
+        .build_cartesian_2d(SqrtRange::covering(max), (0..rows - 1).into_segmented())
+        .context("failed to build chart")?;
+
     chart
         .configure_mesh()
-        .light_line_style(ShapeStyle::from(grid_color).stroke_width(1))
-        .bold_line_style(ShapeStyle::from(grid_color).stroke_width(2))
-        .x_desc("Command")
-        .y_desc(y_label)
-        .axis_desc_style(("sans-serif", 20).into_font())
-        .label_style(axis_font.clone())
-        .x_labels(names.len())
-        .x_label_formatter(&|value| {
-            if *value < 0 {
-                return String::new();
-            }
-            names.get(*value as usize).cloned().unwrap_or_default()
-        })
-        .x_label_style(axis_font.clone())
-        .y_labels(label_count)
-        .y_label_formatter(&|value| format!("{value:.0}"))
+        .bold_line_style(ShapeStyle::from(GRID).stroke_width(1))
+        .light_line_style(ShapeStyle::from(MINOR_GRID).stroke_width(1))
+        .x_desc("Milliseconds (square-root scale)")
+        .y_desc("Command")
+        .axis_desc_style(font.clone())
+        .x_label_style(font.clone().color(&TEXT))
+        .x_label_formatter(&|ms| format!("{ms:.0}"))
+        .disable_y_mesh()
+        .disable_y_axis()
         .draw()
-        .map_err(|err| anyhow!("failed to configure chart mesh: {err}"))?;
+        .context("failed to draw axes")?;
 
-    let candle_style = ShapeStyle::from(color).filled().stroke_width(3);
-    let whisker_style = ShapeStyle::from(color.mix(0.7)).stroke_width(10);
-    let label_font = ("sans-serif", 20).into_font();
-    let label_color = RGBColor(30, 30, 30);
+    if let Some(jjp) = entries.iter().find(|entry| entry.name == HIGHLIGHT_COMMAND) {
+        let median = jjp.median;
+        chart
+            .draw_series(std::iter::once(DashedPathElement::new(
+                [(median, RowKey::Exact(0)), (median, RowKey::Last)],
+                6,
+                4,
+                ShapeStyle::from(HIGHLIGHT.mix(0.8)).stroke_width(1),
+            )))
+            .context("failed to draw reference line")?;
+    }
 
-    chart
-        .draw_series(entries.iter().enumerate().map(|(index, entry)| {
-            let stats = accessor(entry);
-            CandleStick::new(
-                index as i32,
-                stats.q1,
-                stats.max,
-                stats.min,
-                stats.q3,
-                candle_style,
-                whisker_style,
-                candle_width,
-            )
-        }))
-        .map_err(|err| anyhow!("failed to draw candlestick series: {err}"))?;
+    for (row, entry) in entries.iter().rev().enumerate() {
+        let Series {
+            min,
+            q1,
+            median,
+            q3,
+            max,
+            ..
+        } = *entry;
+        let highlighted = entry.name == HIGHLIGHT_COMMAND;
+        let color = if highlighted { HIGHLIGHT } else { BASE };
+        let y = RowKey::CenterOf(row);
+        let whisker_style = ShapeStyle::from(color.mix(0.7)).stroke_width(2);
+        let half_box = BOX_HEIGHT_PX / 2;
 
-    chart
-        .draw_series(entries.iter().enumerate().map(|(index, entry)| {
-            let stats = accessor(entry);
-            let label = label_formatter(entry, stats);
-            EmptyElement::at((index as i32, stats.max))
-                + Text::new(label, (0, -18), label_font.clone().color(&label_color))
-        }))
-        .map_err(|err| anyhow!("failed to draw candlestick labels: {err}"))?;
+        chart
+            .draw_series([
+                PathElement::new(vec![(min, y.clone()), (max, y.clone())], whisker_style),
+                PathElement::new(
+                    vec![(q1, y.clone()), (q3, y.clone())],
+                    ShapeStyle::from(color).stroke_width(BOX_HEIGHT_PX),
+                ),
+            ])
+            .context("failed to draw whiskers and box")?;
+
+        chart
+            .draw_series([min, max].map(|x| {
+                EmptyElement::at((x, y.clone()))
+                    + PathElement::new(vec![(0, -CAP_PX), (0, CAP_PX)], whisker_style)
+            }))
+            .context("failed to draw whisker caps")?;
+
+        chart
+            .draw_series([EmptyElement::at((median, y.clone()))
+                + PathElement::new(
+                    vec![(0, -(half_box as i32)), (0, half_box as i32)],
+                    ShapeStyle::from(WHITE).stroke_width(2),
+                )])
+            .context("failed to draw median marker")?;
+
+        let median_label = font
+            .clone()
+            .color(&TEXT)
+            .pos(Pos::new(HPos::Left, VPos::Center));
+        let name_label = font
+            .clone()
+            .style(if highlighted {
+                FontStyle::Bold
+            } else {
+                FontStyle::Normal
+            })
+            .color(if highlighted { &HIGHLIGHT } else { &TEXT })
+            .pos(Pos::new(HPos::Right, VPos::Center));
+        chart
+            .draw_series([
+                EmptyElement::at((max.max(q3), y.clone()))
+                    + Text::new(format!("{median:.1} ms"), (10, 0), median_label),
+                EmptyElement::at((0.0, y)) + Text::new(entry.name.clone(), (-10, 0), name_label),
+            ])
+            .context("failed to draw labels")?;
+    }
 
     Ok(())
 }
 
-fn compute_stats(values: &[f64]) -> Option<CandlestickStats> {
+fn compute_stats(name: String, values: &[f64]) -> Option<Series> {
     if values.is_empty() {
         return None;
     }
@@ -444,7 +338,8 @@ fn compute_stats(values: &[f64]) -> Option<CandlestickStats> {
     let min = *sorted.first()?;
     let max = *sorted.last()?;
 
-    Some(CandlestickStats {
+    Some(Series {
+        name,
         min,
         q1: percentile(&sorted, 0.25),
         median: percentile(&sorted, 0.5),
@@ -472,12 +367,35 @@ fn percentile(sorted: &[f64], percentile: f64) -> f64 {
     }
 }
 
-fn linear_range(max: f64) -> std::ops::Range<f64> {
-    let start = 0.0;
-    let safe_max = max.max(0.0);
-    let padding = (safe_max * 0.1).max(10.0);
-    let end = (safe_max + padding).max(start + 1.0);
-    start..end
+fn major_ticks(end_ms: f64) -> Vec<f64> {
+    let mut kept: Vec<f64> = Vec::new();
+    for ms in TICK_CANDIDATES_MS
+        .into_iter()
+        .take_while(|ms| *ms <= end_ms)
+    {
+        let far_enough = kept.last().is_none_or(|last| {
+            (ms.sqrt() - last.sqrt()) / end_ms.sqrt() * PLOT_WIDTH_PX >= MIN_TICK_SPACING_PX
+        });
+        if far_enough {
+            kept.push(ms);
+        }
+    }
+    kept
+}
+
+fn minor_ticks(majors: &[f64], end_ms: f64) -> Vec<f64> {
+    let next_candidate = majors
+        .last()
+        .and_then(|last| TICK_CANDIDATES_MS.into_iter().find(|ms| ms > last));
+    let bounds: Vec<f64> = majors.iter().copied().chain(next_candidate).collect();
+    bounds
+        .windows(2)
+        .flat_map(|pair| {
+            let step = (pair[1] - pair[0]) / MINORS_PER_GAP as f64;
+            (1..MINORS_PER_GAP).map(move |index| pair[0] + step * index as f64)
+        })
+        .filter(|ms| *ms <= end_ms)
+        .collect()
 }
 
 #[cfg(test)]
@@ -525,6 +443,33 @@ mod tests {
     }
 
     #[test]
+    fn minor_ticks_split_each_gap_into_three() {
+        let minors = minor_ticks(&[100.0, 250.0], 625.0);
+
+        let expected = [150.0, 200.0, 1000.0 / 3.0, 1250.0 / 3.0];
+        assert_eq!(minors.len(), expected.len());
+        for (actual, expected) in minors.iter().zip(expected) {
+            assert!((actual - expected).abs() < 1e-9);
+        }
+    }
+
+    #[test]
+    fn major_ticks_stay_within_range() {
+        assert_eq!(
+            major_ticks(625.0),
+            [0.0, 5.0, 25.0, 50.0, 100.0, 250.0, 500.0]
+        );
+    }
+
+    #[test]
+    fn sqrt_range_maps_midpoint_of_root_axis() {
+        let range = SqrtRange { end_ms: 100.0 };
+
+        assert_eq!(range.map(&25.0, (0, 200)), 100);
+        assert_eq!(range.map(&100.0, (0, 200)), 200);
+    }
+
+    #[test]
     fn rejects_hyperfine_v1_results() {
         let v1 = r#"{ "results": [{ "command": "jjp", "times": [0.005] }] }"#;
 
@@ -536,7 +481,7 @@ mod tests {
         let dir = std::env::temp_dir().join(format!("xtask-plot-{}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
         let input = dir.join("bench.json");
-        let output = dir.join("bench.png");
+        let output = dir.join("bench.svg");
         std::fs::write(&input, HYPERFINE_V2).unwrap();
 
         plot_benchmark_candlesticks(&input, &output, "title", "subtitle").unwrap();

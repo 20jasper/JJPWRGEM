@@ -1,5 +1,5 @@
 [toolchain]
-channel = "nightly-2026-10-26"
+channel = "nightly-2026-11-16"
 profile = "minimal"
 components = [
   "cargo",
@@ -9,3 +9,4 @@ components = [
   "rust-analyzer",
   "llvm-tools",
 ]
+targets = ["wasm32-unknown-unknown"]

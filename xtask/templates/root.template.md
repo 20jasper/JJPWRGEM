@@ -5,22 +5,22 @@ JJPWRGEM JSON Parser With Really Good Error Messages
 An RFC 8259 compliant JSON language server and formatter!
 
 ```
-{{CHECK_EXAMPLE}}
+{{ check_example }}
 ```
 
-{{COVERAGE_BADGE}} [![See codspeed dashboard](https://img.shields.io/endpoint?url=https://codspeed.io/badge.json)](https://codspeed.io/20jasper/JJPWRGEM?utm_source=badge)
+{{ coverage_badge }} [![See codspeed dashboard](https://img.shields.io/endpoint?url=https://codspeed.io/badge.json)](https://codspeed.io/20jasper/JJPWRGEM?utm_source=badge)
 
 ## Why JJP?
 
 - Rich errors with context, descriptions, and patches
-- {{LSP_PERF_CLAIM}}
-- Parses and pretty prints a 1.7MB file in ~7ms — [benchmarks](./benches/BENCHMARKS.md)
+- {% include "lsp_perf_claim.md" %}
+- Parses and pretty prints a 1.7MB file in ~7ms — [benchmarks](https://github.com/20jasper/JJPWRGEM/blob/main/benches/BENCHMARKS.md)
 
-![animation of JJPWRGEM's LSP. file changes are made quickly and feedback is shown quickly. code actions fix common issues like missing colons](./crates/lsp/lsp-demo.gif)
+![animation of JJPWRGEM's LSP. file changes are made quickly and feedback is shown quickly. code actions fix common issues like missing colons](https://raw.githubusercontent.com/20jasper/JJPWRGEM/main/crates/lsp/lsp-demo.gif)
 
 Also there's a really cool axolotl riding a skateboard as the logo
 
-![A logo of an axolotl riding a skateboard](./logo.webp)
+![A logo of an axolotl riding a skateboard](https://raw.githubusercontent.com/20jasper/JJPWRGEM/main/logo.webp)
 
 ## Installation
 
@@ -40,7 +40,7 @@ RUSTFLAGS="-C target-cpu=native" cargo install --path .
 
 ### LSP
 
-See [LSP setup](./crates/lsp/readme.md#quick-start) to configure your editor, and [settings](./crates/lsp/readme.md#settings) for the format options
+See [LSP setup](https://github.com/20jasper/JJPWRGEM/blob/main/crates/lsp/readme.md#quick-start) to configure your editor, and [settings](https://github.com/20jasper/JJPWRGEM/blob/main/crates/lsp/readme.md#settings) for the format options
 
 ## Stability
 
@@ -64,7 +64,7 @@ It sounds cool and the name isn't taken on any package managers
 
 Axolotls can't walk so fast, so skateboards are pretty fast 🛹🐟
 
-See the [benchmarks](/benches/BENCHMARKS.md)
+See the [benchmarks](https://github.com/20jasper/JJPWRGEM/blob/main/benches/BENCHMARKS.md)
 
 ### Why is the logo an axolotl riding a skateboard?
 

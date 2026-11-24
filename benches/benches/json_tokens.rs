@@ -1,7 +1,7 @@
 use std::hint::black_box;
 
 use criterion::{BenchmarkId, Criterion, Throughput, criterion_group, criterion_main};
-use jjpwrgem_parse::tokens::TokenStream;
+use jjpwrgem_parse::{SyntaxOptions, tokens::TokenStream};
 
 mod json_common;
 
@@ -20,7 +20,7 @@ fn bench_tokens(c: &mut Criterion) {
                 json.as_str(),
                 |b, json| {
                     b.iter(|| {
-                        TokenStream::new(black_box(json)).for_each(|token| {
+                        TokenStream::new(black_box(json), SyntaxOptions::JSON).for_each(|token| {
                             black_box(token.unwrap());
                         });
                     });

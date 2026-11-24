@@ -27,6 +27,14 @@ suite("Extension Smoke Tests", function () {
     assert.ok(extension.isActive, "Extension should be active");
   });
 
+  test("Built-in JSON language features should be disabled", async () => {
+    assert.strictEqual(
+      vscode.extensions.getExtension("vscode.json-language-features"),
+      undefined,
+      "built-in json extension should be disabled",
+    );
+  });
+
   test("Open a JSON file on disk and format it", async () => {
     await whenReady;
 
@@ -63,6 +71,73 @@ suite("Extension Smoke Tests", function () {
       formatted.trim(),
       '{ "foo": "bar" }',
       "Formatted document should contain expected JSON keys",
+    );
+
+    await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  test("Open a JSONC file and get jsonc diagnostics", async () => {
+    await whenReady;
+
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "jjpwrgem-smoke-"));
+    const filePath = path.join(tmpDir, "smoke.jsonc");
+    const content = `{
+  // line
+  "a": 1, /* block */
+  "b": ,
+}
+`;
+    fs.writeFileSync(filePath, content, "utf8");
+
+    const uri = vscode.Uri.file(filePath);
+    const doc = await vscode.workspace.openTextDocument(uri);
+    const editor = await vscode.window.showTextDocument(doc);
+
+    assert.strictEqual(
+      editor.document.languageId,
+      "jsonc",
+      "File should be recognized as jsonc",
+    );
+
+    const getJjpDiagnostics = () =>
+      vscode.languages
+        .getDiagnostics(uri)
+        .filter((d) => d.source === "jjpwrgem");
+
+    const diagnostics = await new Promise<vscode.Diagnostic[]>(
+      (resolve, reject) => {
+        const check = () => {
+          const found = getJjpDiagnostics();
+          if (found.length > 0) {
+            clearTimeout(timer);
+            subscription.dispose();
+            resolve(found);
+          }
+        };
+        const timer = setTimeout(() => {
+          subscription.dispose();
+          reject(new Error("no jjpwrgem diagnostics"));
+        }, 10000);
+        const subscription = vscode.languages.onDidChangeDiagnostics(check);
+        check();
+      },
+    );
+
+    assert.strictEqual(
+      diagnostics.length,
+      1,
+      "Only the missing value should be reported",
+    );
+    assert.strictEqual(
+      diagnostics[0]!.message,
+      "expected json value, found `,`",
+    );
+
+    assert.strictEqual(
+      vscode.languages.getDiagnostics(uri).length,
+      1,
+      "No diagnostics besides jjpwrgem's should be present",
     );
 
     await vscode.commands.executeCommand("workbench.action.closeActiveEditor");

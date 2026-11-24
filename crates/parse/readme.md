@@ -6,7 +6,7 @@ JSON parser and formatter with rich errors. Currently unstable—expect breaking
 
 Tracey is used to track spec compliance.
 
-[![jsonlines: 60%](https://img.shields.io/badge/spec:jsonlines-60%25-yellow)](spec/jsonlines.md)
+[![jsonlines: 60%](https://img.shields.io/badge/spec:jsonlines-60%25-yellow)](https://github.com/20jasper/JJPWRGEM/blob/main/spec/jsonlines.md)
 
 ## Indeterminate Handling
 
@@ -20,5 +20,5 @@ How cases undefined by the spec are handled
 - parsing will fail if BOM is included
 - only utf8 encoding is supported
 - no limitations on nesting or length
-- extensions such as trailing commas or comments are not allowed
+- extensions are not allowed unless enabled with `SyntaxOptions`: trailing commas and comments are not valid in json but are valid in jsonc
 - surrogates are not validated, eg a lone continuation byte is valid

@@ -27,6 +27,25 @@ specs (
         )
     }
     {
+        name jsonc
+        include (spec/jsonc.md)
+        impls (
+            {
+                name rust
+                include (
+                    crates/parse/src/tokens.rs
+                    crates/parse/src/tokens/**/*.rs
+                    crates/parse/src/traverse/**/*.rs
+                    crates/parse/src/ast.rs
+                    crates/parse/src/format/uglify.rs
+                    crates/cli/**/*.rs
+                    tests/integration/jsonc_line_comments.rs
+                    tests/integration/jsonc_block_comments.rs
+                )
+            }
+        )
+    }
+    {
         name json-schema-v7
         include (spec/json-schema-v7.md)
         impls (

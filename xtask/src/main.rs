@@ -1,12 +1,20 @@
 use clap::{Parser, Subcommand};
 
-mod badge;
+macro_rules! repo_path {
+    ($path:literal) => {
+        concat!(env!("CARGO_MANIFEST_DIR"), "/../", $path)
+    };
+}
+
+mod badges;
 mod bench_table;
+mod criterion;
+mod generated;
 mod lsp_bench_report;
+mod markdown;
 mod npm;
 mod plot;
 mod settings_docs;
-mod spec_badges;
 mod template;
 mod vscode_settings;
 
@@ -17,20 +25,23 @@ struct Cli {
     cmd: Commands,
 }
 
+#[derive(clap::Args)]
+struct CheckArgs {
+    /// Fail if the committed output differs instead of writing it
+    #[arg(long)]
+    check: bool,
+}
+
 #[derive(Subcommand)]
 enum Commands {
     /// Generate README.md files from templates
-    GenerateReadmes,
-    /// Verify generated READMEs match what's committed
-    VerifyReadmes,
+    Readmes(#[command(flatten)] CheckArgs),
     /// Write the format settings into the VS Code extension package.json
-    GenerateVscodeSettings,
-    /// Verify the VS Code extension package.json has up to date format settings
-    VerifyVscodeSettings,
+    VscodeSettings(#[command(flatten)] CheckArgs),
     /// Generate candlestick charts for all benchmark datasets
     PlotBenchmarks,
-    /// Generate npm package.json
-    GenerateNpmPackage,
+    /// Generate the npm package.json
+    NpmPackage(#[command(flatten)] CheckArgs),
     /// Read criterion JSON from stdin and write a markdown table with time and throughput
     BenchTable,
     /// Read the lsp bench's criterion JSON from stdin plus its RSS sidecar and write per-fixture tables
@@ -43,17 +54,12 @@ fn main() -> anyhow::Result<()> {
     let cli = Cli::parse();
 
     match cli.cmd {
-        Commands::GenerateReadmes => {
-            template::write_readmes();
-            Ok(())
-        }
-        Commands::VerifyReadmes => template::are_readmes_updated(),
-        Commands::GenerateVscodeSettings => vscode_settings::write_vscode_settings(),
-        Commands::VerifyVscodeSettings => vscode_settings::are_vscode_settings_updated(),
+        Commands::Readmes(CheckArgs { check }) => template::readmes(check),
+        Commands::VscodeSettings(CheckArgs { check }) => vscode_settings::vscode_settings(check),
         Commands::PlotBenchmarks => plot::plot_all_benchmarks(),
-        Commands::GenerateNpmPackage => npm::write_package_json(),
+        Commands::NpmPackage(CheckArgs { check }) => npm::npm_package(check),
         Commands::BenchTable => bench_table::write_bench_table(),
         Commands::LspBenchReport => lsp_bench_report::write_lsp_bench_report(),
-        Commands::SpecCoverageBadges => spec_badges::write_spec_badges(),
+        Commands::SpecCoverageBadges => badges::write_spec_badges(),
     }
 }

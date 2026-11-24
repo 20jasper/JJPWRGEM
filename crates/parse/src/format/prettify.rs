@@ -3,7 +3,7 @@ use core::{iter, range::Range};
 use const_format::str_repeat;
 
 use crate::{
-    Result,
+    Result, SyntaxOptions,
     ast::{Document, QUOTE_LEN, Value},
     format::LineEnding,
     tokens::{FALSE, NULL, TRUE},
@@ -132,7 +132,7 @@ pub(crate) fn format_str(
     preferred_width: usize,
 ) -> Result<String> {
     let mut buf = FormatBuf::new(String::with_capacity(json.len()), options, preferred_width);
-    let doc = Document::parse(json)?;
+    let doc = Document::parse(json, SyntaxOptions::JSON)?;
     format_document_value_into(&mut buf, &doc, doc.root(), 0);
     Ok(buf.into_inner())
 }

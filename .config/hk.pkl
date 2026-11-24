@@ -1,5 +1,5 @@
-amends "package://github.com/jdx/hk/releases/download/v2.11.1/hk@2.11.1#/Config.pkl"
-import "package://github.com/jdx/hk/releases/download/v2.11.1/hk@2.11.1#/Builtins.pkl"
+amends "package://github.com/jdx/hk/releases/download/v2.12.0/hk@2.12.0#/Config.pkl"
+import "package://github.com/jdx/hk/releases/download/v2.12.0/hk@2.12.0#/Builtins.pkl"
 
 // Steps that mutate files. Run in pre-commit (with stash) and on `hk fix`.
 local fix_steps = new Mapping<String, Step> {
@@ -82,6 +82,10 @@ local sync_mise = new Mapping<String, Step> {
     glob = List(".config/mise/config.toml", ".config/mise/conf.d/*.toml", "benches/mise.toml", "benches/docker/mise.toml", "rust-toolchain.toml")
     check = "mise install --locked --quiet"
   }
+}
+
+env {
+  ["MISE_LOCKED"] = "1"
 }
 
 hooks {

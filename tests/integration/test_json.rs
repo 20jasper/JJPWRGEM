@@ -10,6 +10,10 @@ pub const OBJECT_MISSING_COMMA_BETWEEN_VALUES: &str = r#"{"hi": null null"#;
 pub const OBJECT_MISSING_COMMA_OR_CLOSING_WITH_WHITESPACE: &str = r#"{"hi": null     "#;
 pub const OBJECT_TRAILING_COMMA_WITH_CLOSED: &str = r#"{"hi": null, }"#;
 pub const OBJECT_TRAILING_COMMA: &str = r#"{"hi": null, "#;
+pub const OBJECT_LINE_COMMENT: &str = "{\n  \"hi\": null, // greeting\n  \"bye\": null\n}";
+pub const OBJECT_BLOCK_COMMENT: &str = "{\n  \"hi\": null, /* greeting */\n  \"bye\": null\n}";
+pub const OBJECT_UNCLOSED_BLOCK_COMMENT: &str =
+    "{\n  \"hi\": null, /* greeting\n  \"bye\": null\n}";
 pub const OBJECT_DOUBLE_OPEN_CURLY: &str = r"{{";
 pub const OBJECT_OPEN_CURLY: &str = r"{";
 pub const CLOSED_CURLY: &str = r"}";
@@ -257,14 +261,10 @@ pub const ARRAY_NUMERIC_MATRIX_HETEROGENEOUS: &str =
     r#"[[1, null], [1, null], [null], [0], [false], [""]]"#;
 
 // valid subset of prettier's JSON format test suite
-pub const PRETTIER_KEY_VALUE: &str =
-    include_str!("../conformance/prettier/tests/format/json/json/key-value.json");
-pub const PRETTIER_MULTI_LINE: &str =
-    include_str!("../conformance/prettier/tests/format/json/json/multi-line.json");
-pub const PRETTIER_SINGLE_LINE: &str =
-    include_str!("../conformance/prettier/tests/format/json/json/single-line.json");
-pub const PRETTIER_PASS1: &str =
-    include_str!("../conformance/prettier/tests/format/json/json/pass1.json");
+pub const PRETTIER_KEY_VALUE: &str = include_str!("fixtures/prettier/key-value.json");
+pub const PRETTIER_MULTI_LINE: &str = include_str!("fixtures/prettier/multi-line.json");
+pub const PRETTIER_SINGLE_LINE: &str = include_str!("fixtures/prettier/single-line.json");
+pub const PRETTIER_PASS1: &str = include_str!("fixtures/prettier/pass1.json");
 pub const PRETTIER_ARRAY: &str = "[[1, null], [null], [0], [false], [\"\"]]";
 
 pub const STRING_MIXED_CASE_HEX_UNICODE: &str = r#""\u0123\u4567\u89AB\uCDEF\uabcd\uef4A""#;

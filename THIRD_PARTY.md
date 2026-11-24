@@ -1,0 +1,1 @@
+crates/lsp/THIRD_PARTY.md

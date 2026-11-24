@@ -1,0 +1,18 @@
+[tasks.build-wasm]
+description = "Build the language server to wasm into target/wasm"
+run = [
+  "cargo rustc -p jjpwrgem-lsp --profile wasm --target wasm32-unknown-unknown --features wasm --crate-type cdylib",
+  "wasm-bindgen --target web --out-dir target/wasm --out-name jjpwrgem_lsp target/wasm32-unknown-unknown/wasm/jjpwrgem_lsp.wasm",
+  "wasm-opt -Os --enable-simd -o target/wasm/jjpwrgem_lsp_bg.wasm target/wasm/jjpwrgem_lsp_bg.wasm",
+]
+
+[tasks.build-wasm.tools]
+"cargo:wasm-bindgen-cli" = "0.2.130"
+"aqua:WebAssembly/binaryen" = "version_133"
+
+[tasks.test-wasm]
+description = "Run the wasm smoke test in Node"
+run = "cargo test -p jjpwrgem-lsp --profile wasm --target wasm32-unknown-unknown --features wasm --test wasm"
+
+[tasks.test-wasm.tools]
+"cargo:wasm-bindgen-cli" = "0.2.130"

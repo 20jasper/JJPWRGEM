@@ -1,7 +1,7 @@
 use core::{iter::Peekable, range::Range};
 
 use crate::{
-    Error, ErrorKind, Result,
+    Error, ErrorKind, Result, SyntaxOptions,
     tokens::{
         ByteWithContext, BytesWithContext, FALSE, NULL, TRUE, Token, TokenWithContext,
         current_byte_pos,
@@ -39,17 +39,38 @@ fn skip_whitespace(bytes: &[u8]) -> usize {
         .unwrap_or(bytes.len().saturating_sub(i))
 }
 
+const LINE_COMMENT_OPEN: &[u8] = b"//";
+const BLOCK_COMMENT_OPEN: &[u8] = b"/*";
+const BLOCK_COMMENT_CLOSE: &[u8] = b"*/";
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum Comments {
+    Reject,
+    Skip,
+}
+
+fn line_comment_len(rest: &[u8]) -> usize {
+    // jsonc[impl line-ending]
+    memchr::memchr2(b'\n', b'\r', rest).unwrap_or(rest.len())
+}
+
+fn block_comment_len(rest: &[u8]) -> Option<usize> {
+    memchr::memmem::find(rest, BLOCK_COMMENT_CLOSE).map(|offset| offset + BLOCK_COMMENT_CLOSE.len())
+}
+
 #[derive(Debug, Clone)]
 struct TokenStreamInner<'a> {
     input: &'a str,
     pos: usize,
+    comments: Comments,
 }
 
 impl<'a> TokenStreamInner<'a> {
-    fn new_at_range(full_source: &'a str, range: Range<usize>) -> Self {
+    fn new_at_range(full_source: &'a str, range: Range<usize>, comments: Comments) -> Self {
         Self {
             input: &full_source[..range.end],
             pos: range.start,
+            comments,
         }
     }
 
@@ -102,6 +123,54 @@ impl<'a> TokenStreamInner<'a> {
             self.pos..self.pos + unexpected.len_utf8(),
             self.input,
         ))
+    }
+
+    #[cold]
+    #[inline(never)]
+    fn consume_comment(&mut self) -> Result<()> {
+        match self.input.as_bytes().get(self.pos + 1) {
+            Some(b'/') => {
+                // jsonc[impl single-line-comment]
+                let body = self.pos + LINE_COMMENT_OPEN.len();
+                let end = body + line_comment_len(&self.input.as_bytes()[body..]);
+                match self.comments {
+                    Comments::Skip => {
+                        self.pos = end;
+                        Ok(())
+                    }
+                    Comments::Reject => Err(Error::new(
+                        ErrorKind::UnexpectedComment,
+                        self.pos..end,
+                        self.input,
+                    )),
+                }
+            }
+            Some(b'*') => {
+                // jsonc[impl multi-line-comment]
+                // jsonc[impl no-nested-comments]
+                let body = self.pos + BLOCK_COMMENT_OPEN.len();
+                let closed =
+                    block_comment_len(&self.input.as_bytes()[body..]).map(|len| body + len);
+                match (self.comments, closed) {
+                    (Comments::Skip, Some(end)) => {
+                        // jsonc[impl comments-ignored]
+                        self.pos = end;
+                        Ok(())
+                    }
+                    (Comments::Reject, Some(end)) => Err(Error::new(
+                        ErrorKind::UnexpectedComment,
+                        self.pos..end,
+                        self.input,
+                    )),
+                    (_, None) => Err(Error::new(
+                        ErrorKind::UnterminatedComment,
+                        self.pos..self.input.len(),
+                        self.input,
+                    )),
+                }
+            }
+            _ => self.unexpected_character().map(|_| ()),
+        }
     }
 
     fn consume_whitespace(&mut self) {
@@ -157,6 +226,10 @@ impl Iterator for TokenStreamInner<'_> {
                         self.unexpected_character()
                     }
                 }
+                b'/' => match self.consume_comment() {
+                    Ok(()) => continue,
+                    Err(err) => Err(err),
+                },
                 _ => self.unexpected_character(),
             };
 
@@ -172,15 +245,24 @@ pub struct TokenStream<'a> {
 }
 
 impl<'a> TokenStream<'a> {
-    pub(crate) fn new_at_range(full_source: &'a str, range: Range<usize>) -> Self {
+    pub(crate) fn new_at_range(
+        full_source: &'a str,
+        range: Range<usize>,
+        options: SyntaxOptions,
+    ) -> Self {
+        let comments = if options.comments {
+            Comments::Skip
+        } else {
+            Comments::Reject
+        };
         Self {
-            inner: TokenStreamInner::new_at_range(full_source, range),
+            inner: TokenStreamInner::new_at_range(full_source, range, comments),
             cached: None,
         }
     }
 
-    pub fn new(s: &'a str) -> Self {
-        Self::new_at_range(s, 0..s.len())
+    pub fn new(s: &'a str, options: SyntaxOptions) -> Self {
+        Self::new_at_range(s, 0..s.len(), options)
     }
 
     #[inline]

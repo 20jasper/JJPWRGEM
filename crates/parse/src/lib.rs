@@ -9,9 +9,29 @@ pub mod settings;
 pub mod tokens;
 mod traverse;
 
-pub use check::validate_str;
+pub use check::{CheckInputSettings, CheckParser, validate_str};
 
 pub use crate::error::{Error, ErrorKind, Result};
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct SyntaxOptions {
+    pub trailing_commas: bool,
+    pub comments: bool,
+}
+
+impl SyntaxOptions {
+    /// [RFC 8259](https://datatracker.ietf.org/doc/html/rfc8259) compliant json: no trailing commas or comments
+    pub const JSON: Self = Self {
+        trailing_commas: false,
+        comments: false,
+    };
+
+    /// [JSONC](https://jsonc.org/) json: trailing commas and comments allowed
+    pub const JSONC: Self = Self {
+        trailing_commas: true,
+        comments: true,
+    };
+}
 
 pub fn format_str(json: &str, request: &format::FormatRequest) -> Result<String> {
     match request {

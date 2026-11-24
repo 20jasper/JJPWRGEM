@@ -4,6 +4,6 @@ JSON parser and formatter with rich errors. Currently unstable—expect breaking
 
 Tracey is used to track spec compliance.
 
-{{JSONLINES_SPEC_BADGE}}
+{{ jsonlines_spec_badge }}
 
-{{IND}}
+{% include "indeterminate_handling.md" %}

@@ -1,9 +1,8 @@
 [tasks.readmes]
 description = "Generate markdown files from templates"
 sources = [
+  "xtask/src/**/*.rs",
   "xtask/templates/**",
-  "xtask/src/template.rs",
-  "xtask/src/vscode_settings.rs",
   "crates/parse/src/settings.rs",
   "crates/parse/src/format/config.rs",
   "benches/docker/output/*.md",
@@ -24,8 +23,8 @@ outputs = [
   "npm-packages/jjpwrgem-vscode/package.json",
 ]
 run = [
-  "cargo xtask generate-readmes",
-  "cargo xtask generate-vscode-settings",
+  "cargo xtask readmes",
+  "cargo xtask vscode-settings",
   "cargo +nightly fmt -p bytes2chars",
   "cargo rdme --workspace-project bytes2chars --force",
   "cargo rdme --workspace-project lspresso --force",
@@ -34,13 +33,14 @@ run = [
 [tasks.readmes.tools]
 "github:orium/cargo-rdme" = "2.2"
 "github:bearcove/tracey" = "v1.4.0"
-"npm:oxfmt" = "0.77.0"
+"npm:oxfmt" = "0.78.0"
 
 [tasks."readmes-check"]
 description = "Verify markdown files match generated templates"
 run = [
-  "cargo xtask verify-readmes",
-  "cargo xtask verify-vscode-settings",
+  "cargo xtask readmes --check",
+  "cargo xtask vscode-settings --check",
+  "cargo xtask npm-package --check",
   "cargo rdme --workspace-project bytes2chars --check",
   "cargo rdme --workspace-project lspresso --check",
 ]
@@ -48,4 +48,4 @@ run = [
 [tasks."readmes-check".tools]
 "github:orium/cargo-rdme" = "2.2"
 "github:bearcove/tracey" = "v1.4.0"
-"npm:oxfmt" = "0.77.0"
+"npm:oxfmt" = "0.78.0"

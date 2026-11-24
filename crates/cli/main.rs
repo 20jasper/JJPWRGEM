@@ -19,9 +19,8 @@ use std::{
 
 pub use error::{Error, Result};
 use jjpwrgem_parse::{
-    diagnostics::Diagnostic,
-    format::{FormatRequest, Parser},
-    format_str, validate_str,
+    CheckParser, SyntaxOptions, diagnostics::Diagnostic, format::FormatRequest, format_str,
+    validate_str,
 };
 use jjpwrgem_ui::{Color, Style};
 
@@ -31,12 +30,20 @@ fn main() -> ExitCode {
     let style = Style::Pretty(Color::Plain);
 
     match commands::parse() {
-        Action::Lsp => {
-            lsp::run_blocking();
-            ExitCode::SUCCESS
+        Action::Lsp => match lsp::run_blocking() {
+            Ok(code) => code,
+            Err(error) => {
+                anstream::eprintln!("jjp lsp: {error}");
+                ExitCode::FAILURE
+            }
+        },
+        Action::Check(CheckParser::Jsonlines) => run_on_stdin(style, check_jsonlines),
+        Action::Check(CheckParser::Json) => {
+            run_on_stdin(style, |json, style| check(json, style, SyntaxOptions::JSON))
         }
-        Action::Check(Parser::Jsonlines) => run_on_stdin(style, check_jsonlines),
-        Action::Check(Parser::Json) => run_on_stdin(style, check),
+        Action::Check(CheckParser::Jsonc) => run_on_stdin(style, |json, style| {
+            check(json, style, SyntaxOptions::JSONC)
+        }),
         Action::Format(request) => {
             run_on_stdin(style, |json, style| format_input(json, style, &request))
         }
@@ -105,8 +112,8 @@ fn format_input(json: &str, style: Style, request: &FormatRequest) -> Output {
     }
 }
 
-pub fn check(json: &str, style: Style) -> Output {
-    match validate_str(json) {
+pub fn check(json: &str, style: Style, syntax: SyntaxOptions) -> Output {
+    match validate_str(json, syntax) {
         Ok(()) => Output::success(""),
         Err(error) => Output::failure_diagnostic(Diagnostic::from(&error), style),
     }
@@ -134,7 +141,6 @@ fn print_output(output: &mut Output) {
     }
 }
 mod docs {
-    #[macro_export]
     macro_rules! get_docs_snapshot {
         ($name:literal) => {
             include_str!(concat!(
@@ -145,6 +151,8 @@ mod docs {
             ))
         };
     }
+
+    pub(crate) use get_docs_snapshot;
 
     pub fn strip_front_matter(raw: &str) -> &str {
         const FRONT_MATTER_SEP: &str = "\n---\n";

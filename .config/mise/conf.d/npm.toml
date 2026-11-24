@@ -6,14 +6,13 @@ outputs = [
   "npm-packages/jjpwrgem/npm-shrinkwrap.json",
 ]
 run = [
-  "cargo xtask generate-npm-package",
-  "oxfmt npm-packages/jjpwrgem/package.json --write",
+  "cargo xtask npm-package",
   "npm install --prefix npm-packages/jjpwrgem --ignore-scripts --no-fund",
   "npm shrinkwrap --prefix npm-packages/jjpwrgem",
 ]
 
 [tasks.package-json.tools]
-"npm:oxfmt" = "0.77.0"
+"npm:oxfmt" = "0.78.0"
 
 [tasks.pack-npm]
 description = "Pack the npm package into ./npm and verify README, CHANGELOG and LICENSE are included"

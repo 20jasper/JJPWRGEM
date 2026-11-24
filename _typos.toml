@@ -1,11 +1,11 @@
 [files]
 extend-exclude = [
   "tests/conformance/",
+  "tests/integration/fixtures/",
   "benches/data/",
   "**/__snapshots__/",
   "**/snapshots/",
   "**/*.snap",
-  "**/*.base64",
   "*.cast",
   "**/CHANGELOG.md",
 ]

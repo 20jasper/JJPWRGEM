@@ -2,7 +2,7 @@
 run = "typos"
 
 [tasks.typos.tools]
-"aqua:crate-ci/typos" = "1.52.0"
+"aqua:crate-ci/typos" = "1.52.2"
 
 [tasks.deny]
 run = "cargo deny check"
@@ -17,7 +17,7 @@ run = [
 ]
 
 [tasks.format.tools]
-"npm:oxfmt" = "0.77.0"
+"npm:oxfmt" = "0.78.0"
 
 [tasks.format-check]
 run = [
@@ -26,24 +26,24 @@ run = [
 ]
 
 [tasks.format-check.tools]
-"npm:oxfmt" = "0.77.0"
+"npm:oxfmt" = "0.78.0"
 
 [tasks.lint]
-env = { RUSTFLAGS = "-Dwarnings" }
+env = { CARGO_BUILD_WARNINGS = "deny" }
 run = [
   "! git grep -n 'gen_lsp_types::{' -- '*.rs'",
   "cargo clippy -q --all-targets --all-features --workspace",
   "pnpm --filter jjpwrgem-vscode run check-types",
   "knip --workspace npm-packages/jjpwrgem-vscode",
   "actionlint",
+  { task = "oxlint" },
 ]
 
 [tasks.lint.tools]
 actionlint = "1.7.12"
 # actionlint checks workflow run blocks with it when on PATH
 shellcheck = "0.11.0"
-"npm:knip" = "6.44.2"
-"aqua:oxc-project/oxc/oxlint" = "1.90.0"
+"npm:knip" = "6.45.1"
 
 [tasks.vsce-pack-check]
 run = "pnpm --filter jjpwrgem-vscode run vsce:pack"
@@ -52,13 +52,10 @@ run = "pnpm --filter jjpwrgem-vscode run vsce:pack"
 run = "knip --workspace npm-packages/jjpwrgem-vscode"
 
 [tasks.knip.tools]
-"npm:knip" = "6.44.2"
+"npm:knip" = "6.45.1"
 
 [tasks.oxlint]
 run = "pnpm run lint"
-
-[tasks.oxlint.tools]
-"aqua:oxc-project/oxc/oxlint" = "1.90.0"
 
 [tasks.diet]
 description = "Trim publishable crate dirs before release"
@@ -74,7 +71,7 @@ run = "cargo shear --check-test-targets"
 "github:Boshen/cargo-shear" = "1.14"
 
 [tasks.shellcheck]
-run = "shellcheck --shell=bash $(git ls-files '*.sh' '*.bash')"
+run = "shellcheck -x -P SCRIPTDIR --shell=bash $(git ls-files '*.sh' '*.bash')"
 
 [tasks.shellcheck.tools]
 shellcheck = "0.11.0"
@@ -94,6 +91,6 @@ run = "tracey pre-commit"
 run = "renovate-config-validator .github/renovate.json"
 
 [tasks.renovate-check.tools]
-"npm:renovate" = { version = "44.222.4", trust_policy_excludes = [
+"npm:renovate" = { version = "44.240.0", trust_policy_excludes = [
   "@yarnpkg/libzip@3.2.2",
 ] } # manual publish by a yarn maintainer, no provenance

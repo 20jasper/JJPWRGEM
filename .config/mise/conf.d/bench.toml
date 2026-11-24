@@ -16,7 +16,7 @@ mkdir -p output
 cargo criterion --bench "$usage_name" --message-format=json \
   ${usage_sample_size:+--sample-size "$usage_sample_size"} \
   | cargo xtask bench-table > "output/$usage_name.md"
-cargo xtask generate-readmes
+cargo xtask readmes
 cargo +nightly fmt -p bytes2chars
 cargo rdme --workspace-project bytes2chars --force
 '''
@@ -25,7 +25,7 @@ cargo rdme --workspace-project bytes2chars --force
 "cargo:cargo-criterion" = "1.1.0"
 "github:orium/cargo-rdme" = "2.2"
 "github:bearcove/tracey" = "v1.4.0"
-"npm:oxfmt" = "0.77.0"
+"npm:oxfmt" = "0.78.0"
 
 [tasks.bench-json]
 description = "Run the four standard json criterion benches and regenerate readmes"
@@ -40,19 +40,31 @@ run = [
 "cargo:cargo-criterion" = "1.1.0"
 "github:orium/cargo-rdme" = "2.2"
 "github:bearcove/tracey" = "v1.4.0"
-"npm:oxfmt" = "0.77.0"
+"npm:oxfmt" = "0.78.0"
 
-[tasks.bench-codspeed]
-description = "Build and run all criterion benches via codspeed"
+[tasks.bench-codspeed-build]
+description = "Build the criterion benches for codspeed in simulation mode"
 dir = "{{config_root}}/benches"
 run = [
   "cargo build --profile dist -p jjpwrgem",
-  "cargo codspeed build {{vars.codspeed_benches}}",
-  "cargo codspeed run {{vars.codspeed_benches}}",
+  "cargo codspeed build --measurement-mode simulation {{vars.codspeed_benches}}",
 ]
 
-[tasks.bench-codspeed.tools]
+[tasks.bench-codspeed-build.tools]
 "github:CodSpeedHQ/codspeed-rust" = "6.0.0"
+
+[tasks.bench-codspeed-run]
+description = "Run the prebuilt codspeed benches (CI runs this inside the codspeed action)"
+dir = "{{config_root}}/benches"
+run = "cargo codspeed run {{vars.codspeed_benches}}"
+
+[tasks.bench-codspeed-run.tools]
+"github:CodSpeedHQ/codspeed-rust" = "6.0.0"
+
+[tasks.bench-codspeed]
+description = "Build and run all criterion benches via codspeed"
+depends = ["bench-codspeed-build"]
+run = "mise run bench-codspeed-run"
 
 [tasks.bench-iai]
 description = "Run the iai (gungraun) bench"
@@ -64,7 +76,13 @@ run = 'cargo bench --bench json_iai "$@"'
 
 [tasks.plot-bench]
 description = "Plot docker bench results"
-run = "cargo xtask plot-benchmarks"
+run = [
+  "cargo xtask plot-benchmarks",
+  'for f in ./benches/docker/output/*.svg; do oxvg optimise "$f" -o "$f"; done',
+]
+
+[tasks.plot-bench.tools]
+"cargo:oxvg" = "0.0.9"
 
 [tasks.kcachegrind]
 description = "Open kcachegrind on a json_iai callgrind output (Linux only; requires kcachegrind on PATH)"
@@ -97,30 +115,26 @@ callgrind_annotate \
 [tasks.bench-docker]
 description = "Run perf tests against 10+ cli tools via docker and embed outputs in readmes"
 shell = "bash -c"
+depends_post = ["plot-bench", "readmes"]
 run = '''
-mkdir -p benches/docker/output
+set -euo pipefail
+engine=$(command -v docker || command -v podman)
 mise run -C benches/docker build-oci
-docker buildx create --name jjp-bench --driver docker-container 2>/dev/null || true
-GITHUB_TOKEN="$(gh auth token 2>/dev/null || true)" \
-  docker buildx build --builder jjp-bench -t jjp-benchmark \
-    --build-context "mise-tools=oci-layout://$(pwd)/benches/docker/.mise-oci" \
-    --secret id=gh_token,env=GITHUB_TOKEN \
-    --load .
-docker run --rm \
-  -u "$(id -u):$(id -g)" \
-  -v "$(pwd)/benches/docker/output:/benchmark/output" \
-  jjp-benchmark
-
-oxfmt './benches/docker/output/*.md' --write
-cargo xtask plot-benchmarks
-cargo xtask generate-readmes
-cargo rdme --workspace-project bytes2chars --force
+loaded=$(tar -C benches/docker/.mise-oci -c . | "$engine" load | sed -n 's/^Loaded image[^:]*: //p' | tail -n 1)
+"$engine" tag "$loaded" localhost/jjp-mise-tools
+"$engine" build --security-opt label=disable -t jjp-benchmark .
+mkdir -p benches/docker/output
+userns=()
+if [[ $engine == *podman ]]; then
+  userns=(--userns=keep-id)
+fi
+"$engine" run --rm -u "$(id -u):$(id -g)" "${userns[@]}" --security-opt label=disable \
+  -v "$(pwd)/benches/docker/output:/benchmark/output:Z" jjp-benchmark
+oxfmt --no-error-on-unmatched-pattern './benches/docker/output/*.md' --write
 '''
 
 [tasks.bench-docker.tools]
-"npm:oxfmt" = "0.77.0"
-"github:orium/cargo-rdme" = "2.2"
-"github:bearcove/tracey" = "v1.4.0"
+"npm:oxfmt" = "0.78.0"
 
 [tasks.bench-lsp]
 description = "Bench jjp's LSP against other JSON LSPs via lspresso and regenerate benches/lsp/lsp.md"
@@ -130,7 +144,7 @@ run = '''
 set -euo pipefail
 cargo build --profile dist -p jjpwrgem
 VSCODE_JSON_BIN="{{vars.vscode_json_bin}}" cargo criterion --bench lsp --message-format=json | cargo xtask lsp-bench-report
-cargo xtask generate-readmes
+cargo xtask readmes
 '''
 
 [tasks.bench-lsp.tools]
@@ -138,7 +152,7 @@ cargo xtask generate-readmes
 "npm:@t1ckbase/vscode-langservers-extracted" = "2.0.5"
 "github:libkakashi/light-json-lsp" = "0.1.0"
 "github:bearcove/tracey" = "v1.4.0"
-"npm:oxfmt" = "0.77.0"
+"npm:oxfmt" = "0.78.0"
 "github:orium/cargo-rdme" = "2.2"
 
 [tasks.test-lsp-e2e]

@@ -1,138 +1,129 @@
-mod metadata;
-
-use std::fs;
-
-use anyhow::{Context, Result, anyhow};
+use anyhow::{Context, Result, bail};
+use cargo_metadata::{MetadataCommand, Package};
 use itertools::Itertools as _;
-use jjpwrgem_parse::{ast::Document, format::LineEnding};
-use serde_json::Value;
+use serde::Deserialize;
+use serde_json::{Value, json};
 
-use crate::npm::metadata::{
-    PackageMetadata, PlatformConfig, build_platforms_from_targets,
-    targets::parse_release_targets_from_env,
-};
+use crate::generated::{oxfmt_format, pretty_json, write_or_check};
 
+const PACKAGE_JSON: &str = repo_path!("npm-packages/jjpwrgem/package.json");
 const BIN_NAME: &str = "jjp";
-const ARTIFACT_DOWNLOAD_URL_KEY: &str = "artifactDownloadUrl";
-const SUPPORTED_PLATFORMS_KEY: &str = "supportedPlatforms";
-const ARTIFACT_NAME_KEY: &str = "artifactName";
-const BINS_KEY: &str = "bins";
-const ZIP_EXT_KEY: &str = "zipExt";
 
-const TEMPLATE: &str = include_str!(concat!(
-    env!("CARGO_MANIFEST_DIR"),
-    "/../npm-packages/jjpwrgem/package.template.json"
-));
+const TEMPLATE: &str = include_str!(repo_path!("npm-packages/jjpwrgem/package.template.json"));
 
-pub fn write_package_json() -> Result<()> {
-    let patched = patch_package_json()?;
-    let compact = jjpwrgem_parse::format::serde::uglify_serializable(&patched)?;
-    let ast = Document::parse(compact.as_str()).map_err(|err| anyhow!(err.to_string()))?;
-    let formatted = jjpwrgem_parse::format::prettify_document(&ast, 80, LineEnding::Lf);
-
-    let out_path = concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/../npm-packages/jjpwrgem/package.json"
-    );
-    fs::write(out_path, formatted)?;
-
-    println!("generated package json");
-    Ok(())
+#[derive(Deserialize)]
+struct ReleaseTarget {
+    target: String,
+    archive: String,
+    glibc: Option<String>,
 }
 
-fn patch_package_json() -> Result<Value> {
-    let cargo_meta = PackageMetadata::from_cargo_env()?;
-    let targets = parse_release_targets_from_env()?;
-    let platforms = build_platforms_from_targets(targets)?;
-    apply_patches(serde_json::from_str(TEMPLATE)?, &cargo_meta, platforms)
+fn release_targets() -> Result<Vec<ReleaseTarget>> {
+    Ok(serde_json::from_str(include_str!(repo_path!(
+        ".github/release-targets.json"
+    )))?)
 }
 
-fn apply_patches(
-    mut pkg: Value,
-    cargo_meta: &PackageMetadata,
-    platforms: Vec<PlatformConfig>,
-) -> Result<Value> {
-    let repository_url = cargo_meta
-        .package
-        .repository
-        .clone()
-        .context("missing repo url")?;
+fn root_package() -> Result<Package> {
+    MetadataCommand::new()
+        .manifest_path(repo_path!("Cargo.toml"))
+        .no_deps()
+        .exec()?
+        .root_package()
+        .cloned()
+        .context("No root package found in cargo metadata")
+}
 
-    let artifact_download_url = format!(
-        "{}/releases/download/{}-v{}",
-        repository_url, cargo_meta.package.name, cargo_meta.package.version
-    );
+pub fn npm_package(check: bool) -> Result<()> {
+    let patched = patch_package_json(&root_package()?, &release_targets()?)?;
+    let formatted = oxfmt_format(&pretty_json(&patched)?, "package.json")?;
 
+    write_or_check(PACKAGE_JSON, &formatted, "npm-package", check)
+}
+
+fn supported_platform(archive: &str) -> Result<Value> {
+    let (zip_ext, exe_suffix) = if archive.ends_with(".zip") {
+        (".zip", ".exe")
+    } else if archive.ends_with(".tar.xz") {
+        (".tar.xz", "")
+    } else {
+        bail!("unsupported archive type: {archive}");
+    };
+
+    Ok(json!({
+        "artifactName": archive,
+        "bins": { BIN_NAME: format!("{BIN_NAME}{exe_suffix}") },
+        "zipExt": zip_ext,
+    }))
+}
+
+fn glibc_minimum(targets: &[ReleaseTarget]) -> Result<Value> {
+    let floors = targets
+        .iter()
+        .filter_map(|t| t.glibc.as_deref())
+        .unique()
+        .collect::<Vec<_>>();
+    let [floor] = floors[..] else {
+        bail!("release targets must declare exactly one glibc floor, found {floors:?}");
+    };
+    Ok(floor.into())
+}
+
+fn patch_package_json(package: &Package, targets: &[ReleaseTarget]) -> Result<Value> {
+    let repository_url = package.repository.clone().context("missing repo url")?;
+
+    let mut pkg: Value = serde_json::from_str(TEMPLATE)?;
     let map = pkg
         .as_object_mut()
         .context("template is not a JSON object")?;
 
-    map.insert(
-        "version".into(),
-        Value::String(cargo_meta.package.version.to_string()),
-    );
+    map.insert("version".into(), package.version.to_string().into());
     map.insert(
         "description".into(),
-        Value::String(cargo_meta.package.description.clone().unwrap_or_default()),
+        package.description.clone().unwrap_or_default().into(),
     );
     map.insert(
         "keywords".into(),
-        Value::Array(
-            cargo_meta
-                .package
-                .categories
-                .iter()
-                .cloned()
-                .chain(cargo_meta.package.keywords.iter().cloned())
-                .dedup()
-                .map(Value::String)
-                .collect(),
-        ),
+        package
+            .categories
+            .iter()
+            .chain(&package.keywords)
+            .dedup()
+            .cloned()
+            .collect::<Vec<_>>()
+            .into(),
     );
     map.insert(
         "homepage".into(),
-        Value::String(
-            cargo_meta
-                .package
-                .homepage
-                .clone()
-                .or(cargo_meta.package.repository.clone())
-                .unwrap_or_default(),
-        ),
+        package
+            .homepage
+            .clone()
+            .or(package.repository.clone())
+            .unwrap_or_default()
+            .into(),
     );
     map.insert(
         "author".into(),
-        Value::String(
-            cargo_meta
-                .package
-                .authors
-                .first()
-                .cloned()
-                .unwrap_or_default(),
-        ),
+        package.authors.first().cloned().unwrap_or_default().into(),
     );
     map.insert(
-        ARTIFACT_DOWNLOAD_URL_KEY.into(),
-        Value::String(artifact_download_url),
+        "artifactDownloadUrl".into(),
+        format!(
+            "{repository_url}/releases/download/{}-v{}",
+            package.name, package.version
+        )
+        .into(),
     );
     map.insert(
-        SUPPORTED_PLATFORMS_KEY.into(),
-        Value::Object(
-            platforms
-                .into_iter()
-                .map(|platform| {
-                    (
-                        platform.rust_target,
-                        serde_json::json!({
-                            ARTIFACT_NAME_KEY: platform.artifact_name,
-                            BINS_KEY: { BIN_NAME: format!("jjp{}", platform.exe_suffix) },
-                            ZIP_EXT_KEY: platform.zip_ext,
-                        }),
-                    )
-                })
-                .collect(),
-        ),
+        "supportedPlatforms".into(),
+        targets
+            .iter()
+            .map(|t| Ok((t.target.clone(), supported_platform(&t.archive)?)))
+            .collect::<Result<serde_json::Map<_, _>>>()?
+            .into(),
     );
+
+    map.insert("glibcMinimum".into(), glibc_minimum(targets)?);
 
     Ok(pkg)
 }
@@ -142,12 +133,11 @@ mod tests {
     use cargo_metadata::{
         PackageBuilder, PackageId, PackageName, camino::Utf8PathBuf, semver::Version,
     };
-    use serde_json::json;
 
     use super::*;
 
-    fn make_cargo_meta() -> PackageMetadata {
-        let package = PackageBuilder::new(
+    fn fixture_package() -> Package {
+        PackageBuilder::new(
             PackageName::new("jjpwrgem".to_owned()),
             Version::parse("0.5.1").unwrap(),
             PackageId {
@@ -174,122 +164,12 @@ mod tests {
         .repository(Some("https://github.com/20jasper/jjpwrgem".into()))
         .homepage(Some("https://github.com/20jasper/jjpwrgem".into()))
         .build()
-        .expect("package builds");
-
-        PackageMetadata { package }
-    }
-
-    fn make_platforms() -> Vec<PlatformConfig> {
-        vec![
-            PlatformConfig {
-                rust_target: "aarch64-apple-darwin".into(),
-                artifact_name: "jjpwrgem-aarch64-apple-darwin.tar.xz".into(),
-                exe_suffix: String::new(),
-                zip_ext: ".tar.xz".into(),
-            },
-            PlatformConfig {
-                rust_target: "aarch64-unknown-linux-gnu".into(),
-                artifact_name: "jjpwrgem-aarch64-unknown-linux-gnu.tar.xz".into(),
-                exe_suffix: String::new(),
-                zip_ext: ".tar.xz".into(),
-            },
-            PlatformConfig {
-                rust_target: "x86_64-apple-darwin".into(),
-                artifact_name: "jjpwrgem-x86_64-apple-darwin.tar.xz".into(),
-                exe_suffix: String::new(),
-                zip_ext: ".tar.xz".into(),
-            },
-            PlatformConfig {
-                rust_target: "x86_64-unknown-linux-gnu".into(),
-                artifact_name: "jjpwrgem-x86_64-unknown-linux-gnu.tar.xz".into(),
-                exe_suffix: String::new(),
-                zip_ext: ".tar.xz".into(),
-            },
-            PlatformConfig {
-                rust_target: "x86_64-pc-windows-msvc".into(),
-                artifact_name: "jjpwrgem-x86_64-pc-windows-msvc.zip".into(),
-                exe_suffix: ".exe".into(),
-                zip_ext: ".zip".into(),
-            },
-            PlatformConfig {
-                rust_target: "aarch64-pc-windows-msvc".into(),
-                artifact_name: "jjpwrgem-aarch64-pc-windows-msvc.zip".into(),
-                exe_suffix: ".exe".into(),
-                zip_ext: ".zip".into(),
-            },
-        ]
+        .expect("package builds")
     }
 
     #[test]
-    fn patch_matches_expected() {
-        let cargo_meta = make_cargo_meta();
-        let platforms = make_platforms();
-        let template: Value = serde_json::from_str(TEMPLATE).unwrap();
-        let actual = apply_patches(template, &cargo_meta, platforms).unwrap();
-
-        let expected = json!({
-          "name": "jjpwrgem",
-          "version": "0.5.1",
-          "private": false,
-          "description": "jjpwrgem json parser with really good error messages",
-          "keywords": [
-            "command-line-utilities",
-            "text-processing",
-            "encoding",
-            "parser",
-            "formatter",
-            "json",
-            "linter"
-          ],
-          "homepage": "https://github.com/20jasper/jjpwrgem",
-          "license": "MIT",
-          "author": "Jacob Asper <jacobasper191@gmail.com>",
-          "repository": "https://github.com/20jasper/jjpwrgem",
-          "bin": { "jjp": "run-jjp.js" },
-          "files": ["*.js", "README.md", "CHANGELOG.md", "LICENSE"],
-          "type": "",
-          "main": "",
-          "scripts": { "postinstall": "node ./install.js" },
-          "dependencies": { "detect-libc": "^2.1.2" },
-          "devDependencies": {},
-          "engines": { "node": ">=14.18.0", "npm": ">=6" },
-          "artifactDownloadUrl": "https://github.com/20jasper/jjpwrgem/releases/download/jjpwrgem-v0.5.1",
-          "glibcMinimum": { "major": 2, "series": 35 },
-          "preferUnplugged": true,
-          "supportedPlatforms": {
-            "aarch64-apple-darwin": {
-              "artifactName": "jjpwrgem-aarch64-apple-darwin.tar.xz",
-              "bins": { "jjp": "jjp" },
-              "zipExt": ".tar.xz"
-            },
-            "aarch64-unknown-linux-gnu": {
-              "artifactName": "jjpwrgem-aarch64-unknown-linux-gnu.tar.xz",
-              "bins": { "jjp": "jjp" },
-              "zipExt": ".tar.xz"
-            },
-            "x86_64-apple-darwin": {
-              "artifactName": "jjpwrgem-x86_64-apple-darwin.tar.xz",
-              "bins": { "jjp": "jjp" },
-              "zipExt": ".tar.xz"
-            },
-            "x86_64-unknown-linux-gnu": {
-              "artifactName": "jjpwrgem-x86_64-unknown-linux-gnu.tar.xz",
-              "bins": { "jjp": "jjp" },
-              "zipExt": ".tar.xz"
-            },
-            "x86_64-pc-windows-msvc": {
-              "artifactName": "jjpwrgem-x86_64-pc-windows-msvc.zip",
-              "bins": { "jjp": "jjp.exe" },
-              "zipExt": ".zip"
-            },
-            "aarch64-pc-windows-msvc": {
-              "artifactName": "jjpwrgem-aarch64-pc-windows-msvc.zip",
-              "bins": { "jjp": "jjp.exe" },
-              "zipExt": ".zip"
-            }
-          }
-        });
-
-        assert_eq!(actual, expected);
+    fn package_json_snapshot() {
+        let actual = patch_package_json(&fixture_package(), &release_targets().unwrap()).unwrap();
+        insta::assert_json_snapshot!(actual);
     }
 }
