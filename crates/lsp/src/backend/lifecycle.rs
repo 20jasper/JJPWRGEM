@@ -27,16 +27,7 @@ impl<S: Sink> Backend<S> {
     }
 
     pub(super) fn initialized(&mut self) {
-        let diagnostics = if self.client_pulls_diagnostics {
-            "pull"
-        } else {
-            "push"
-        };
-        self.info(format!(
-            "{SOURCE} {} started (position encoding {}, {diagnostics} diagnostics)",
-            self.version,
-            self.position_encoding.name(),
-        ));
+        self.info(format!("{SOURCE} {} started", self.version));
     }
 
     pub(super) fn initialize(&mut self, params: InitializeParams) -> InitializeResult {

@@ -38,7 +38,7 @@ fn initialize_reports_the_server_and_shutdown_exits_cleanly() -> TestResult {
 }
 
 #[test]
-fn startup_logs_the_version_and_client_setup() -> TestResult {
+fn startup_logs_the_version() -> TestResult {
     let mut command = Command::new(env!("CARGO_BIN_EXE_jjp"));
     command.arg("lsp");
     let mut client = Client::spawn(command)?.with_timeout(TIMEOUT);
@@ -52,10 +52,7 @@ fn startup_logs_the_version_and_client_setup() -> TestResult {
         Some(version)
     );
     assert_eq!(log.kind, MessageType::Info);
-    assert_eq!(
-        log.message,
-        format!("jjpwrgem {version} started (position encoding utf-16, pull diagnostics)")
-    );
+    assert_eq!(log.message, format!("jjpwrgem {version} started"));
     Ok(())
 }
 
