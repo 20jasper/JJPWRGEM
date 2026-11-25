@@ -1,5 +1,7 @@
 #![feature(new_range)]
 
+use core::default;
+
 use jjpwrgem_parse::ast::Document;
 
 mod error {
@@ -42,7 +44,7 @@ mod primitive {
 
     use jjpwrgem_parse::ast::{Document, Value};
 
-    use crate::Schema;
+    use crate::{Schema, Type};
 
     // r[json-schema-v7.type.primitive]
     #[derive(Debug, PartialEq, Eq, Clone, Copy)]
@@ -103,15 +105,15 @@ mod primitive {
         }
     }
 
-    pub fn schema_as_primitive(val: &Schema) -> PrimitiveType {
-        match val {
-            Schema::Bool => PrimitiveType::Boolean,
-            Schema::String => PrimitiveType::String,
-            Schema::Null => PrimitiveType::Null,
-            Schema::Object => PrimitiveType::Object,
-            Schema::Array => PrimitiveType::Array,
-            Schema::Number => PrimitiveType::Number,
-            Schema::Integer => PrimitiveType::Integer,
+    pub fn schema_as_primitive(schema: &Schema) -> PrimitiveType {
+        match &schema.type_ {
+            Type::Bool => PrimitiveType::Boolean,
+            Type::String => PrimitiveType::String,
+            Type::Null => PrimitiveType::Null,
+            Type::Object => PrimitiveType::Object,
+            Type::Array => PrimitiveType::Array,
+            Type::Number => PrimitiveType::Number,
+            Type::Integer => PrimitiveType::Integer,
         }
     }
 }
@@ -132,8 +134,40 @@ pub fn validate<S: AsRef<str>>(doc: &Document<S>, schema: &Schema) -> Result<()>
     }
 }
 
+#[derive(Debug, PartialEq, Eq)]
+pub struct Schema {
+    type_: Type,
+    title: Option<String>,
+    description: Option<String>,
+}
+
+impl Schema {
+    pub fn new(type_: Type, title: Option<String>, description: Option<String>) -> Self {
+        Self {
+            type_,
+            title,
+            description,
+        }
+    }
+
+    pub fn type_(type_: Type) -> Self {
+        Self {
+            type_,
+            title: None,
+            description: None,
+        }
+    }
+
+    // // todo maybe generic?
+    // // todo special case raw bits
+    // pub fn parse(doc: Document<String>) -> Self {
+    //     let val = doc.root();
+
+    // }
+}
+
 #[derive(Debug, PartialEq, Eq, Clone)]
-pub enum Schema {
+pub enum Type {
     Bool,
     String,
     Null,
@@ -152,13 +186,13 @@ mod tests {
 
     // r[verify json-schema-v7.type.primitive]
     #[rstest::rstest]
-    #[case("true", Schema::Bool)]
-    #[case("false", Schema::Bool)]
-    #[case(r#""string""#, Schema::String)]
-    #[case("null", Schema::Null)]
-    #[case("-42", Schema::Integer)]
-    #[case("[1,2,3]", Schema::Array)]
-    #[case("{}", Schema::Object)]
+    #[case("true", Schema::type_(Type::Bool))]
+    #[case("false", Schema::type_(Type::Bool))]
+    #[case(r#""string""#, Schema::type_(Type::String))]
+    #[case("null", Schema::type_(Type::Null))]
+    #[case("-42", Schema::type_(Type::Integer))]
+    #[case("[1,2,3]", Schema::type_(Type::Array))]
+    #[case("{}", Schema::type_(Type::Object))]
     fn it_works(#[case] json: &str, #[case] schema: Schema) {
         let doc = Document::parse(json, SyntaxOptions::JSON).unwrap();
         assert!(validate(&doc, &schema).is_ok());
@@ -166,10 +200,10 @@ mod tests {
 
     // r[verify json-schema-v7.type.integer-subset]
     #[rstest::rstest]
-    #[case("123.0", Schema::Number)]
-    #[case("123.0", Schema::Integer)]
-    #[case("123", Schema::Number)]
-    #[case("123", Schema::Integer)]
+    #[case("123.0", Schema::type_(Type::Number))]
+    #[case("123.0", Schema::type_(Type::Integer))]
+    #[case("123", Schema::type_(Type::Number))]
+    #[case("123", Schema::type_(Type::Integer))]
     fn integer_is_subset_of_number(#[case] json: &str, #[case] schema: Schema) {
         let doc = Document::parse(json, SyntaxOptions::JSON).unwrap();
         assert!(validate(&doc, &schema).is_ok());
@@ -179,7 +213,7 @@ mod tests {
     fn number_is_not_subset_of_integer() {
         let doc = Document::parse("123.5", SyntaxOptions::JSON).unwrap();
         assert_eq!(
-            validate(&doc, &Schema::Integer),
+            validate(&doc, &Schema::type_(Type::Integer)),
             Err(Error::MismatchedTypes {
                 range: 0..5,
                 expected: PrimitiveType::Integer,
@@ -189,14 +223,14 @@ mod tests {
     }
 
     #[rstest::rstest]
-    #[case("true", Schema::String)]
-    #[case("false", Schema::String)]
-    #[case("null", Schema::Bool)]
-    #[case("123", Schema::Bool)]
-    #[case("[1,2,3]", Schema::Bool)]
-    #[case("{}", Schema::Bool)]
-    #[case("true", Schema::Null)]
-    #[case("false", Schema::Null)]
+    #[case("true", Schema::type_(Type::String))]
+    #[case("false", Schema::type_(Type::String))]
+    #[case("null", Schema::type_(Type::Bool))]
+    #[case("123", Schema::type_(Type::Bool))]
+    #[case("[1,2,3]", Schema::type_(Type::Bool))]
+    #[case("{}", Schema::type_(Type::Bool))]
+    #[case("true", Schema::type_(Type::Null))]
+    #[case("false", Schema::type_(Type::Null))]
     fn it_doesnt_work(#[case] json: &str, #[case] schema: Schema) {
         let doc = Document::parse(json, SyntaxOptions::JSON).unwrap();
         assert!(validate(&doc, &schema).is_err());
