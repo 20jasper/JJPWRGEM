@@ -12,7 +12,7 @@
       "automerge": true
     },
     {
-      "matchManagers": ["dockerfile", "mise", "cargo"],
+      "matchManagers": ["dockerfile", "cargo"],
       "matchFileNames": [
         "xtask/bench/**",
         "benches/**",
