@@ -1,6 +1,6 @@
 #![feature(new_range)]
 
-use jjpwrgem_parse::ast::Document;
+use jjpwrgem_parse::ast::{Document, Value};
 
 mod error {
     use core::range::Range;
@@ -17,12 +17,19 @@ mod error {
             expected: PrimitiveType,
             actual: PrimitiveType,
         },
+        /// schema root must be a boolean or object. found {found}
+        InvalidSchemaRoot {
+            range: Range<usize>,
+            found: PrimitiveType,
+        },
     }
 
     impl Error {
         pub fn range(&self) -> &Range<usize> {
             match self {
-                Error::MismatchedTypes { range, .. } => range,
+                Error::MismatchedTypes { range, .. } | Error::InvalidSchemaRoot { range, .. } => {
+                    range
+                }
             }
         }
     }
@@ -117,27 +124,39 @@ mod primitive {
 }
 
 pub fn validate<S: AsRef<str>>(doc: &Document<S>, schema: &Schema) -> Result<()> {
-    let Some(ty) = &schema.types else {
-        return Ok(());
-    };
+    match schema {
+        // r[impl json-schema-v7.schema.boolean-true]
+        Schema::Bool(true) => Ok(()),
+        Schema::Bool(false) => todo!(),
+        Schema::Object(ObjectSchema { types: None, .. }) => Ok(()),
+        Schema::Object(ObjectSchema {
+            types: Some(ty), ..
+        }) => {
+            let actual = value_as_primitive(doc.root(), doc);
+            let expected = type_as_primitive(ty);
 
-    let actual = value_as_primitive(doc.root(), doc);
-    let expected = type_as_primitive(ty);
-
-    if actual.is_subset(expected) {
-        Ok(())
-    } else {
-        let range = doc.root().range();
-        Err(Error::MismatchedTypes {
-            range,
-            expected,
-            actual,
-        })
+            if actual.is_subset(expected) {
+                Ok(())
+            } else {
+                let range = doc.root().range();
+                Err(Error::MismatchedTypes {
+                    range,
+                    expected,
+                    actual,
+                })
+            }
+        }
     }
 }
 
+#[derive(Debug, PartialEq, Eq)]
+pub enum Schema {
+    Bool(bool),
+    Object(ObjectSchema),
+}
+
 #[derive(Debug, Default, PartialEq, Eq)]
-pub struct Schema {
+pub struct ObjectSchema {
     title: Option<String>,
     description: Option<String>,
     types: Option<Type>,
@@ -145,14 +164,24 @@ pub struct Schema {
 
 impl Schema {
     fn type_(type_: Type) -> Self {
-        Self {
+        Self::Object(ObjectSchema {
             types: Some(type_),
-            ..Self::default()
-        }
+            ..ObjectSchema::default()
+        })
     }
 
-    pub fn parse<S: AsRef<str>>(_doc: &Document<S>) -> Result<Self> {
-        todo!()
+    // r[impl json-schema-v7.schema.root]
+    pub fn parse<S: AsRef<str>>(doc: &Document<S>) -> Result<Self> {
+        if let Value::Boolean(_, b) = doc.root() {
+            Ok(Schema::Bool(*b))
+        } else if let Value::Object(..) = doc.root() {
+            todo!()
+        } else {
+            Err(Error::InvalidSchemaRoot {
+                range: doc.root().range(),
+                found: value_as_primitive(doc.root(), doc),
+            })
+        }
     }
 }
 
@@ -233,7 +262,10 @@ mod tests {
 
     #[test]
     fn parse_empty_object_has_no_constraints() {
-        assert_eq!(parse_schema("{}"), Ok(Schema::default()));
+        assert_eq!(
+            parse_schema("{}"),
+            Ok(Schema::Object(ObjectSchema::default()))
+        );
     }
 
     #[rstest::rstest]
@@ -251,11 +283,47 @@ mod tests {
     fn parse_title_and_description() {
         assert_eq!(
             parse_schema(r#"{"title": "Port", "description": "TCP port"}"#),
-            Ok(Schema {
+            Ok(Schema::Object(ObjectSchema {
                 title: Some("Port".to_string()),
                 description: Some("TCP port".to_string()),
                 types: None,
-            })
+            }))
         );
+    }
+
+    // r[verify json-schema-v7.schema.root]
+    #[rstest::rstest]
+    #[case("5", PrimitiveType::Integer)]
+    #[case(r#""text""#, PrimitiveType::String)]
+    #[case("null", PrimitiveType::Null)]
+    #[case("[1,2]", PrimitiveType::Array)]
+    fn parse_rejects_non_object_or_boolean_root(#[case] json: &str, #[case] found: PrimitiveType) {
+        assert!(matches!(
+            parse_schema(json),
+            Err(Error::InvalidSchemaRoot { found: actual, .. }) if actual == found
+        ));
+    }
+
+    // r[verify json-schema-v7.schema.root]
+    #[test]
+    fn parse_true_boolean_schema() {
+        assert_eq!(parse_schema("true"), Ok(Schema::Bool(true)));
+    }
+
+    // r[verify json-schema-v7.schema.root]
+    #[test]
+    fn parse_false_boolean_schema() {
+        assert_eq!(parse_schema("false"), Ok(Schema::Bool(false)));
+    }
+
+    // r[verify json-schema-v7.schema.boolean-true]
+    #[rstest::rstest]
+    #[case("5")]
+    #[case(r#""text""#)]
+    #[case("null")]
+    #[case("[1,2]")]
+    fn true_schema_accepts_any_value(#[case] json: &str) {
+        let doc = Document::parse(json, SyntaxOptions::JSON).unwrap();
+        assert!(validate(&doc, &Schema::Bool(true)).is_ok());
     }
 }
