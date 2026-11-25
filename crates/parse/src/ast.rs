@@ -191,6 +191,38 @@ impl<S: AsRef<str>> Document<S> {
     pub fn parse_f64(&self, value: &Value) -> Option<f64> {
         value.to_f64(self.source.as_ref())
     }
+
+    pub fn as_null(&self, value: &Value) -> Option<()> {
+        matches!(value, Value::Null(_)).then_some(())
+    }
+
+    pub fn as_bool(&self, value: &Value) -> Option<bool> {
+        match value {
+            Value::Boolean(_, b) => Some(*b),
+            _ => None,
+        }
+    }
+
+    pub fn as_array<'a>(&self, value: &'a Value) -> Option<&'a [Value]> {
+        match value {
+            Value::Array(_, items) => Some(items.as_slice()),
+            _ => None,
+        }
+    }
+
+    pub fn as_object<'a>(&self, value: &'a Value) -> Option<&'a ObjectEntries> {
+        match value {
+            Value::Object(_, entries) => Some(entries),
+            _ => None,
+        }
+    }
+
+    pub fn as_number(&self, value: &Value) -> Option<&str> {
+        match value {
+            Value::Number { .. } => Some(self.slice(value.range())),
+            _ => None,
+        }
+    }
 }
 
 pub(crate) fn parse_at(
@@ -414,6 +446,52 @@ mod tests {
         };
         assert_eq!(Document::parse(json, options).is_ok(), allowed);
         assert!(Document::parse(json, SyntaxOptions::JSON).is_err());
+    }
+
+    #[test]
+    fn as_accessors_return_data_for_matching_variant() {
+        let doc = Document::parse(
+            r#"[null, true, 1.5, "a", [2], {"k": 3}]"#,
+            SyntaxOptions::JSON,
+        )
+        .unwrap();
+        let items = doc.as_array(doc.root()).unwrap();
+        assert_eq!(items.len(), 6);
+
+        assert_eq!(doc.as_null(&items[0]), Some(()));
+        assert_eq!(doc.as_bool(&items[1]), Some(true));
+        assert_eq!(doc.as_number(&items[2]), Some("1.5"));
+        assert_eq!(doc.as_str(&items[3]), Some("a"));
+        assert_eq!(doc.as_array(&items[4]).map(<[Value]>::len), Some(1));
+        assert_eq!(
+            doc.get_object_value(doc.as_object(&items[5]).unwrap(), "k")
+                .and_then(|v| doc.as_number(v)),
+            Some("3")
+        );
+    }
+
+    #[rstest::rstest]
+    #[case("42", Some("42"))]
+    #[case("-7", Some("-7"))]
+    #[case("1.50", Some("1.50"))]
+    #[case("1.5e1", Some("1.5e1"))]
+    #[case("9223372036854775808", Some("9223372036854775808"))]
+    #[case(r#""1""#, None)]
+    fn as_number_returns_source_text(#[case] json: &str, #[case] expected: Option<&str>) {
+        let doc = Document::parse(json, SyntaxOptions::JSON).unwrap();
+        assert_eq!(doc.as_number(doc.root()), expected);
+    }
+
+    #[test]
+    fn as_accessors_return_none_for_other_variants() {
+        let doc = Document::parse("1", SyntaxOptions::JSON).unwrap();
+        let root = doc.root();
+
+        assert_eq!(doc.as_null(root), None);
+        assert_eq!(doc.as_bool(root), None);
+        assert_eq!(doc.as_array(root), None);
+        assert!(doc.as_object(root).is_none());
+        assert_eq!(doc.as_str(root), None);
     }
 
     fn range_of(source: &str, needle: &str) -> Range<usize> {
