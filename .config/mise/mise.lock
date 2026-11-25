@@ -706,10 +706,10 @@ backend = "npm:prettier"
 specifiers = ["3.10.1"]
 
 [[tools."npm:renovate"]]
-version = "44.240.0"
-aube = { path = "locks/npm-renovate/44.240.0~aa673d8d", digest = "sha256:d4493569e2a91aead92f136ed69017b6675f5bc7459916c4b69c80533bb48b2d" }
+version = "44.257.9"
+aube = { path = "locks/npm-renovate/44.257.9~aa673d8d", digest = "sha256:c1b90e213ef05ab655a30f6e04c6f15de9671157ce0373c9875a5df203fec229" }
 backend = "npm:renovate"
-specifiers = ["44.240.0"]
+specifiers = ["44.257.9"]
 
 [tools."npm:renovate".options]
 trust_policy_excludes = '["@yarnpkg/libzip@3.2.2"]'
