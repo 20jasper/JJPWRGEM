@@ -31,6 +31,13 @@ impl PositionEncoding {
         if offers_utf8 { Self::Utf8 } else { Self::Utf16 }
     }
 
+    pub fn name(self) -> &'static str {
+        match self {
+            Self::Utf8 => "utf-8",
+            Self::Utf16 => "utf-16",
+        }
+    }
+
     pub fn advertised(self) -> Option<PositionEncodingKind> {
         match self {
             Self::Utf8 => Some(PositionEncodingKind::UTF8),

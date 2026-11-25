@@ -26,6 +26,19 @@ impl<S: Sink> Backend<S> {
         }
     }
 
+    pub(super) fn initialized(&mut self) {
+        let diagnostics = if self.client_pulls_diagnostics {
+            "pull"
+        } else {
+            "push"
+        };
+        self.info(format!(
+            "{SOURCE} {} started (position encoding {}, {diagnostics} diagnostics)",
+            env!("CARGO_PKG_VERSION"),
+            self.position_encoding.name(),
+        ));
+    }
+
     pub(super) fn initialize(&mut self, params: InitializeParams) -> InitializeResult {
         self.lifecycle = Lifecycle::Running;
         self.position_encoding = PositionEncoding::negotiate(&params.capabilities);

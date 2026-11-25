@@ -38,6 +38,24 @@ fn initialize_reports_the_server_and_shutdown_exits_cleanly() -> TestResult {
 }
 
 #[test]
+fn startup_logs_the_version_and_client_setup() -> TestResult {
+    let mut command = Command::new(env!("CARGO_BIN_EXE_jjp"));
+    command.arg("lsp");
+    let mut client = Client::spawn(command)?.with_timeout(TIMEOUT);
+
+    let result = client.initialize(capabilities::vscode::latest())?;
+    let log = client.wait_for_notification::<LogMessageNotification>()?;
+
+    let version = result.server_info.and_then(|info| info.version).unwrap();
+    assert_eq!(log.kind, MessageType::Info);
+    assert_eq!(
+        log.message,
+        format!("jjpwrgem {version} started (position encoding utf-16, pull diagnostics)")
+    );
+    Ok(())
+}
+
+#[test]
 fn valid_json_has_no_diagnostics() -> TestResult {
     let mut client = client(capabilities::vscode::latest)?;
     let uri = open(&mut client, r#"{"a": 1}"#)?;
