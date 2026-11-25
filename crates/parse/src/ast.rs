@@ -48,6 +48,14 @@ pub enum Value {
 }
 
 impl Value {
+    pub fn is_container(&self) -> bool {
+        matches!(self, Self::Object(..) | Self::Array(..))
+    }
+
+    pub fn is_primitive(&self) -> bool {
+        !self.is_container()
+    }
+
     pub fn range(&self) -> Range<usize> {
         match self {
             Value::Null(r)
