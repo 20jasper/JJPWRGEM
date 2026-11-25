@@ -146,28 +146,54 @@ mod tests {
         );
     }
 
-    #[test]
-    fn selection_chain_for_nested_object_key() {
-        let document = parse(r#"{"a":{"b":2}}"#);
-        let selection =
-            selection_ranges(&document, PositionEncoding::Utf16, &[Position::new(0, 7)]).remove(0);
+    fn range((sl, sc): (u32, u32), (el, ec): (u32, u32)) -> Range {
+        Range::new(Position::new(sl, sc), Position::new(el, ec))
+    }
 
-        let chain: Vec<_> =
-            std::iter::successors(Some(&selection), |selection| selection.parent.as_deref())
-                .map(|selection| selection.range)
-                .collect();
+    /// ranges from innermost to outermost at `position`
+    fn selection_chain(text: &str, position: Position) -> Vec<Range> {
+        let document = parse(text);
+        let selection = selection_ranges(&document, PositionEncoding::Utf16, &[position]).remove(0);
+        std::iter::successors(Some(&selection), |selection| selection.parent.as_deref())
+            .map(|selection| selection.range)
+            .collect()
+    }
 
-        let line_range = |start, end| Range::new(Position::new(0, start), Position::new(0, end));
+    #[rstest]
+    #[case(
+        r#"{"a":{"b":2}}"#,
+        (0, 7),
+        vec![
+            range((0, 7), (0, 8)),
+            range((0, 6), (0, 9)),
+            range((0, 6), (0, 11)),
+            range((0, 5), (0, 12)),
+            range((0, 1), (0, 12)),
+            range((0, 0), (0, 13)),
+        ],
+    )]
+    #[case(
+        "{\n  \"a\": {\n    \"b\": 2\n  }\n}",
+        (2, 5),
+        vec![
+            range((2, 5), (2, 6)),
+            range((2, 4), (2, 7)),
+            range((2, 4), (2, 10)),
+            range((1, 8), (3, 2)),
+            range((1, 7), (3, 3)),
+            range((1, 2), (3, 3)),
+            range((0, 1), (4, 0)),
+            range((0, 0), (4, 1)),
+        ],
+    )]
+    fn selection_chain_for_nested_object_key(
+        #[case] text: &str,
+        #[case] (line, character): (u32, u32),
+        #[case] expected: Vec<Range>,
+    ) {
         assert_eq!(
-            chain,
-            [
-                line_range(7, 8),
-                line_range(6, 9),
-                line_range(6, 11),
-                line_range(5, 12),
-                line_range(1, 12),
-                line_range(0, 13),
-            ]
+            selection_chain(text, Position::new(line, character)),
+            expected
         );
     }
 }
