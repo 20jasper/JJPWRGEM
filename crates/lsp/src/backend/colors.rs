@@ -62,13 +62,9 @@ fn channel(c: f32) -> u8 {
 }
 
 fn color_label(color: Color) -> String {
-    let (r, g, b) = (
-        channel(color.red),
-        channel(color.green),
-        channel(color.blue),
-    );
-    if color.alpha < 1.0 {
-        format!("#{r:02x}{g:02x}{b:02x}{:02x}", channel(color.alpha))
+    let [r, g, b, a] = [color.red, color.green, color.blue, color.alpha].map(channel);
+    if a < 255 {
+        format!("#{r:02x}{g:02x}{b:02x}{a:02x}")
     } else {
         format!("#{r:02x}{g:02x}{b:02x}")
     }
@@ -130,6 +126,7 @@ mod tests {
 
     #[rstest]
     #[case::opaque(Color { red: 1.0, green: 0.0, blue: 0.0, alpha: 1.0 }, "#ff0000")]
+    #[case::nearly_opaque(Color { red: 1.0, green: 0.0, blue: 0.0, alpha: 0.999 }, "#ff0000")]
     #[case::translucent(Color { red: 0.0, green: 1.0, blue: 0.0, alpha: 0.5 }, "#00ff0080")]
     #[case::rounding(Color { red: 0.5, green: 0.001, blue: 0.999, alpha: 1.0 }, "#8000ff")]
     fn labels_colors(#[case] color: Color, #[case] expected: &str) {
