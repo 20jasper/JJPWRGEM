@@ -34,7 +34,7 @@ impl Default for Server {
 impl Server {
     pub fn new() -> Self {
         Self {
-            backend: Backend::new(Writer::new(Collected::default())),
+            backend: Backend::new(Writer::new(Collected::default()), env!("CARGO_PKG_VERSION")),
         }
     }
 

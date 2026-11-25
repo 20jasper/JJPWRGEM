@@ -14,6 +14,10 @@ impl<S: Sink> Backend<S> {
         self.log_message(MessageType::Warning, message);
     }
 
+    pub(super) fn info(&mut self, message: impl Into<String>) {
+        self.log_message(MessageType::Info, message);
+    }
+
     fn log_message(&mut self, kind: MessageType, message: impl Into<String>) {
         self.out.notify::<LogMessageNotification>(LogMessageParams {
             kind,
