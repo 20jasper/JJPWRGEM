@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## 0.8.0 — 2026-11-25
+
+### Added
+
+- [5f75684](https://github.com/20jasper/JJPWRGEM/commit/5f756844c645a5fc1d9a80a2d1e8aa938f9712e3) support jsonc diagnostics.
+- [e42c731](https://github.com/20jasper/JJPWRGEM/commit/e42c731a9029f960e542fd08818364d974768e8c) add selection ranges.
+- [1c5ede9](https://github.com/20jasper/JJPWRGEM/commit/1c5ede9e616fb6ce8171dcd03d5028c3a6ae3f6c) check jsonc with `--parser jsonc`.
+
+### Fixed
+
+- [12cb8b9](https://github.com/20jasper/JJPWRGEM/commit/12cb8b9ca8029fb8af523de05201284919430a0d) list correct jjp binary version on startup.
+
+### Changed
+
+- [9385563](https://github.com/20jasper/JJPWRGEM/commit/93855636e62d98e62904a4ecaec8466ccae86cdb) explain that comments are not allowed in json and suggest removing them.
+
 ## 0.7.8 — 2026-11-21
 
 ### Performance

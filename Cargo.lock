@@ -1040,7 +1040,7 @@ checksum = "3bd1574e617a9a6c1f8f8181bd7e841e1f20e4277607ef28945765188d6284d4"
 
 [[package]]
 name = "jjpwrgem"
-version = "0.7.8"
+version = "0.8.0"
 dependencies = [
  "anstream",
  "bytes2chars",
@@ -1063,7 +1063,7 @@ dependencies = [
 
 [[package]]
 name = "jjpwrgem-lsp"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "gen-lsp-types",
  "itertools 0.15.0",
@@ -1078,7 +1078,7 @@ dependencies = [
 
 [[package]]
 name = "jjpwrgem-parse"
-version = "0.14.4"
+version = "0.15.0"
 dependencies = [
  "bon",
  "bytes2chars",
@@ -1094,7 +1094,7 @@ dependencies = [
 
 [[package]]
 name = "jjpwrgem-schema"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "displaydoc",
  "jjpwrgem-parse",
@@ -1103,7 +1103,7 @@ dependencies = [
 
 [[package]]
 name = "jjpwrgem-ui"
-version = "0.3.3"
+version = "0.3.4"
 dependencies = [
  "annotate-snippets",
  "jjpwrgem-parse",

@@ -1,5 +1,9 @@
 # jjpwrgem-schema
 
+## 0.1.2 — 2026-11-25
+
+Version bump only, to follow other packages.
+
 ## 0.1.1 — 2026-11-17
 
 ### Fixed
