@@ -1,7 +1,5 @@
 #![feature(new_range)]
 
-use core::default;
-
 use jjpwrgem_parse::ast::Document;
 
 mod error {
@@ -36,7 +34,7 @@ mod error {
 
 use error::{Error, Result};
 
-use crate::primitive::{schema_as_primitive, value_as_primitive};
+use crate::primitive::{type_as_primitive, value_as_primitive};
 
 mod primitive {
 
@@ -44,7 +42,7 @@ mod primitive {
 
     use jjpwrgem_parse::ast::{Document, Value};
 
-    use crate::{Schema, Type};
+    use crate::Type;
 
     // r[json-schema-v7.type.primitive]
     #[derive(Debug, PartialEq, Eq, Clone, Copy)]
@@ -105,8 +103,8 @@ mod primitive {
         }
     }
 
-    pub fn schema_as_primitive(schema: &Schema) -> PrimitiveType {
-        match &schema.type_ {
+    pub fn type_as_primitive(ty: &Type) -> PrimitiveType {
+        match ty {
             Type::Bool => PrimitiveType::Boolean,
             Type::String => PrimitiveType::String,
             Type::Null => PrimitiveType::Null,
@@ -119,51 +117,43 @@ mod primitive {
 }
 
 pub fn validate<S: AsRef<str>>(doc: &Document<S>, schema: &Schema) -> Result<()> {
-    let actual = value_as_primitive(doc.root(), doc);
-    let expected = schema_as_primitive(schema);
+    let Some(ty) = &schema.types else {
+        return Ok(());
+    };
 
-    if !actual.is_subset(expected) {
+    let actual = value_as_primitive(doc.root(), doc);
+    let expected = type_as_primitive(ty);
+
+    if actual.is_subset(expected) {
+        Ok(())
+    } else {
         let range = doc.root().range();
         Err(Error::MismatchedTypes {
             range,
             expected,
             actual,
         })
-    } else {
-        Ok(())
     }
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Default, PartialEq, Eq)]
 pub struct Schema {
-    type_: Type,
     title: Option<String>,
     description: Option<String>,
+    types: Option<Type>,
 }
 
 impl Schema {
-    pub fn new(type_: Type, title: Option<String>, description: Option<String>) -> Self {
+    fn type_(type_: Type) -> Self {
         Self {
-            type_,
-            title,
-            description,
+            types: Some(type_),
+            ..Self::default()
         }
     }
 
-    pub fn type_(type_: Type) -> Self {
-        Self {
-            type_,
-            title: None,
-            description: None,
-        }
+    pub fn parse<S: AsRef<str>>(_doc: &Document<S>) -> Result<Self> {
+        todo!()
     }
-
-    // // todo maybe generic?
-    // // todo special case raw bits
-    // pub fn parse(doc: Document<String>) -> Self {
-    //     let val = doc.root();
-
-    // }
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -234,5 +224,38 @@ mod tests {
     fn it_doesnt_work(#[case] json: &str, #[case] schema: Schema) {
         let doc = Document::parse(json, SyntaxOptions::JSON).unwrap();
         assert!(validate(&doc, &schema).is_err());
+    }
+
+    fn parse_schema(json: &str) -> Result<Schema> {
+        let doc = Document::parse(json.to_string(), SyntaxOptions::JSON).unwrap();
+        Schema::parse(&doc)
+    }
+
+    #[test]
+    fn parse_empty_object_has_no_constraints() {
+        assert_eq!(parse_schema("{}"), Ok(Schema::default()));
+    }
+
+    #[rstest::rstest]
+    #[case("123")]
+    #[case(r#""text""#)]
+    #[case("null")]
+    #[case("[1,2]")]
+    fn empty_schema_accepts_any_value(#[case] json: &str) {
+        let schema = parse_schema("{}").unwrap();
+        let doc = Document::parse(json, SyntaxOptions::JSON).unwrap();
+        assert!(validate(&doc, &schema).is_ok());
+    }
+
+    #[test]
+    fn parse_title_and_description() {
+        assert_eq!(
+            parse_schema(r#"{"title": "Port", "description": "TCP port"}"#),
+            Ok(Schema {
+                title: Some("Port".to_string()),
+                description: Some("TCP port".to_string()),
+                types: None,
+            })
+        );
     }
 }
