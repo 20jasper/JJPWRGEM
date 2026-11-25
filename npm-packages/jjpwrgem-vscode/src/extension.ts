@@ -16,16 +16,8 @@ let client: LanguageClient;
 export function activate(context: vscode.ExtensionContext): {
   whenReady: Promise<void>;
 } {
-  const configuredPath = getSetting("jjpwrgem.path").trim();
-  const inspected = vscode.workspace
-    .getConfiguration()
-    .inspect<string>("jjpwrgem.path");
-  const custom = [
-    inspected?.globalValue,
-    inspected?.workspaceValue,
-    inspected?.workspaceFolderValue,
-  ].some((value) => value?.trim());
-  const command = configuredPath || "jjp";
+  const command = getSetting("jjpwrgem.path").trim() || "jjp";
+  const custom = command !== "jjp";
   const serverOptions: ServerOptions = {
     command,
     args: ["lsp"],

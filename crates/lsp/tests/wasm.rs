@@ -15,7 +15,7 @@ fn message(id: Option<u64>, method: &str, params: Value) -> String {
 }
 
 fn open(text: &str) -> Server {
-    let mut server = Server::new("0.0.0");
+    let mut server = Server::new();
     server.handle(&message(
         Some(1),
         "initialize",

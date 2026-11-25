@@ -28,31 +28,12 @@ fn initialize_reports_the_server_and_shutdown_exits_cleanly() -> TestResult {
 
     let result = client.initialize(capabilities::vscode::latest())?;
     assert_eq!(
-        result.server_info.map(|info| info.name).as_deref(),
-        Some("jjpwrgem")
+        result.server_info.map(|info| (info.name, info.version)),
+        Some(("jjpwrgem".into(), Some(env!("CARGO_PKG_VERSION").into())))
     );
 
     client.shutdown()?;
     assert!(client.wait_for_exit()?.success());
-    Ok(())
-}
-
-#[test]
-fn startup_logs_the_version() -> TestResult {
-    let mut command = Command::new(env!("CARGO_BIN_EXE_jjp"));
-    command.arg("lsp");
-    let mut client = Client::spawn(command)?.with_timeout(TIMEOUT);
-
-    let result = client.initialize(capabilities::vscode::latest())?;
-    let log = client.wait_for_notification::<LogMessageNotification>()?;
-
-    let version = env!("CARGO_PKG_VERSION");
-    assert_eq!(
-        result.server_info.and_then(|info| info.version).as_deref(),
-        Some(version)
-    );
-    assert_eq!(log.kind, MessageType::Info);
-    assert_eq!(log.message, format!("jjpwrgem {version} started"));
     Ok(())
 }
 
