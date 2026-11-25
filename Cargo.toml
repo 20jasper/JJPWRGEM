@@ -49,7 +49,6 @@ members = [
   "crates/json-schema",
   "crates/lspresso",
 ]
-exclude = ["fuzz"]
 
 [workspace.dependencies]
 jjpwrgem-parse = { path = "crates/parse", version = "0.14" }

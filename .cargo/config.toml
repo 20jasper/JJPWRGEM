@@ -5,3 +5,7 @@ xtask = "run -p xtask -q --"
 # wasm simd128 is supported by Chrome, Firefox and Node since 2021 and Safari since 2023
 rustflags = ["-C", "target-feature=+simd128"]
 runner = "wasm-bindgen-test-runner"
+
+[resolver]
+# bytes2chars lowers version unnecessarily and is only a lib so doesn't matter
+incompatible-rust-versions = "allow"

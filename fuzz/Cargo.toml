@@ -25,3 +25,5 @@ path = "fuzz_targets/cli_check.rs"
 test = false
 doc = false
 bench = false
+
+[workspace]
