@@ -95,6 +95,13 @@ impl<S: Sink> Backend<S> {
                 LspRequestMethod::TextDocumentFoldingRange => {
                     self.respond::<FoldingRangeRequest>(id, params, Self::folding_range)
                 }
+                LspRequestMethod::TextDocumentDocumentColor => {
+                    self.respond::<DocumentColorRequest>(id, params, Self::document_color)
+                }
+                LspRequestMethod::TextDocumentColorPresentation => self
+                    .respond::<ColorPresentationRequest>(id, params, |_, params| {
+                        super::colors::color_presentation(params)
+                    }),
                 LspRequestMethod::TextDocumentSelectionRange => {
                     self.respond::<SelectionRangeRequest>(id, params, Self::selection_range)
                 }

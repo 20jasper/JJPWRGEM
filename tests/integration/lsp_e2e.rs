@@ -468,6 +468,41 @@ fn folding_ranges_are_none_for_invalid_json() -> TestResult {
 }
 
 #[test]
+fn document_colors_find_hex_string_values_but_not_keys() -> TestResult {
+    let mut client = client(capabilities::vscode::latest)?;
+    let uri = open(
+        &mut client,
+        r##"{"a": "#ff0000", "b": ["#0f08"], "#00f": 1}"##,
+    )?;
+
+    let range = |start, end| Range {
+        start: Position::new(0, start),
+        end: Position::new(0, end),
+    };
+    let red = Color::new(1.0, 0.0, 0.0, 1.0);
+    let green = Color::new(0.0, 1.0, 0.0, 136.0 / 255.0);
+    assert_eq!(
+        client.document_color(&uri)?,
+        vec![
+            ColorInformation::new(range(7, 14), red),
+            ColorInformation::new(range(24, 29), green),
+        ]
+    );
+
+    let presentations = client.color_presentation(&uri, green, range(24, 29))?;
+    assert_eq!(presentations.len(), 1);
+    assert_eq!(presentations[0].label, "#00ff0088");
+    assert_eq!(
+        presentations[0].text_edit,
+        Some(TextEdit {
+            range: range(24, 29),
+            new_text: "#00ff0088".into(),
+        })
+    );
+    Ok(())
+}
+
+#[test]
 fn selection_ranges_return_one_chain_per_position() -> TestResult {
     let mut client = client(capabilities::vscode::latest)?;
     let uri = open(&mut client, r#"[10, "x"]"#)?;

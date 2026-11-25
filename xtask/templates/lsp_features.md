@@ -5,6 +5,7 @@ LSP providing
 - formatting
 - document symbols
 - folding ranges
+- document colors
 - selection ranges
 
 Scales well for large files. There is no perceivable delay when editing a 68k line, 5MB file. Diagnostics, code actions, and formatting take around 20ms
