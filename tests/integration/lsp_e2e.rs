@@ -467,6 +467,26 @@ fn folding_ranges_are_none_for_invalid_json() -> TestResult {
     Ok(())
 }
 
+#[test]
+fn selection_ranges_return_one_chain_per_position() -> TestResult {
+    let mut client = client(capabilities::vscode::latest)?;
+    let uri = open(&mut client, r#"[10, "x"]"#)?;
+
+    let chains = client
+        .selection_range(&uri, vec![Position::new(0, 6), Position::new(0, 1)])?
+        .ok_or("expected selection ranges")?;
+
+    let innermost: Vec<Range> = chains.iter().map(|chain| chain.range).collect();
+    assert_eq!(
+        innermost,
+        vec![
+            Range::new(Position::new(0, 6), Position::new(0, 7)),
+            Range::new(Position::new(0, 1), Position::new(0, 3)),
+        ]
+    );
+    Ok(())
+}
+
 const SETTINGS_INPUT: &str = r#"{"a":[1,2]}"#;
 
 fn configured_client(options: Option<serde_json::Value>) -> TestResult<Client> {

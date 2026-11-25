@@ -55,6 +55,7 @@ impl<S: Sink> Backend<S> {
                 code_action_provider: Some(true.into()),
                 document_symbol_provider: Some(true.into()),
                 folding_range_provider: Some(true.into()),
+                selection_range_provider: Some(true.into()),
                 diagnostic_provider: Some(DiagnosticProvider::DiagnosticOptions(
                     DiagnosticOptions {
                         identifier: Some(SOURCE.into()),

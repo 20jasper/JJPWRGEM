@@ -95,6 +95,9 @@ impl<S: Sink> Backend<S> {
                 LspRequestMethod::TextDocumentFoldingRange => {
                     self.respond::<FoldingRangeRequest>(id, params, Self::folding_range)
                 }
+                LspRequestMethod::TextDocumentSelectionRange => {
+                    self.respond::<SelectionRangeRequest>(id, params, Self::selection_range)
+                }
                 method => self.out.fail(
                     id,
                     ErrorCodes::MethodNotFound,
