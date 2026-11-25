@@ -70,9 +70,6 @@
       "outFiles": [
         "${workspaceFolder}/npm-packages/jjpwrgem-vscode/dist/**/*.js"
       ],
-      "env": {
-        "PATH": "${workspaceFolder}/target/debug:${env:PATH}"
-      },
       "preLaunchTask": "build dev host"
     }
   ]
