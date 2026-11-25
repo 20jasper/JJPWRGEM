@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## 0.15.0 — 2026-11-25
+
+### Changed
+
+- [a103b5c](https://github.com/20jasper/JJPWRGEM/commit/a103b5c649d66af6250539d010f204b3004a6c0f) `Document::parse` and `validate_str` now take `SyntaxOptions`, which can allow trailing commas. `SyntaxOptions::JSON` keeps strict json.
+- [9385563](https://github.com/20jasper/JJPWRGEM/commit/93855636e62d98e62904a4ecaec8466ccae86cdb) explain that comments are not allowed in json and suggest removing them.
+
+### Added
+
+- [e42c731](https://github.com/20jasper/JJPWRGEM/commit/e42c731a9029f960e542fd08818364d974768e8c) add `Value::is_container` and `Value::is_primitive`
+- [d2939b8](https://github.com/20jasper/JJPWRGEM/commit/d2939b870a7a87b2ffda342c7cc363f797736493) accept `/* */` block comments with `SyntaxOptions::JSONC`.
+- [1c5ede9](https://github.com/20jasper/JJPWRGEM/commit/1c5ede9e616fb6ce8171dcd03d5028c3a6ae3f6c) check jsonc with `--parser jsonc`.
+- [e42c731](https://github.com/20jasper/JJPWRGEM/commit/e42c731a9029f960e542fd08818364d974768e8c) add `Value::child_at` and `Value::path_at`
+- [9385563](https://github.com/20jasper/JJPWRGEM/commit/93855636e62d98e62904a4ecaec8466ccae86cdb) add `SyntaxOptions::comments` and `SyntaxOptions::JSONC` to accept `//` line comments.
+
 ## 0.14.4 — 2026-11-17
 
 ### Added
