@@ -2,7 +2,7 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Run JJPWRGEM VS Code Extension",
+      "name": "Extension",
       "presentation": {
         "group": "JJPWRGEM",
         "order": 1
@@ -26,7 +26,7 @@
       "preLaunchTask": "build dev host"
     },
     {
-      "name": "Run JJPWRGEM VS Code Extension (Dev Profile)",
+      "name": "Extension (profile)",
       "presentation": {
         "group": "JJPWRGEM",
         "order": 2
@@ -52,7 +52,7 @@
       "preLaunchTask": "build dev host"
     },
     {
-      "name": "Run JJPWRGEM VS Code Extension (WSL, Dev Profile)",
+      "name": "Extension (WSL, profile)",
       "presentation": {
         "group": "JJPWRGEM",
         "order": 3
