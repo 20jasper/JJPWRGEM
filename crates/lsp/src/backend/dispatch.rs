@@ -122,6 +122,7 @@ impl<S: Sink> Backend<S> {
             return;
         }
         match LspNotificationMethod::from(method) {
+            LspNotificationMethod::Initialized => self.initialized(),
             LspNotificationMethod::TextDocumentDidOpen => {
                 self.notify(params, Self::did_open);
             }

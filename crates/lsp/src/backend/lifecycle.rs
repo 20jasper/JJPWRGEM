@@ -26,6 +26,10 @@ impl<S: Sink> Backend<S> {
         }
     }
 
+    pub(super) fn initialized(&mut self) {
+        self.info(format!("{SOURCE} {} started", self.version));
+    }
+
     pub(super) fn initialize(&mut self, params: InitializeParams) -> InitializeResult {
         self.lifecycle = Lifecycle::Running;
         self.position_encoding = PositionEncoding::negotiate(&params.capabilities);
@@ -38,7 +42,7 @@ impl<S: Sink> Backend<S> {
         InitializeResult {
             server_info: Some(ServerInfo {
                 name: SOURCE.into(),
-                version: Some(env!("CARGO_PKG_VERSION").into()),
+                version: Some(self.version.into()),
             }),
             capabilities: ServerCapabilities {
                 position_encoding,

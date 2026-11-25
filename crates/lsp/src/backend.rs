@@ -44,10 +44,11 @@ pub struct Backend<S> {
     position_encoding: PositionEncoding,
     client_pulls_diagnostics: bool,
     format: FormatSettings,
+    version: &'static str,
 }
 
 impl<S: Sink> Backend<S> {
-    pub fn new(out: Writer<S>) -> Self {
+    pub fn new(out: Writer<S>, version: &'static str) -> Self {
         Self {
             out,
             outgoing: Outgoing::new(),
@@ -56,6 +57,7 @@ impl<S: Sink> Backend<S> {
             position_encoding: PositionEncoding::Utf16,
             client_pulls_diagnostics: false,
             format: FormatSettings::default(),
+            version,
         }
     }
 

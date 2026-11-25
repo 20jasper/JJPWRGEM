@@ -28,8 +28,8 @@ fn initialize_reports_the_server_and_shutdown_exits_cleanly() -> TestResult {
 
     let result = client.initialize(capabilities::vscode::latest())?;
     assert_eq!(
-        result.server_info.map(|info| info.name).as_deref(),
-        Some("jjpwrgem")
+        result.server_info.map(|info| (info.name, info.version)),
+        Some(("jjpwrgem".into(), Some(env!("CARGO_PKG_VERSION").into())))
     );
 
     client.shutdown()?;

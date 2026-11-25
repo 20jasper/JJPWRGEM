@@ -30,7 +30,7 @@ fn main() -> ExitCode {
     let style = Style::Pretty(Color::Plain);
 
     match commands::parse() {
-        Action::Lsp => match lsp::run_blocking() {
+        Action::Lsp => match lsp::run_blocking(env!("CARGO_PKG_VERSION")) {
             Ok(code) => code,
             Err(error) => {
                 anstream::eprintln!("jjp lsp: {error}");
