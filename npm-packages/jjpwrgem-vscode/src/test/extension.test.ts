@@ -5,7 +5,12 @@ import {
   INSTALL_ACTION,
   SETTINGS_ACTION,
 } from "../startError";
-import { activateExtension, formatDocument, withTempFile } from "./helpers";
+import {
+  activateExtension,
+  formatDocument,
+  jjpwrgemDiagnostics,
+  withTempFile,
+} from "./helpers";
 
 suite("Extension Smoke Tests", function () {
   this.timeout(15000);
@@ -52,29 +57,7 @@ suite("Extension Smoke Tests", function () {
       await vscode.window.showTextDocument(doc);
       assert.strictEqual(doc.languageId, "jsonc");
 
-      const jjpDiagnostics = () =>
-        vscode.languages
-          .getDiagnostics(uri)
-          .filter((d) => d.source === "jjpwrgem");
-
-      const diagnostics = await new Promise<vscode.Diagnostic[]>(
-        (resolve, reject) => {
-          const check = () => {
-            const found = jjpDiagnostics();
-            if (found.length > 0) {
-              clearTimeout(timer);
-              subscription.dispose();
-              resolve(found);
-            }
-          };
-          const timer = setTimeout(() => {
-            subscription.dispose();
-            reject(new Error("no jjpwrgem diagnostics"));
-          }, 10000);
-          const subscription = vscode.languages.onDidChangeDiagnostics(check);
-          check();
-        },
-      );
+      const diagnostics = await jjpwrgemDiagnostics(uri);
 
       assert.deepStrictEqual(
         diagnostics.map((d) => d.message),

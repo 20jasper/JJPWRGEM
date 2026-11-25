@@ -41,3 +41,28 @@ export async function formatDocument(
   });
   return edits ?? [];
 }
+
+export function jjpwrgemDiagnostics(
+  uri: vscode.Uri,
+  timeoutMs = 10000,
+): Promise<vscode.Diagnostic[]> {
+  return new Promise((resolve, reject) => {
+    const subscription = vscode.languages.onDidChangeDiagnostics(check);
+    const timer = setTimeout(() => {
+      subscription.dispose();
+      reject(new Error("no jjpwrgem diagnostics"));
+    }, timeoutMs);
+
+    function check() {
+      const found = vscode.languages
+        .getDiagnostics(uri)
+        .filter((d) => d.source === "jjpwrgem");
+      if (found.length > 0) {
+        clearTimeout(timer);
+        subscription.dispose();
+        resolve(found);
+      }
+    }
+    check();
+  });
+}
