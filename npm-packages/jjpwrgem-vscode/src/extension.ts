@@ -35,25 +35,25 @@ export function activate(context: vscode.ExtensionContext): {
   );
 
   context.subscriptions.push(client);
-  return {
-    whenReady: client.start().catch((error: unknown) => {
-      vscode.window
-        .showErrorMessage(
-          "Could not start the LSP server. Is `jjp` installed and on your PATH?",
-          "Installation instructions",
-        )
-        .then((action) => {
-          if (action === "Installation instructions") {
-            void vscode.env.openExternal(
-              vscode.Uri.parse(
-                "https://github.com/20jasper/jjpwrgem#installation",
-              ),
-            );
-          }
-        });
-      throw error;
-    }),
-  };
+  const whenReady = client.start().catch((error: unknown) => {
+    vscode.window
+      .showErrorMessage(
+        "Could not start the LSP server. Is `jjp` installed and on your PATH?",
+        "Installation instructions",
+      )
+      .then((action) => {
+        if (action === "Installation instructions") {
+          void vscode.env.openExternal(
+            vscode.Uri.parse(
+              "https://github.com/20jasper/jjpwrgem#installation",
+            ),
+          );
+        }
+      });
+    throw error;
+  });
+  whenReady.catch(() => undefined);
+  return { whenReady };
 }
 
 export function deactivate(): Thenable<void> | undefined {
