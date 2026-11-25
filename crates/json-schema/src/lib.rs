@@ -1,132 +1,12 @@
 #![feature(new_range)]
 
-use jjpwrgem_parse::ast::{Document, ObjectEntries};
-
-mod error {
-    use core::range::Range;
-
-    use displaydoc::Display;
-
-    use crate::{error::Error::FalseRoot, primitive::PrimitiveType};
-
-    #[derive(Debug, Display, PartialEq, Eq, Clone)]
-    pub enum Error {
-        /// mismatched types. expected {expected} but found {actual}
-        MismatchedTypes {
-            range: Range<usize>,
-            expected: PrimitiveType,
-            actual: PrimitiveType,
-        },
-        /// schema root must be a boolean or object. found {found}
-        InvalidSchemaRoot {
-            range: Range<usize>,
-            found: PrimitiveType,
-        },
-        /// a literal `false` always fails to validate
-        FalseRoot { range: Range<usize> },
-        /// invalid type {found}
-        InvalidType { range: Range<usize>, found: String },
-    }
-
-    impl Error {
-        pub fn range(&self) -> &Range<usize> {
-            match self {
-                Error::MismatchedTypes { range, .. }
-                | Error::InvalidSchemaRoot { range, .. }
-                | Error::InvalidType { range, .. }
-                | FalseRoot { range } => range,
-            }
-        }
-    }
-
-    impl std::error::Error for Error {}
-
-    pub type Result<T> = std::result::Result<T, Error>;
-}
+mod error;
+mod primitive;
 
 use error::{Error, Result};
+use jjpwrgem_parse::ast::{Document, ObjectEntries};
 
 use crate::primitive::{type_as_primitive, value_as_primitive};
-
-mod primitive {
-
-    use std::fmt;
-
-    use jjpwrgem_parse::ast::{Document, Value};
-
-    use crate::Type;
-
-    // r[json-schema-v7.type.primitive]
-    #[derive(Debug, PartialEq, Eq, Clone, Copy)]
-    pub enum PrimitiveType {
-        Null,
-        Boolean,
-        String,
-        Number,
-        Integer,
-        Array,
-        Object,
-    }
-
-    impl PrimitiveType {
-        // r[json-schema-v7.type.integer-subset]
-        pub fn is_subset(self, superset: PrimitiveType) -> bool {
-            match (self, superset) {
-                (PrimitiveType::Integer, PrimitiveType::Number) => true,
-                (lhs, rhs) => lhs == rhs,
-            }
-        }
-    }
-
-    impl fmt::Display for PrimitiveType {
-        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-            let name = match self {
-                PrimitiveType::Null => "null",
-                PrimitiveType::Boolean => "boolean",
-                PrimitiveType::String => "string",
-                PrimitiveType::Number => "number",
-                PrimitiveType::Integer => "integer",
-                PrimitiveType::Array => "array",
-                PrimitiveType::Object => "object",
-            };
-            write!(f, "{name}")
-        }
-    }
-
-    pub fn value_as_primitive<S: AsRef<str>>(value: &Value, doc: &Document<S>) -> PrimitiveType {
-        match value {
-            Value::Null(_) => PrimitiveType::Null,
-            Value::Boolean(_, _) => PrimitiveType::Boolean,
-            Value::String(_) => PrimitiveType::String,
-            Value::Number { mantissa, .. } => {
-                // "integer" which matches any number with a zero fractional part
-                // https://json-schema.org/draft-07/draft-handrews-json-schema-validation-01#rfc.section.6.1.1
-                let s = doc.slice(*mantissa);
-                if s.find('.')
-                    .is_none_or(|i| s[i + 1..].chars().all(|c| c == '0'))
-                {
-                    PrimitiveType::Integer
-                } else {
-                    PrimitiveType::Number
-                }
-            }
-            Value::Array(_, _) => PrimitiveType::Array,
-            Value::Object(_, _) => PrimitiveType::Object,
-        }
-    }
-
-    pub fn type_as_primitive(ty: &Type) -> PrimitiveType {
-        match ty {
-            Type::Bool => PrimitiveType::Boolean,
-            Type::String => PrimitiveType::String,
-            Type::Null => PrimitiveType::Null,
-            Type::Object => PrimitiveType::Object,
-            Type::Array => PrimitiveType::Array,
-            Type::Number => PrimitiveType::Number,
-            Type::Integer => PrimitiveType::Integer,
-        }
-    }
-}
 
 pub fn validate<S: AsRef<str>>(doc: &Document<S>, schema: &Schema) -> Result<()> {
     match schema {
@@ -178,34 +58,33 @@ mod keyword {
 impl ObjectSchema {
     fn parse<S: AsRef<str>>(doc: &Document<S>, entries: &ObjectEntries) -> Result<Self> {
         Ok(Self {
-            title: string_keyword(doc, entries, keyword::TITLE),
-            description: string_keyword(doc, entries, keyword::DESCRIPTION),
+            title: string_keyword(doc, entries, keyword::TITLE).map(ToOwned::to_owned),
+            description: string_keyword(doc, entries, keyword::DESCRIPTION).map(ToOwned::to_owned),
             types: type_keyword(doc, entries)?,
         })
     }
 }
 
-fn string_keyword<S: AsRef<str>>(
-    doc: &Document<S>,
+fn string_keyword<'a, S: AsRef<str>>(
+    doc: &'a Document<S>,
     entries: &ObjectEntries,
     key: &str,
-) -> Option<String> {
+) -> Option<&'a str> {
     doc.get_object_value(entries, key)
         .and_then(|value| doc.as_str(value))
-        .map(ToOwned::to_owned)
 }
 
 fn type_keyword<S: AsRef<str>>(doc: &Document<S>, entries: &ObjectEntries) -> Result<Option<Type>> {
-    doc.get_object_value(entries, keyword::TYPE)
-        .map(|value| {
-            doc.as_str(value)
-                .and_then(Type::from_name)
-                .ok_or_else(|| Error::InvalidType {
-                    range: value.span(),
-                    found: doc.slice(value.span()).to_owned(),
-                })
+    let Some(value) = doc.get_object_value(entries, keyword::TYPE) else {
+        return Ok(None);
+    };
+    doc.as_str(value)
+        .and_then(Type::from_name)
+        .map(Some)
+        .ok_or_else(|| Error::InvalidType {
+            range: value.span(),
+            found: doc.slice(value.span()).to_owned(),
         })
-        .transpose()
 }
 
 impl Schema {
