@@ -1,10 +1,8 @@
 import * as assert from "assert";
 import * as vscode from "vscode";
-import * as fs from "fs";
-import * as os from "os";
-import * as path from "path";
 import { spawnSync } from "child_process";
 import { type SettingKey } from "../settings";
+import { activateExtension, formatDocument, withTempFile } from "./helpers";
 
 const pathSetting = "jjpwrgem.path" satisfies SettingKey;
 
@@ -18,24 +16,17 @@ suite("Custom jjpwrgem.path", function () {
       vscode.workspace.getConfiguration().get(pathSetting),
       process.env.JJPWRGEM_TEST_CUSTOM_PATH,
     );
+    await activateExtension();
 
-    const extension = vscode.extensions.getExtension<{
-      whenReady: Promise<void>;
-    }>("20jasper.jjpwrgem-vscode")!;
-    await extension.activate();
-    await extension.exports.whenReady;
-
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "jjpwrgem-smoke-"));
-    const file = path.join(dir, "smoke.json");
-    fs.writeFileSync(file, `{"foo":"bar"}`);
-
-    const edits = await vscode.commands.executeCommand<vscode.TextEdit[]>(
-      "vscode.executeFormatDocumentProvider",
-      vscode.Uri.file(file),
-      { tabSize: 2, insertSpaces: true },
+    const edits = await withTempFile(
+      "smoke.json",
+      `{"foo":"bar"}`,
+      formatDocument,
     );
-    assert.ok(edits?.length, "no formatting edits");
 
-    fs.rmSync(dir, { recursive: true, force: true });
+    assert.deepStrictEqual(
+      edits.map((edit) => edit.newText.trim()),
+      ['{ "foo": "bar" }'],
+    );
   });
 });

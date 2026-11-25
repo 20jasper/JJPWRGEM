@@ -1,181 +1,136 @@
 import * as assert from "assert";
 import * as vscode from "vscode";
-import * as fs from "fs";
-import * as os from "os";
-import * as path from "path";
 import {
   describeStartError,
   INSTALL_ACTION,
   SETTINGS_ACTION,
 } from "../startError";
+import { activateExtension, formatDocument, withTempFile } from "./helpers";
 
 suite("Extension Smoke Tests", function () {
   this.timeout(15000);
 
-  let whenReady: Promise<void>;
+  suiteSetup(activateExtension);
 
-  suiteSetup(async () => {
-    const extension = vscode.extensions.getExtension<{
-      whenReady: Promise<void>;
-    }>("20jasper.jjpwrgem-vscode")!;
-    if (!extension.isActive) {
-      await extension.activate();
-    }
-    whenReady = extension.exports.whenReady;
-  });
-
-  test("Extension should be present and activate", async () => {
+  test("extension is installed and active", () => {
     const extension = vscode.extensions.getExtension(
       "20jasper.jjpwrgem-vscode",
     );
     assert.ok(extension, "jjpwrgem-vscode extension should be installed");
-    assert.ok(extension.isActive, "Extension should be active");
+    assert.ok(extension.isActive, "extension should be active");
   });
 
-  test("Built-in JSON language features should be disabled", async () => {
+  test("built-in JSON language features are disabled", () => {
     assert.strictEqual(
       vscode.extensions.getExtension("vscode.json-language-features"),
       undefined,
-      "built-in json extension should be disabled",
     );
   });
 
-  test("Open a JSON file on disk and format it", async () => {
-    await whenReady;
+  test("formats a json file", async () => {
+    await withTempFile("smoke.json", `{"foo":"bar"}`, async (uri) => {
+      const doc = await vscode.workspace.openTextDocument(uri);
+      assert.strictEqual(doc.languageId, "json");
 
-    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "jjpwrgem-smoke-"));
-    const filePath = path.join(tmpDir, "smoke.json");
-    const content = `{"foo":"bar"}`;
-    fs.writeFileSync(filePath, content, "utf8");
+      const edit = new vscode.WorkspaceEdit();
+      edit.set(uri, await formatDocument(uri));
+      await vscode.workspace.applyEdit(edit);
 
-    const uri = vscode.Uri.file(filePath);
-    const doc = await vscode.workspace.openTextDocument(uri);
-    const editor = await vscode.window.showTextDocument(doc);
-
-    assert.strictEqual(
-      editor.document.languageId,
-      "json",
-      "File should be recognized as json",
-    );
-
-    const edits = await vscode.commands.executeCommand<
-      vscode.TextEdit[] | undefined
-    >("vscode.executeFormatDocumentProvider", doc.uri, {
-      tabSize: 2,
-      insertSpaces: true,
+      assert.strictEqual(doc.getText().trim(), '{ "foo": "bar" }');
     });
-    if (edits && edits.length > 0) {
-      const workspaceEdit = new vscode.WorkspaceEdit();
-      workspaceEdit.set(doc.uri, edits);
-      await vscode.workspace.applyEdit(workspaceEdit);
-      await doc.save();
-    }
-
-    const formatted = editor.document.getText();
-    assert.equal(
-      formatted.trim(),
-      '{ "foo": "bar" }',
-      "Formatted document should contain expected JSON keys",
-    );
-
-    await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
-    fs.rmSync(tmpDir, { recursive: true, force: true });
   });
 
-  test("Open a JSONC file and get jsonc diagnostics", async () => {
-    await whenReady;
-
-    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "jjpwrgem-smoke-"));
-    const filePath = path.join(tmpDir, "smoke.jsonc");
+  test("reports jsonc diagnostics for a missing value", async () => {
     const content = `{
   // line
   "a": 1, /* block */
   "b": ,
 }
 `;
-    fs.writeFileSync(filePath, content, "utf8");
+    await withTempFile("smoke.jsonc", content, async (uri) => {
+      const doc = await vscode.workspace.openTextDocument(uri);
+      await vscode.window.showTextDocument(doc);
+      assert.strictEqual(doc.languageId, "jsonc");
 
-    const uri = vscode.Uri.file(filePath);
-    const doc = await vscode.workspace.openTextDocument(uri);
-    const editor = await vscode.window.showTextDocument(doc);
+      const jjpDiagnostics = () =>
+        vscode.languages
+          .getDiagnostics(uri)
+          .filter((d) => d.source === "jjpwrgem");
 
-    assert.strictEqual(
-      editor.document.languageId,
-      "jsonc",
-      "File should be recognized as jsonc",
-    );
-
-    const getJjpDiagnostics = () =>
-      vscode.languages
-        .getDiagnostics(uri)
-        .filter((d) => d.source === "jjpwrgem");
-
-    const diagnostics = await new Promise<vscode.Diagnostic[]>(
-      (resolve, reject) => {
-        const check = () => {
-          const found = getJjpDiagnostics();
-          if (found.length > 0) {
-            clearTimeout(timer);
+      const diagnostics = await new Promise<vscode.Diagnostic[]>(
+        (resolve, reject) => {
+          const check = () => {
+            const found = jjpDiagnostics();
+            if (found.length > 0) {
+              clearTimeout(timer);
+              subscription.dispose();
+              resolve(found);
+            }
+          };
+          const timer = setTimeout(() => {
             subscription.dispose();
-            resolve(found);
-          }
-        };
-        const timer = setTimeout(() => {
-          subscription.dispose();
-          reject(new Error("no jjpwrgem diagnostics"));
-        }, 10000);
-        const subscription = vscode.languages.onDidChangeDiagnostics(check);
-        check();
-      },
-    );
+            reject(new Error("no jjpwrgem diagnostics"));
+          }, 10000);
+          const subscription = vscode.languages.onDidChangeDiagnostics(check);
+          check();
+        },
+      );
 
-    assert.strictEqual(
-      diagnostics.length,
-      1,
-      "Only the missing value should be reported",
-    );
-    assert.strictEqual(
-      diagnostics[0]!.message,
-      "expected json value, found `,`",
-    );
-
-    assert.strictEqual(
-      vscode.languages.getDiagnostics(uri).length,
-      1,
-      "No diagnostics besides jjpwrgem's should be present",
-    );
-
-    await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
-    fs.rmSync(tmpDir, { recursive: true, force: true });
+      assert.deepStrictEqual(
+        diagnostics.map((d) => d.message),
+        ["expected json value, found `,`"],
+      );
+      assert.strictEqual(
+        vscode.languages.getDiagnostics(uri).length,
+        1,
+        "only jjpwrgem diagnostics should be present",
+      );
+    });
   });
 });
 
-suite("Start error message", () => {
-  test("names the error and suggests installing when the path is unset", () => {
-    const { message, actions } = describeStartError(
-      "jjp",
-      false,
-      new Error("spawn jjp ENOENT"),
-    );
-    assert.ok(message.includes("spawn jjp ENOENT"));
-    assert.ok(message.includes("installed and on your PATH"));
-    assert.deepStrictEqual(actions, [INSTALL_ACTION]);
-  });
+suite("describeStartError", () => {
+  const cases = [
+    {
+      name: "path unset",
+      command: "jjp",
+      custom: false,
+      error: new Error("spawn jjp ENOENT"),
+      message:
+        "Could not start the jjpwrgem language server: spawn jjp ENOENT. Is jjp installed and on your PATH?",
+      actions: [INSTALL_ACTION],
+    },
+    {
+      name: "path set",
+      command: "/opt/bad/jjp",
+      custom: true,
+      error: new Error("spawn /opt/bad/jjp ENOENT"),
+      message:
+        'Could not start the jjpwrgem language server with "/opt/bad/jjp": spawn /opt/bad/jjp ENOENT. Check the jjpwrgem.path setting.',
+      actions: [SETTINGS_ACTION],
+    },
+    {
+      name: "non-Error rejection",
+      command: "jjp",
+      custom: false,
+      error: "boom",
+      message:
+        "Could not start the jjpwrgem language server: boom. Is jjp installed and on your PATH?",
+      actions: [INSTALL_ACTION],
+    },
+  ];
 
-  test("names the command and points to the setting when the path is set", () => {
-    const { message, actions } = describeStartError(
-      "/opt/bad/jjp",
-      true,
-      new Error("spawn /opt/bad/jjp ENOENT"),
-    );
-    assert.ok(message.includes('with "/opt/bad/jjp"'));
-    assert.ok(message.includes("spawn /opt/bad/jjp ENOENT"));
-    assert.ok(message.includes("jjpwrgem.path"));
-    assert.deepStrictEqual(actions, [SETTINGS_ACTION]);
-  });
+  for (const { name, command, custom, error, message, actions } of cases) {
+    test(name, () => {
+      assert.deepStrictEqual(describeStartError(command, custom, error), {
+        message,
+        actions,
+      });
+    });
+  }
 
-  test("accepts a non-Error rejection", () => {
-    const { message } = describeStartError("jjp", false, "boom");
-    assert.ok(message.includes("boom"));
+  test("action labels are what the user sees", () => {
+    assert.strictEqual(INSTALL_ACTION, "Installation instructions");
+    assert.strictEqual(SETTINGS_ACTION, "Open settings");
   });
 });
