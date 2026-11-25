@@ -37,6 +37,12 @@ url = "https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_
 url_api = "https://api.github.com/repos/rhysd/actionlint/releases/assets/384924893"
 provenance = "github-attestations"
 
+[tools.actionlint."platforms.macos-x64"]
+checksum = "sha256:5b44c3bc2255115c9b69e30efc0fecdf498fdb63c5d58e17084fd5f16324c644"
+url = "https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_darwin_amd64.tar.gz"
+url_api = "https://api.github.com/repos/rhysd/actionlint/releases/assets/384924880"
+provenance = "github-attestations"
+
 [tools.actionlint."platforms.windows-x64"]
 checksum = "sha256:6e7241b51e6817ea6a047693d8e6fed13b31819c9a0dd6c5a726e1592d22f6e9"
 url = "https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_windows_amd64.zip"
@@ -111,6 +117,12 @@ checksum_source = "mise-versions"
 url = "https://github.com/WebAssembly/binaryen/releases/download/version_133/binaryen-version_133-arm64-macos.tar.gz"
 url_api = "https://api.github.com/repos/WebAssembly/binaryen/releases/assets/580039733"
 
+[tools."aqua:WebAssembly/binaryen"."platforms.macos-x64"]
+checksum = "sha256:13a9b90be775c6389ce3d1f879cb8627bea56708ba8c122983941d53a8199b95"
+checksum_source = "mise-versions"
+url = "https://github.com/WebAssembly/binaryen/releases/download/version_133/binaryen-version_133-x86_64-macos.tar.gz"
+url_api = "https://api.github.com/repos/WebAssembly/binaryen/releases/assets/580039734"
+
 [tools."aqua:WebAssembly/binaryen"."platforms.windows-x64"]
 checksum = "sha256:17a2cbeac6b5693c5fbafab3838d3c65fd9c1eb38b05f5baec6c657e8c84995b"
 checksum_source = "mise-versions"
@@ -152,6 +164,12 @@ checksum_source = "mise-versions"
 url = "https://github.com/crate-ci/typos/releases/download/v1.52.2/typos-v1.52.2-aarch64-apple-darwin.tar.gz"
 url_api = "https://api.github.com/repos/crate-ci/typos/releases/assets/733789873"
 
+[tools."aqua:crate-ci/typos"."platforms.macos-x64"]
+checksum = "sha256:2c1e5cd3be644005d27543d7d83a32dbba36eb285bc12678818709938a63a988"
+checksum_source = "mise-versions"
+url = "https://github.com/crate-ci/typos/releases/download/v1.52.2/typos-v1.52.2-x86_64-apple-darwin.tar.gz"
+url_api = "https://api.github.com/repos/crate-ci/typos/releases/assets/733789561"
+
 [tools."aqua:crate-ci/typos"."platforms.windows-x64"]
 checksum = "sha256:ab79036832cea0f2a21aa947731d39512250cc0f7a6a2f6add26262738a8cc11"
 checksum_source = "mise-versions"
@@ -181,6 +199,12 @@ url_api = "https://api.github.com/repos/mitsuhiko/insta/releases/assets/60686002
 checksum = "sha256:e596702d36313dbbc2f168ca9db447a9e259e666cd9cae9ab94eb712ca1d89e5"
 url = "https://github.com/mitsuhiko/insta/releases/download/1.49.0/cargo-insta-aarch64-apple-darwin.tar.xz"
 url_api = "https://api.github.com/repos/mitsuhiko/insta/releases/assets/606859971"
+
+[tools."aqua:mitsuhiko/insta"."platforms.macos-x64"]
+checksum = "sha256:e47d3d529de4eaf85c074b718af38be49a04578ff07ef0aa5765f22688095273"
+checksum_source = "mise-versions"
+url = "https://github.com/mitsuhiko/insta/releases/download/1.49.0/cargo-insta-x86_64-apple-darwin.tar.xz"
+url_api = "https://api.github.com/repos/mitsuhiko/insta/releases/assets/606859990"
 
 [tools."aqua:mitsuhiko/insta"."platforms.windows-x64"]
 checksum = "sha256:bf6374b054f596d75b5bb203010394a340cdb44d4150cd03560564fbc35d8156"
@@ -269,6 +293,12 @@ url = "https://github.com/taiki-e/cargo-llvm-cov/releases/download/v0.9.2/cargo-
 url_api = "https://api.github.com/repos/taiki-e/cargo-llvm-cov/releases/assets/772450818"
 provenance = "github-attestations"
 
+[tools."aqua:taiki-e/cargo-llvm-cov"."platforms.macos-x64"]
+checksum = "sha256:07dbf196c2ad47ca6b30af993c19a6f487989c4986dc963d347d256bf814acd5"
+url = "https://github.com/taiki-e/cargo-llvm-cov/releases/download/v0.9.2/cargo-llvm-cov-x86_64-apple-darwin.tar.gz"
+url_api = "https://api.github.com/repos/taiki-e/cargo-llvm-cov/releases/assets/772450883"
+provenance = "github-attestations"
+
 [tools."aqua:taiki-e/cargo-llvm-cov"."platforms.windows-x64"]
 checksum = "sha256:5525084e4f6a4fa771c1055e6d260a7cee40939f0f624265e92c16bffb777956"
 url = "https://github.com/taiki-e/cargo-llvm-cov/releases/download/v0.9.2/cargo-llvm-cov-x86_64-pc-windows-msvc.tar.gz"
@@ -340,6 +370,12 @@ url = "https://github.com/Boshen/cargo-shear/releases/download/v1.14.1/cargo-she
 url_api = "https://api.github.com/repos/Boshen/cargo-shear/releases/assets/742156822"
 provenance = "github-attestations"
 
+[tools."github:Boshen/cargo-shear"."platforms.macos-x64"]
+checksum = "sha256:c414e63bdc08205c19b276456fc8ac5af6e33c3f2b40086a782fedb7c13e5567"
+url = "https://github.com/Boshen/cargo-shear/releases/download/v1.14.1/cargo-shear-x86_64-apple-darwin.tar.gz"
+url_api = "https://api.github.com/repos/Boshen/cargo-shear/releases/assets/742156852"
+provenance = "github-attestations"
+
 [tools."github:Boshen/cargo-shear"."platforms.windows-x64"]
 checksum = "sha256:439a3c203c177b06c538e13cfb7260972738b9e9e8dc6433d4ace416cf40eb36"
 url = "https://github.com/Boshen/cargo-shear/releases/download/v1.14.1/cargo-shear-x86_64-pc-windows-msvc.zip"
@@ -371,6 +407,12 @@ url_api = "https://api.github.com/repos/Byron/cargo-diet/releases/assets/6964996
 checksum = "sha256:ada1fd02101dbfc9544864a19248a2af8082232ec7f373794168edda816b388d"
 url = "https://github.com/Byron/cargo-diet/releases/download/v1.4.2/cargo-diet-v1.4.2-x86_64-unknown-linux-musl.tar.gz"
 url_api = "https://api.github.com/repos/Byron/cargo-diet/releases/assets/696499638"
+
+[tools."github:Byron/cargo-diet"."platforms.macos-x64"]
+checksum = "sha256:b066c849cc4ce472237d7b23d8e439c31fa587c8177d690ec3ec2e9cc847445e"
+checksum_source = "mise-versions"
+url = "https://github.com/Byron/cargo-diet/releases/download/v1.4.2/cargo-diet-v1.4.2-x86_64-apple-darwin.tar.gz"
+url_api = "https://api.github.com/repos/Byron/cargo-diet/releases/assets/696498873"
 
 [tools."github:Byron/cargo-diet"."platforms.windows-x64"]
 checksum = "sha256:fcdaeee907950d3dd7091d89c9ea1b9c02307a048146e95f5387d1eec979bf26"
@@ -493,6 +535,12 @@ checksum_source = "mise-versions"
 url = "https://github.com/bruits/sampo/releases/download/cargo-sampo-v0.24.1/sampo-0.24.1-aarch64-apple-darwin.tar.gz"
 url_api = "https://api.github.com/repos/bruits/sampo/releases/assets/734780496"
 
+[tools."github:bruits/sampo"."platforms.macos-x64"]
+checksum = "sha256:d15f270e5810d1e478c73f681f03f209a0ac0d648db148411788488368117d34"
+checksum_source = "mise-versions"
+url = "https://github.com/bruits/sampo/releases/download/cargo-sampo-v0.24.1/sampo-0.24.1-x86_64-apple-darwin.tar.gz"
+url_api = "https://api.github.com/repos/bruits/sampo/releases/assets/734780457"
+
 [tools."github:bruits/sampo"."platforms.windows-x64"]
 checksum = "sha256:e3971161e96b990859e4e9effdfb3b44fd550c6f5274799e02c227a15fb726a2"
 checksum_source = "mise-versions"
@@ -524,6 +572,12 @@ url_api = "https://api.github.com/repos/gungraun/gungraun/releases/assets/591083
 checksum = "sha256:f6dcbd5af550c199b23ba258eb69d5444af8299c0c49309aa785599f60f9ec8b"
 url = "https://github.com/gungraun/gungraun/releases/download/v0.20.0/gungraun-runner-v0.20.0-x86_64-unknown-linux-musl.tar.gz"
 url_api = "https://api.github.com/repos/gungraun/gungraun/releases/assets/591084341"
+
+[tools."github:gungraun/gungraun"."platforms.macos-x64"]
+checksum = "sha256:ecd8452d5ad61939a71915982ba80e937eafeaa5b5596768f369976700e312c2"
+checksum_source = "mise-versions"
+url = "https://github.com/gungraun/gungraun/releases/download/v0.20.0/gungraun-runner-v0.20.0-x86_64-unknown-freebsd.tar.gz"
+url_api = "https://api.github.com/repos/gungraun/gungraun/releases/assets/591084038"
 
 [tools."github:gungraun/gungraun"."platforms.windows-x64"]
 checksum = "sha256:ecd8452d5ad61939a71915982ba80e937eafeaa5b5596768f369976700e312c2"
@@ -565,6 +619,12 @@ checksum = "sha256:80e4b8bfb0ceb9e2d1374ac4b5b9e4eee2146e5d019c559a53cb2e159fb77
 checksum_source = "mise-versions"
 url = "https://github.com/libkakashi/light-json-lsp/releases/download/v0.1.0/light-json-lsp-aarch64-macos.tar.gz"
 url_api = "https://api.github.com/repos/libkakashi/light-json-lsp/releases/assets/355034298"
+
+[tools."github:libkakashi/light-json-lsp"."platforms.macos-x64"]
+checksum = "sha256:1b053b1cb6e14ae56eeda14c52273cd7ca8219ed323d4decd59981050049e312"
+checksum_source = "mise-versions"
+url = "https://github.com/libkakashi/light-json-lsp/releases/download/v0.1.0/light-json-lsp-x86_64-macos.tar.gz"
+url_api = "https://api.github.com/repos/libkakashi/light-json-lsp/releases/assets/355034296"
 
 [[tools."github:orium/cargo-rdme"]]
 version = "2.2.3"
@@ -631,6 +691,12 @@ checksum_source = "mise-versions"
 url = "https://github.com/rust-cross/cargo-zigbuild/releases/download/v0.24.1/cargo-zigbuild-aarch64-apple-darwin.tar.xz"
 url_api = "https://api.github.com/repos/rust-cross/cargo-zigbuild/releases/assets/709674719"
 
+[tools."github:rust-cross/cargo-zigbuild"."platforms.macos-x64"]
+checksum = "sha256:9f047b1a0f97efbfef64919d7c25e33304a4448b832cde12f6588c4f11489877"
+checksum_source = "mise-versions"
+url = "https://github.com/rust-cross/cargo-zigbuild/releases/download/v0.24.1/cargo-zigbuild-x86_64-apple-darwin.tar.xz"
+url_api = "https://api.github.com/repos/rust-cross/cargo-zigbuild/releases/assets/709674794"
+
 [tools."github:rust-cross/cargo-zigbuild"."platforms.windows-x64"]
 checksum = "sha256:7f660482f8dada6dfcd495bfc52a4c4f0cf6b2e01ac9740811855a1de7c4f60a"
 checksum_source = "mise-versions"
@@ -670,6 +736,12 @@ provenance = "github-attestations"
 checksum = "sha256:2d75340ba57a4b4b4c8708a21c2dc8e958a48aaa8bba13b27f77f6e4c0eca07e"
 url = "https://github.com/jqlang/jq/releases/download/jq-1.8.2/jq-macos-arm64"
 url_api = "https://api.github.com/repos/jqlang/jq/releases/assets/453012783"
+provenance = "github-attestations"
+
+[tools.jq."platforms.macos-x64"]
+checksum = "sha256:e94b266e3c26690550006abe63152b782280f4e14374accdf04cbde844f00bc0"
+url = "https://github.com/jqlang/jq/releases/download/jq-1.8.2/jq-macos-amd64"
+url_api = "https://api.github.com/repos/jqlang/jq/releases/assets/453012782"
 provenance = "github-attestations"
 
 [tools.jq."platforms.windows-x64"]
@@ -786,6 +858,12 @@ checksum = "sha256:56affdd8de5527894dca6dc3d7e0a99a873b0f004d7aabc30ae407d3f48b0
 url = "https://github.com/koalaman/shellcheck/releases/download/v0.11.0/shellcheck-v0.11.0.darwin.aarch64.tar.xz"
 url_api = "https://api.github.com/repos/koalaman/shellcheck/releases/assets/279056932"
 
+[tools.shellcheck."platforms.macos-x64"]
+checksum = "sha256:3c89db4edcab7cf1c27bff178882e0f6f27f7afdf54e859fa041fca10febe4c6"
+checksum_source = "mise-versions"
+url = "https://github.com/koalaman/shellcheck/releases/download/v0.11.0/shellcheck-v0.11.0.darwin.x86_64.tar.xz"
+url_api = "https://api.github.com/repos/koalaman/shellcheck/releases/assets/279056930"
+
 [tools.shellcheck."platforms.windows-x64"]
 checksum = "sha256:8a4e35ab0b331c85d73567b12f2a444df187f483e5079ceffa6bda1faa2e740e"
 url = "https://github.com/koalaman/shellcheck/releases/download/v0.11.0/shellcheck-v0.11.0.zip"
@@ -815,6 +893,11 @@ url = "https://ziglang.org/download/0.17.1/zig-x86_64-linux-0.17.1.tar.xz"
 [tools.zig."platforms.macos-arm64"]
 checksum = "sha256:75f1bc7a1e9852f17ec9a0c1895f767c4ec56d46bc8a834920eece1d0359dd8d"
 url = "https://ziglang.org/download/0.17.1/zig-aarch64-macos-0.17.1.tar.xz"
+
+[tools.zig."platforms.macos-x64"]
+checksum = "sha256:9af07b20319fbd0c92ee46ad23e81d6a782b1aaea2cfb8dcbff35f1d2c7ddbb7"
+url = "https://ziglang.org/download/0.17.1/zig-x86_64-macos-0.17.1.tar.xz"
+provenance = "minisign"
 
 [tools.zig."platforms.windows-x64"]
 checksum = "sha256:b03f477a1943673e02aca0f570e8030dffd536ce1f45cbc4d3326ec31159562e"
