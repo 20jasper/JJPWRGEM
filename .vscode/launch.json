@@ -50,6 +50,30 @@
         "PATH": "${workspaceFolder}/target/debug:${env:PATH}"
       },
       "preLaunchTask": "build dev host"
+    },
+    {
+      "name": "Run JJPWRGEM VS Code Extension (WSL)",
+      "presentation": {
+        "group": "JJPWRGEM",
+        "order": 3
+      },
+      "type": "extensionHost",
+      "request": "launch",
+      "args": [
+        "--extensionDevelopmentPath=vscode-remote://wsl+${env:WSL_DISTRO_NAME}${workspaceFolder}/npm-packages/jjpwrgem-vscode",
+        "--disable-extension=vscode.json-language-features",
+        "--folder-uri=vscode-remote://wsl+${env:WSL_DISTRO_NAME}${workspaceFolder}",
+        "--file-uri=vscode-remote://wsl+${env:WSL_DISTRO_NAME}${workspaceFolder}/npm-packages/jjpwrgem-vscode/tsconfig.json",
+        "--file-uri=vscode-remote://wsl+${env:WSL_DISTRO_NAME}${workspaceFolder}/npm-packages/jjpwrgem-vscode/package.json",
+        "--file-uri=vscode-remote://wsl+${env:WSL_DISTRO_NAME}${workspaceFolder}/benches/data/twitter.json"
+      ],
+      "outFiles": [
+        "${workspaceFolder}/npm-packages/jjpwrgem-vscode/dist/**/*.js"
+      ],
+      "env": {
+        "PATH": "${workspaceFolder}/target/debug:${env:PATH}"
+      },
+      "preLaunchTask": "build dev host"
     }
   ]
 }
