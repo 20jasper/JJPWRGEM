@@ -74,3 +74,49 @@ pub fn type_as_primitive(ty: &Type) -> PrimitiveType {
         Type::Integer => PrimitiveType::Integer,
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use jjpwrgem_parse::SyntaxOptions;
+
+    use super::*;
+
+    fn doc(json: &str) -> Document<&str> {
+        Document::parse(json, SyntaxOptions::JSON).unwrap()
+    }
+
+    // r[verify json-schema-v7.type.primitive]
+    #[rstest::rstest]
+    #[case("null", PrimitiveType::Null)]
+    #[case("true", PrimitiveType::Boolean)]
+    #[case(r#""text""#, PrimitiveType::String)]
+    #[case("[1]", PrimitiveType::Array)]
+    #[case("{}", PrimitiveType::Object)]
+    fn value_maps_to_primitive(#[case] json: &str, #[case] expected: PrimitiveType) {
+        let doc = doc(json);
+        assert_eq!(value_as_primitive(doc.root(), &doc), expected);
+    }
+
+    // r[verify json-schema-v7.type.integer-subset]
+    #[rstest::rstest]
+    #[case("123", PrimitiveType::Integer)]
+    #[case("123.0", PrimitiveType::Integer)]
+    #[case("1e3", PrimitiveType::Integer)]
+    #[case("1.5e1", PrimitiveType::Integer)]
+    #[case("1.5", PrimitiveType::Number)]
+    #[case("1.0e-1", PrimitiveType::Number)]
+    fn number_is_classified_by_value(#[case] json: &str, #[case] expected: PrimitiveType) {
+        let doc = doc(json);
+        assert_eq!(value_as_primitive(doc.root(), &doc), expected);
+    }
+
+    // r[verify json-schema-v7.type.integer-subset]
+    #[rstest::rstest]
+    #[case(PrimitiveType::Integer, PrimitiveType::Number, true)]
+    #[case(PrimitiveType::Number, PrimitiveType::Integer, false)]
+    #[case(PrimitiveType::Integer, PrimitiveType::Integer, true)]
+    #[case(PrimitiveType::String, PrimitiveType::Number, false)]
+    fn is_subset_of(#[case] lhs: PrimitiveType, #[case] rhs: PrimitiveType, #[case] valid: bool) {
+        assert_eq!(lhs.is_subset(rhs), valid);
+    }
+}
