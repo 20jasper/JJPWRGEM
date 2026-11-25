@@ -25,7 +25,7 @@ cargo rdme --workspace-project bytes2chars --force
 "cargo:cargo-criterion" = "1.1.0"
 "github:orium/cargo-rdme" = "2.2"
 "github:bearcove/tracey" = "v1.4.0"
-"npm:oxfmt" = "0.78.0"
+"npm:oxfmt" = "0.79.0"
 
 [tasks.bench-json]
 description = "Run the four standard json criterion benches and regenerate readmes"
@@ -40,7 +40,7 @@ run = [
 "cargo:cargo-criterion" = "1.1.0"
 "github:orium/cargo-rdme" = "2.2"
 "github:bearcove/tracey" = "v1.4.0"
-"npm:oxfmt" = "0.78.0"
+"npm:oxfmt" = "0.79.0"
 
 [tasks.bench-codspeed-build]
 description = "Build the criterion benches for codspeed in simulation mode"
@@ -51,7 +51,7 @@ run = [
 ]
 
 [tasks.bench-codspeed-build.tools]
-"github:CodSpeedHQ/codspeed-rust" = "6.0.0"
+"github:CodSpeedHQ/codspeed-rust" = "v6.1.0"
 
 [tasks.bench-codspeed-run]
 description = "Run the prebuilt codspeed benches (CI runs this inside the codspeed action)"
@@ -59,7 +59,7 @@ dir = "{{config_root}}/benches"
 run = "cargo codspeed run {{vars.codspeed_benches}}"
 
 [tasks.bench-codspeed-run.tools]
-"github:CodSpeedHQ/codspeed-rust" = "6.0.0"
+"github:CodSpeedHQ/codspeed-rust" = "v6.1.0"
 
 [tasks.bench-codspeed]
 description = "Build and run all criterion benches via codspeed"
@@ -134,7 +134,7 @@ oxfmt --no-error-on-unmatched-pattern './benches/docker/output/*.md' --write
 '''
 
 [tasks.bench-docker.tools]
-"npm:oxfmt" = "0.78.0"
+"npm:oxfmt" = "0.79.0"
 
 [tasks.bench-lsp]
 description = "Bench jjp's LSP against other JSON LSPs via lspresso and regenerate benches/lsp/lsp.md"
@@ -152,7 +152,7 @@ cargo xtask readmes
 "npm:@t1ckbase/vscode-langservers-extracted" = "2.0.5"
 "github:libkakashi/light-json-lsp" = "0.1.0"
 "github:bearcove/tracey" = "v1.4.0"
-"npm:oxfmt" = "0.78.0"
+"npm:oxfmt" = "0.79.0"
 "github:orium/cargo-rdme" = "2.2"
 
 [tasks.test-lsp-e2e]

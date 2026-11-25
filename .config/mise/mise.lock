@@ -44,39 +44,45 @@ url_api = "https://api.github.com/repos/rhysd/actionlint/releases/assets/3849249
 provenance = "github-attestations"
 
 [[tools."aqua:EmbarkStudios/cargo-deny"]]
-version = "0.20.2"
+version = "0.22.0"
 backend = "aqua:EmbarkStudios/cargo-deny"
-specifiers = ["0.20.2"]
+specifiers = ["0.22.0"]
 
 [tools."aqua:EmbarkStudios/cargo-deny"."platforms.linux-arm64"]
-checksum = "sha256:995c82be0defc7a025cae49a2aa2644ce8245c9a3318fc4103907c6a285e8c7d"
-url = "https://github.com/EmbarkStudios/cargo-deny/releases/download/0.20.2/cargo-deny-0.20.2-aarch64-unknown-linux-musl.tar.gz"
-url_api = "https://api.github.com/repos/EmbarkStudios/cargo-deny/releases/assets/471598345"
+checksum = "sha256:4818d44cdcac285776336504fca722493ab634d3377b94a462e98aad3f41484a"
+checksum_source = "mise-versions"
+url = "https://github.com/EmbarkStudios/cargo-deny/releases/download/0.22.0/cargo-deny-0.22.0-aarch64-unknown-linux-musl.tar.gz"
+url_api = "https://api.github.com/repos/EmbarkStudios/cargo-deny/releases/assets/768401428"
 
 [tools."aqua:EmbarkStudios/cargo-deny"."platforms.linux-arm64-musl"]
-checksum = "sha256:995c82be0defc7a025cae49a2aa2644ce8245c9a3318fc4103907c6a285e8c7d"
-url = "https://github.com/EmbarkStudios/cargo-deny/releases/download/0.20.2/cargo-deny-0.20.2-aarch64-unknown-linux-musl.tar.gz"
-url_api = "https://api.github.com/repos/EmbarkStudios/cargo-deny/releases/assets/471598345"
+checksum = "sha256:4818d44cdcac285776336504fca722493ab634d3377b94a462e98aad3f41484a"
+checksum_source = "mise-versions"
+url = "https://github.com/EmbarkStudios/cargo-deny/releases/download/0.22.0/cargo-deny-0.22.0-aarch64-unknown-linux-musl.tar.gz"
+url_api = "https://api.github.com/repos/EmbarkStudios/cargo-deny/releases/assets/768401428"
 
 [tools."aqua:EmbarkStudios/cargo-deny"."platforms.linux-x64"]
-checksum = "sha256:9f12ed4c49936e09b48bf862b595cde2fe64fcbd9d74dfacac6131ca824c8d5f"
-url = "https://github.com/EmbarkStudios/cargo-deny/releases/download/0.20.2/cargo-deny-0.20.2-x86_64-unknown-linux-musl.tar.gz"
-url_api = "https://api.github.com/repos/EmbarkStudios/cargo-deny/releases/assets/471598214"
+checksum = "sha256:98c56e6a408bfa5c3c60744b6015aaa6aa08f743fdeb88386d06fca035bb1786"
+checksum_source = "mise-versions"
+url = "https://github.com/EmbarkStudios/cargo-deny/releases/download/0.22.0/cargo-deny-0.22.0-x86_64-unknown-linux-musl.tar.gz"
+url_api = "https://api.github.com/repos/EmbarkStudios/cargo-deny/releases/assets/768401805"
 
 [tools."aqua:EmbarkStudios/cargo-deny"."platforms.linux-x64-musl"]
-checksum = "sha256:9f12ed4c49936e09b48bf862b595cde2fe64fcbd9d74dfacac6131ca824c8d5f"
-url = "https://github.com/EmbarkStudios/cargo-deny/releases/download/0.20.2/cargo-deny-0.20.2-x86_64-unknown-linux-musl.tar.gz"
-url_api = "https://api.github.com/repos/EmbarkStudios/cargo-deny/releases/assets/471598214"
+checksum = "sha256:98c56e6a408bfa5c3c60744b6015aaa6aa08f743fdeb88386d06fca035bb1786"
+checksum_source = "mise-versions"
+url = "https://github.com/EmbarkStudios/cargo-deny/releases/download/0.22.0/cargo-deny-0.22.0-x86_64-unknown-linux-musl.tar.gz"
+url_api = "https://api.github.com/repos/EmbarkStudios/cargo-deny/releases/assets/768401805"
 
 [tools."aqua:EmbarkStudios/cargo-deny"."platforms.macos-arm64"]
-checksum = "sha256:fe67d82a10d8597a3549364cb733a3f9cc1bfff9031b7ae46384a9f2a72090c3"
-url = "https://github.com/EmbarkStudios/cargo-deny/releases/download/0.20.2/cargo-deny-0.20.2-aarch64-apple-darwin.tar.gz"
-url_api = "https://api.github.com/repos/EmbarkStudios/cargo-deny/releases/assets/471597689"
+checksum = "sha256:aa23e2f32eaf0b92efb36de3fc925f3e1b841fdafcc555ddab43d4d146cec251"
+checksum_source = "mise-versions"
+url = "https://github.com/EmbarkStudios/cargo-deny/releases/download/0.22.0/cargo-deny-0.22.0-aarch64-apple-darwin.tar.gz"
+url_api = "https://api.github.com/repos/EmbarkStudios/cargo-deny/releases/assets/768403477"
 
 [tools."aqua:EmbarkStudios/cargo-deny"."platforms.windows-x64"]
-checksum = "sha256:975a22143262fd27476d19ee00c7af67978426e40e1dee94eed6bbade1cf87dc"
-url = "https://github.com/EmbarkStudios/cargo-deny/releases/download/0.20.2/cargo-deny-0.20.2-x86_64-pc-windows-msvc.tar.gz"
-url_api = "https://api.github.com/repos/EmbarkStudios/cargo-deny/releases/assets/471599057"
+checksum = "sha256:a85b270b4aa28633d2cb2be97fccd4518ccb783014914e99463e75468cb3183c"
+checksum_source = "mise-versions"
+url = "https://github.com/EmbarkStudios/cargo-deny/releases/download/0.22.0/cargo-deny-0.22.0-x86_64-pc-windows-msvc.tar.gz"
+url_api = "https://api.github.com/repos/EmbarkStudios/cargo-deny/releases/assets/768406065"
 
 [[tools."aqua:WebAssembly/binaryen"]]
 version = "version_133"
@@ -182,44 +188,50 @@ url = "https://github.com/mitsuhiko/insta/releases/download/1.49.0/cargo-insta-x
 url_api = "https://api.github.com/repos/mitsuhiko/insta/releases/assets/606859993"
 
 [[tools."aqua:pnpm/pnpm"]]
-version = "12.21.0"
+version = "12.22.0"
 backend = "aqua:pnpm/pnpm"
-specifiers = ["12.21.0"]
+specifiers = ["12.22.0"]
 
 [tools."aqua:pnpm/pnpm"."platforms.linux-arm64"]
-checksum = "sha256:6c5913a48c93b3a556b71c3bd9bf12c6bf9fbfbbbd2dcbd1d52a85c539751b9e"
-url = "https://github.com/pnpm/pnpm/releases/download/v12.21.0/pnpm-linux-arm64.tar.gz"
-url_api = "https://api.github.com/repos/pnpm/pnpm/releases/assets/744357257"
+checksum = "sha256:22b23da8b00d12c2fdfc41b5533b65b467c7b178d93fdfe9128c491585dff1a4"
+url = "https://github.com/pnpm/pnpm/releases/download/v12.22.0/pnpm-linux-arm64.tar.gz"
+url_api = "https://api.github.com/repos/pnpm/pnpm/releases/assets/760376163"
 provenance = "github-attestations"
 
 [tools."aqua:pnpm/pnpm"."platforms.linux-arm64-musl"]
-checksum = "sha256:4faedaaa333b44d940ce5e38c223e829124affdbe5a6d3f694a69dd979a5a8d8"
-url = "https://github.com/pnpm/pnpm/releases/download/v12.21.0/pnpm-linux-arm64-musl.tar.gz"
-url_api = "https://api.github.com/repos/pnpm/pnpm/releases/assets/744357263"
+checksum = "sha256:e052ff62ee6150127645d70d38b730c7cf0b865c3ebbae2fc5c53c0d47ef6aa6"
+url = "https://github.com/pnpm/pnpm/releases/download/v12.22.0/pnpm-linux-arm64-musl.tar.gz"
+url_api = "https://api.github.com/repos/pnpm/pnpm/releases/assets/760376162"
 provenance = "github-attestations"
 
 [tools."aqua:pnpm/pnpm"."platforms.linux-x64"]
-checksum = "sha256:84c4773bcf4a217f4083cd7b2a91e4cee6103cf42426c1282ef37d308f55a410"
-url = "https://github.com/pnpm/pnpm/releases/download/v12.21.0/pnpm-linux-x64.tar.gz"
-url_api = "https://api.github.com/repos/pnpm/pnpm/releases/assets/744357264"
+checksum = "sha256:07ee196f91af1e21edb0c794401f4152932c74b0dba5d415dc4dbd5783f3c7af"
+url = "https://github.com/pnpm/pnpm/releases/download/v12.22.0/pnpm-linux-x64.tar.gz"
+url_api = "https://api.github.com/repos/pnpm/pnpm/releases/assets/760376184"
 provenance = "github-attestations"
 
 [tools."aqua:pnpm/pnpm"."platforms.linux-x64-musl"]
-checksum = "sha256:6dbcd9ea8ed37b5acbe279159ad0ed3a4ac614f5d7ae62d5ba51d32a85a589d7"
-url = "https://github.com/pnpm/pnpm/releases/download/v12.21.0/pnpm-linux-x64-musl.tar.gz"
-url_api = "https://api.github.com/repos/pnpm/pnpm/releases/assets/744357269"
+checksum = "sha256:d2a2b598a366e271cf3bf5df04d70a53132f118f1b94f75b85c03fe32752bf6d"
+url = "https://github.com/pnpm/pnpm/releases/download/v12.22.0/pnpm-linux-x64-musl.tar.gz"
+url_api = "https://api.github.com/repos/pnpm/pnpm/releases/assets/760376168"
 provenance = "github-attestations"
 
 [tools."aqua:pnpm/pnpm"."platforms.macos-arm64"]
-checksum = "sha256:5c4d73018e00dd602531ce714625594fb693cbe110e6719df2b043b0ae62ab1a"
-url = "https://github.com/pnpm/pnpm/releases/download/v12.21.0/pnpm-darwin-arm64.tar.gz"
-url_api = "https://api.github.com/repos/pnpm/pnpm/releases/assets/744357270"
+checksum = "sha256:af43c44f22ef89191d83163c3ef9f5ee021a7368f401c95d92731be7d6b21cc5"
+url = "https://github.com/pnpm/pnpm/releases/download/v12.22.0/pnpm-darwin-arm64.tar.gz"
+url_api = "https://api.github.com/repos/pnpm/pnpm/releases/assets/760376177"
+provenance = "github-attestations"
+
+[tools."aqua:pnpm/pnpm"."platforms.macos-x64"]
+checksum = "sha256:f3323c08c43a409035c9fe4965abcb6260a24fc91ce6f70351bc207c833e324c"
+url = "https://github.com/pnpm/pnpm/releases/download/v12.22.0/pnpm-darwin-x64.tar.gz"
+url_api = "https://api.github.com/repos/pnpm/pnpm/releases/assets/760376193"
 provenance = "github-attestations"
 
 [tools."aqua:pnpm/pnpm"."platforms.windows-x64"]
-checksum = "sha256:4fb64bb37e46c788309e0fd4ea93beb512546fdc7348121194fb704fbb72c09c"
-url = "https://github.com/pnpm/pnpm/releases/download/v12.21.0/pnpm-win32-x64.zip"
-url_api = "https://api.github.com/repos/pnpm/pnpm/releases/assets/744357265"
+checksum = "sha256:0a9c1bc147202089b12d91f43349f6f9ae26df191ee704dee313ba3f9a0a8ffe"
+url = "https://github.com/pnpm/pnpm/releases/download/v12.22.0/pnpm-win32-x64.zip"
+url_api = "https://api.github.com/repos/pnpm/pnpm/releases/assets/760376175"
 provenance = "github-attestations"
 
 [[tools."aqua:taiki-e/cargo-llvm-cov"]]
@@ -366,38 +378,43 @@ url = "https://github.com/Byron/cargo-diet/releases/download/v1.4.2/cargo-diet-v
 url_api = "https://api.github.com/repos/Byron/cargo-diet/releases/assets/696501828"
 
 [[tools."github:CodSpeedHQ/codspeed-rust"]]
-version = "6.0.0"
+version = "6.1.0"
 backend = "github:CodSpeedHQ/codspeed-rust"
-specifiers = ["6.0.0"]
+specifiers = ["v6.1.0"]
 unsupported_platforms = [
     "macos-x64",
     "windows-x64",
 ]
 
 [tools."github:CodSpeedHQ/codspeed-rust"."platforms.linux-arm64"]
-checksum = "sha256:eb82a5114d754099fcaf91155c3ee29e64a070953d4065ea315fe33d95a1371c"
-url = "https://github.com/CodSpeedHQ/codspeed-rust/releases/download/v6.0.0/cargo-codspeed-aarch64-unknown-linux-musl"
-url_api = "https://api.github.com/repos/CodSpeedHQ/codspeed-rust/releases/assets/663057817"
+checksum = "sha256:9dc4cd6f98a54a64bf07de070fb104c531d9ddb59ab1a38e205b93b0851da0f0"
+checksum_source = "mise-versions"
+url = "https://github.com/CodSpeedHQ/codspeed-rust/releases/download/v6.1.0/cargo-codspeed-aarch64-unknown-linux-musl"
+url_api = "https://api.github.com/repos/CodSpeedHQ/codspeed-rust/releases/assets/772612636"
 
 [tools."github:CodSpeedHQ/codspeed-rust"."platforms.linux-arm64-musl"]
-checksum = "sha256:eb82a5114d754099fcaf91155c3ee29e64a070953d4065ea315fe33d95a1371c"
-url = "https://github.com/CodSpeedHQ/codspeed-rust/releases/download/v6.0.0/cargo-codspeed-aarch64-unknown-linux-musl"
-url_api = "https://api.github.com/repos/CodSpeedHQ/codspeed-rust/releases/assets/663057817"
+checksum = "sha256:9dc4cd6f98a54a64bf07de070fb104c531d9ddb59ab1a38e205b93b0851da0f0"
+checksum_source = "mise-versions"
+url = "https://github.com/CodSpeedHQ/codspeed-rust/releases/download/v6.1.0/cargo-codspeed-aarch64-unknown-linux-musl"
+url_api = "https://api.github.com/repos/CodSpeedHQ/codspeed-rust/releases/assets/772612636"
 
 [tools."github:CodSpeedHQ/codspeed-rust"."platforms.linux-x64"]
-checksum = "sha256:99b4ada4e00a0b4e153f5fe50f70844898cbd6f77274cbe29e44bf671e5f85d8"
-url = "https://github.com/CodSpeedHQ/codspeed-rust/releases/download/v6.0.0/cargo-codspeed-x86_64-unknown-linux-musl"
-url_api = "https://api.github.com/repos/CodSpeedHQ/codspeed-rust/releases/assets/663057900"
+checksum = "sha256:165dd7d694f4d5f776bf2e5ceadd03a4194f960e5d5a87a25645918c19c6692d"
+checksum_source = "mise-versions"
+url = "https://github.com/CodSpeedHQ/codspeed-rust/releases/download/v6.1.0/cargo-codspeed-x86_64-unknown-linux-musl"
+url_api = "https://api.github.com/repos/CodSpeedHQ/codspeed-rust/releases/assets/772612697"
 
 [tools."github:CodSpeedHQ/codspeed-rust"."platforms.linux-x64-musl"]
-checksum = "sha256:99b4ada4e00a0b4e153f5fe50f70844898cbd6f77274cbe29e44bf671e5f85d8"
-url = "https://github.com/CodSpeedHQ/codspeed-rust/releases/download/v6.0.0/cargo-codspeed-x86_64-unknown-linux-musl"
-url_api = "https://api.github.com/repos/CodSpeedHQ/codspeed-rust/releases/assets/663057900"
+checksum = "sha256:165dd7d694f4d5f776bf2e5ceadd03a4194f960e5d5a87a25645918c19c6692d"
+checksum_source = "mise-versions"
+url = "https://github.com/CodSpeedHQ/codspeed-rust/releases/download/v6.1.0/cargo-codspeed-x86_64-unknown-linux-musl"
+url_api = "https://api.github.com/repos/CodSpeedHQ/codspeed-rust/releases/assets/772612697"
 
 [tools."github:CodSpeedHQ/codspeed-rust"."platforms.macos-arm64"]
-checksum = "sha256:f6dd22a5c09bd4978b1331c0349c04e3c8aacb6a56b76343c6b016ce88f465aa"
-url = "https://github.com/CodSpeedHQ/codspeed-rust/releases/download/v6.0.0/cargo-codspeed-aarch64-apple-darwin"
-url_api = "https://api.github.com/repos/CodSpeedHQ/codspeed-rust/releases/assets/663057845"
+checksum = "sha256:dab87456ef2c5385a559c8ab8a22aa15f17edc39d53094ae39a36d50d9438ef6"
+checksum_source = "mise-versions"
+url = "https://github.com/CodSpeedHQ/codspeed-rust/releases/download/v6.1.0/cargo-codspeed-aarch64-apple-darwin"
+url_api = "https://api.github.com/repos/CodSpeedHQ/codspeed-rust/releases/assets/772612629"
 
 [[tools."github:bearcove/tracey"]]
 version = "1.4.0"
@@ -671,16 +688,16 @@ specifiers = ["2.0.5"]
 repository = "github.com/T1ckbase/vscode-langservers-extracted"
 
 [[tools."npm:knip"]]
-version = "6.45.1"
-aube = { path = "locks/npm-knip/6.45.1", digest = "sha256:d8923b4964845c886bb6fe4678ee3ee6e4d30493cdb4fc84273bf51a98e4d263" }
+version = "6.47.0"
+aube = { path = "locks/npm-knip/6.47.0", digest = "sha256:241264c7f3fd53a499a8972075bbff9b6b476fe7f937e40174061b4ed4be53ac" }
 backend = "npm:knip"
-specifiers = ["6.45.1"]
+specifiers = ["6.47.0"]
 
 [[tools."npm:oxfmt"]]
-version = "0.78.0"
-aube = { path = "locks/npm-oxfmt/0.78.0", digest = "sha256:0da2508ef998e667c28c917c70d56e9d70b8513831de5663f0e0bdfae343bf2b" }
+version = "0.79.0"
+aube = { path = "locks/npm-oxfmt/0.79.0", digest = "sha256:1fb57357074535b1bf9329d5b4dac6c98ce258b003056387f018f196eee3a611" }
 backend = "npm:oxfmt"
-specifiers = ["0.78.0"]
+specifiers = ["0.79.0"]
 
 [[tools."npm:prettier"]]
 version = "3.10.1"
