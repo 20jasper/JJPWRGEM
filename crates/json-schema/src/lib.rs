@@ -1,6 +1,6 @@
 #![feature(new_range)]
 
-use jjpwrgem_parse::ast::Document;
+use jjpwrgem_parse::ast::{Document, ObjectEntries};
 
 mod error {
     use core::range::Range;
@@ -24,6 +24,8 @@ mod error {
         },
         /// a literal `false` always fails to validate
         FalseRoot { range: Range<usize> },
+        /// invalid type {found}
+        InvalidType { range: Range<usize>, found: String },
     }
 
     impl Error {
@@ -31,6 +33,7 @@ mod error {
             match self {
                 Error::MismatchedTypes { range, .. }
                 | Error::InvalidSchemaRoot { range, .. }
+                | Error::InvalidType { range, .. }
                 | FalseRoot { range } => range,
             }
         }
@@ -166,6 +169,45 @@ pub struct ObjectSchema {
     types: Option<Type>,
 }
 
+mod keyword {
+    pub const TITLE: &str = "title";
+    pub const DESCRIPTION: &str = "description";
+    pub const TYPE: &str = "type";
+}
+
+impl ObjectSchema {
+    fn parse<S: AsRef<str>>(doc: &Document<S>, entries: &ObjectEntries) -> Result<Self> {
+        Ok(Self {
+            title: string_keyword(doc, entries, keyword::TITLE),
+            description: string_keyword(doc, entries, keyword::DESCRIPTION),
+            types: type_keyword(doc, entries)?,
+        })
+    }
+}
+
+fn string_keyword<S: AsRef<str>>(
+    doc: &Document<S>,
+    entries: &ObjectEntries,
+    key: &str,
+) -> Option<String> {
+    doc.get_object_value(entries, key)
+        .and_then(|value| doc.as_str(value))
+        .map(ToOwned::to_owned)
+}
+
+fn type_keyword<S: AsRef<str>>(doc: &Document<S>, entries: &ObjectEntries) -> Result<Option<Type>> {
+    doc.get_object_value(entries, keyword::TYPE)
+        .map(|value| {
+            doc.as_str(value)
+                .and_then(Type::from_name)
+                .ok_or_else(|| Error::InvalidType {
+                    range: value.span(),
+                    found: doc.slice(value.span()).to_owned(),
+                })
+        })
+        .transpose()
+}
+
 impl Schema {
     fn type_(type_: Type) -> Self {
         Self::Object(ObjectSchema {
@@ -178,8 +220,8 @@ impl Schema {
     pub fn parse<S: AsRef<str>>(doc: &Document<S>) -> Result<Self> {
         if let Some(b) = doc.as_bool(doc.root()) {
             Ok(Schema::Bool(b))
-        } else if doc.as_object(doc.root()).is_some() {
-            todo!()
+        } else if let Some(entries) = doc.as_object(doc.root()) {
+            Ok(Schema::Object(ObjectSchema::parse(doc, entries)?))
         } else {
             Err(Error::InvalidSchemaRoot {
                 range: doc.root().range(),
@@ -198,6 +240,21 @@ pub enum Type {
     Array,
     Number,
     Integer,
+}
+
+impl Type {
+    pub fn from_name(name: &str) -> Option<Self> {
+        match name {
+            "boolean" => Some(Self::Bool),
+            "string" => Some(Self::String),
+            "null" => Some(Self::Null),
+            "object" => Some(Self::Object),
+            "array" => Some(Self::Array),
+            "number" => Some(Self::Number),
+            "integer" => Some(Self::Integer),
+            _ => None,
+        }
+    }
 }
 
 #[cfg(test)]
@@ -329,5 +386,73 @@ mod tests {
     fn true_schema_accepts_any_value(#[case] json: &str) {
         let doc = Document::parse(json, SyntaxOptions::JSON).unwrap();
         assert!(validate(&doc, &Schema::Bool(true)).is_ok());
+    }
+
+    #[rstest::rstest]
+    #[case("boolean", Type::Bool)]
+    #[case("string", Type::String)]
+    #[case("null", Type::Null)]
+    #[case("object", Type::Object)]
+    #[case("array", Type::Array)]
+    #[case("number", Type::Number)]
+    #[case("integer", Type::Integer)]
+    fn type_from_name_maps_each_json_type(#[case] name: &str, #[case] expected: Type) {
+        assert_eq!(Type::from_name(name), Some(expected));
+    }
+
+    #[test]
+    fn type_from_name_rejects_unknown_names() {
+        assert_eq!(Type::from_name("float"), None);
+        assert_eq!(Type::from_name("Object"), None);
+    }
+
+    #[rstest::rstest]
+    #[case("null", Type::String, PrimitiveType::String, PrimitiveType::Null, 0, 4)]
+    #[case("{}", Type::Array, PrimitiveType::Array, PrimitiveType::Object, 0, 2)]
+    #[case("[1]", Type::Object, PrimitiveType::Object, PrimitiveType::Array, 0, 3)]
+    #[case(
+        "true",
+        Type::Number,
+        PrimitiveType::Number,
+        PrimitiveType::Boolean,
+        0,
+        4
+    )]
+    #[case(
+        r#""text""#,
+        Type::Integer,
+        PrimitiveType::Integer,
+        PrimitiveType::String,
+        0,
+        6
+    )]
+    fn mismatch_reports_expected_actual_and_range(
+        #[case] json: &str,
+        #[case] ty: Type,
+        #[case] expected: PrimitiveType,
+        #[case] actual: PrimitiveType,
+        #[case] start: usize,
+        #[case] end: usize,
+    ) {
+        let doc = Document::parse(json, SyntaxOptions::JSON).unwrap();
+        assert_eq!(
+            validate(&doc, &Schema::type_(ty)),
+            Err(Error::MismatchedTypes {
+                range: core::range::Range { start, end },
+                expected,
+                actual,
+            })
+        );
+    }
+
+    // r[verify json-schema-v7.type.integer-subset]
+    #[rstest::rstest]
+    #[case("1e3", true)]
+    #[case("1.5e1", true)]
+    #[case("1.0e-1", false)]
+    #[case("1.5", false)]
+    fn integer_is_decided_by_value_not_text(#[case] json: &str, #[case] valid: bool) {
+        let doc = Document::parse(json, SyntaxOptions::JSON).unwrap();
+        assert_eq!(validate(&doc, &Schema::type_(Type::Integer)).is_ok(), valid);
     }
 }
