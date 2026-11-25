@@ -6,8 +6,8 @@
     "lint": "oxlint --deny-warnings --tsconfig npm-packages/jjpwrgem-vscode/tsconfig.json npm-packages/"
   },
   "devDependencies": {
-    "oxlint": "1.90.0",
-    "oxlint-tsgolint": "7.0.2007"
+    "oxlint": "1.94.0",
+    "oxlint-tsgolint": "7.0.2008"
   },
   "engines": {
     "node": ">=22.22.3",

@@ -38,6 +38,7 @@ impl ImplStatus {
 fn tracey_status() -> anyhow::Result<Option<TraceyStatus>> {
     let output = match Command::new("tracey")
         .args(["query", "--json", "status"])
+        .current_dir(repo_path!(""))
         .output()
     {
         Ok(o) => o,
