@@ -36,7 +36,7 @@ export function activate(context: vscode.ExtensionContext): {
 
   context.subscriptions.push(client);
   return {
-    whenReady: client.start().catch(() => {
+    whenReady: client.start().catch((error: unknown) => {
       vscode.window
         .showErrorMessage(
           "Could not start the LSP server. Is `jjp` installed and on your PATH?",
@@ -51,6 +51,7 @@ export function activate(context: vscode.ExtensionContext): {
             );
           }
         });
+      throw error;
     }),
   };
 }
