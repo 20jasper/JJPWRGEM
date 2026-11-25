@@ -9,6 +9,7 @@ use crate::{
     transport::{Sink, Writer},
 };
 
+mod colors;
 mod diagnostics;
 mod dispatch;
 mod documents;

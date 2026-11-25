@@ -56,6 +56,7 @@ impl<S: Sink> Backend<S> {
                 document_symbol_provider: Some(true.into()),
                 folding_range_provider: Some(true.into()),
                 selection_range_provider: Some(true.into()),
+                color_provider: Some(true.into()),
                 diagnostic_provider: Some(DiagnosticProvider::DiagnosticOptions(
                     DiagnosticOptions {
                         identifier: Some(SOURCE.into()),
