@@ -8,6 +8,7 @@ use crate::{
 };
 
 choice_enum! {
+    #[cfg_attr(feature = "serde", derive(::serde::Deserialize), serde(rename_all = "lowercase"))]
     pub enum CheckParser default Json {
         /// A single json document
         Json = "json",
@@ -19,6 +20,7 @@ choice_enum! {
 }
 
 settings! {
+    #[cfg_attr(feature = "serde", derive(::serde::Deserialize), serde(rename_all = "camelCase", default))]
     struct CheckInputSettings, table CHECK_INPUT_SETTINGS, id CheckInputSetting {
         /// Parser to use for input
         Parser parser: CheckParser = choice(),

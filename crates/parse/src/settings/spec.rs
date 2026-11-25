@@ -36,7 +36,12 @@ impl<T> Spec<T> {
         Self(Setting { aliases, ..self.0 }, PhantomData)
     }
 
-    pub const fn shorthand(self, name: &'static str, short: char, value: &'static str) -> Self {
+    pub const fn shorthand(
+        self,
+        name: &'static str,
+        short: Option<char>,
+        value: &'static str,
+    ) -> Self {
         Self(
             Setting {
                 shorthand: Some(Shorthand { name, short, value }),

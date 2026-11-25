@@ -10,6 +10,7 @@ repository.workspace = true
 documentation = "https://docs.rs/jjpwrgem-parse"
 keywords = ["json", "parser", "formatter", "diagnostics"]
 categories = ["parser-implementations", "text-processing"]
+include = ["src/**/*", "readme.md", "CHANGELOG.md"]
 
 [dependencies]
 bon = "3.9"

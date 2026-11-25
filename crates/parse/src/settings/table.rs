@@ -18,9 +18,12 @@ impl SettingValue for Option<usize> {
     }
 }
 
-// Rust-like syntax for defining Settings for conflicts, defaults, descriptions
-macro_rules! settings {
+/// Defines a settings struct, its id enum and its `Setting` table from Rust-like syntax. Extra attributes such as serde derives are supplied by the caller.
+#[doc(hidden)]
+#[macro_export]
+macro_rules! __settings {
     (
+        $(#[$meta:meta])*
         struct $struct_name:ident, table $table_name:ident, id $id_name:ident {
             $(
                 #[doc = $field_doc:literal]
@@ -29,11 +32,7 @@ macro_rules! settings {
         }
     ) => {
         #[derive(Debug, Default, Clone, PartialEq, Eq)]
-        #[cfg_attr(
-            feature = "serde",
-            derive(::serde::Deserialize),
-            serde(rename_all = "camelCase", default)
-        )]
+        $(#[$meta])*
         pub struct $struct_name {
             $(#[doc = $field_doc] pub $field_name: $field_type,)*
         }
@@ -88,4 +87,4 @@ macro_rules! settings {
     };
 }
 
-pub(crate) use settings;
+pub use __settings as settings;

@@ -87,6 +87,7 @@ pub(crate) fn join_into<T, B>(
 }
 
 choice_enum! {
+    #[cfg_attr(feature = "serde", derive(::serde::Deserialize), serde(rename_all = "lowercase"))]
     pub enum LineEnding default Lf {
         /// Unix line endings (LF)
         Lf = "lf",

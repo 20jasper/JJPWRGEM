@@ -17,19 +17,20 @@ pub const fn choice<T: Choice>() -> Spec<T> {
     })
 }
 
-macro_rules! choice_enum {
+/// Defines an enum usable as a choice setting, with per-variant descriptions and a default. Extra attributes such as serde derives are supplied by the caller.
+#[doc(hidden)]
+#[macro_export]
+macro_rules! __choice_enum {
     (
+        $(#[$meta:meta])*
         pub enum $name:ident default $default:ident {
             $(#[doc = $variant_doc:literal] $variant:ident = $name_lit:literal),+ $(,)?
         }
     ) => {
         #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-        #[cfg_attr(feature = "serde", derive(::serde::Deserialize))]
+        $(#[$meta])*
         pub enum $name {
-            $(
-                #[cfg_attr(feature = "serde", serde(rename = $name_lit))]
-                $variant,
-            )+
+            $($variant,)+
         }
 
         impl Default for $name {
@@ -60,4 +61,4 @@ macro_rules! choice_enum {
     };
 }
 
-pub(crate) use choice_enum;
+pub use __choice_enum as choice_enum;
