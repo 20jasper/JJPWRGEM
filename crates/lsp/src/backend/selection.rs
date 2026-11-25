@@ -151,7 +151,7 @@ mod tests {
     }
 
     /// ranges from innermost to outermost at `position`
-    fn selection_chain(text: &str, position: Position) -> Vec<Range> {
+    fn chain_at(text: &str, position: Position) -> Vec<Range> {
         let document = parse(text);
         let selection = selection_ranges(&document, PositionEncoding::Utf16, &[position]).remove(0);
         std::iter::successors(Some(&selection), |selection| selection.parent.as_deref())
@@ -186,14 +186,49 @@ mod tests {
             range((0, 0), (4, 1)),
         ],
     )]
-    fn selection_chain_for_nested_object_key(
+    #[case(
+        r#"[{"k": "ab", "z": 1}]"#,
+        (0, 9),
+        vec![
+            range((0, 8), (0, 10)),
+            range((0, 7), (0, 11)),
+            range((0, 2), (0, 11)),
+            range((0, 2), (0, 19)),
+            range((0, 1), (0, 20)),
+            range((0, 0), (0, 21)),
+        ],
+    )]
+    #[case(
+        "{\n  \"a\": [1, 2],\n  \"b\": 3\n}",
+        (1, 10),
+        vec![
+            range((1, 8), (1, 12)),
+            range((1, 7), (1, 13)),
+            range((1, 2), (1, 13)),
+            range((0, 1), (3, 0)),
+            range((0, 0), (3, 1)),
+        ],
+    )]
+    #[case(
+        r#"[10, "x"]"#,
+        (0, 6),
+        vec![
+            range((0, 6), (0, 7)),
+            range((0, 5), (0, 8)),
+            range((0, 1), (0, 8)),
+            range((0, 0), (0, 9)),
+        ],
+    )]
+    #[case(
+        r#"[10, "x"]"#,
+        (0, 1),
+        vec![range((0, 1), (0, 3)), range((0, 1), (0, 8)), range((0, 0), (0, 9))],
+    )]
+    fn selection_chain(
         #[case] text: &str,
         #[case] (line, character): (u32, u32),
         #[case] expected: Vec<Range>,
     ) {
-        assert_eq!(
-            selection_chain(text, Position::new(line, character)),
-            expected
-        );
+        assert_eq!(chain_at(text, Position::new(line, character)), expected);
     }
 }
