@@ -8,7 +8,7 @@ pub struct WasmServer(crate::Server);
 impl WasmServer {
     #[wasm_bindgen(constructor)]
     pub fn new() -> Self {
-        Self(crate::Server::new())
+        Self(crate::Server::new(env!("CARGO_PKG_VERSION")))
     }
 
     pub fn handle(&mut self, message: &str) -> Vec<String> {

@@ -27,14 +27,14 @@ impl fmt::Debug for Server {
 
 impl Default for Server {
     fn default() -> Self {
-        Self::new()
+        Self::new(env!("CARGO_PKG_VERSION"))
     }
 }
 
 impl Server {
-    pub fn new() -> Self {
+    pub fn new(version: &'static str) -> Self {
         Self {
-            backend: Backend::new(Writer::new(Collected::default())),
+            backend: Backend::new(Writer::new(Collected::default()), version),
         }
     }
 

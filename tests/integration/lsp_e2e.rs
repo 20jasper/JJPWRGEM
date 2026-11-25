@@ -46,7 +46,11 @@ fn startup_logs_the_version_and_client_setup() -> TestResult {
     let result = client.initialize(capabilities::vscode::latest())?;
     let log = client.wait_for_notification::<LogMessageNotification>()?;
 
-    let version = result.server_info.and_then(|info| info.version).unwrap();
+    let version = env!("CARGO_PKG_VERSION");
+    assert_eq!(
+        result.server_info.and_then(|info| info.version).as_deref(),
+        Some(version)
+    );
     assert_eq!(log.kind, MessageType::Info);
     assert_eq!(
         log.message,

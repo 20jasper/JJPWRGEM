@@ -34,7 +34,7 @@ impl<S: Sink> Backend<S> {
         };
         self.info(format!(
             "{SOURCE} {} started (position encoding {}, {diagnostics} diagnostics)",
-            env!("CARGO_PKG_VERSION"),
+            self.version,
             self.position_encoding.name(),
         ));
     }
@@ -51,7 +51,7 @@ impl<S: Sink> Backend<S> {
         InitializeResult {
             server_info: Some(ServerInfo {
                 name: SOURCE.into(),
-                version: Some(env!("CARGO_PKG_VERSION").into()),
+                version: Some(self.version.into()),
             }),
             capabilities: ServerCapabilities {
                 position_encoding,

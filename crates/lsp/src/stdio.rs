@@ -18,9 +18,12 @@ impl Sink for Stdout {
     }
 }
 
-pub fn run_blocking() -> Result<ExitCode, Box<dyn Error + Send + Sync>> {
+pub fn run_blocking(version: &'static str) -> Result<ExitCode, Box<dyn Error + Send + Sync>> {
     let events = crate::lsp_server::stdio::spawn_reader();
-    let mut backend = Backend::new(Writer::new(Stdout(BufWriter::new(stdout().lock()))));
+    let mut backend = Backend::new(
+        Writer::new(Stdout(BufWriter::new(stdout().lock()))),
+        version,
+    );
     loop {
         let body = match events.recv() {
             Ok(Event::Message(body)) => body,
