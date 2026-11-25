@@ -3,6 +3,11 @@ import * as vscode from "vscode";
 import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
+import {
+  describeStartError,
+  INSTALL_ACTION,
+  SETTINGS_ACTION,
+} from "../startError";
 
 suite("Extension Smoke Tests", function () {
   this.timeout(15000);
@@ -142,5 +147,35 @@ suite("Extension Smoke Tests", function () {
 
     await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
     fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+});
+
+suite("Start error message", () => {
+  test("names the error and suggests installing when the path is unset", () => {
+    const { message, actions } = describeStartError(
+      "jjp",
+      false,
+      new Error("spawn jjp ENOENT"),
+    );
+    assert.ok(message.includes("spawn jjp ENOENT"));
+    assert.ok(message.includes("installed and on your PATH"));
+    assert.deepStrictEqual(actions, [INSTALL_ACTION]);
+  });
+
+  test("names the command and points to the setting when the path is set", () => {
+    const { message, actions } = describeStartError(
+      "/opt/bad/jjp",
+      true,
+      new Error("spawn /opt/bad/jjp ENOENT"),
+    );
+    assert.ok(message.includes('with "/opt/bad/jjp"'));
+    assert.ok(message.includes("spawn /opt/bad/jjp ENOENT"));
+    assert.ok(message.includes("jjpwrgem.path"));
+    assert.deepStrictEqual(actions, [SETTINGS_ACTION]);
+  });
+
+  test("accepts a non-Error rejection", () => {
+    const { message } = describeStartError("jjp", false, "boom");
+    assert.ok(message.includes("boom"));
   });
 });

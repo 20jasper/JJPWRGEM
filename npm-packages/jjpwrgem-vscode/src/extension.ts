@@ -1,6 +1,11 @@
 import * as vscode from "vscode";
 import { getSetting } from "./settings";
 import {
+  describeStartError,
+  INSTALL_ACTION,
+  SETTINGS_ACTION,
+} from "./startError";
+import {
   LanguageClient,
   type LanguageClientOptions,
   type ServerOptions,
@@ -11,8 +16,18 @@ let client: LanguageClient;
 export function activate(context: vscode.ExtensionContext): {
   whenReady: Promise<void>;
 } {
+  const configuredPath = getSetting("jjpwrgem.path").trim();
+  const inspected = vscode.workspace
+    .getConfiguration()
+    .inspect<string>("jjpwrgem.path");
+  const custom = [
+    inspected?.globalValue,
+    inspected?.workspaceValue,
+    inspected?.workspaceFolderValue,
+  ].some((value) => value?.trim());
+  const command = configuredPath || "jjp";
   const serverOptions: ServerOptions = {
-    command: getSetting("jjpwrgem.path").trim() || "jjp",
+    command,
     args: ["lsp"],
   };
 
@@ -36,20 +51,19 @@ export function activate(context: vscode.ExtensionContext): {
 
   context.subscriptions.push(client);
   const whenReady = client.start().catch((error: unknown) => {
-    vscode.window
-      .showErrorMessage(
-        "Could not start the LSP server. Is `jjp` installed and on your PATH?",
-        "Installation instructions",
-      )
-      .then((action) => {
-        if (action === "Installation instructions") {
-          void vscode.env.openExternal(
-            vscode.Uri.parse(
-              "https://github.com/20jasper/jjpwrgem#installation",
-            ),
-          );
-        }
-      });
+    const { message, actions } = describeStartError(command, custom, error);
+    void vscode.window.showErrorMessage(message, ...actions).then((action) => {
+      if (action === INSTALL_ACTION) {
+        void vscode.env.openExternal(
+          vscode.Uri.parse("https://github.com/20jasper/jjpwrgem#installation"),
+        );
+      } else if (action === SETTINGS_ACTION) {
+        void vscode.commands.executeCommand(
+          "workbench.action.openSettings",
+          "jjpwrgem.path",
+        );
+      }
+    });
     throw error;
   });
   whenReady.catch(() => undefined);
