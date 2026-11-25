@@ -52,7 +52,7 @@
       "preLaunchTask": "build dev host"
     },
     {
-      "name": "Run JJPWRGEM VS Code Extension (WSL)",
+      "name": "Run JJPWRGEM VS Code Extension (WSL, Dev Profile)",
       "presentation": {
         "group": "JJPWRGEM",
         "order": 3
@@ -60,6 +60,8 @@
       "type": "extensionHost",
       "request": "launch",
       "args": [
+        "--profile",
+        "JJPWRGEM Dev",
         "--extensionDevelopmentPath=vscode-remote://wsl+${env:WSL_DISTRO_NAME}${workspaceFolder}/npm-packages/jjpwrgem-vscode",
         "--disable-extension=vscode.json-language-features",
         "--folder-uri=vscode-remote://wsl+${env:WSL_DISTRO_NAME}${workspaceFolder}",
