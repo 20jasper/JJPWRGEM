@@ -1,13 +1,13 @@
 #![feature(new_range)]
 
-use jjpwrgem_parse::ast::{Document, Value};
+use jjpwrgem_parse::ast::Document;
 
 mod error {
     use core::range::Range;
 
     use displaydoc::Display;
 
-    use crate::primitive::PrimitiveType;
+    use crate::{error::Error::FalseRoot, primitive::PrimitiveType};
 
     #[derive(Debug, Display, PartialEq, Eq, Clone)]
     pub enum Error {
@@ -22,14 +22,16 @@ mod error {
             range: Range<usize>,
             found: PrimitiveType,
         },
+        /// a literal `false` always fails to validate
+        FalseRoot { range: Range<usize> },
     }
 
     impl Error {
         pub fn range(&self) -> &Range<usize> {
             match self {
-                Error::MismatchedTypes { range, .. } | Error::InvalidSchemaRoot { range, .. } => {
-                    range
-                }
+                Error::MismatchedTypes { range, .. }
+                | Error::InvalidSchemaRoot { range, .. }
+                | FalseRoot { range } => range,
             }
         }
     }
@@ -127,7 +129,9 @@ pub fn validate<S: AsRef<str>>(doc: &Document<S>, schema: &Schema) -> Result<()>
     match schema {
         // r[impl json-schema-v7.schema.boolean-true]
         Schema::Bool(true) => Ok(()),
-        Schema::Bool(false) => todo!(),
+        Schema::Bool(false) => Err(Error::FalseRoot {
+            range: doc.root().range(),
+        }),
         Schema::Object(ObjectSchema { types: None, .. }) => Ok(()),
         Schema::Object(ObjectSchema {
             types: Some(ty), ..
@@ -172,9 +176,9 @@ impl Schema {
 
     // r[impl json-schema-v7.schema.root]
     pub fn parse<S: AsRef<str>>(doc: &Document<S>) -> Result<Self> {
-        if let Value::Boolean(_, b) = doc.root() {
-            Ok(Schema::Bool(*b))
-        } else if let Value::Object(..) = doc.root() {
+        if let Some(b) = doc.as_bool(doc.root()) {
+            Ok(Schema::Bool(b))
+        } else if doc.as_object(doc.root()).is_some() {
             todo!()
         } else {
             Err(Error::InvalidSchemaRoot {
