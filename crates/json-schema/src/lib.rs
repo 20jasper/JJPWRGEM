@@ -13,7 +13,7 @@ pub fn validate<S: AsRef<str>>(doc: &Document<S>, schema: &Schema) -> Result<()>
         // r[impl json-schema-v7.schema.boolean-true]
         Schema::Bool(true) => Ok(()),
         Schema::Bool(false) => Err(Error::FalseRoot {
-            range: doc.root().range(),
+            range: doc.root().span(),
         }),
         Schema::Object(ObjectSchema { types: None, .. }) => Ok(()),
         Schema::Object(ObjectSchema {
@@ -25,7 +25,7 @@ pub fn validate<S: AsRef<str>>(doc: &Document<S>, schema: &Schema) -> Result<()>
             if actual.is_subset(expected) {
                 Ok(())
             } else {
-                let range = doc.root().range();
+                let range = doc.root().span();
                 Err(Error::MismatchedTypes {
                     range,
                     expected,
@@ -96,7 +96,7 @@ impl Schema {
             Ok(Schema::Object(ObjectSchema::parse(doc, entries)?))
         } else {
             Err(Error::InvalidSchemaRoot {
-                range: doc.root().range(),
+                range: doc.root().span(),
                 found: value_as_primitive(doc.root(), doc),
             })
         }
@@ -142,6 +142,13 @@ mod tests {
 
     fn parse_schema(json: &str) -> Result<Schema> {
         Schema::parse(&Document::parse(json.to_string(), SyntaxOptions::JSON).unwrap())
+    }
+
+    fn type_schema(ty: Type) -> Schema {
+        Schema::Object(ObjectSchema {
+            types: Some(ty),
+            ..Default::default()
+        })
     }
 
     mod parse {
@@ -224,7 +231,7 @@ mod tests {
         #[case("true", Type::Null, false)]
         #[case("false", Type::Null, false)]
         fn checks_type(#[case] json: &str, #[case] ty: Type, #[case] valid: bool) {
-            assert_eq!(validate(&doc(json), &Schema::type_(ty)).is_ok(), valid);
+            assert_eq!(validate(&doc(json), &type_schema(ty)).is_ok(), valid);
         }
 
         #[rstest::rstest]
@@ -242,7 +249,7 @@ mod tests {
             #[case] range: core::range::Range<usize>,
         ) {
             assert_eq!(
-                validate(&doc(json), &Schema::type_(ty)),
+                validate(&doc(json), &type_schema(ty)),
                 Err(Error::MismatchedTypes {
                     range,
                     expected,

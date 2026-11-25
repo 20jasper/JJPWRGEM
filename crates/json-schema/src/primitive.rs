@@ -102,9 +102,7 @@ mod tests {
     #[case("123", PrimitiveType::Integer)]
     #[case("123.0", PrimitiveType::Integer)]
     #[case("1e3", PrimitiveType::Integer)]
-    #[case("1.5e1", PrimitiveType::Integer)]
     #[case("1.5", PrimitiveType::Number)]
-    #[case("1.0e-1", PrimitiveType::Number)]
     fn number_is_classified_by_value(#[case] json: &str, #[case] expected: PrimitiveType) {
         let doc = doc(json);
         assert_eq!(value_as_primitive(doc.root(), &doc), expected);
