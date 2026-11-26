@@ -1,9 +1,16 @@
 use std::cmp::Ordering;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+enum Sign {
+    Negative,
+    Zero,
+    Positive,
+}
+
 /// An exact JSON number: sign x digits(`int` ++ `frac`) x 10^`exp`, normalised without allocating.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Eq)]
 pub struct Decimal<'a> {
-    negative: bool,
+    sign: Sign,
     int: &'a str,
     frac: &'a str,
     exp: i64,
@@ -34,12 +41,18 @@ impl<'a> Decimal<'a> {
             int = trimmed;
         }
 
-        let zero = int.is_empty() && frac.is_empty();
+        let (sign, exp) = if int.is_empty() && frac.is_empty() {
+            (Sign::Zero, 0)
+        } else if negative {
+            (Sign::Negative, exp)
+        } else {
+            (Sign::Positive, exp)
+        };
         Self {
-            negative: negative && !zero,
+            sign,
             int,
             frac,
-            exp: if zero { 0 } else { exp },
+            exp,
         }
     }
 
@@ -51,20 +64,8 @@ impl<'a> Decimal<'a> {
         self.int.bytes().chain(self.frac.bytes())
     }
 
-    fn is_zero(&self) -> bool {
-        self.int.is_empty() && self.frac.is_empty()
-    }
-
     fn magnitude(&self) -> i128 {
         (self.int.len() + self.frac.len()) as i128 + i128::from(self.exp)
-    }
-
-    fn sign(&self) -> i8 {
-        match (self.is_zero(), self.negative) {
-            (true, _) => 0,
-            (false, true) => -1,
-            (false, false) => 1,
-        }
     }
 }
 
@@ -95,8 +96,6 @@ impl PartialEq for Decimal<'_> {
     }
 }
 
-impl Eq for Decimal<'_> {}
-
 impl PartialOrd for Decimal<'_> {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
@@ -105,19 +104,17 @@ impl PartialOrd for Decimal<'_> {
 
 impl Ord for Decimal<'_> {
     fn cmp(&self, other: &Self) -> Ordering {
-        let by_sign = self.sign().cmp(&other.sign());
-        if by_sign != Ordering::Equal || self.is_zero() {
-            return by_sign;
-        }
-        let magnitude = self
-            .magnitude()
-            .cmp(&other.magnitude())
-            .then_with(|| self.digits().cmp(other.digits()));
-        if self.negative {
-            magnitude.reverse()
-        } else {
-            magnitude
-        }
+        self.sign.cmp(&other.sign).then_with(|| {
+            let magnitude = self
+                .magnitude()
+                .cmp(&other.magnitude())
+                .then_with(|| self.digits().cmp(other.digits()));
+            match self.sign {
+                Sign::Zero => Ordering::Equal,
+                Sign::Positive => magnitude,
+                Sign::Negative => magnitude.reverse(),
+            }
+        })
     }
 }
 
