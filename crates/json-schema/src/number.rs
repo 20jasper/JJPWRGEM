@@ -7,6 +7,17 @@ enum Sign {
     Positive,
 }
 
+impl Sign {
+    /// Orders two numbers of this sign from how their magnitudes compare, which is only computed when the sign is not zero.
+    fn then_with(self, magnitude: impl FnOnce() -> Ordering) -> Ordering {
+        match self {
+            Self::Zero => Ordering::Equal,
+            Self::Positive => magnitude(),
+            Self::Negative => magnitude().reverse(),
+        }
+    }
+}
+
 /// An exact JSON number: sign x digits(`int` ++ `frac`) x 10^`exp`, normalised without allocating.
 #[derive(Debug, Clone, Copy, Eq)]
 pub struct Decimal<'a> {
@@ -64,8 +75,15 @@ impl<'a> Decimal<'a> {
         self.int.bytes().chain(self.frac.bytes())
     }
 
-    fn magnitude(&self) -> i128 {
+    fn order_of_magnitude(&self) -> i128 {
         (self.int.len() + self.frac.len()) as i128 + i128::from(self.exp)
+    }
+
+    /// Compares absolute values.
+    fn cmp_magnitude(&self, other: &Self) -> Ordering {
+        self.order_of_magnitude()
+            .cmp(&other.order_of_magnitude())
+            .then_with(|| self.digits().cmp(other.digits()))
     }
 }
 
@@ -104,17 +122,9 @@ impl PartialOrd for Decimal<'_> {
 
 impl Ord for Decimal<'_> {
     fn cmp(&self, other: &Self) -> Ordering {
-        self.sign.cmp(&other.sign).then_with(|| {
-            let magnitude = self
-                .magnitude()
-                .cmp(&other.magnitude())
-                .then_with(|| self.digits().cmp(other.digits()));
-            match self.sign {
-                Sign::Zero => Ordering::Equal,
-                Sign::Positive => magnitude,
-                Sign::Negative => magnitude.reverse(),
-            }
-        })
+        self.sign
+            .cmp(&other.sign)
+            .then_with(|| self.sign.then_with(|| self.cmp_magnitude(other)))
     }
 }
 
