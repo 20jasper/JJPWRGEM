@@ -59,5 +59,3 @@ macro_rules! __choice_enum {
         }
     };
 }
-
-pub use __choice_enum as choice_enum;

@@ -86,5 +86,3 @@ macro_rules! __settings {
         }
     };
 }
-
-pub use __settings as settings;
