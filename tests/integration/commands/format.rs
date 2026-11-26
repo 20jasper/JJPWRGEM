@@ -1,5 +1,7 @@
 use crate::{
-    common::{assert_cli_snapshot, cli, cli_snapshot, exec_cmd, format_template},
+    common::{
+        assert_cli_snapshot, cli, cli_snapshot, docs_json_pipeline, exec_cmd, format_template,
+    },
     test_json::*,
 };
 
@@ -108,5 +110,17 @@ fn docs(#[case] args: &[&str], #[case] input: &str, #[case] postfix: &str) {
         let output = exec_cmd(&mut cmd, Some(input.as_bytes().to_vec()));
 
         cli_snapshot!(format!("format_{postfix}"), output.docs_display_stdin());
+    });
+}
+
+#[test]
+fn docs_json() {
+    insta::with_settings!({
+        prepend_module_to_snapshot => false,
+    }, {
+        cli_snapshot!(
+            "format_json",
+            docs_json_pipeline(&["format", "--json"], r#"{"a":[1,2]}"#)
+        );
     });
 }

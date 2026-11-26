@@ -1,7 +1,7 @@
 use rstest::rstest;
 
 use crate::{
-    common::{assert_cli_snapshot, cli, cli_snapshot, exec_cmd},
+    common::{assert_cli_snapshot, cli, cli_snapshot, docs_json_pipeline, exec_cmd},
     test_json::*,
 };
 
@@ -77,6 +77,20 @@ fn docs(#[case] input: &str, #[case] postfix: &str) {
         let output = exec_cmd(&mut cmd, Some(input.as_bytes().to_vec()));
 
         cli_snapshot!(format!("check_{postfix}"), output.docs_display_stdin());
+    });
+}
+
+#[rstest::rstest]
+#[case(r#"{"coolKey"}"#, "failure")]
+#[case(r#"{"hello I am valid": null} "#, "success")]
+fn docs_json(#[case] input: &str, #[case] postfix: &str) {
+    insta::with_settings!({
+        prepend_module_to_snapshot => false,
+    }, {
+        cli_snapshot!(
+            format!("check_json_{postfix}"),
+            docs_json_pipeline(&["check", "--json"], input)
+        );
     });
 }
 

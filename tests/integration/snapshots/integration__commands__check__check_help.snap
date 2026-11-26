@@ -55,4 +55,41 @@ Examples:
 	1 | {"coolKey": "🐟🛹"}
 	  |           ++++++++
 
+JSON reporter format:
+	$ echo -en "{\"hello I am valid\": null} " | jjp check --json 2>&1 | jjp format
+	{ "success": true }
+
+	$ echo -en "{\"coolKey\"}" | jjp check --json 2>&1 | jjp format
+	{
+	  "success": false,
+	  "error": {
+	    "kind": "diagnostic",
+	    "message": "expected colon after key, found `}`",
+	    "file": "stdin",
+	    "range": {
+	      "start": { "offset": 10, "line": 1, "column": 11 },
+	      "end": { "offset": 11, "line": 1, "column": 12 }
+	    },
+	    "context": [
+	      {
+	        "message": "expected due to `\"coolKey\"`",
+	        "range": {
+	          "start": { "offset": 1, "line": 1, "column": 2 },
+	          "end": { "offset": 10, "line": 1, "column": 11 }
+	        }
+	      }
+	    ],
+	    "fixes": [
+	      {
+	        "message": "insert colon and placeholder value",
+	        "range": {
+	          "start": { "offset": 10, "line": 1, "column": 11 },
+	          "end": { "offset": 10, "line": 1, "column": 11 }
+	        },
+	        "replacement": ": \"🐟🛹\""
+	      }
+	    ]
+	  }
+	}
+
 stderr ---

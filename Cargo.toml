@@ -17,7 +17,10 @@ include = [
   # Embedded in binary
   "/axolotl.txt",
   "/tests/integration/snapshots/check_failure.snap",
+  "/tests/integration/snapshots/check_json_failure.snap",
+  "/tests/integration/snapshots/check_json_success.snap",
   "/tests/integration/snapshots/check_success.snap",
+  "/tests/integration/snapshots/format_json.snap",
   "/tests/integration/snapshots/format_pretty.snap",
   "/tests/integration/snapshots/format_uglify.snap",
 ]

@@ -103,6 +103,26 @@ stderr ---
     }
 }
 
+/// Runs `jjp <args>` on `input`, pipes its stdout and stderr into `jjp format`, and renders the pipeline.
+pub fn docs_json_pipeline(args: &[&str], input: &str) -> String {
+    let mut first = cli();
+    first.args(args);
+    let first = exec_cmd(&mut first, Some(input.as_bytes().to_vec()));
+    let combined = format!("{}{}", first.stdout, first.stderr);
+
+    let mut second = cli();
+    second.arg("format");
+    let second = exec_cmd(&mut second, Some(combined.into_bytes()));
+
+    format!(
+        "$ echo -en {:?} | jjp {} 2>&1 | jjp format\n{}{}",
+        first.stdin,
+        first.args.join(" "),
+        second.stdout,
+        second.stderr
+    )
+}
+
 pub fn exec_cmd(cmd: &mut Command, stdin: Option<Vec<u8>>) -> Output {
     let mut child = cmd
         .stdin(Stdio::piped())

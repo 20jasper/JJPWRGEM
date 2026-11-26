@@ -1,0 +1,7 @@
+---
+source: tests/integration/commands/check.rs
+assertion_line: 90
+expression: "docs_json_pipeline(&[\"check\", \"--json\"], input)"
+---
+$ echo -en "{\"hello I am valid\": null} " | jjp check --json 2>&1 | jjp format
+{ "success": true }

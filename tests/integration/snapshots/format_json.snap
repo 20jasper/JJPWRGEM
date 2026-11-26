@@ -1,0 +1,7 @@
+---
+source: tests/integration/commands/format.rs
+assertion_line: 119
+expression: "docs_json_pipeline(&[\"format\", \"--json\"], r#\"{\"a\":[1,2]}\"#)"
+---
+$ echo -en "{\"a\":[1,2]}" | jjp format --json 2>&1 | jjp format
+{ "success": true, "output": "{ \"a\": [1, 2] }" }
