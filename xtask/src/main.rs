@@ -16,6 +16,7 @@ mod npm;
 mod plot;
 mod settings_docs;
 mod template;
+mod vscode_extension;
 mod vscode_settings;
 
 #[derive(Parser)]

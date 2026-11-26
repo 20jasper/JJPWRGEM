@@ -55,6 +55,9 @@ fn setting_arg(setting: &Setting, help: String) -> Arg {
         SettingKind::Integer { default } => arg
             .default_value(default.to_string())
             .value_parser(value_parser!(usize)),
+        SettingKind::String { default } => arg
+            .default_value(default)
+            .value_parser(value_parser!(String)),
         SettingKind::Choice {
             values,
             descriptions,
@@ -98,7 +101,7 @@ fn main_value(matches: &ArgMatches, setting: &Setting) -> Option<Value> {
         SettingKind::Integer { .. } => matches
             .get_one::<usize>(setting.name)
             .map(|value| Value::from(*value)),
-        SettingKind::Choice { .. } => matches
+        SettingKind::Choice { .. } | SettingKind::String { .. } => matches
             .get_one::<String>(setting.name)
             .map(|value| Value::from(value.as_str())),
     }

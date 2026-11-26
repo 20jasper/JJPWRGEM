@@ -6,6 +6,10 @@ pub trait IntegerSetting {}
 
 impl IntegerSetting for Option<usize> {}
 
+pub trait StringSetting {}
+
+impl StringSetting for Option<String> {}
+
 #[derive(Debug)]
 #[must_use]
 pub struct Spec<T>(Setting, PhantomData<fn() -> T>);
@@ -25,6 +29,10 @@ pub(super) const fn blank<T>(kind: SettingKind) -> Spec<T> {
 
 pub const fn integer<T: IntegerSetting>(default: usize) -> Spec<T> {
     blank(SettingKind::Integer { default })
+}
+
+pub const fn string<T: StringSetting>(default: &'static str) -> Spec<T> {
+    blank(SettingKind::String { default })
 }
 
 impl<T> Spec<T> {

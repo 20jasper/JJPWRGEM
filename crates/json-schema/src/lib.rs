@@ -1,139 +1,110 @@
 #![feature(new_range)]
 
-use jjpwrgem_parse::ast::Document;
-
-mod error {
-    use core::range::Range;
-
-    use displaydoc::Display;
-
-    use crate::primitive::PrimitiveType;
-
-    #[derive(Debug, Display, PartialEq, Eq, Clone)]
-    pub enum Error {
-        /// mismatched types. expected {expected} but found {actual}
-        MismatchedTypes {
-            range: Range<usize>,
-            expected: PrimitiveType,
-            actual: PrimitiveType,
-        },
-    }
-
-    impl Error {
-        pub fn range(&self) -> &Range<usize> {
-            match self {
-                Error::MismatchedTypes { range, .. } => range,
-            }
-        }
-    }
-
-    impl std::error::Error for Error {}
-
-    pub type Result<T> = std::result::Result<T, Error>;
-}
+mod error;
+mod primitive;
 
 use error::{Error, Result};
+use jjpwrgem_parse::ast::{Document, ObjectEntries};
 
-use crate::primitive::{schema_as_primitive, value_as_primitive};
+use crate::primitive::{type_as_primitive, value_as_primitive};
 
-mod primitive {
+pub fn validate<S: AsRef<str>>(doc: &Document<S>, schema: &Schema) -> Result<()> {
+    match schema {
+        // r[impl json-schema-v7.schema.boolean-true]
+        Schema::Bool(true) => Ok(()),
+        Schema::Bool(false) => Err(Error::FalseRoot {
+            range: doc.root().span(),
+        }),
+        Schema::Object(ObjectSchema { types: None, .. }) => Ok(()),
+        Schema::Object(ObjectSchema {
+            types: Some(ty), ..
+        }) => {
+            let actual = value_as_primitive(doc.root(), doc);
+            let expected = type_as_primitive(ty);
 
-    use std::fmt;
-
-    use jjpwrgem_parse::ast::{Document, Value};
-
-    use crate::Schema;
-
-    // r[json-schema-v7.type.primitive]
-    #[derive(Debug, PartialEq, Eq, Clone, Copy)]
-    pub enum PrimitiveType {
-        Null,
-        Boolean,
-        String,
-        Number,
-        Integer,
-        Array,
-        Object,
-    }
-
-    impl PrimitiveType {
-        // r[json-schema-v7.type.integer-subset]
-        pub fn is_subset(self, superset: PrimitiveType) -> bool {
-            match (self, superset) {
-                (PrimitiveType::Integer, PrimitiveType::Number) => true,
-                (lhs, rhs) => lhs == rhs,
+            if actual.is_subset(expected) {
+                Ok(())
+            } else {
+                let range = doc.root().span();
+                Err(Error::MismatchedTypes {
+                    range,
+                    expected,
+                    actual,
+                })
             }
-        }
-    }
-
-    impl fmt::Display for PrimitiveType {
-        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-            let name = match self {
-                PrimitiveType::Null => "null",
-                PrimitiveType::Boolean => "boolean",
-                PrimitiveType::String => "string",
-                PrimitiveType::Number => "number",
-                PrimitiveType::Integer => "integer",
-                PrimitiveType::Array => "array",
-                PrimitiveType::Object => "object",
-            };
-            write!(f, "{name}")
-        }
-    }
-
-    pub fn value_as_primitive<S: AsRef<str>>(value: &Value, doc: &Document<S>) -> PrimitiveType {
-        match value {
-            Value::Null(_) => PrimitiveType::Null,
-            Value::Boolean(_, _) => PrimitiveType::Boolean,
-            Value::String(_) => PrimitiveType::String,
-            Value::Number { mantissa, .. } => {
-                // "integer" which matches any number with a zero fractional part
-                // https://json-schema.org/draft-07/draft-handrews-json-schema-validation-01#rfc.section.6.1.1
-                let s = doc.slice(*mantissa);
-                if s.find('.')
-                    .is_none_or(|i| s[i + 1..].chars().all(|c| c == '0'))
-                {
-                    PrimitiveType::Integer
-                } else {
-                    PrimitiveType::Number
-                }
-            }
-            Value::Array(_, _) => PrimitiveType::Array,
-            Value::Object(_, _) => PrimitiveType::Object,
-        }
-    }
-
-    pub fn schema_as_primitive(val: &Schema) -> PrimitiveType {
-        match val {
-            Schema::Bool => PrimitiveType::Boolean,
-            Schema::String => PrimitiveType::String,
-            Schema::Null => PrimitiveType::Null,
-            Schema::Object => PrimitiveType::Object,
-            Schema::Array => PrimitiveType::Array,
-            Schema::Number => PrimitiveType::Number,
-            Schema::Integer => PrimitiveType::Integer,
         }
     }
 }
 
-pub fn validate<S: AsRef<str>>(doc: &Document<S>, schema: &Schema) -> Result<()> {
-    let actual = value_as_primitive(doc.root(), doc);
-    let expected = schema_as_primitive(schema);
+#[derive(Debug, PartialEq, Eq)]
+pub enum Schema {
+    Bool(bool),
+    Object(ObjectSchema),
+}
 
-    if !actual.is_subset(expected) {
-        let range = doc.root().range();
-        Err(Error::MismatchedTypes {
-            range,
-            expected,
-            actual,
+#[derive(Debug, Default, PartialEq, Eq)]
+pub struct ObjectSchema {
+    title: Option<String>,
+    description: Option<String>,
+    types: Option<Type>,
+}
+
+mod keyword {
+    pub const TITLE: &str = "title";
+    pub const DESCRIPTION: &str = "description";
+    pub const TYPE: &str = "type";
+}
+
+impl ObjectSchema {
+    fn parse<S: AsRef<str>>(doc: &Document<S>, entries: &ObjectEntries) -> Result<Self> {
+        Ok(Self {
+            title: string_keyword(doc, entries, keyword::TITLE).map(ToOwned::to_owned),
+            description: string_keyword(doc, entries, keyword::DESCRIPTION).map(ToOwned::to_owned),
+            types: type_keyword(doc, entries)?,
         })
-    } else {
-        Ok(())
+    }
+}
+
+fn string_keyword<'a, S: AsRef<str>>(
+    doc: &'a Document<S>,
+    entries: &ObjectEntries,
+    key: &str,
+) -> Option<&'a str> {
+    doc.get_object_value(entries, key)
+        .and_then(|value| doc.as_str(value))
+}
+
+fn type_keyword<S: AsRef<str>>(doc: &Document<S>, entries: &ObjectEntries) -> Result<Option<Type>> {
+    let Some(value) = doc.get_object_value(entries, keyword::TYPE) else {
+        return Ok(None);
+    };
+    doc.as_str(value)
+        .and_then(Type::from_name)
+        .map(Some)
+        .ok_or_else(|| Error::InvalidType {
+            range: value.span(),
+            found: doc.slice(value.span()).to_owned(),
+        })
+}
+
+impl Schema {
+    // r[impl json-schema-v7.schema.root]
+    pub fn parse<S: AsRef<str>>(doc: &Document<S>) -> Result<Self> {
+        if let Some(b) = doc.as_bool(doc.root()) {
+            Ok(Schema::Bool(b))
+        } else if let Some(entries) = doc.as_object(doc.root()) {
+            Ok(Schema::Object(ObjectSchema::parse(doc, entries)?))
+        } else {
+            Err(Error::InvalidSchemaRoot {
+                range: doc.root().span(),
+                found: value_as_primitive(doc.root(), doc),
+            })
+        }
     }
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
-pub enum Schema {
+pub enum Type {
     Bool,
     String,
     Null,
@@ -143,6 +114,21 @@ pub enum Schema {
     Integer,
 }
 
+impl Type {
+    pub fn from_name(name: &str) -> Option<Self> {
+        match name {
+            "boolean" => Some(Self::Bool),
+            "string" => Some(Self::String),
+            "null" => Some(Self::Null),
+            "object" => Some(Self::Object),
+            "array" => Some(Self::Array),
+            "number" => Some(Self::Number),
+            "integer" => Some(Self::Integer),
+            _ => None,
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use jjpwrgem_parse::SyntaxOptions;
@@ -150,55 +136,164 @@ mod tests {
     use super::*;
     use crate::primitive::PrimitiveType;
 
-    // r[verify json-schema-v7.type.primitive]
-    #[rstest::rstest]
-    #[case("true", Schema::Bool)]
-    #[case("false", Schema::Bool)]
-    #[case(r#""string""#, Schema::String)]
-    #[case("null", Schema::Null)]
-    #[case("-42", Schema::Integer)]
-    #[case("[1,2,3]", Schema::Array)]
-    #[case("{}", Schema::Object)]
-    fn it_works(#[case] json: &str, #[case] schema: Schema) {
-        let doc = Document::parse(json, SyntaxOptions::JSON).unwrap();
-        assert!(validate(&doc, &schema).is_ok());
+    fn doc(json: &str) -> Document<&str> {
+        Document::parse(json, SyntaxOptions::JSON).unwrap()
     }
 
-    // r[verify json-schema-v7.type.integer-subset]
-    #[rstest::rstest]
-    #[case("123.0", Schema::Number)]
-    #[case("123.0", Schema::Integer)]
-    #[case("123", Schema::Number)]
-    #[case("123", Schema::Integer)]
-    fn integer_is_subset_of_number(#[case] json: &str, #[case] schema: Schema) {
-        let doc = Document::parse(json, SyntaxOptions::JSON).unwrap();
-        assert!(validate(&doc, &schema).is_ok());
+    fn parse_schema(json: &str) -> Result<Schema> {
+        Schema::parse(&Document::parse(json.to_string(), SyntaxOptions::JSON).unwrap())
     }
 
-    #[test]
-    fn number_is_not_subset_of_integer() {
-        let doc = Document::parse("123.5", SyntaxOptions::JSON).unwrap();
-        assert_eq!(
-            validate(&doc, &Schema::Integer),
-            Err(Error::MismatchedTypes {
-                range: 0..5,
-                expected: PrimitiveType::Integer,
-                actual: PrimitiveType::Number
-            })
-        );
+    fn type_schema(ty: Type) -> Schema {
+        Schema::Object(ObjectSchema {
+            types: Some(ty),
+            ..Default::default()
+        })
     }
 
-    #[rstest::rstest]
-    #[case("true", Schema::String)]
-    #[case("false", Schema::String)]
-    #[case("null", Schema::Bool)]
-    #[case("123", Schema::Bool)]
-    #[case("[1,2,3]", Schema::Bool)]
-    #[case("{}", Schema::Bool)]
-    #[case("true", Schema::Null)]
-    #[case("false", Schema::Null)]
-    fn it_doesnt_work(#[case] json: &str, #[case] schema: Schema) {
-        let doc = Document::parse(json, SyntaxOptions::JSON).unwrap();
-        assert!(validate(&doc, &schema).is_err());
+    mod parse {
+        use super::*;
+
+        #[test]
+        fn empty_object_has_no_constraints() {
+            assert_eq!(
+                parse_schema("{}"),
+                Ok(Schema::Object(ObjectSchema::default()))
+            );
+        }
+
+        #[test]
+        fn title_and_description() {
+            assert_eq!(
+                parse_schema(r#"{"title": "Port", "description": "TCP port"}"#),
+                Ok(Schema::Object(ObjectSchema {
+                    title: Some("Port".to_string()),
+                    description: Some("TCP port".to_string()),
+                    types: None,
+                }))
+            );
+        }
+
+        // r[verify json-schema-v7.schema.root]
+        #[rstest::rstest]
+        #[case("5", PrimitiveType::Integer)]
+        #[case(r#""text""#, PrimitiveType::String)]
+        #[case("null", PrimitiveType::Null)]
+        #[case("[1,2]", PrimitiveType::Array)]
+        fn rejects_non_object_or_boolean_root(#[case] json: &str, #[case] found: PrimitiveType) {
+            assert!(matches!(
+                parse_schema(json),
+                Err(Error::InvalidSchemaRoot { found: actual, .. }) if actual == found
+            ));
+        }
+
+        // r[verify json-schema-v7.schema.root]
+        #[rstest::rstest]
+        #[case("true", true)]
+        #[case("false", false)]
+        fn boolean_schema(#[case] json: &str, #[case] value: bool) {
+            assert_eq!(parse_schema(json), Ok(Schema::Bool(value)));
+        }
+
+        #[rstest::rstest]
+        #[case("boolean", Some(Type::Bool))]
+        #[case("string", Some(Type::String))]
+        #[case("null", Some(Type::Null))]
+        #[case("object", Some(Type::Object))]
+        #[case("array", Some(Type::Array))]
+        #[case("number", Some(Type::Number))]
+        #[case("integer", Some(Type::Integer))]
+        #[case("float", None)]
+        #[case("Object", None)]
+        fn type_from_name(#[case] name: &str, #[case] expected: Option<Type>) {
+            assert_eq!(Type::from_name(name), expected);
+        }
+    }
+
+    mod validate {
+        use super::*;
+
+        // r[verify json-schema-v7.type.primitive]
+        #[rstest::rstest]
+        #[case("true", Type::Bool, true)]
+        #[case("false", Type::Bool, true)]
+        #[case(r#""string""#, Type::String, true)]
+        #[case("null", Type::Null, true)]
+        #[case("-42", Type::Integer, true)]
+        #[case("[1,2,3]", Type::Array, true)]
+        #[case("{}", Type::Object, true)]
+        #[case("true", Type::String, false)]
+        #[case("false", Type::String, false)]
+        #[case("null", Type::Bool, false)]
+        #[case("123", Type::Bool, false)]
+        #[case("[1,2,3]", Type::Bool, false)]
+        #[case("{}", Type::Bool, false)]
+        #[case("true", Type::Null, false)]
+        #[case("false", Type::Null, false)]
+        fn checks_type(#[case] json: &str, #[case] ty: Type, #[case] valid: bool) {
+            assert_eq!(validate(&doc(json), &type_schema(ty)).is_ok(), valid);
+        }
+
+        #[rstest::rstest]
+        #[case("null", Type::String, PrimitiveType::String, PrimitiveType::Null, 0..4)]
+        #[case("{}", Type::Array, PrimitiveType::Array, PrimitiveType::Object, 0..2)]
+        #[case("[1]", Type::Object, PrimitiveType::Object, PrimitiveType::Array, 0..3)]
+        #[case("123.5", Type::Integer, PrimitiveType::Integer, PrimitiveType::Number, 0..5)]
+        #[case("true", Type::Number, PrimitiveType::Number, PrimitiveType::Boolean, 0..4)]
+        #[case(r#""text""#, Type::Integer, PrimitiveType::Integer, PrimitiveType::String, 0..6)]
+        fn mismatch_reports_expected_actual_and_range(
+            #[case] json: &str,
+            #[case] ty: Type,
+            #[case] expected: PrimitiveType,
+            #[case] actual: PrimitiveType,
+            #[case] range: core::range::Range<usize>,
+        ) {
+            assert_eq!(
+                validate(&doc(json), &type_schema(ty)),
+                Err(Error::MismatchedTypes {
+                    range,
+                    expected,
+                    actual,
+                })
+            );
+        }
+
+        // r[verify json-schema-v7.schema.boolean-true]
+        #[rstest::rstest]
+        #[case("5")]
+        #[case(r#""text""#)]
+        #[case("null")]
+        #[case("[1,2]")]
+        fn empty_and_true_schemas_accept_any_value(#[case] json: &str) {
+            assert!(validate(&doc(json), &parse_schema("{}").unwrap()).is_ok());
+            assert!(validate(&doc(json), &Schema::Bool(true)).is_ok());
+        }
+    }
+
+    mod end_to_end {
+        use super::*;
+
+        // r[verify json-schema-v7.type.primitive]
+        #[rstest::rstest]
+        #[case(
+            r#"{"title": "Port", "description": "TCP port", "type": "integer"}"#,
+            "8080",
+            true
+        )]
+        #[case(r#"{"type": "integer"}"#, "1.5", false)]
+        #[case(r#"{"type": "object"}"#, "{}", true)]
+        #[case(r#"{"type": "object"}"#, "[]", false)]
+        fn top_level_type(#[case] schema: &str, #[case] instance: &str, #[case] valid: bool) {
+            let schema = parse_schema(schema).unwrap();
+            assert_eq!(validate(&doc(instance), &schema).is_ok(), valid);
+        }
+
+        #[test]
+        fn top_level_unknown_type_is_an_error() {
+            assert!(matches!(
+                parse_schema(r#"{"type": "float"}"#),
+                Err(Error::InvalidType { found, .. }) if found == r#""float""#
+            ));
+        }
     }
 }

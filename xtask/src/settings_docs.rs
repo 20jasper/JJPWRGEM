@@ -17,6 +17,7 @@ fn ignored_sentences<'a>(
 fn section(setting: &Setting, prefix: &str) -> String {
     let details = match setting.kind {
         SettingKind::Integer { default } => vec![format!("Default `{default}`.")],
+        SettingKind::String { default } => vec![format!("Default `\"{default}\"`.")],
         SettingKind::Choice {
             values,
             descriptions,
@@ -54,7 +55,9 @@ pub fn settings_reference(prefix: &str) -> String {
 fn value(setting: &Setting) -> String {
     match setting.kind {
         SettingKind::Integer { default } => default.to_string(),
-        SettingKind::Choice { default, .. } => format!("\"{default}\""),
+        SettingKind::Choice { default, .. } | SettingKind::String { default } => {
+            format!("\"{default}\"")
+        }
     }
 }
 
@@ -69,7 +72,7 @@ fn comments(setting: &Setting) -> Vec<String> {
             .zip(descriptions)
             .map(|(value, description)| format!("  \"{value}\": {description}"))
             .collect(),
-        SettingKind::Integer { .. } => Vec::new(),
+        SettingKind::Integer { .. } | SettingKind::String { .. } => Vec::new(),
     };
     std::iter::once(setting.description.to_owned())
         .chain(

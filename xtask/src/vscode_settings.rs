@@ -8,7 +8,10 @@ use jjpwrgem_parse::{
 };
 use serde_json::{Map, Value, json};
 
-use crate::generated::{pretty_json, write_or_check};
+use crate::{
+    generated::{pretty_json, write_or_check},
+    vscode_extension::extension_properties,
+};
 
 const PACKAGE_JSON: &str = repo_path!("npm-packages/jjpwrgem-vscode/package.json");
 const SETTINGS_PREFIX: &str = "jjpwrgem.format.";
@@ -30,9 +33,12 @@ fn markdown_description(setting: &Setting) -> String {
         .join(" ")
 }
 
-fn property(id: FormatSetting) -> Value {
-    let setting = id.setting();
-    let mut schema = match setting.kind {
+pub fn schema(setting: &Setting) -> Value {
+    match setting.kind {
+        SettingKind::String { default } => json!({
+            "type": "string",
+            "default": default,
+        }),
         SettingKind::Integer { default } => json!({
             "type": "integer",
             "minimum": 0,
@@ -48,13 +54,18 @@ fn property(id: FormatSetting) -> Value {
             "enumDescriptions": descriptions,
             "default": default,
         }),
-    };
+    }
+}
+
+fn property(id: FormatSetting) -> Value {
+    let setting = id.setting();
+    let mut schema = schema(setting);
     schema["markdownDescription"] = markdown_description(setting).into();
     schema["order"] = (id as usize).into();
     schema
 }
 
-fn generated_properties() -> Map<String, Value> {
+fn format_properties() -> Map<String, Value> {
     FormatSetting::ALL
         .iter()
         .map(|&id| {
@@ -66,17 +77,27 @@ fn generated_properties() -> Map<String, Value> {
         .collect()
 }
 
+fn generated_properties() -> Map<String, Value> {
+    let (extension, trace) = extension_properties();
+    extension
+        .into_iter()
+        .chain(format_properties())
+        .chain(trace)
+        .collect()
+}
+
 fn render(package_json: &str) -> Result<String> {
     let mut package: Value = serde_json::from_str(package_json)?;
     let properties = package
         .pointer_mut(PROPERTIES_POINTER)
         .and_then(Value::as_object_mut)
         .context("package.json has no contributes.configuration.properties")?;
+    let generated = generated_properties();
     let kept: Map<String, Value> = std::mem::take(properties)
         .into_iter()
-        .filter(|(key, _)| !key.starts_with(SETTINGS_PREFIX))
+        .filter(|(key, _)| !generated.contains_key(key) && !key.starts_with(SETTINGS_PREFIX))
         .collect();
-    *properties = kept.into_iter().chain(generated_properties()).collect();
+    *properties = kept.into_iter().chain(generated).collect();
     pretty_json(&package)
 }
 

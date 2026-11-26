@@ -1,6 +1,6 @@
 ARG APP_NAME=jjp
 
-FROM docker.io/rustlang/rust:nightly-slim@sha256:28d4eebad341342ebbd0e432245138ea2b4d7c4aaaa42796d0e469cf902e1cf4 AS build
+FROM docker.io/rustlang/rust:nightly-slim@sha256:e7887652249be8af40b96a3e22c7ddb023328fcc9545e504d21bd7cd544a0bb7 AS build
 ARG APP_NAME
 WORKDIR /app
 

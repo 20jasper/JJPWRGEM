@@ -2,30 +2,9 @@ use core::range::Range;
 
 use crate::{
     Result, SyntaxOptions,
-    settings::{choice, choice_enum, settings},
     tokens::TokenStream,
     traverse::{Visitor, parse_tokens},
 };
-
-choice_enum! {
-    #[cfg_attr(feature = "serde", derive(::serde::Deserialize), serde(rename_all = "lowercase"))]
-    pub enum CheckParser default Json {
-        /// A single json document
-        Json = "json",
-        /// A single json document with comments and trailing commas
-        Jsonc = "jsonc",
-        /// One json document per line
-        Jsonlines = "jsonlines",
-    }
-}
-
-settings! {
-    #[cfg_attr(feature = "serde", derive(::serde::Deserialize), serde(rename_all = "camelCase", default))]
-    struct CheckInputSettings, table CHECK_INPUT_SETTINGS, id CheckInputSetting {
-        /// Parser to use for input
-        Parser parser: CheckParser = choice(),
-    }
-}
 
 #[derive(Debug)]
 pub struct NoopVisitor;

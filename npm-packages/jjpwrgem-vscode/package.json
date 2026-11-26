@@ -87,6 +87,18 @@
           "default": "lf",
           "markdownDescription": "Line ending to use when formatting output.",
           "order": 2
+        },
+        "jjpwrgem.trace.server": {
+          "type": "string",
+          "enum": ["off", "messages", "verbose"],
+          "enumDescriptions": [
+            "No tracing",
+            "Trace requests and notifications",
+            "Trace requests and notifications with their payloads"
+          ],
+          "default": "off",
+          "scope": "window",
+          "markdownDescription": "Traces the communication between VS Code and the jjpwrgem language server."
         }
       }
     }

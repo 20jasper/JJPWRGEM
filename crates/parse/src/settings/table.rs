@@ -13,12 +13,22 @@ impl SettingValue for Option<usize> {
         match (self, setting.kind) {
             (Some(value), _) => value.to_string(),
             (None, SettingKind::Integer { default }) => default.to_string(),
-            (None, SettingKind::Choice { .. }) => String::new(),
+            (None, SettingKind::Choice { .. } | SettingKind::String { .. }) => String::new(),
         }
     }
 }
 
-/// Defines a settings struct, its id enum and its `Setting` table from Rust-like syntax. Extra attributes such as serde derives are supplied by the caller.
+impl SettingValue for Option<String> {
+    fn text(&self, setting: &Setting) -> String {
+        match (self, setting.kind) {
+            (Some(value), _) => value.clone(),
+            (None, SettingKind::String { default }) => default.to_owned(),
+            (None, SettingKind::Integer { .. } | SettingKind::Choice { .. }) => String::new(),
+        }
+    }
+}
+
+// Rust-like syntax for defining Settings for conflicts, defaults, descriptions
 #[doc(hidden)]
 #[macro_export]
 macro_rules! __settings {
@@ -86,5 +96,3 @@ macro_rules! __settings {
         }
     };
 }
-
-pub use __settings as settings;

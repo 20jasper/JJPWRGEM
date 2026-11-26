@@ -3,6 +3,20 @@
 Validation rules derived from
 [draft-handrews-json-schema-validation-01](https://json-schema.org/draft-07/draft-handrews-json-schema-validation-01).
 
+## §4.3.1 — JSON Schema values and keywords
+
+> r[json-schema-v7.schema.root]
+> A JSON Schema MUST be an object or a boolean.
+> See [§4.3.1](https://json-schema.org/draft-07/draft-handrews-json-schema-01#rfc.section.4.3.1).
+
+> r[json-schema-v7.schema.boolean-true]
+> `true`: Always passes validation, as if the empty schema {}
+> See [§4.3.1](https://json-schema.org/draft-07/draft-handrews-json-schema-01#rfc.section.4.3.1).
+
+> r[json-schema-v7.schema.boolean-false]
+> `false`: Always fails validation, as if the schema { "not":{} }
+> See [§4.3.1](https://json-schema.org/draft-07/draft-handrews-json-schema-01#rfc.section.4.3.1).
+
 ## §6.1 — validation keywords for any instance type
 
 > r[json-schema-v7.type.primitive]
