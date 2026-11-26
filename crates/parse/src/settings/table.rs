@@ -13,7 +13,17 @@ impl SettingValue for Option<usize> {
         match (self, setting.kind) {
             (Some(value), _) => value.to_string(),
             (None, SettingKind::Integer { default }) => default.to_string(),
-            (None, SettingKind::Choice { .. }) => String::new(),
+            (None, SettingKind::Choice { .. } | SettingKind::String { .. }) => String::new(),
+        }
+    }
+}
+
+impl SettingValue for Option<String> {
+    fn text(&self, setting: &Setting) -> String {
+        match (self, setting.kind) {
+            (Some(value), _) => value.clone(),
+            (None, SettingKind::String { default }) => default.to_owned(),
+            (None, SettingKind::Integer { .. } | SettingKind::Choice { .. }) => String::new(),
         }
     }
 }

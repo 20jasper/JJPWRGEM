@@ -5,7 +5,7 @@ mod spec;
 mod table;
 
 pub use choice::{Choice, choice};
-pub use spec::{IntegerSetting, Spec, integer};
+pub use spec::{IntegerSetting, Spec, StringSetting, integer, string};
 pub use table::{SettingValue, Table};
 
 #[doc(inline)]
@@ -15,6 +15,9 @@ pub use crate::{__choice_enum as choice_enum, __settings as settings};
 pub enum SettingKind {
     Integer {
         default: usize,
+    },
+    String {
+        default: &'static str,
     },
     Choice {
         values: &'static [&'static str],

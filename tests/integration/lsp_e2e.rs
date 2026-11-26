@@ -575,7 +575,9 @@ fn table_defaults_as_client_settings_match_no_settings() -> TestResult {
         .map(|setting| {
             let value = match setting.kind {
                 SettingKind::Integer { default } => default.into(),
-                SettingKind::Choice { default, .. } => default.into(),
+                SettingKind::Choice { default, .. } | SettingKind::String { default } => {
+                    default.into()
+                }
             };
             (setting.key(), value)
         })
