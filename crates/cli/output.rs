@@ -11,19 +11,11 @@ pub struct Output {
 }
 
 impl Output {
-    pub fn success(stdout: impl Into<String>) -> Self {
+    pub fn success(style: Style, output: Option<String>) -> Self {
         Output {
-            stdout: Some(stdout.into()),
+            stdout: Some(style.render_success(output)),
             stderr: None,
             exit_code: ExitCode::SUCCESS,
-        }
-    }
-
-    pub fn failure(stderr: impl Into<String>) -> Self {
-        Output {
-            stdout: None,
-            stderr: Some(stderr.into()),
-            exit_code: ExitCode::FAILURE,
         }
     }
 

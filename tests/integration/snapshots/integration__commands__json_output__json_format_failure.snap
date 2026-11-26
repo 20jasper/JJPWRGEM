@@ -1,0 +1,13 @@
+---
+source: tests/integration/commands/json_output.rs
+expression: output.snapshot_display()
+---
+args: ["format", "--output-format", "json"]
+status: 1
+success: false
+stdin ---
+{"coolKey"}
+stdout ---
+
+stderr ---
+{"success":false,"error":{"kind":"diagnostic","message":"expected colon after key, found `}`","file":"stdin","range":{"start":{"offset":10,"line":1,"column":11},"end":{"offset":11,"line":1,"column":12}},"context":[{"message":"expected due to `\"coolKey\"`","range":{"start":{"offset":1,"line":1,"column":2},"end":{"offset":10,"line":1,"column":11}}}],"fixes":[{"message":"insert colon and placeholder value","range":{"start":{"offset":10,"line":1,"column":11},"end":{"offset":10,"line":1,"column":11}},"replacement":": \"🐟🛹\""}]}}

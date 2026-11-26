@@ -1,0 +1,13 @@
+---
+source: tests/integration/commands/json_output.rs
+expression: output.snapshot_display()
+---
+args: ["format", "--output-format", "json"]
+status: 0
+success: true
+stdin ---
+{"a":   [1,2]}
+stdout ---
+{"success":true,"output":"{ \"a\": [1, 2] }"}
+
+stderr ---

@@ -1,0 +1,14 @@
+---
+source: tests/integration/commands/json_output.rs
+expression: output.snapshot_display()
+---
+args: ["check", "--output-format", "json"]
+status: 1
+success: false
+stdin ---
+{"a":
+  "é" ,}
+stdout ---
+
+stderr ---
+{"success":false,"error":{"kind":"diagnostic","message":"expected key, found `}`","file":"stdin","range":{"start":{"offset":14,"line":2,"column":8},"end":{"offset":15,"line":2,"column":9}},"context":[{"message":"expected due to `,`","range":{"start":{"offset":13,"line":2,"column":7},"end":{"offset":14,"line":2,"column":8}}}],"fixes":[{"message":"consider removing the trailing comma","range":{"start":{"offset":13,"line":2,"column":7},"end":{"offset":14,"line":2,"column":8}},"replacement":""}]}}

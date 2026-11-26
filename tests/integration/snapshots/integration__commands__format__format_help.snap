@@ -49,6 +49,18 @@ Options:
           
           [default: json]
 
+      --output-format <OUTPUT_FORMAT>
+          Format used to report results and errors
+
+          Possible values:
+          - pretty: Human readable output
+          - json:   A single line of json describing the result
+          
+          [default: pretty]
+
+      --json
+          Shorthand for --output-format json
+
   -h, --help
           Print help (see a summary with '-h')
 

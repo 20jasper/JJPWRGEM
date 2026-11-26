@@ -10,6 +10,7 @@
 mod commands;
 mod error;
 mod output;
+mod output_format;
 mod setting_args;
 
 use std::{
@@ -24,12 +25,16 @@ use jjpwrgem_parse::{
 };
 use jjpwrgem_ui::{Color, Style};
 
-use crate::{commands::Action, output::Output};
+use crate::{commands::Action, output::Output, output_format::OutputFormat};
 
 fn main() -> ExitCode {
-    let style = Style::Pretty(Color::Plain);
+    let (action, output_format) = commands::parse();
+    let style = match output_format {
+        OutputFormat::Pretty => Style::Pretty(Color::Plain),
+        OutputFormat::Json => Style::Json,
+    };
 
-    match commands::parse() {
+    match action {
         Action::Lsp => match lsp::run_blocking(env!("CARGO_PKG_VERSION")) {
             Ok(code) => code,
             Err(error) => {
@@ -107,21 +112,21 @@ fn decode_utf8(bytes: &[u8], style: Style) -> Option<&str> {
 
 fn format_input(json: &str, style: Style, request: &FormatRequest) -> Output {
     match format_str(json, request) {
-        Ok(result) => Output::success(result),
+        Ok(result) => Output::success(style, Some(result)),
         Err(error) => Output::failure_diagnostic(Diagnostic::from(&error), style),
     }
 }
 
 pub fn check(json: &str, style: Style, syntax: SyntaxOptions) -> Output {
     match validate_str(json, syntax) {
-        Ok(()) => Output::success(""),
+        Ok(()) => Output::success(style, None),
         Err(error) => Output::failure_diagnostic(Diagnostic::from(&error), style),
     }
 }
 
 fn check_jsonlines(json: &str, style: Style) -> Output {
     match jjpwrgem_parse::jsonlines::parse(json) {
-        Ok(_) => Output::success(""),
+        Ok(_) => Output::success(style, None),
         Err(e) => Output::failure_diagnostic(Diagnostic::from(&e), style),
     }
 }

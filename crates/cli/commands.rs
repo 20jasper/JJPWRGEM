@@ -10,6 +10,7 @@ use jjpwrgem_parse::{
 
 use crate::{
     docs::{get_docs_snapshot, indent, strip_front_matter},
+    output_format::{OutputFormat, OutputSettings},
     setting_args::{FromSettings, Help, shorthand_text},
 };
 
@@ -61,12 +62,18 @@ pub struct FormatArgs {
 
     #[command(flatten)]
     input: FromSettings<InputSettings, FormatHelp>,
+
+    #[command(flatten)]
+    output: FromSettings<OutputSettings>,
 }
 
 #[derive(Args, Debug)]
 pub struct CheckArgs {
     #[command(flatten)]
     input: FromSettings<CheckInputSettings>,
+
+    #[command(flatten)]
+    output: FromSettings<OutputSettings>,
 }
 
 impl From<FormatArgs> for FormatConfig {
@@ -100,23 +107,29 @@ pub enum Action {
     Format(FormatRequest),
 }
 
-pub fn parse() -> Action {
+pub fn parse() -> (Action, OutputFormat) {
     let mut command = Cli::command();
     let matches = command.get_matches_mut();
     let cli =
         Cli::from_arg_matches(&matches).unwrap_or_else(|error| error.format(&mut command).exit());
     match cli.command {
-        Commands::Lsp => Action::Lsp,
-        Commands::Check(args) => Action::Check(args.input.into_inner().parser),
-        Commands::Format(args) => match FormatRequest::try_from(FormatConfig::from(args)) {
-            Ok(request) => Action::Format(request),
-            Err(ConfigError(rule)) => usage_error(
-                &command,
-                matches.subcommand_name(),
-                rule.describe(option_flag),
-            )
-            .exit(),
-        },
+        Commands::Lsp => (Action::Lsp, OutputFormat::default()),
+        Commands::Check(args) => (
+            Action::Check(args.input.into_inner().parser),
+            args.output.into_inner().output_format,
+        ),
+        Commands::Format(args) => {
+            let output_format = args.output.clone().into_inner().output_format;
+            match FormatRequest::try_from(FormatConfig::from(args)) {
+                Ok(request) => (Action::Format(request), output_format),
+                Err(ConfigError(rule)) => usage_error(
+                    &command,
+                    matches.subcommand_name(),
+                    rule.describe(option_flag),
+                )
+                .exit(),
+            }
+        }
     }
 }
 

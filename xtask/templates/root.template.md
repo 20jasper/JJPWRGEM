@@ -42,6 +42,38 @@ RUSTFLAGS="-C target-cpu=native" cargo install --path .
 
 See [LSP setup](https://github.com/20jasper/JJPWRGEM/blob/main/crates/lsp/readme.md#quick-start) to configure your editor, and [settings](https://github.com/20jasper/JJPWRGEM/blob/main/crates/lsp/readme.md#settings) for the format options
 
+## JSON output
+
+`jjp check` and `jjp format` print a single line of json with `--output-format json`, or `--json` for short. Successes go to stdout and failures go to stderr. Exit codes are the same as the default pretty output.
+
+Check success
+
+```bash
+$ echo '{"a": 1}' | jjp check --json
+{"success":true}
+```
+
+Format success
+
+```bash
+$ echo '{"a":[1,2]}' | jjp format --json
+{"success":true,"output":"{ \"a\": [1, 2] }"}
+```
+
+Syntax error. `range`, `context`, and `fixes` use byte `offset`s, 1-based `line`s, and 1-based `column`s counted in characters. `range` is `null` when there is no location
+
+```bash
+$ echo '{"coolKey"}' | jjp check --json
+{"success":false,"error":{"kind":"diagnostic","message":"expected colon after key, found `}`","file":"stdin","range":{"start":{"offset":10,"line":1,"column":11},"end":{"offset":11,"line":1,"column":12}},"context":[{"message":"expected due to `\"coolKey\"`","range":{"start":{"offset":1,"line":1,"column":2},"end":{"offset":10,"line":1,"column":11}}}],"fixes":[{"message":"insert colon and placeholder value","range":{"start":{"offset":10,"line":1,"column":11},"end":{"offset":10,"line":1,"column":11}},"replacement":": \"🐟🛹\""}]}}
+```
+
+Other errors, like missing stdin
+
+```bash
+$ jjp check --json
+{"success":false,"error":{"kind":"message","message":"expected non empty input from stdin","help":"pipe data to stdin like so\n$ echo -en \"{\\\"hello I am valid\\\": null} \" | jjp check\n"}}
+```
+
 ## Stability
 
 Internal libraries are likely unstable. Formatting output is unstable

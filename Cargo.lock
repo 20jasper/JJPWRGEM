@@ -1107,6 +1107,7 @@ version = "0.3.4"
 dependencies = [
  "annotate-snippets",
  "jjpwrgem-parse",
+ "serde",
 ]
 
 [[package]]
