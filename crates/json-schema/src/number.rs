@@ -39,6 +39,7 @@ impl<'a> Decimal<'a> {
             .strip_prefix('-')
             .map_or((false, mantissa), |rest| (true, rest));
         let (int, frac, exp) = fraction_to_exponent(unsigned, parse_exponent(exponent));
+        // strip leading and trailing 0s
         let int = int.trim_start_matches('0');
         let frac = if int.is_empty() {
             frac.trim_start_matches('0')
