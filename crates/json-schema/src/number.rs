@@ -34,14 +34,16 @@ impl<'a> Decimal<'a> {
     /// `mantissa` includes any leading `-`. `exponent` excludes `e`/`E` but may carry a sign.
     /// Expects validated JSON number text, so digits only, as produced by the parser.
     pub fn from_parts(mantissa: &'a str, exponent: Option<&str>) -> Self {
-        let (negative, unsigned) = split_sign(mantissa);
-        let (int, frac, exp) = glue(unsigned, parse_exponent(exponent));
+        let (negative, unsigned) = mantissa
+            .strip_prefix('-')
+            .map_or((false, mantissa), |rest| (true, rest));
+        let (int, frac) = unsigned.split_once('.').unwrap_or((unsigned, ""));
+        let exp = parse_exponent(exponent).saturating_sub(to_i64(frac.len()));
         let (int, frac) = trim_leading_zeros(int, frac);
         let (int, frac, exp) = trim_trailing_zeros(int, frac, exp);
         Self::new(negative, int, frac, exp)
     }
 
-    /// Picks the sign, and gives zero the exponent 0.
     fn new(negative: bool, int: &'a str, frac: &'a str, exp: i64) -> Self {
         let (sign, exp) = if int.is_empty() && frac.is_empty() {
             (Sign::Zero, 0)
@@ -82,21 +84,6 @@ fn to_i64(n: usize) -> i64 {
     i64::try_from(n).unwrap_or(i64::MAX)
 }
 
-/// Splits off a leading `-`, returning whether it was there.
-fn split_sign(mantissa: &str) -> (bool, &str) {
-    match mantissa.strip_prefix('-') {
-        Some(rest) => (true, rest),
-        None => (false, mantissa),
-    }
-}
-
-/// Splits at `.` and moves the fraction into the exponent.
-fn glue(unsigned: &str, exp: i64) -> (&str, &str, i64) {
-    let (int, frac) = unsigned.split_once('.').unwrap_or((unsigned, ""));
-    (int, frac, exp.saturating_sub(to_i64(frac.len())))
-}
-
-/// Drops leading zeros, which never change the value.
 fn trim_leading_zeros<'a>(int: &'a str, frac: &'a str) -> (&'a str, &'a str) {
     let int = int.trim_start_matches('0');
     let frac = if int.is_empty() {
@@ -107,7 +94,6 @@ fn trim_leading_zeros<'a>(int: &'a str, frac: &'a str) -> (&'a str, &'a str) {
     (int, frac)
 }
 
-/// Drops trailing zeros, adding 1 to the exponent for each, and only touches `int` when `frac` is empty.
 fn trim_trailing_zeros<'a>(int: &'a str, frac: &'a str, exp: i64) -> (&'a str, &'a str, i64) {
     let trimmed = frac.trim_end_matches('0');
     let exp = exp.saturating_add(to_i64(frac.len() - trimmed.len()));
@@ -119,7 +105,6 @@ fn trim_trailing_zeros<'a>(int: &'a str, frac: &'a str, exp: i64) -> (&'a str, &
     (int_trimmed, trimmed, exp)
 }
 
-/// Parses an optionally signed exponent, saturating instead of overflowing.
 fn parse_exponent(exponent: Option<&str>) -> i64 {
     let Some(text) = exponent else { return 0 };
     let (negative, digits) = match text.strip_prefix('-') {
