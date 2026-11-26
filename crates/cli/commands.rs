@@ -1,6 +1,5 @@
 use clap::{Args, Command, CommandFactory, FromArgMatches, Parser, Subcommand, error::ErrorKind};
 use jjpwrgem_parse::{
-    CheckInputSettings, CheckParser,
     format::{
         ConfigError, FormatConfig, FormatOption, FormatRequest, FormatSettings, InputSettings,
         rule_clause,
@@ -9,6 +8,7 @@ use jjpwrgem_parse::{
 };
 
 use crate::{
+    check_input::{CheckInputSettings, CheckParser},
     docs::{get_docs_snapshot, indent, strip_front_matter},
     setting_args::{FromSettings, Help, shorthand_text},
 };

@@ -6,6 +6,7 @@ use super::{
 use crate::settings::{choice, choice_enum, integer, settings};
 
 choice_enum! {
+    #[cfg_attr(feature = "serde", derive(::serde::Deserialize), serde(rename_all = "lowercase"))]
     pub enum Parser default Json {
         /// A single json document
         Json = "json",
@@ -15,6 +16,7 @@ choice_enum! {
 }
 
 choice_enum! {
+    #[cfg_attr(feature = "serde", derive(::serde::Deserialize), serde(rename_all = "lowercase"))]
     pub enum FormatMode default Pretty {
         /// Pretty print with indentation and line breaks
         Pretty = "pretty",
@@ -24,6 +26,7 @@ choice_enum! {
 }
 
 settings! {
+    #[cfg_attr(feature = "serde", derive(::serde::Deserialize), serde(rename_all = "camelCase", default))]
     struct InputSettings, table INPUT_SETTINGS, id InputSetting {
         /// Parser to use for input
         Parser parser: Parser = choice(),
@@ -31,9 +34,10 @@ settings! {
 }
 
 settings! {
+    #[cfg_attr(feature = "serde", derive(::serde::Deserialize), serde(rename_all = "camelCase", default))]
     struct FormatSettings, table FORMAT_SETTINGS, id FormatSetting {
         /// Output style
-        Mode mode: FormatMode = choice().shorthand("uglify", 'u', "uglify"),
+        Mode mode: FormatMode = choice().shorthand("uglify", Some('u'), "uglify"),
         /// Preferred maximum line width. Note this is not a hard maximum width
         PreferredWidth preferred_width: Option<usize> = integer(DEFAULT_PREFERRED_WIDTH),
         /// Line ending to use when formatting output
