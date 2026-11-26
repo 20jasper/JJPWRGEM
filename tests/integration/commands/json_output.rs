@@ -54,6 +54,16 @@ fn stdin_required() {
     );
 }
 
+#[test]
+fn invalid_utf8() {
+    assert_cli_snapshot!(
+        "json_invalid_utf8",
+        ["check", "--reporter", "json"],
+        Some(b"{\"a\": \"\xff\"}"),
+        false
+    );
+}
+
 #[rstest]
 #[case("check", br#"{"a": 1}"#, true)]
 #[case("check", TRAILING_COMMA, false)]

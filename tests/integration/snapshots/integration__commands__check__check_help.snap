@@ -92,4 +92,14 @@ JSON reporter format:
 	  }
 	}
 
+	$ jjp check --json < /dev/null 2>&1 | jjp format
+	{
+	  "success": false,
+	  "error": {
+	    "kind": "message",
+	    "message": "expected non empty input from stdin",
+	    "help": "pipe data to stdin like so\n$ echo -en \"{\\\"hello I am valid\\\": null} \" | jjp check\n"
+	  }
+	}
+
 stderr ---

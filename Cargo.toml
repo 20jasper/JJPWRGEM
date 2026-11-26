@@ -18,6 +18,7 @@ include = [
   "/axolotl.txt",
   "/tests/integration/snapshots/check_failure.snap",
   "/tests/integration/snapshots/check_json_failure.snap",
+  "/tests/integration/snapshots/check_json_message.snap",
   "/tests/integration/snapshots/check_json_success.snap",
   "/tests/integration/snapshots/check_success.snap",
   "/tests/integration/snapshots/format_json.snap",

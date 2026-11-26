@@ -40,19 +40,21 @@ pub struct Cli {
 pub enum Commands {
     /// Make your json look really good
     #[command(after_help = format!(
-        "Examples:\n{}\n\n{}\n\nJSON reporter format:\n{}\n\n{}",
+        "Examples:\n{}\n\n{}\n\nJSON reporter format:\n{}\n\n{}\n\n{}",
         indent(strip_front_matter(get_docs_snapshot!("format_pretty"))),
         indent(strip_front_matter(get_docs_snapshot!("format_uglify"))),
         indent(strip_front_matter(get_docs_snapshot!("format_json"))),
         indent(strip_front_matter(get_docs_snapshot!("check_json_failure"))),
+        indent(strip_front_matter(get_docs_snapshot!("check_json_message"))),
     ))]
     Format(FormatArgs),
     #[command(after_help = format!(
-        "Examples:\n{}\n\n{}\n\nJSON reporter format:\n{}\n\n{}",
+        "Examples:\n{}\n\n{}\n\nJSON reporter format:\n{}\n\n{}\n\n{}",
         indent(strip_front_matter(get_docs_snapshot!("check_success"))),
         indent(strip_front_matter(get_docs_snapshot!("check_failure"))),
         indent(strip_front_matter(get_docs_snapshot!("check_json_success"))),
         indent(strip_front_matter(get_docs_snapshot!("check_json_failure"))),
+        indent(strip_front_matter(get_docs_snapshot!("check_json_message"))),
     ))]
     /// Validates json syntax
     Check(CheckArgs),

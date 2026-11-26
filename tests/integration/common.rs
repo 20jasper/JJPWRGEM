@@ -114,9 +114,15 @@ pub fn docs_json_pipeline(args: &[&str], input: &str) -> String {
     second.arg("format");
     let second = exec_cmd(&mut second, Some(combined.into_bytes()));
 
+    let source = if input.is_empty() {
+        String::new()
+    } else {
+        format!("echo -en {:?} | ", first.stdin)
+    };
+    let redirect = if input.is_empty() { " < /dev/null" } else { "" };
+
     format!(
-        "$ echo -en {:?} | jjp {} 2>&1 | jjp format\n{}{}",
-        first.stdin,
+        "$ {source}jjp {}{redirect} 2>&1 | jjp format\n{}{}",
         first.args.join(" "),
         second.stdout,
         second.stderr

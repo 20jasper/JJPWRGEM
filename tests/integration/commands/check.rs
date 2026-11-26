@@ -83,6 +83,7 @@ fn docs(#[case] input: &str, #[case] postfix: &str) {
 #[rstest::rstest]
 #[case(r#"{"coolKey"}"#, "failure")]
 #[case(r#"{"hello I am valid": null} "#, "success")]
+#[case("", "message")]
 fn docs_json(#[case] input: &str, #[case] postfix: &str) {
     insta::with_settings!({
         prepend_module_to_snapshot => false,
