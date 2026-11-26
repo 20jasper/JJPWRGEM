@@ -23,7 +23,7 @@ pub fn shorthand_text(setting: &Setting, shorthand: &Shorthand) -> String {
     format!("Shorthand for --{} {}", setting.flag(), shorthand.value)
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct Plain;
 
 impl Help for Plain {
@@ -32,7 +32,7 @@ impl Help for Plain {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct FromSettings<T, H = Plain>(T, PhantomData<H>);
 
 impl<T, H> FromSettings<T, H> {

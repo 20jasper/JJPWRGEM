@@ -1,4 +1,5 @@
 use jjpwrgem_parse::settings::{choice, choice_enum, settings};
+use jjpwrgem_ui::{Color, Style};
 
 choice_enum! {
     #[derive(::serde::Deserialize)]
@@ -9,6 +10,15 @@ choice_enum! {
         Pretty = "pretty",
         /// A single line of json describing the result
         Json = "json",
+    }
+}
+
+impl From<OutputFormat> for Style {
+    fn from(format: OutputFormat) -> Self {
+        match format {
+            OutputFormat::Pretty => Self::Pretty(Color::Plain),
+            OutputFormat::Json => Self::Json,
+        }
     }
 }
 

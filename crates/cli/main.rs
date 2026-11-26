@@ -23,20 +23,12 @@ pub use error::{Error, Result};
 use jjpwrgem_parse::{
     SyntaxOptions, diagnostics::Diagnostic, format::FormatRequest, format_str, validate_str,
 };
-use jjpwrgem_ui::{Color, Style};
+use jjpwrgem_ui::Style;
 
-use crate::{
-    check_input::CheckParser, commands::Action, output::Output, output_format::OutputFormat,
-};
+use crate::{check_input::CheckParser, commands::Action, output::Output};
 
 fn main() -> ExitCode {
-    let (action, output_format) = commands::parse();
-    let style = match output_format {
-        OutputFormat::Pretty => Style::Pretty(Color::Plain),
-        OutputFormat::Json => Style::Json,
-    };
-
-    match action {
+    match commands::parse() {
         Action::Lsp => match lsp::run_blocking(env!("CARGO_PKG_VERSION")) {
             Ok(code) => code,
             Err(error) => {
@@ -44,14 +36,14 @@ fn main() -> ExitCode {
                 ExitCode::FAILURE
             }
         },
-        Action::Check(CheckParser::Jsonlines) => run_on_stdin(style, check_jsonlines),
-        Action::Check(CheckParser::Json) => {
+        Action::Check(CheckParser::Jsonlines, style) => run_on_stdin(style, check_jsonlines),
+        Action::Check(CheckParser::Json, style) => {
             run_on_stdin(style, |json, style| check(json, style, SyntaxOptions::JSON))
         }
-        Action::Check(CheckParser::Jsonc) => run_on_stdin(style, |json, style| {
+        Action::Check(CheckParser::Jsonc, style) => run_on_stdin(style, |json, style| {
             check(json, style, SyntaxOptions::JSONC)
         }),
-        Action::Format(request) => {
+        Action::Format(request, style) => {
             run_on_stdin(style, |json, style| format_input(json, style, &request))
         }
     }

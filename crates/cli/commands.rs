@@ -6,11 +6,12 @@ use jjpwrgem_parse::{
     },
     settings::{Setting, Shorthand},
 };
+use jjpwrgem_ui::Style;
 
 use crate::{
     check_input::{CheckInputSettings, CheckParser},
     docs::{get_docs_snapshot, indent, strip_front_matter},
-    output_format::{OutputFormat, OutputSettings},
+    output_format::OutputSettings,
     setting_args::{FromSettings, Help, shorthand_text},
 };
 
@@ -76,16 +77,7 @@ pub struct CheckArgs {
     output: FromSettings<OutputSettings>,
 }
 
-impl From<FormatArgs> for FormatConfig {
-    fn from(args: FormatArgs) -> Self {
-        Self {
-            input: args.input.into_inner(),
-            settings: args.settings.into_inner(),
-        }
-    }
-}
-
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 struct FormatHelp;
 
 impl Help for FormatHelp {
@@ -103,25 +95,32 @@ impl Help for FormatHelp {
 
 pub enum Action {
     Lsp,
-    Check(CheckParser),
-    Format(FormatRequest),
+    Check(CheckParser, Style),
+    Format(FormatRequest, Style),
 }
 
-pub fn parse() -> (Action, OutputFormat) {
+pub fn parse() -> Action {
     let mut command = Cli::command();
     let matches = command.get_matches_mut();
     let cli =
         Cli::from_arg_matches(&matches).unwrap_or_else(|error| error.format(&mut command).exit());
     match cli.command {
-        Commands::Lsp => (Action::Lsp, OutputFormat::default()),
-        Commands::Check(args) => (
-            Action::Check(args.input.into_inner().parser),
-            args.output.into_inner().output_format,
+        Commands::Lsp => Action::Lsp,
+        Commands::Check(args) => Action::Check(
+            args.input.into_inner().parser,
+            args.output.into_inner().output_format.into(),
         ),
-        Commands::Format(args) => {
-            let output_format = args.output.clone().into_inner().output_format;
-            match FormatRequest::try_from(FormatConfig::from(args)) {
-                Ok(request) => (Action::Format(request), output_format),
+        Commands::Format(FormatArgs {
+            settings,
+            input,
+            output,
+        }) => {
+            let style = output.into_inner().output_format.into();
+            match FormatRequest::try_from(FormatConfig {
+                input: input.into_inner(),
+                settings: settings.into_inner(),
+            }) {
+                Ok(request) => Action::Format(request, style),
                 Err(ConfigError(rule)) => usage_error(
                     &command,
                     matches.subcommand_name(),
