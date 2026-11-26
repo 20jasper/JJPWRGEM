@@ -7,6 +7,7 @@
     variant_size_differences,
     reason = "commands are different sizes and not perf sensitive"
 )]
+mod check_input;
 mod commands;
 mod error;
 mod output;
@@ -19,12 +20,11 @@ use std::{
 
 pub use error::{Error, Result};
 use jjpwrgem_parse::{
-    CheckParser, SyntaxOptions, diagnostics::Diagnostic, format::FormatRequest, format_str,
-    validate_str,
+    SyntaxOptions, diagnostics::Diagnostic, format::FormatRequest, format_str, validate_str,
 };
 use jjpwrgem_ui::{Color, Style};
 
-use crate::{commands::Action, output::Output};
+use crate::{check_input::CheckParser, commands::Action, output::Output};
 
 fn main() -> ExitCode {
     let style = Style::Pretty(Color::Plain);

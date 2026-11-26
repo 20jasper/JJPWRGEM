@@ -9,7 +9,7 @@ pub mod settings;
 pub mod tokens;
 mod traverse;
 
-pub use check::{CheckInputSettings, CheckParser, validate_str};
+pub use check::validate_str;
 
 pub use crate::error::{Error, ErrorKind, Result};
 
