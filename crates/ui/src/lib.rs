@@ -53,3 +53,9 @@ pub struct BasicErrorMessage {
     pub error: String,
     pub help: Option<String>,
 }
+
+/// JSON Schema for the `--reporter json` output.
+#[cfg(feature = "schema")]
+pub fn reporter_schema() -> schemars::Schema {
+    json::schema()
+}

@@ -9,6 +9,7 @@ include = ["src/**/*"]
 anyhow = "1"
 clap = { version = "4", features = ["derive"] }
 jjpwrgem-parse = { workspace = true, features = ["serde"] }
+jjpwrgem-ui = { workspace = true, features = ["schema"] }
 plotters = { version = "0.3", default-features = false, features = [
   "svg_backend",
   "candlestick",

@@ -1,6 +1,5 @@
 ---
 source: tests/integration/commands/check.rs
-assertion_line: 90
 expression: "docs_json_pipeline(&[\"check\", \"--json\"], input)"
 ---
 $ echo -en "{\"coolKey\"}" | jjp check --json 2>&1 | jjp format
@@ -11,15 +10,15 @@ $ echo -en "{\"coolKey\"}" | jjp check --json 2>&1 | jjp format
     "message": "expected colon after key, found `}`",
     "file": "stdin",
     "range": {
-      "start": { "offset": 10, "line": 1, "column": 11 },
-      "end": { "offset": 11, "line": 1, "column": 12 }
+      "start": { "byteFromStart": 10, "line": 1, "charColumn": 11 },
+      "end": { "byteFromStart": 11, "line": 1, "charColumn": 12 }
     },
     "context": [
       {
         "message": "expected due to `\"coolKey\"`",
         "range": {
-          "start": { "offset": 1, "line": 1, "column": 2 },
-          "end": { "offset": 10, "line": 1, "column": 11 }
+          "start": { "byteFromStart": 1, "line": 1, "charColumn": 2 },
+          "end": { "byteFromStart": 10, "line": 1, "charColumn": 11 }
         }
       }
     ],
@@ -27,8 +26,8 @@ $ echo -en "{\"coolKey\"}" | jjp check --json 2>&1 | jjp format
       {
         "message": "insert colon and placeholder value",
         "range": {
-          "start": { "offset": 10, "line": 1, "column": 11 },
-          "end": { "offset": 10, "line": 1, "column": 11 }
+          "start": { "byteFromStart": 10, "line": 1, "charColumn": 11 },
+          "end": { "byteFromStart": 10, "line": 1, "charColumn": 11 }
         },
         "replacement": ": \"🐟🛹\""
       }

@@ -19,6 +19,10 @@ doctest = false
 annotate-snippets = "0.12.17"
 jjpwrgem-parse = { workspace = true, features = ["serde"] }
 serde = { workspace = true, features = ["derive"] }
+schemars = { version = "1", optional = true }
+
+[features]
+schema = ["dep:schemars"]
 
 [lints]
 workspace = true

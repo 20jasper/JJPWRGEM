@@ -14,6 +14,7 @@ mod lsp_bench_report;
 mod markdown;
 mod npm;
 mod plot;
+mod reporter_schema;
 mod settings_docs;
 mod template;
 mod vscode_extension;
@@ -41,6 +42,8 @@ enum Commands {
     VscodeSettings(#[command(flatten)] CheckArgs),
     /// Generate candlestick charts for all benchmark datasets
     PlotBenchmarks,
+    /// Write the JSON Schema for the json reporter output
+    ReporterSchema(#[command(flatten)] CheckArgs),
     /// Generate the npm package.json
     NpmPackage(#[command(flatten)] CheckArgs),
     /// Read criterion JSON from stdin and write a markdown table with time and throughput
@@ -57,6 +60,7 @@ fn main() -> anyhow::Result<()> {
     match cli.cmd {
         Commands::Readmes(CheckArgs { check }) => template::readmes(check),
         Commands::VscodeSettings(CheckArgs { check }) => vscode_settings::vscode_settings(check),
+        Commands::ReporterSchema(CheckArgs { check }) => reporter_schema::reporter_schema(check),
         Commands::PlotBenchmarks => plot::plot_all_benchmarks(),
         Commands::NpmPackage(CheckArgs { check }) => npm::npm_package(check),
         Commands::BenchTable => bench_table::write_bench_table(),

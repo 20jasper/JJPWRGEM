@@ -72,6 +72,8 @@ Examples:
 	{"shoppingList":["cheese","slushy machine"]}
 
 JSON reporter format:
+Schema: https://raw.githubusercontent.com/20jasper/JJPWRGEM/main/schemas/reporter.schema.json
+
 	$ echo -en "{\"a\":[1,2]}" | jjp format --json 2>&1 | jjp format
 	{ "success": true, "output": "{ \"a\": [1, 2] }" }
 
@@ -83,15 +85,15 @@ JSON reporter format:
 	    "message": "expected colon after key, found `}`",
 	    "file": "stdin",
 	    "range": {
-	      "start": { "offset": 10, "line": 1, "column": 11 },
-	      "end": { "offset": 11, "line": 1, "column": 12 }
+	      "start": { "byteFromStart": 10, "line": 1, "charColumn": 11 },
+	      "end": { "byteFromStart": 11, "line": 1, "charColumn": 12 }
 	    },
 	    "context": [
 	      {
 	        "message": "expected due to `\"coolKey\"`",
 	        "range": {
-	          "start": { "offset": 1, "line": 1, "column": 2 },
-	          "end": { "offset": 10, "line": 1, "column": 11 }
+	          "start": { "byteFromStart": 1, "line": 1, "charColumn": 2 },
+	          "end": { "byteFromStart": 10, "line": 1, "charColumn": 11 }
 	        }
 	      }
 	    ],
@@ -99,8 +101,8 @@ JSON reporter format:
 	      {
 	        "message": "insert colon and placeholder value",
 	        "range": {
-	          "start": { "offset": 10, "line": 1, "column": 11 },
-	          "end": { "offset": 10, "line": 1, "column": 11 }
+	          "start": { "byteFromStart": 10, "line": 1, "charColumn": 11 },
+	          "end": { "byteFromStart": 10, "line": 1, "charColumn": 11 }
 	        },
 	        "replacement": ": \"🐟🛹\""
 	      }

@@ -11,4 +11,4 @@ stdin ---
 stdout ---
 
 stderr ---
-{"success":false,"error":{"kind":"diagnostic","message":"expected key, found `}`","file":"stdin","range":{"start":{"offset":14,"line":2,"column":8},"end":{"offset":15,"line":2,"column":9}},"context":[{"message":"expected due to `,`","range":{"start":{"offset":13,"line":2,"column":7},"end":{"offset":14,"line":2,"column":8}}}],"fixes":[{"message":"consider removing the trailing comma","range":{"start":{"offset":13,"line":2,"column":7},"end":{"offset":14,"line":2,"column":8}},"replacement":""}]}}
+{"success":false,"error":{"kind":"diagnostic","message":"expected key, found `}`","file":"stdin","range":{"start":{"byteFromStart":14,"line":2,"charColumn":8},"end":{"byteFromStart":15,"line":2,"charColumn":9}},"context":[{"message":"expected due to `,`","range":{"start":{"byteFromStart":13,"line":2,"charColumn":7},"end":{"byteFromStart":14,"line":2,"charColumn":8}}}],"fixes":[{"message":"consider removing the trailing comma","range":{"start":{"byteFromStart":13,"line":2,"charColumn":7},"end":{"byteFromStart":14,"line":2,"charColumn":8}},"replacement":""}]}}

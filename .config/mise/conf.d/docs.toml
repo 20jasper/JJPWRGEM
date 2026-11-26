@@ -21,10 +21,12 @@ outputs = [
   "crates/bytes2chars/README.md",
   "crates/lspresso/README.md",
   "npm-packages/jjpwrgem-vscode/package.json",
+  "schemas/reporter.schema.json",
 ]
 run = [
   "cargo xtask readmes",
   "cargo xtask vscode-settings",
+  "cargo xtask reporter-schema",
   "cargo +nightly fmt -p bytes2chars",
   "cargo rdme --workspace-project bytes2chars --force",
   "cargo rdme --workspace-project lspresso --force",
@@ -40,6 +42,7 @@ description = "Verify markdown files match generated templates"
 run = [
   "cargo xtask readmes --check",
   "cargo xtask vscode-settings --check",
+  "cargo xtask reporter-schema --check",
   "cargo xtask npm-package --check",
   "cargo rdme --workspace-project bytes2chars --check",
   "cargo rdme --workspace-project lspresso --check",

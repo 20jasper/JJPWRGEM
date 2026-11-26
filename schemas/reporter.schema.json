@@ -1,0 +1,174 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Reporter",
+  "description": "Output of `jjp check` and `jjp format` with `--reporter json`.",
+  "anyOf": [{ "$ref": "#/$defs/Success" }, { "$ref": "#/$defs/Failure" }],
+  "$defs": {
+    "Success": {
+      "description": "The command succeeded.",
+      "type": "object",
+      "properties": {
+        "success": {
+          "description": "Always `true`.",
+          "type": "boolean",
+          "const": true
+        },
+        "output": {
+          "description": "Formatted json, only present for `format`.",
+          "type": "string"
+        }
+      },
+      "required": ["success"]
+    },
+    "Failure": {
+      "description": "The command failed.",
+      "type": "object",
+      "properties": {
+        "success": {
+          "description": "Always `false`.",
+          "type": "boolean",
+          "const": false
+        },
+        "error": {
+          "description": "What went wrong.",
+          "$ref": "#/$defs/ErrorBody"
+        }
+      },
+      "required": ["success", "error"]
+    },
+    "ErrorBody": {
+      "description": "A failure, discriminated by `kind`.",
+      "oneOf": [
+        {
+          "description": "A syntax error in the input.",
+          "type": "object",
+          "properties": { "kind": { "type": "string", "const": "diagnostic" } },
+          "$ref": "#/$defs/DiagnosticBody",
+          "required": ["kind"]
+        },
+        {
+          "description": "An error with no position, like missing stdin.",
+          "type": "object",
+          "properties": { "kind": { "type": "string", "const": "message" } },
+          "$ref": "#/$defs/MessageBody",
+          "required": ["kind"]
+        }
+      ]
+    },
+    "JsonRange": {
+      "description": "A span of the input.",
+      "type": "object",
+      "properties": {
+        "start": {
+          "description": "Where the span starts.",
+          "$ref": "#/$defs/Position"
+        },
+        "end": {
+          "description": "Where the span ends.",
+          "$ref": "#/$defs/Position"
+        }
+      },
+      "required": ["start", "end"]
+    },
+    "Position": {
+      "description": "A location in the input.",
+      "type": "object",
+      "properties": {
+        "byteFromStart": {
+          "description": "UTF-8 bytes from the start of the input, starting at 0.",
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0
+        },
+        "line": {
+          "description": "1-based line number.",
+          "type": "integer",
+          "format": "uint",
+          "minimum": 1
+        },
+        "charColumn": {
+          "description": "1-based count of characters (Unicode scalar values) within the line.",
+          "type": "integer",
+          "format": "uint",
+          "minimum": 1
+        }
+      },
+      "required": ["byteFromStart", "line", "charColumn"]
+    },
+    "ContextBody": {
+      "description": "A related span that explains the error.",
+      "type": "object",
+      "properties": {
+        "message": {
+          "description": "Why this span is relevant.",
+          "type": "string"
+        },
+        "range": {
+          "description": "The related span.",
+          "$ref": "#/$defs/JsonRange"
+        }
+      },
+      "required": ["message", "range"]
+    },
+    "FixBody": {
+      "description": "A suggested edit.",
+      "type": "object",
+      "properties": {
+        "message": { "description": "What the edit does.", "type": "string" },
+        "range": {
+          "description": "The span to replace.",
+          "$ref": "#/$defs/JsonRange"
+        },
+        "replacement": {
+          "description": "Text to put in place of `range`.",
+          "type": "string"
+        }
+      },
+      "required": ["message", "range", "replacement"]
+    },
+    "DiagnosticBody": {
+      "description": "A syntax error in the input.",
+      "type": "object",
+      "properties": {
+        "message": {
+          "description": "Human readable description of the error.",
+          "type": "string"
+        },
+        "file": {
+          "description": "Path of the input file, or `\"stdin\"` when reading stdin.",
+          "type": "string"
+        },
+        "range": {
+          "description": "Where the error is, or null when the error has no position.",
+          "anyOf": [{ "$ref": "#/$defs/JsonRange" }, { "type": "null" }]
+        },
+        "context": {
+          "description": "Related spans that explain the error.",
+          "type": "array",
+          "items": { "$ref": "#/$defs/ContextBody" }
+        },
+        "fixes": {
+          "description": "Suggested edits. Apply `replacement` over `range`.",
+          "type": "array",
+          "items": { "$ref": "#/$defs/FixBody" }
+        }
+      },
+      "required": ["message", "file", "context", "fixes"]
+    },
+    "MessageBody": {
+      "description": "An error with no position, like missing stdin.",
+      "type": "object",
+      "properties": {
+        "message": {
+          "description": "Human readable description of the error.",
+          "type": "string"
+        },
+        "help": {
+          "description": "Suggestion for how to resolve the error, or null when there is none.",
+          "type": ["string", "null"]
+        }
+      },
+      "required": ["message"]
+    }
+  }
+}

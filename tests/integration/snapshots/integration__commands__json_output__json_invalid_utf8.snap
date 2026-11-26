@@ -10,4 +10,4 @@ raw bytes: [123, 34, 97, 34, 58, 32, 34, 255, 34, 125]
 stdout ---
 
 stderr ---
-{"success":false,"error":{"kind":"diagnostic","message":"byte 0xFF would start a sequence of 5 or more bytes","file":"stdin","range":{"start":{"offset":7,"line":1,"column":8},"end":{"offset":10,"line":1,"column":9}},"context":[],"fixes":[]}}
+{"success":false,"error":{"kind":"diagnostic","message":"byte 0xFF would start a sequence of 5 or more bytes","file":"stdin","range":{"start":{"byteFromStart":7,"line":1,"charColumn":8},"end":{"byteFromStart":10,"line":1,"charColumn":9}},"context":[],"fixes":[]}}

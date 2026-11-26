@@ -15,6 +15,9 @@ use crate::{
     setting_args::{FromSettings, Help, shorthand_text},
 };
 
+const REPORTER_SCHEMA_URL: &str =
+    "https://raw.githubusercontent.com/20jasper/JJPWRGEM/main/schemas/reporter.schema.json";
+
 #[derive(Parser)]
 #[command(
     version = concat!(
@@ -40,18 +43,20 @@ pub struct Cli {
 pub enum Commands {
     /// Make your json look really good
     #[command(after_help = format!(
-        "Examples:\n{}\n\n{}\n\nJSON reporter format:\n{}\n\n{}\n\n{}",
+        "Examples:\n{}\n\n{}\n\nJSON reporter format:\nSchema: {}\n\n{}\n\n{}\n\n{}",
         indent(strip_front_matter(get_docs_snapshot!("format_pretty"))),
         indent(strip_front_matter(get_docs_snapshot!("format_uglify"))),
+        REPORTER_SCHEMA_URL,
         indent(strip_front_matter(get_docs_snapshot!("format_json"))),
         indent(strip_front_matter(get_docs_snapshot!("check_json_failure"))),
         indent(strip_front_matter(get_docs_snapshot!("check_json_message"))),
     ))]
     Format(FormatArgs),
     #[command(after_help = format!(
-        "Examples:\n{}\n\n{}\n\nJSON reporter format:\n{}\n\n{}\n\n{}",
+        "Examples:\n{}\n\n{}\n\nJSON reporter format:\nSchema: {}\n\n{}\n\n{}\n\n{}",
         indent(strip_front_matter(get_docs_snapshot!("check_success"))),
         indent(strip_front_matter(get_docs_snapshot!("check_failure"))),
+        REPORTER_SCHEMA_URL,
         indent(strip_front_matter(get_docs_snapshot!("check_json_success"))),
         indent(strip_front_matter(get_docs_snapshot!("check_json_failure"))),
         indent(strip_front_matter(get_docs_snapshot!("check_json_message"))),

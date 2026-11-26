@@ -75,11 +75,11 @@ $ echo '{"a":[1,2]}' | jjp format --json
 {"success":true,"output":"{ \"a\": [1, 2] }"}
 ```
 
-Syntax error. `range`, `context`, and `fixes` use byte `offset`s, 1-based `line`s, and 1-based `column`s counted in characters. `range` is `null` when there is no location
+Syntax error. See [`schemas/reporter.schema.json`](schemas/reporter.schema.json) for the JSON Schema, which documents every field
 
 ```bash
 $ echo '{"coolKey"}' | jjp check --json
-{"success":false,"error":{"kind":"diagnostic","message":"expected colon after key, found `}`","file":"stdin","range":{"start":{"offset":10,"line":1,"column":11},"end":{"offset":11,"line":1,"column":12}},"context":[{"message":"expected due to `\"coolKey\"`","range":{"start":{"offset":1,"line":1,"column":2},"end":{"offset":10,"line":1,"column":11}}}],"fixes":[{"message":"insert colon and placeholder value","range":{"start":{"offset":10,"line":1,"column":11},"end":{"offset":10,"line":1,"column":11}},"replacement":": \"🐟🛹\""}]}}
+{"success":false,"error":{"kind":"diagnostic","message":"expected colon after key, found `}`","file":"stdin","range":{"start":{"byteFromStart":10,"line":1,"charColumn":11},"end":{"byteFromStart":11,"line":1,"charColumn":12}},"context":[{"message":"expected due to `\"coolKey\"`","range":{"start":{"byteFromStart":1,"line":1,"charColumn":2},"end":{"byteFromStart":10,"line":1,"charColumn":11}}}],"fixes":[{"message":"insert colon and placeholder value","range":{"start":{"byteFromStart":10,"line":1,"charColumn":11},"end":{"byteFromStart":10,"line":1,"charColumn":11}},"replacement":": \"🐟🛹\""}]}}
 ```
 
 Other errors, like missing stdin
