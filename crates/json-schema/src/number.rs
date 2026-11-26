@@ -27,20 +27,19 @@ pub struct Decimal<'a> {
     sign: Sign,
     int: &'a str,
     frac: &'a str,
-    exp: isize,
+    exp: i64,
 }
 
 impl<'a> Decimal<'a> {
-    /// Parser-validated number text, such as `-1.5` and `+3` for `-1.5e+3`.
     pub fn from_parts(mantissa: &'a str, exponent: Option<&str>) -> Self {
         let (negative, unsigned) = mantissa
             .strip_prefix('-')
             .map_or((false, mantissa), |rest| (true, rest));
         let exp = exponent.map_or(0, |e| {
-            e.parse().unwrap_or(if e.starts_with('-') {
-                isize::MIN
+            e.parse::<i64>().unwrap_or(if e.starts_with('-') {
+                i64::MIN
             } else {
-                isize::MAX
+                i64::MAX
             })
         });
         let (int, frac, exp) = fraction_to_exponent(unsigned, exp);
@@ -55,7 +54,7 @@ impl<'a> Decimal<'a> {
         Self::new(negative, int, frac, exp)
     }
 
-    fn new(negative: bool, int: &'a str, frac: &'a str, exp: isize) -> Self {
+    fn new(negative: bool, int: &'a str, frac: &'a str, exp: i64) -> Self {
         let (sign, exp) = if int.is_empty() && frac.is_empty() {
             (Sign::Zero, 0)
         } else if negative {
@@ -79,9 +78,9 @@ impl<'a> Decimal<'a> {
         self.int.bytes().chain(self.frac.bytes())
     }
 
-    fn order_of_magnitude(&self) -> isize {
-        (self.int.len() + self.frac.len())
-            .cast_signed()
+    fn order_of_magnitude(&self) -> i64 {
+        i64::try_from(self.int.len() + self.frac.len())
+            .unwrap_or(i64::MAX)
             .saturating_add(self.exp)
     }
 
@@ -93,19 +92,23 @@ impl<'a> Decimal<'a> {
     }
 }
 
-fn fraction_to_exponent(unsigned: &str, exp: isize) -> (&str, &str, isize) {
+fn fraction_to_exponent(unsigned: &str, exp: i64) -> (&str, &str, i64) {
     let (int, frac) = unsigned.split_once('.').unwrap_or((unsigned, ""));
-    (int, frac, exp.saturating_sub(frac.len().cast_signed()))
+    (
+        int,
+        frac,
+        exp.saturating_sub(i64::try_from(frac.len()).unwrap_or(i64::MAX)),
+    )
 }
 
-fn trim_trailing_zeros<'a>(int: &'a str, frac: &'a str, exp: isize) -> (&'a str, &'a str, isize) {
+fn trim_trailing_zeros<'a>(int: &'a str, frac: &'a str, exp: i64) -> (&'a str, &'a str, i64) {
     let trimmed = frac.trim_end_matches('0');
-    let exp = exp.saturating_add((frac.len() - trimmed.len()).cast_signed());
+    let exp = exp.saturating_add(i64::try_from(frac.len() - trimmed.len()).unwrap_or(i64::MAX));
     if !trimmed.is_empty() {
         return (int, trimmed, exp);
     }
     let int_trimmed = int.trim_end_matches('0');
-    let exp = exp.saturating_add((int.len() - int_trimmed.len()).cast_signed());
+    let exp = exp.saturating_add(i64::try_from(int.len() - int_trimmed.len()).unwrap_or(i64::MAX));
     (int_trimmed, trimmed, exp)
 }
 
