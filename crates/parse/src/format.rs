@@ -6,8 +6,7 @@ pub mod serde;
 pub(crate) mod uglify;
 
 pub use config::{
-    FORMAT_SETTINGS, FormatConfig, FormatMode, FormatSetting, FormatSettings, INPUT_SETTINGS,
-    InputSetting, InputSettings, Parser,
+    FormatConfig, FormatMode, FormatSetting, FormatSettings, InputSetting, InputSettings, Parser,
 };
 pub use prettify::{prettify_document, prettify_document_into, prettify_str};
 pub use rules::{ConfigError, FORMAT_RULES, FormatOption, Rule, rule_clause};
@@ -88,8 +87,9 @@ pub(crate) fn join_into<T, B>(
 
 choice_enum! {
     #[cfg_attr(feature = "serde", derive(::serde::Deserialize), serde(rename_all = "lowercase"))]
-    pub enum LineEnding default Lf {
+    pub enum LineEnding {
         /// Unix line endings (LF)
+        #[default]
         Lf = "lf",
         /// Windows line endings (CRLF)
         CrLf = "crlf",

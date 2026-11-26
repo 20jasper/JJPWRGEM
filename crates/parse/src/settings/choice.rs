@@ -22,20 +22,14 @@ pub const fn choice<T: Choice>() -> Spec<T> {
 macro_rules! __choice_enum {
     (
         $(#[$meta:meta])*
-        pub enum $name:ident default $default:ident {
-            $(#[doc = $variant_doc:literal] $variant:ident = $name_lit:literal),+ $(,)?
+        pub enum $name:ident {
+            $(#[doc = $variant_doc:literal] $(#[$marker:ident])? $variant:ident = $name_lit:literal),+ $(,)?
         }
     ) => {
-        #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+        #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
         $(#[$meta])*
         pub enum $name {
-            $($variant,)+
-        }
-
-        impl Default for $name {
-            fn default() -> Self {
-                Self::$default
-            }
+            $($(#[$marker])? $variant,)+
         }
 
         impl $name {
@@ -55,7 +49,7 @@ macro_rules! __choice_enum {
         impl $crate::settings::Choice for $name {
             const VALUES: &'static [&'static str] = &[$($name_lit),+];
             const DESCRIPTIONS: &'static [&'static str] = &[$($variant_doc.trim_ascii()),+];
-            const DEFAULT: &'static str = Self::$default.name();
+            const DEFAULT: &'static str = [$($( { let _ = stringify!($marker); $name_lit }, )?)+][0];
         }
     };
 }

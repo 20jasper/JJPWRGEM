@@ -34,7 +34,7 @@ impl SettingValue for Option<String> {
 macro_rules! __settings {
     (
         $(#[$meta:meta])*
-        struct $struct_name:ident, table $table_name:ident, id $id_name:ident {
+        struct $struct_name:ident, id $id_name:ident {
             $(
                 #[doc = $field_doc:literal]
                 $variant:ident $field_name:ident: $field_type:ty = $spec:expr
@@ -52,23 +52,21 @@ macro_rules! __settings {
             $($variant,)*
         }
 
-        pub const $table_name: &[$crate::settings::Setting] = &[
-            $($crate::settings::Setting {
-                name: stringify!($field_name),
-                description: $field_doc.trim_ascii(),
-                ..$crate::settings::Spec::<$field_type>::row($spec)
-            },)*
-        ];
-
         impl $crate::settings::Table for $struct_name {
-            const TABLE: &'static [$crate::settings::Setting] = $table_name;
+            const TABLE: &'static [$crate::settings::Setting] = &[
+                $($crate::settings::Setting {
+                    name: stringify!($field_name),
+                    description: $field_doc.trim_ascii(),
+                    ..$crate::settings::Spec::<$field_type>::row($spec)
+                },)*
+            ];
         }
 
         impl $id_name {
             pub const ALL: &[Self] = &[$(Self::$variant),*];
 
             pub fn setting(self) -> &'static $crate::settings::Setting {
-                &$table_name[self as usize]
+                &<$struct_name as $crate::settings::Table>::TABLE[self as usize]
             }
         }
 
