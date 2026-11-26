@@ -18,7 +18,7 @@ impl SettingValue for Option<usize> {
     }
 }
 
-/// Defines a settings struct, its id enum and its `Setting` table from Rust-like syntax. Extra attributes such as serde derives are supplied by the caller.
+// Rust-like syntax for defining Settings for conflicts, defaults, descriptions
 #[doc(hidden)]
 #[macro_export]
 macro_rules! __settings {

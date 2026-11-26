@@ -17,7 +17,6 @@ pub const fn choice<T: Choice>() -> Spec<T> {
     })
 }
 
-/// Defines an enum usable as a choice setting, with per-variant descriptions and a default. Extra attributes such as serde derives are supplied by the caller.
 #[doc(hidden)]
 #[macro_export]
 macro_rules! __choice_enum {
