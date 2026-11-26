@@ -12,7 +12,7 @@ mod commands;
 mod docs;
 mod error;
 mod output;
-mod output_format;
+mod reporter;
 mod setting_args;
 
 use std::{

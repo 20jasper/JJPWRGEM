@@ -4,7 +4,7 @@ use jjpwrgem_ui::{Color, Style};
 choice_enum! {
     #[derive(::serde::Deserialize)]
     #[serde(rename_all = "lowercase")]
-    pub enum OutputFormat {
+    pub enum Reporter {
         /// Human readable output
         #[default]
         Pretty = "pretty",
@@ -13,11 +13,11 @@ choice_enum! {
     }
 }
 
-impl From<OutputFormat> for Style {
-    fn from(format: OutputFormat) -> Self {
+impl From<Reporter> for Style {
+    fn from(format: Reporter) -> Self {
         match format {
-            OutputFormat::Pretty => Self::Pretty(Color::Plain),
-            OutputFormat::Json => Self::Json,
+            Reporter::Pretty => Self::Pretty(Color::Plain),
+            Reporter::Json => Self::Json,
         }
     }
 }
@@ -25,8 +25,8 @@ impl From<OutputFormat> for Style {
 settings! {
     #[derive(::serde::Deserialize)]
     #[serde(rename_all = "camelCase", default)]
-    struct OutputSettings, id OutputSetting {
+    struct ReporterSettings, id ReporterSetting {
         /// Format used to report results and errors
-        OutputFormat output_format: OutputFormat = choice().shorthand("json", None, "json"),
+        Reporter reporter: Reporter = choice().shorthand("json", None, "json"),
     }
 }

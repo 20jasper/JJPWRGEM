@@ -11,7 +11,7 @@ use jjpwrgem_ui::Style;
 use crate::{
     check_input::{CheckInputSettings, CheckParser},
     docs::{get_docs_snapshot, indent, strip_front_matter},
-    output_format::OutputSettings,
+    reporter::ReporterSettings,
     setting_args::{FromSettings, Help, shorthand_text},
 };
 
@@ -69,7 +69,7 @@ pub struct FormatArgs {
     input: FromSettings<InputSettings, FormatHelp>,
 
     #[command(flatten)]
-    output: FromSettings<OutputSettings>,
+    reporter: FromSettings<ReporterSettings>,
 }
 
 #[derive(Args, Debug)]
@@ -78,7 +78,7 @@ pub struct CheckArgs {
     input: FromSettings<CheckInputSettings>,
 
     #[command(flatten)]
-    output: FromSettings<OutputSettings>,
+    reporter: FromSettings<ReporterSettings>,
 }
 
 #[derive(Debug)]
@@ -112,14 +112,14 @@ pub fn parse() -> Action {
         Commands::Lsp => Action::Lsp,
         Commands::Check(args) => Action::Check(
             args.input.into_inner().parser,
-            args.output.into_inner().output_format.into(),
+            args.reporter.into_inner().reporter.into(),
         ),
         Commands::Format(FormatArgs {
             settings,
             input,
-            output,
+            reporter,
         }) => {
-            let style = output.into_inner().output_format.into();
+            let style = reporter.into_inner().reporter.into();
             match FormatRequest::try_from(FormatConfig {
                 input: input.into_inner(),
                 settings: settings.into_inner(),

@@ -44,7 +44,7 @@ See [LSP setup](https://github.com/20jasper/JJPWRGEM/blob/main/crates/lsp/readme
 
 ## JSON output
 
-`jjp check` and `jjp format` print a single line of json with `--output-format json`, or `--json` for short. Successes go to stdout and failures go to stderr. Exit codes are the same as the default pretty output.
+`jjp check` and `jjp format` print a single line of json with `--reporter json`, or `--json` for short. Successes go to stdout and failures go to stderr. Exit codes are the same as the default pretty output.
 
 Check success
 

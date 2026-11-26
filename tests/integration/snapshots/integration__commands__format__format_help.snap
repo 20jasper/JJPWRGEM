@@ -49,7 +49,7 @@ Options:
           
           [default: json]
 
-      --output-format <OUTPUT_FORMAT>
+      --reporter <REPORTER>
           Format used to report results and errors
 
           Possible values:
@@ -59,7 +59,7 @@ Options:
           [default: pretty]
 
       --json
-          Shorthand for --output-format json
+          Shorthand for --reporter json
 
   -h, --help
           Print help (see a summary with '-h')

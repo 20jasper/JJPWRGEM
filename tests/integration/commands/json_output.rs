@@ -8,7 +8,7 @@ const TRAILING_COMMA: &[u8] = b"{\"a\":\n  \"\xc3\xa9\" ,}";
 fn check_success() {
     assert_cli_snapshot!(
         "json_check_success",
-        ["check", "--output-format", "json"],
+        ["check", "--reporter", "json"],
         Some(br#"{"a": 1}"#),
         true
     );
@@ -18,7 +18,7 @@ fn check_success() {
 fn check_failure_with_context_and_fixes() {
     assert_cli_snapshot!(
         "json_check_failure",
-        ["check", "--output-format", "json"],
+        ["check", "--reporter", "json"],
         Some(TRAILING_COMMA),
         false
     );
@@ -28,7 +28,7 @@ fn check_failure_with_context_and_fixes() {
 fn format_success() {
     assert_cli_snapshot!(
         "json_format_success",
-        ["format", "--output-format", "json"],
+        ["format", "--reporter", "json"],
         Some(br#"{"a":   [1,2]}"#),
         true
     );
@@ -38,7 +38,7 @@ fn format_success() {
 fn format_failure() {
     assert_cli_snapshot!(
         "json_format_failure",
-        ["format", "--output-format", "json"],
+        ["format", "--reporter", "json"],
         Some(br#"{"coolKey"}"#),
         false
     );
@@ -48,7 +48,7 @@ fn format_failure() {
 fn stdin_required() {
     assert_cli_snapshot!(
         "json_no_stdin",
-        ["check", "--output-format", "json"],
+        ["check", "--reporter", "json"],
         None,
         false
     );
@@ -66,5 +66,5 @@ fn shorthand_matches_long_flag(#[case] command: &str, #[case] input: &[u8], #[ca
         assert_eq!(output.status.success(), ok, "{}", output.snapshot_display());
         (output.stdout, output.stderr)
     };
-    assert_eq!(run(&["--json"]), run(&["--output-format", "json"]));
+    assert_eq!(run(&["--json"]), run(&["--reporter", "json"]));
 }
