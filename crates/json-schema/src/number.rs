@@ -27,24 +27,29 @@ pub struct Decimal<'a> {
     sign: Sign,
     int: &'a str,
     frac: &'a str,
-    exp: i64,
+    exp: isize,
 }
 
 impl<'a> Decimal<'a> {
+    /// Takes the mantissa and exponent text slices, moves the fraction into the exponent, then strips leading and trailing zeros.
     /// `mantissa` includes any leading `-`. `exponent` excludes `e`/`E` but may carry a sign.
     /// Expects validated JSON number text, so digits only, as produced by the parser.
     pub fn from_parts(mantissa: &'a str, exponent: Option<&str>) -> Self {
         let (negative, unsigned) = mantissa
             .strip_prefix('-')
             .map_or((false, mantissa), |rest| (true, rest));
-        let (int, frac) = unsigned.split_once('.').unwrap_or((unsigned, ""));
-        let exp = parse_exponent(exponent).saturating_sub(to_i64(frac.len()));
-        let (int, frac) = trim_leading_zeros(int, frac);
+        let (int, frac, exp) = fraction_to_exponent(unsigned, parse_exponent(exponent));
+        let int = int.trim_start_matches('0');
+        let frac = if int.is_empty() {
+            frac.trim_start_matches('0')
+        } else {
+            frac
+        };
         let (int, frac, exp) = trim_trailing_zeros(int, frac, exp);
         Self::new(negative, int, frac, exp)
     }
 
-    fn new(negative: bool, int: &'a str, frac: &'a str, exp: i64) -> Self {
+    fn new(negative: bool, int: &'a str, frac: &'a str, exp: isize) -> Self {
         let (sign, exp) = if int.is_empty() && frac.is_empty() {
             (Sign::Zero, 0)
         } else if negative {
@@ -68,8 +73,10 @@ impl<'a> Decimal<'a> {
         self.int.bytes().chain(self.frac.bytes())
     }
 
-    fn order_of_magnitude(&self) -> i64 {
-        to_i64(self.int.len() + self.frac.len()).saturating_add(self.exp)
+    fn order_of_magnitude(&self) -> isize {
+        (self.int.len() + self.frac.len())
+            .cast_signed()
+            .saturating_add(self.exp)
     }
 
     /// Compares absolute values.
@@ -80,39 +87,30 @@ impl<'a> Decimal<'a> {
     }
 }
 
-fn to_i64(n: usize) -> i64 {
-    i64::try_from(n).unwrap_or(i64::MAX)
+fn fraction_to_exponent(unsigned: &str, exp: isize) -> (&str, &str, isize) {
+    let (int, frac) = unsigned.split_once('.').unwrap_or((unsigned, ""));
+    (int, frac, exp.saturating_sub(frac.len().cast_signed()))
 }
 
-fn trim_leading_zeros<'a>(int: &'a str, frac: &'a str) -> (&'a str, &'a str) {
-    let int = int.trim_start_matches('0');
-    let frac = if int.is_empty() {
-        frac.trim_start_matches('0')
-    } else {
-        frac
-    };
-    (int, frac)
-}
-
-fn trim_trailing_zeros<'a>(int: &'a str, frac: &'a str, exp: i64) -> (&'a str, &'a str, i64) {
+fn trim_trailing_zeros<'a>(int: &'a str, frac: &'a str, exp: isize) -> (&'a str, &'a str, isize) {
     let trimmed = frac.trim_end_matches('0');
-    let exp = exp.saturating_add(to_i64(frac.len() - trimmed.len()));
+    let exp = exp.saturating_add((frac.len() - trimmed.len()).cast_signed());
     if !trimmed.is_empty() {
         return (int, trimmed, exp);
     }
     let int_trimmed = int.trim_end_matches('0');
-    let exp = exp.saturating_add(to_i64(int.len() - int_trimmed.len()));
+    let exp = exp.saturating_add((int.len() - int_trimmed.len()).cast_signed());
     (int_trimmed, trimmed, exp)
 }
 
-fn parse_exponent(exponent: Option<&str>) -> i64 {
+fn parse_exponent(exponent: Option<&str>) -> isize {
     let Some(text) = exponent else { return 0 };
     let (negative, digits) = match text.strip_prefix('-') {
         Some(d) => (true, d),
         None => (false, text.strip_prefix('+').unwrap_or(text)),
     };
-    digits.bytes().fold(0i64, |acc, b| {
-        let digit = i64::from(b - b'0');
+    digits.bytes().fold(0isize, |acc, b| {
+        let digit = isize::from(b - b'0');
         let acc = acc.saturating_mul(10);
         if negative {
             acc.saturating_sub(digit)
