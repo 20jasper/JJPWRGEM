@@ -1,7 +1,10 @@
 use std::{error::Error, process::Command, time::Duration};
 
 use insta::assert_snapshot;
-use jjpwrgem_parse::{format::FORMAT_SETTINGS, settings::SettingKind};
+use jjpwrgem_parse::{
+    format::FormatSettings,
+    settings::{SettingKind, Table},
+};
 use lspresso::{Client, ErrorKind, Initialize, capabilities, gen_lsp_types::*};
 use rstest::rstest;
 
@@ -570,7 +573,7 @@ fn invalid_settings_warn_and_fall_back_to_defaults(
 
 #[test]
 fn table_defaults_as_client_settings_match_no_settings() -> TestResult {
-    let defaults: serde_json::Map<_, _> = FORMAT_SETTINGS
+    let defaults: serde_json::Map<_, _> = FormatSettings::TABLE
         .iter()
         .map(|setting| {
             let value = match setting.kind {

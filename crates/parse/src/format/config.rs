@@ -7,8 +7,9 @@ use crate::settings::{choice, choice_enum, integer, settings};
 
 choice_enum! {
     #[cfg_attr(feature = "serde", derive(::serde::Deserialize), serde(rename_all = "lowercase"))]
-    pub enum Parser default Json {
+    pub enum Parser {
         /// A single json document
+        #[default]
         Json = "json",
         /// One json document per line
         Jsonlines = "jsonlines",
@@ -17,8 +18,9 @@ choice_enum! {
 
 choice_enum! {
     #[cfg_attr(feature = "serde", derive(::serde::Deserialize), serde(rename_all = "lowercase"))]
-    pub enum FormatMode default Pretty {
+    pub enum FormatMode {
         /// Pretty print with indentation and line breaks
+        #[default]
         Pretty = "pretty",
         /// Remove all insignificant whitespace, also known as minifying
         Uglify = "uglify",
@@ -27,7 +29,7 @@ choice_enum! {
 
 settings! {
     #[cfg_attr(feature = "serde", derive(::serde::Deserialize), serde(rename_all = "camelCase", default))]
-    struct InputSettings, table INPUT_SETTINGS, id InputSetting {
+    struct InputSettings, id InputSetting {
         /// Parser to use for input
         Parser parser: Parser = choice(),
     }
@@ -35,7 +37,7 @@ settings! {
 
 settings! {
     #[cfg_attr(feature = "serde", derive(::serde::Deserialize), serde(rename_all = "camelCase", default))]
-    struct FormatSettings, table FORMAT_SETTINGS, id FormatSetting {
+    struct FormatSettings, id FormatSetting {
         /// Output style
         Mode mode: FormatMode = choice().shorthand("uglify", Some('u'), "uglify"),
         /// Preferred maximum line width. Note this is not a hard maximum width

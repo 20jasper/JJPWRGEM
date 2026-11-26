@@ -26,8 +26,9 @@ struct VscodeMeta {
 }
 
 choice_enum! {
-    pub enum TraceServer default Off {
+    pub enum TraceServer {
         /// No tracing
+        #[default]
         Off = "off",
         /// Trace requests and notifications
         Messages = "messages",
@@ -37,14 +38,14 @@ choice_enum! {
 }
 
 settings! {
-    struct ExtensionSettings, table EXTENSION_SETTINGS, id ExtensionSetting {
+    struct ExtensionSettings, id ExtensionSetting {
         /// Path to the `jjp` executable used to run the language server. Defaults to `jjp` on your `PATH`
         Path path: Option<String> = string("jjp"),
     }
 }
 
 settings! {
-    struct TraceSettings, table TRACE_SETTINGS, id TraceSetting {
+    struct TraceSettings, id TraceSetting {
         /// Traces the communication between VS Code and the jjpwrgem language server
         Server server: TraceServer = choice(),
     }

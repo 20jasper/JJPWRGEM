@@ -1,8 +1,9 @@
 use jjpwrgem_parse::settings::{Table, choice, choice_enum, integer, settings};
 
 choice_enum! {
-    pub enum Mode default Fast {
+    pub enum Mode {
         /// Quick.
+        #[default]
         Fast = "fast",
         /// Careful.
         Slow = "slow",
@@ -10,7 +11,7 @@ choice_enum! {
 }
 
 settings! {
-    struct Demo, table DEMO_TABLE, id DemoId {
+    struct Demo, id DemoId {
         /// How many.
         Count count: Option<usize> = integer(3),
         /// Which mode.

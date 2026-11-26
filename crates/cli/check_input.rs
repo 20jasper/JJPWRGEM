@@ -3,8 +3,9 @@ use jjpwrgem_parse::settings::{choice, choice_enum, settings};
 choice_enum! {
     #[derive(::serde::Deserialize)]
     #[serde(rename_all = "lowercase")]
-    pub enum CheckParser default Json {
+    pub enum CheckParser {
         /// A single json document
+        #[default]
         Json = "json",
         /// A single json document with comments and trailing commas
         Jsonc = "jsonc",
@@ -16,7 +17,7 @@ choice_enum! {
 settings! {
     #[derive(::serde::Deserialize)]
     #[serde(rename_all = "camelCase", default)]
-    struct CheckInputSettings, table CHECK_INPUT_SETTINGS, id CheckInputSetting {
+    struct CheckInputSettings, id CheckInputSetting {
         /// Parser to use for input
         Parser parser: CheckParser = choice(),
     }
