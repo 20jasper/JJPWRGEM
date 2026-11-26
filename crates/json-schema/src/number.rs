@@ -31,14 +31,19 @@ pub struct Decimal<'a> {
 }
 
 impl<'a> Decimal<'a> {
-    /// Takes the mantissa and exponent text slices, moves the fraction into the exponent, then strips leading and trailing zeros.
-    /// `mantissa` includes any leading `-`. `exponent` excludes `e`/`E` but may carry a sign.
-    /// Expects validated JSON number text, so digits only, as produced by the parser.
+    /// Parser-validated number text, such as `-1.5` and `+3` for `-1.5e+3`.
     pub fn from_parts(mantissa: &'a str, exponent: Option<&str>) -> Self {
         let (negative, unsigned) = mantissa
             .strip_prefix('-')
             .map_or((false, mantissa), |rest| (true, rest));
-        let (int, frac, exp) = fraction_to_exponent(unsigned, parse_exponent(exponent));
+        let exp = exponent.map_or(0, |e| {
+            e.parse().unwrap_or(if e.starts_with('-') {
+                isize::MIN
+            } else {
+                isize::MAX
+            })
+        });
+        let (int, frac, exp) = fraction_to_exponent(unsigned, exp);
         // strip leading and trailing 0s
         let int = int.trim_start_matches('0');
         let frac = if int.is_empty() {
@@ -102,23 +107,6 @@ fn trim_trailing_zeros<'a>(int: &'a str, frac: &'a str, exp: isize) -> (&'a str,
     let int_trimmed = int.trim_end_matches('0');
     let exp = exp.saturating_add((int.len() - int_trimmed.len()).cast_signed());
     (int_trimmed, trimmed, exp)
-}
-
-fn parse_exponent(exponent: Option<&str>) -> isize {
-    let Some(text) = exponent else { return 0 };
-    let (negative, digits) = match text.strip_prefix('-') {
-        Some(d) => (true, d),
-        None => (false, text.strip_prefix('+').unwrap_or(text)),
-    };
-    digits.bytes().fold(0isize, |acc, b| {
-        let digit = isize::from(b - b'0');
-        let acc = acc.saturating_mul(10);
-        if negative {
-            acc.saturating_sub(digit)
-        } else {
-            acc.saturating_add(digit)
-        }
-    })
 }
 
 impl PartialEq for Decimal<'_> {
