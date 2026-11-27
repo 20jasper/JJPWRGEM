@@ -31,7 +31,7 @@ pub enum Kind<'a, S> {
     Null,
     Bool(bool),
     String(Str<'a, S>),
-    Number(NumberText<'a>),
+    Number(Number<'a, S>),
     Array(Array<'a, S>),
     Object(Object<'a, S>),
 }
@@ -171,6 +171,57 @@ pub struct NumberText<'a> {
     pub exponent: Option<&'a str>,
 }
 
+/// A number literal, sliced only when asked.
+pub struct Number<'a, S> {
+    doc: &'a Document<S>,
+    mantissa: Range<usize>,
+    exponent: Option<Range<usize>>,
+}
+
+impl<S> Clone for Number<'_, S> {
+    fn clone(&self) -> Self {
+        *self
+    }
+}
+
+impl<S> Copy for Number<'_, S> {}
+
+impl<S> core::fmt::Debug for Number<'_, S> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.debug_struct("Number")
+            .field("mantissa", &self.mantissa)
+            .field("exponent", &self.exponent)
+            .finish_non_exhaustive()
+    }
+}
+
+impl<'a, S: AsRef<str>> Number<'a, S> {
+    /// mantissa with its sign
+    pub fn mantissa(self) -> &'a str {
+        self.doc.slice(self.mantissa)
+    }
+
+    /// exponent digits after `e` or `E`, with their sign
+    pub fn exponent(self) -> Option<&'a str> {
+        self.exponent.map(|e| self.doc.slice(e))
+    }
+
+    pub fn span(self) -> Range<usize> {
+        let end = self.exponent.map_or(self.mantissa.end, |e| e.end);
+        Range {
+            start: self.mantissa.start,
+            end,
+        }
+    }
+
+    pub fn text(self) -> NumberText<'a> {
+        NumberText {
+            mantissa: self.mantissa(),
+            exponent: self.exponent(),
+        }
+    }
+}
+
 impl<S> Document<S> {
     pub fn root_node(&self) -> Node<'_, S> {
         Node {
@@ -191,9 +242,10 @@ impl<'a, S: AsRef<str>> Node<'a, S> {
             Value::Null(_) => Kind::Null,
             Value::Boolean(_, b) => Kind::Bool(*b),
             Value::String(range) => Kind::String(Str { doc, range: *range }),
-            Value::Number { mantissa, exponent } => Kind::Number(NumberText {
-                mantissa: doc.slice(*mantissa),
-                exponent: exponent.map(|e| doc.slice(e)),
+            Value::Number { mantissa, exponent } => Kind::Number(Number {
+                doc,
+                mantissa: *mantissa,
+                exponent: *exponent,
             }),
             Value::Array(_, items) => Kind::Array(Array { node: self, items }),
             Value::Object(_, entries) => Kind::Object(Object {
@@ -411,10 +463,7 @@ mod tests {
         let items = array.items().collect::<Vec<_>>();
         assert!(matches!(
             items[1].kind(),
-            Kind::Number(NumberText {
-                mantissa: "20",
-                exponent: None
-            })
+            Kind::Number(n) if n.text() == NumberText { mantissa: "20", exponent: None }
         ));
         assert_eq!(object.node().span(), doc.root_node().span());
         assert_eq!(object.members().next_back().unwrap().0.raw(), "b");
@@ -446,7 +495,7 @@ mod tests {
             panic!("root is an object");
         };
         let mantissa = |name| match root.get(name).unwrap().kind() {
-            Kind::Number(n) => n.mantissa,
+            Kind::Number(n) => n.mantissa(),
             _ => panic!("number"),
         };
         assert_eq!(mantissa("ab"), "1");
@@ -479,7 +528,8 @@ mod tests {
         let Kind::Number(number) = doc.root_node().kind() else {
             panic!("number");
         };
-        assert_eq!(number, NumberText { mantissa, exponent });
+        assert_eq!(number.text(), NumberText { mantissa, exponent });
+        assert_eq!(&json[number.span()], json);
     }
 
     #[test]
