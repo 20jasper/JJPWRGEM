@@ -1,7 +1,7 @@
 use std::range::Range as Span;
 
 use gen_lsp_types::*;
-use jjpwrgem_parse::{Kind, Node, Str, ast::Document};
+use jjpwrgem_parse::{Kind, Node, ast::Document};
 
 use crate::{
     backend::Backend,
@@ -29,51 +29,54 @@ struct Source<'a> {
     positions: Positions,
 }
 
-enum Member<'a> {
-    Name(Str<'a, String>),
-    Index(usize),
-}
-
 fn map_children(
     source: &Source<'_>,
     node: Node<'_, String>,
     remaining: &mut usize,
 ) -> Option<Vec<DocumentSymbol>> {
-    let members: Box<dyn Iterator<Item = (Member<'_>, Node<'_, String>)>> = match node.kind() {
-        Kind::Object(object) => Box::new(
+    match node.kind() {
+        Kind::Object(object) => Some(
             object
                 .members()
-                .map(|(key, child)| (Member::Name(key), child)),
+                .map_while(|(key, child)| {
+                    source.child(name(key.raw()), key.span(), child, remaining)
+                })
+                .collect(),
         ),
-        Kind::Array(array) => Box::new(
+        Kind::Array(array) => Some(
             array
                 .items()
                 .enumerate()
-                .map(|(index, child)| (Member::Index(index), child)),
+                .map_while(|(index, child)| {
+                    source.child(index.to_string(), child.span(), child, remaining)
+                })
+                .collect(),
         ),
-        _ => return None,
-    };
-    Some(
-        members
-            .map_while(|(member, child)| {
-                *remaining = remaining.checked_sub(1)?;
-                Some(source.symbol(&member, child, map_children(source, child, remaining)))
-            })
-            .collect(),
-    )
+        _ => None,
+    }
 }
 
 impl Source<'_> {
+    /// Returns `None` once the symbol cap is exhausted, which ends the caller's iteration.
+    fn child(
+        &self,
+        name: String,
+        selection: Span<usize>,
+        node: Node<'_, String>,
+        remaining: &mut usize,
+    ) -> Option<DocumentSymbol> {
+        *remaining = remaining.checked_sub(1)?;
+        let children = map_children(self, node, remaining);
+        Some(self.symbol(name, selection, node, children))
+    }
+
     fn symbol(
         &self,
-        member: &Member<'_>,
+        name: String,
+        selection: Span<usize>,
         node: Node<'_, String>,
         children: Option<Vec<DocumentSymbol>>,
     ) -> DocumentSymbol {
-        let (name, selection) = match member {
-            Member::Name(key) => (name(key.raw()), key.span()),
-            Member::Index(index) => (index.to_string(), node.span()),
-        };
         let full = Span::from(selection.start..node.span().end);
         // detail shows the raw source between the quotes, so it reads the unquoted range off the value
         let detail = Some(node.value().range());
