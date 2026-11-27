@@ -4,7 +4,10 @@
 use std::range::Range as ByteRange;
 
 use gen_lsp_types::*;
-use jjpwrgem_parse::ast::{Document, Key, Value, quoted};
+use jjpwrgem_parse::{
+    Kind, Node,
+    ast::{Document, Key, quoted},
+};
 
 use crate::{
     backend::Backend,
@@ -34,7 +37,7 @@ fn selection_range(
 ) -> SelectionRange {
     let offset = positions.offset(document.source(), position);
     // iterate outer to inner to track selection chain
-    let chain = steps(document.root(), offset)
+    let chain = steps(document.root_node(), offset)
         .into_iter()
         .map(|span| SelectionRange {
             range: positions.range(span),
@@ -59,21 +62,24 @@ fn contains_inclusive(span: ByteRange<usize>, offset: usize) -> bool {
     (span.start..=span.end).contains(&offset)
 }
 
-fn inside_container(value: &Value, offset: usize) -> Option<ByteRange<usize>> {
-    let span = value.span();
+fn inside_container(node: Node<'_, String>, offset: usize) -> Option<ByteRange<usize>> {
+    let span = node.span();
     let inside_brackets = ByteRange::from(span.start + BRACKET_LEN..span.end - BRACKET_LEN);
 
-    let offset_in_container = (value.is_container() || matches!(value, Value::String(..)))
+    let offset_in_container = (node.is_container() || node.kind() == Kind::String)
         && contains_inclusive(inside_brackets, offset);
     offset_in_container.then_some(inside_brackets)
 }
 
-fn value_and_interior(value: &Value, offset: usize) -> impl Iterator<Item = ByteRange<usize>> {
-    std::iter::once(value.span()).chain(inside_container(value, offset))
+fn value_and_interior(
+    node: Node<'_, String>,
+    offset: usize,
+) -> impl Iterator<Item = ByteRange<usize>> {
+    std::iter::once(node.span()).chain(inside_container(node, offset))
 }
 
 /// values from outer to inner
-fn steps(root: &Value, offset: usize) -> Vec<ByteRange<usize>> {
+fn steps(root: Node<'_, String>, offset: usize) -> Vec<ByteRange<usize>> {
     let mut spans = Vec::new();
     let root_span = root.span();
     // add whole document if offset is inside
@@ -141,7 +147,7 @@ mod tests {
     ) {
         let document = parse(text);
         assert_eq!(
-            inside_container(document.root(), offset),
+            inside_container(document.root_node(), offset),
             expected.map(ByteRange::from)
         );
     }

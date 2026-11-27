@@ -1,7 +1,10 @@
 use std::range::Range as Span;
 
 use gen_lsp_types::*;
-use jjpwrgem_parse::ast::{Document, Key, Value, quoted};
+use jjpwrgem_parse::{
+    Kind, Node,
+    ast::{Document, Key, quoted},
+};
 
 use crate::{
     backend::Backend,
@@ -21,7 +24,7 @@ fn document_symbols(
         positions: Positions::new(document.source(), encoding),
     };
     let mut remaining = MAX_SYMBOLS;
-    map_children(&source, document.root(), &mut remaining).unwrap_or_default()
+    map_children(&source, document.root_node(), &mut remaining).unwrap_or_default()
 }
 
 struct Source<'a> {
@@ -31,12 +34,11 @@ struct Source<'a> {
 
 fn map_children(
     source: &Source<'_>,
-    value: &Value,
+    node: Node<'_, String>,
     remaining: &mut usize,
 ) -> Option<Vec<DocumentSymbol>> {
-    matches!(value, Value::Object(..) | Value::Array(..)).then(|| {
-        value
-            .children()
+    node.is_container().then(|| {
+        node.children()
             .map_while(|(key, child)| {
                 *remaining = remaining.checked_sub(1)?;
                 Some(source.symbol(key, child, map_children(source, child, remaining)))
@@ -49,21 +51,23 @@ impl Source<'_> {
     fn symbol(
         &self,
         key: Key,
-        value: &Value,
+        node: Node<'_, String>,
         children: Option<Vec<DocumentSymbol>>,
     ) -> DocumentSymbol {
         let (name, selection) = match key {
             Key::Name(key) => (name(self.document.slice(key)), quoted(key)),
-            Key::Index(index) => (index.to_string(), value.span()),
+            Key::Index(index) => (index.to_string(), node.span()),
         };
-        let full = Span::from(selection.start..value.span().end);
-        let (kind, detail) = match value {
-            Value::Object(..) => (SymbolKind::Object, None),
-            Value::Array(..) => (SymbolKind::Array, None),
-            Value::String(..) => (SymbolKind::String, Some(value.range())),
-            Value::Number { .. } => (SymbolKind::Number, Some(value.range())),
-            Value::Boolean(..) => (SymbolKind::Boolean, Some(value.range())),
-            Value::Null(..) => (SymbolKind::Null, Some(value.range())),
+        let full = Span::from(selection.start..node.span().end);
+        // detail shows the raw source between the quotes, so it reads the unquoted range off the value
+        let detail = Some(node.value().range());
+        let (kind, detail) = match node.kind() {
+            Kind::Object => (SymbolKind::Object, None),
+            Kind::Array => (SymbolKind::Array, None),
+            Kind::String => (SymbolKind::String, detail),
+            Kind::Number => (SymbolKind::Number, detail),
+            Kind::Bool => (SymbolKind::Boolean, detail),
+            Kind::Null => (SymbolKind::Null, detail),
         };
         #[expect(deprecated, reason = "the field is required to build the struct")]
         DocumentSymbol {

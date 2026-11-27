@@ -1,6 +1,6 @@
 use gen_lsp_types::*;
 use itertools::Itertools;
-use jjpwrgem_parse::ast::{Document, Value};
+use jjpwrgem_parse::ast::Document;
 
 use crate::{
     backend::Backend,
@@ -14,11 +14,11 @@ const MAX_FOLDING_RANGES: usize = 5000;
 fn folding_ranges(document: &Document<String>, encoding: PositionEncoding) -> Vec<FoldingRange> {
     let positions = Positions::new(document.source(), encoding);
     document
-        .root()
+        .root_node()
         .traverse()
-        .filter(|value| matches!(value, Value::Object(..) | Value::Array(..)))
-        .filter_map(|value| {
-            let range = value.range();
+        .filter(|node| node.is_container())
+        .filter_map(|node| {
+            let range = node.span();
             let start_line = positions.line(range.start);
             let close_line = positions.line(range.end - CLOSING_BRACKET_LEN);
             let end_line = close_line.checked_sub(1)?;
