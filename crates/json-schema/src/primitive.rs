@@ -50,7 +50,7 @@ pub fn value_as_primitive<S: AsRef<str>>(value: &Value, doc: &Document<S>) -> Pr
             // "integer" which matches any number with a zero fractional part
             // https://json-schema.org/draft-07/draft-handrews-json-schema-validation-01#rfc.section.6.1.1
             if Decimal::from_parts(doc.slice(*mantissa), exponent.map(|e| doc.slice(e)))
-                .is_integer()
+                .is_some_and(|d| d.is_integer())
             {
                 PrimitiveType::Integer
             } else {

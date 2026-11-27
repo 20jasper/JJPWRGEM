@@ -31,19 +31,20 @@ pub struct Decimal<'a> {
 }
 
 impl<'a> Decimal<'a> {
-    pub fn from_parts(mantissa: &'a str, exponent: Option<&str>) -> Self {
+    pub fn from_parts(mantissa: &'a str, exponent: Option<&str>) -> Option<Self> {
         let (negative, unsigned) = mantissa
             .strip_prefix('-')
             .map_or((false, mantissa), |rest| (true, rest));
-        let exp = exponent.map_or(0, |e| match e.parse::<i64>() {
-            Ok(exp) => exp,
-            Err(err) => match err.kind() {
+        let exp = match exponent.map(str::parse::<i64>) {
+            None => 0,
+            Some(Ok(exp)) => exp,
+            Some(Err(err)) => match err.kind() {
                 IntErrorKind::PosOverflow => i64::MAX,
                 IntErrorKind::NegOverflow => i64::MIN,
-                kind => unreachable!("parser validates exponent digits, got {kind:?}"),
+                _ => return None,
             },
-        });
-        let (int, frac, exp) = fraction_to_exponent(unsigned, exp);
+        };
+        let (int, frac, exp) = fraction_to_exponent(unsigned, exp)?;
         // strip leading and trailing 0s
         let int = int.trim_start_matches('0');
         let frac = if int.is_empty() {
@@ -52,7 +53,7 @@ impl<'a> Decimal<'a> {
             frac
         };
         let (int, frac, exp) = trim_trailing_zeros(int, frac, exp);
-        Self::new(negative, int, frac, exp)
+        Some(Self::new(negative, int, frac, exp))
     }
 
     fn new(negative: bool, int: &'a str, frac: &'a str, exp: i64) -> Self {
@@ -93,13 +94,20 @@ impl<'a> Decimal<'a> {
     }
 }
 
-fn fraction_to_exponent(unsigned: &str, exp: i64) -> (&str, &str, i64) {
-    let (int, frac) = unsigned.split_once('.').unwrap_or((unsigned, ""));
-    (
+fn is_digits(text: &str) -> bool {
+    !text.is_empty() && text.bytes().all(|b| b.is_ascii_digit())
+}
+
+fn fraction_to_exponent(unsigned: &str, exp: i64) -> Option<(&str, &str, i64)> {
+    let (int, frac) = match unsigned.split_once('.') {
+        Some((int, frac)) => (int, is_digits(frac).then_some(frac)?),
+        None => (unsigned, ""),
+    };
+    is_digits(int).then_some((
         int,
         frac,
         exp.saturating_sub(i64::try_from(frac.len()).unwrap_or(i64::MAX)),
-    )
+    ))
 }
 
 fn trim_trailing_zeros<'a>(int: &'a str, frac: &'a str, exp: i64) -> (&'a str, &'a str, i64) {
@@ -142,7 +150,7 @@ mod tests {
             Some(i) => (&text[..i], Some(&text[i + 1..])),
             None => (text, None),
         };
-        Decimal::from_parts(mantissa, exponent)
+        Decimal::from_parts(mantissa, exponent).expect("valid number")
     }
 
     #[rstest::rstest]
@@ -189,6 +197,24 @@ mod tests {
     fn ordered(#[case] smaller: &str, #[case] larger: &str) {
         assert!(dec(smaller) < dec(larger));
         assert!(dec(larger) > dec(smaller));
+    }
+
+    #[rstest::rstest]
+    #[case("")]
+    #[case("-")]
+    #[case("1.")]
+    #[case(".5")]
+    #[case("1.2.3")]
+    #[case("1a")]
+    #[case("1e")]
+    #[case("1e+")]
+    #[case("1ex")]
+    fn rejected(#[case] text: &str) {
+        let (mantissa, exponent) = match text.find(['e', 'E']) {
+            Some(i) => (&text[..i], Some(&text[i + 1..])),
+            None => (text, None),
+        };
+        assert_eq!(Decimal::from_parts(mantissa, exponent), None);
     }
 
     #[test]
