@@ -8,7 +8,6 @@ enum Sign {
 }
 
 impl Sign {
-    /// Orders two numbers of this sign from how their magnitudes compare, which is only computed when the sign is not zero.
     fn then_with(self, magnitude: impl FnOnce() -> Ordering) -> Ordering {
         match self {
             Self::Zero => Ordering::Equal,
@@ -35,6 +34,14 @@ impl<'a> Decimal<'a> {
         let (negative, unsigned) = mantissa
             .strip_prefix('-')
             .map_or((false, mantissa), |rest| (true, rest));
+        let (int, frac) = match unsigned.split_once('.') {
+            Some((int, frac)) if is_digits(frac) => (int, frac),
+            Some(_) => return None,
+            None => (unsigned, ""),
+        };
+        if !is_digits(int) {
+            return None;
+        }
         let exp = match exponent.map(str::parse::<i64>) {
             None => 0,
             Some(Ok(exp)) => exp,
@@ -44,7 +51,7 @@ impl<'a> Decimal<'a> {
                 _ => return None,
             },
         };
-        let (int, frac, exp) = fraction_to_exponent(unsigned, exp)?;
+        let exp = fraction_to_exponent(frac, exp);
         // strip leading and trailing 0s
         let int = int.trim_start_matches('0');
         let frac = if int.is_empty() {
@@ -98,16 +105,8 @@ fn is_digits(text: &str) -> bool {
     !text.is_empty() && text.bytes().all(|b| b.is_ascii_digit())
 }
 
-fn fraction_to_exponent(unsigned: &str, exp: i64) -> Option<(&str, &str, i64)> {
-    let (int, frac) = match unsigned.split_once('.') {
-        Some((int, frac)) => (int, is_digits(frac).then_some(frac)?),
-        None => (unsigned, ""),
-    };
-    is_digits(int).then_some((
-        int,
-        frac,
-        exp.saturating_sub(i64::try_from(frac.len()).unwrap_or(i64::MAX)),
-    ))
+fn fraction_to_exponent(frac: &str, exp: i64) -> i64 {
+    exp.saturating_sub(i64::try_from(frac.len()).unwrap_or(i64::MAX))
 }
 
 fn trim_trailing_zeros<'a>(int: &'a str, frac: &'a str, exp: i64) -> (&'a str, &'a str, i64) {
