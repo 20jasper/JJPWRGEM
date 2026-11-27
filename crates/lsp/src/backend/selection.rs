@@ -4,7 +4,7 @@
 use std::range::Range as ByteRange;
 
 use gen_lsp_types::*;
-use jjpwrgem_parse::{Kind, Node, PathKey, ast::Document};
+use jjpwrgem_parse::{Kind, Node, ast::Document};
 
 use crate::{
     backend::Backend,
@@ -85,20 +85,20 @@ fn steps(root: Node<'_>, offset: usize) -> Vec<ByteRange<usize>> {
     spans.extend(inside_container(root, offset));
 
     // iterate outer to inner
-    for (key, value) in root.path_at(offset) {
-        match key {
-            PathKey::Name(name) if contains_inclusive(name.span(), offset) => {
-                spans.push(value.member_span(key));
+    for member in root.path_at(offset) {
+        match member.name() {
+            Some(name) if contains_inclusive(name.span(), offset) => {
+                spans.push(member.span());
                 spans.push(name.span());
                 if contains_inclusive(name.raw_span(), offset) {
                     spans.push(name.raw_span());
                 }
             }
-            PathKey::Name(_) => {
-                spans.push(value.member_span(key));
-                spans.extend(value_and_interior(value, offset));
+            Some(_) => {
+                spans.push(member.span());
+                spans.extend(value_and_interior(member.value(), offset));
             }
-            PathKey::Index(_) => spans.extend(value_and_interior(value, offset)),
+            None => spans.extend(value_and_interior(member.value(), offset)),
         }
     }
 

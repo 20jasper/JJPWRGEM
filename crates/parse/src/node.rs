@@ -19,9 +19,26 @@ pub enum Kind<'a> {
 }
 
 #[derive(Debug, Clone, Copy)]
-pub enum PathKey<'a> {
-    Name(Str<'a>),
-    Index(usize),
+pub struct Member<'a> {
+    name: Option<Str<'a>>,
+    value: Node<'a>,
+}
+
+impl<'a> Member<'a> {
+    pub fn name(self) -> Option<Str<'a>> {
+        self.name
+    }
+
+    pub fn value(self) -> Node<'a> {
+        self.value
+    }
+
+    pub fn span(self) -> Range<usize> {
+        self.value.value.member_span(
+            self.name
+                .map_or(Key::Index(0), |name| Key::Name(name.range)),
+        )
+    }
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -314,23 +331,15 @@ impl<'a> Node<'a> {
             .map(move |value| Node { source, value })
     }
 
-    pub fn path_at(self, offset: usize) -> impl Iterator<Item = (PathKey<'a>, Node<'a>)> {
+    pub fn path_at(self, offset: usize) -> impl Iterator<Item = Member<'a>> {
         let source = self.source;
-        self.value.path_at(offset).map(move |(key, value)| {
-            let key = match key {
-                Key::Name(range) => PathKey::Name(Str { source, range }),
-                Key::Index(index) => PathKey::Index(index),
-            };
-            (key, Node { source, value })
+        self.value.path_at(offset).map(move |(key, value)| Member {
+            name: match key {
+                Key::Name(range) => Some(Str { source, range }),
+                Key::Index(_) => None,
+            },
+            value: Node { source, value },
         })
-    }
-
-    pub fn member_span(self, key: PathKey<'a>) -> Range<usize> {
-        let span = self.span();
-        match key {
-            PathKey::Name(name) => name.span().start..span.end,
-            PathKey::Index(_) => span,
-        }
     }
 }
 
@@ -503,8 +512,23 @@ mod tests {
         let path = doc
             .root()
             .path_at(source.find('2').unwrap())
-            .map(|(_, node)| &source[node.span()])
+            .map(|member| &source[member.value().span()])
             .collect::<Vec<_>>();
         assert_eq!(path, [r#"[10, {"bb": 2}]"#, r#"{"bb": 2}"#, "2"]);
+    }
+
+    #[test]
+    fn member_spans_start_at_the_name() {
+        let source = r#"{"a": [10, {"bb": 2}]}"#;
+        let doc = parse(source);
+        let members = doc
+            .root()
+            .path_at(source.find('2').unwrap())
+            .collect::<Vec<_>>();
+        assert_eq!(members[0].name().unwrap().raw(), "a");
+        assert_eq!(&source[members[0].span()], r#""a": [10, {"bb": 2}]"#);
+        assert!(members[1].name().is_none());
+        assert_eq!(&source[members[1].span()], r#"{"bb": 2}"#);
+        assert_eq!(&source[members[2].span()], r#""bb": 2"#);
     }
 }
