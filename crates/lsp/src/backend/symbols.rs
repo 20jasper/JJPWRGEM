@@ -76,7 +76,6 @@ impl Source {
         children: Option<Vec<DocumentSymbol>>,
     ) -> DocumentSymbol {
         let full = Span::from(selection.start..node.span().end);
-        // string detail is the raw source between the quotes
         let (kind, detail) = match node.kind() {
             Kind::Object(_) => (SymbolKind::Object, None),
             Kind::Array(_) => (SymbolKind::Array, None),
