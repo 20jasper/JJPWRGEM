@@ -170,8 +170,18 @@ impl<'a, S: AsRef<str>> Object<'a, S> {
 /// Source text of a number: the mantissa with its sign, and the exponent after `e` or `E`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct NumberText<'a> {
-    pub mantissa: &'a str,
-    pub exponent: Option<&'a str>,
+    mantissa: &'a str,
+    exponent: Option<&'a str>,
+}
+
+impl<'a> NumberText<'a> {
+    pub fn mantissa(self) -> &'a str {
+        self.mantissa
+    }
+
+    pub fn exponent(self) -> Option<&'a str> {
+        self.exponent
+    }
 }
 
 /// A number literal, sliced only when asked.
@@ -261,11 +271,6 @@ impl<'a, S: AsRef<str>> Node<'a, S> {
     /// source text of the whole node, including string quotes
     pub fn text(self) -> &'a str {
         self.doc.slice(self.value.span())
-    }
-
-    /// escape hatch for code that needs raw ranges
-    pub fn value(self) -> &'a Value {
-        self.value
     }
 
     /// preorder walk over this node and its descendants
@@ -383,14 +388,11 @@ mod tests {
     #[case(r"\t", "\t")]
     #[case(r"ab", "ab")]
     #[case(r"é", "é")]
-    #[case("é", "é")]
     #[case("", "")]
-    #[case(r"😀", "😀")]
     #[case(r"😀", "😀")]
     #[case(r"\ud83d", "\u{FFFD}")]
     #[case(r"\ud83dA", "\u{FFFD}A")]
     #[case(r"\ud83d\n", "\u{FFFD}\n")]
-    #[case(r"\ud83dA", "\u{FFFD}A")]
     #[case(r"\ude00", "\u{FFFD}")]
     #[case(r"\\u0041", "\\u0041")]
     #[case(r"\u0000", "\0")]
@@ -446,7 +448,7 @@ mod tests {
         let items = array.items().collect::<Vec<_>>();
         assert!(matches!(
             items[1].kind(),
-            Kind::Number(n) if n.text() == NumberText { mantissa: "20", exponent: None }
+            Kind::Number(n) if n.text().mantissa() == "20" && n.text().exponent().is_none()
         ));
         assert_eq!(object.node().span(), doc.root().span());
         assert_eq!(object.members().next_back().unwrap().0.raw(), "b");
@@ -511,7 +513,8 @@ mod tests {
         let Kind::Number(number) = doc.root().kind() else {
             panic!("number");
         };
-        assert_eq!(number.text(), NumberText { mantissa, exponent });
+        assert_eq!(number.text().mantissa(), mantissa);
+        assert_eq!(number.text().exponent(), exponent);
         assert_eq!(&json[number.span()], json);
     }
 

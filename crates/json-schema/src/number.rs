@@ -22,7 +22,8 @@ pub struct Decimal<'a> {
 }
 
 impl<'a> From<NumberText<'a>> for Decimal<'a> {
-    fn from(NumberText { mantissa, exponent }: NumberText<'a>) -> Self {
+    fn from(text: NumberText<'a>) -> Self {
+        let (mantissa, exponent) = (text.mantissa(), text.exponent());
         let (negative, unsigned) = mantissa
             .strip_prefix('-')
             .map_or((false, mantissa), |rest| (true, rest));
@@ -122,14 +123,19 @@ impl Ord for Decimal<'_> {
 
 #[cfg(test)]
 mod tests {
+    use jjpwrgem_parse::{Kind, SyntaxOptions, ast::Document};
+
     use super::*;
 
-    fn dec(text: &str) -> Decimal<'_> {
-        let (mantissa, exponent) = match text.find(['e', 'E']) {
-            Some(i) => (&text[..i], Some(&text[i + 1..])),
-            None => (text, None),
+    fn parsed(text: &str) -> Document<&str> {
+        Document::parse(text, SyntaxOptions::JSON).unwrap()
+    }
+
+    fn dec<'a>(doc: &'a Document<&str>) -> Decimal<'a> {
+        let Kind::Number(number) = doc.root().kind() else {
+            panic!("number");
         };
-        Decimal::from(NumberText { mantissa, exponent })
+        Decimal::from(number.text())
     }
 
     #[rstest::rstest]
@@ -144,7 +150,7 @@ mod tests {
     #[case("0.0005", "5e-4")]
     #[case("1e+2", "100")]
     fn equal(#[case] lhs: &str, #[case] rhs: &str) {
-        assert_eq!(dec(lhs), dec(rhs));
+        assert_eq!(dec(&parsed(lhs)), dec(&parsed(rhs)));
     }
 
     // r[verify json-schema-v7.type.integer-subset]
@@ -157,7 +163,7 @@ mod tests {
     #[case("-3e2", true)]
     #[case("12e-1", false)]
     fn integer_detection(#[case] text: &str, #[case] expected: bool) {
-        assert_eq!(dec(text).is_integer(), expected);
+        assert_eq!(dec(&parsed(text)).is_integer(), expected);
     }
 
     #[rstest::rstest]
@@ -174,19 +180,25 @@ mod tests {
     #[case("-1e100", "-1")]
     #[case("-1", "-0.5")]
     fn ordered(#[case] smaller: &str, #[case] larger: &str) {
-        assert!(dec(smaller) < dec(larger));
-        assert!(dec(larger) > dec(smaller));
+        let (smaller, larger) = (parsed(smaller), parsed(larger));
+        assert!(dec(&smaller) < dec(&larger));
+        assert!(dec(&larger) > dec(&smaller));
     }
 
     #[test]
     fn huge_exponents() {
-        let big = dec("1e99999999999999999999");
-        let small = dec("1e-99999999999999999999");
+        let (big, small) = (
+            parsed("1e99999999999999999999"),
+            parsed("1e-99999999999999999999"),
+        );
+        let (one, neg_one, neg_big) =
+            (parsed("1"), parsed("-1"), parsed("-1e99999999999999999999"));
+        let (big, small) = (dec(&big), dec(&small));
         assert!(big.is_integer());
         assert!(!small.is_integer());
-        assert!(small < dec("1"));
-        assert!(dec("1") < big);
+        assert!(small < dec(&one));
+        assert!(dec(&one) < big);
         assert!(small < big);
-        assert!(dec("-1e99999999999999999999") < dec("-1"));
+        assert!(dec(&neg_big) < dec(&neg_one));
     }
 }

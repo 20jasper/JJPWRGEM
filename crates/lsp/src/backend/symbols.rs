@@ -17,20 +17,18 @@ fn document_symbols(
     encoding: PositionEncoding,
 ) -> Vec<DocumentSymbol> {
     let source = Source {
-        document,
         positions: Positions::new(document.source(), encoding),
     };
     let mut remaining = MAX_SYMBOLS;
     map_children(&source, document.root(), &mut remaining).unwrap_or_default()
 }
 
-struct Source<'a> {
-    document: &'a Document<String>,
+struct Source {
     positions: Positions,
 }
 
 fn map_children(
-    source: &Source<'_>,
+    source: &Source,
     node: Node<'_, String>,
     remaining: &mut usize,
 ) -> Option<Vec<DocumentSymbol>> {
@@ -56,7 +54,7 @@ fn map_children(
     }
 }
 
-impl Source<'_> {
+impl Source {
     /// Returns `None` once the symbol cap is exhausted, which ends the caller's iteration.
     fn child(
         &self,
@@ -78,20 +76,19 @@ impl Source<'_> {
         children: Option<Vec<DocumentSymbol>>,
     ) -> DocumentSymbol {
         let full = Span::from(selection.start..node.span().end);
-        // detail shows the raw source between the quotes, so it reads the unquoted range off the value
-        let detail = Some(node.value().range());
+        // string detail is the raw source between the quotes
         let (kind, detail) = match node.kind() {
             Kind::Object(_) => (SymbolKind::Object, None),
             Kind::Array(_) => (SymbolKind::Array, None),
-            Kind::String(_) => (SymbolKind::String, detail),
-            Kind::Number(_) => (SymbolKind::Number, detail),
-            Kind::Bool(_) => (SymbolKind::Boolean, detail),
-            Kind::Null => (SymbolKind::Null, detail),
+            Kind::String(s) => (SymbolKind::String, Some(s.raw())),
+            Kind::Number(_) => (SymbolKind::Number, Some(node.text())),
+            Kind::Bool(_) => (SymbolKind::Boolean, Some(node.text())),
+            Kind::Null => (SymbolKind::Null, Some(node.text())),
         };
         #[expect(deprecated, reason = "the field is required to build the struct")]
         DocumentSymbol {
             name,
-            detail: detail.map(|range| truncated(self.document.slice(range))),
+            detail: detail.map(truncated),
             kind,
             tags: None,
             deprecated: None,
