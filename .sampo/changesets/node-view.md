@@ -13,4 +13,4 @@ read documents through a `Node` view that carries its document. `Document::root`
 
 `Node` also has `Node::span`, `Node::text`, `Node::traverse`, `Node::path_at` and `Node::member_span`.
 
-`Value::children`, `Value::child_at`, `Value::path_at`, `Value::traverse` and `Value::member_span` are no longer public, use `Node` instead.
+`Value::children`, `Value::child_at`, `Value::path_at`, `Value::traverse`, `Value::member_span`, `Value::is_container` and `Value::is_primitive` are no longer public, use `Node` instead.
