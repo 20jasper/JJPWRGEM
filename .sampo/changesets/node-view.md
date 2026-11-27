@@ -1,8 +1,8 @@
 ---
-cargo/jjpwrgem-parse: minor (Changed)
+cargo/jjpwrgem-parse: minor (Added)
 ---
 
-read documents through a `Node` view that carries its document. `Document::root` returns a `Node`, and `Node::kind` gives typed access:
+add a `Node` view that carries its document, where `Node::kind` gives typed access:
 
 - `Kind::Null`
 - `Kind::Bool`
@@ -12,5 +12,3 @@ read documents through a `Node` view that carries its document. `Document::root`
 - `Kind::Object` with `Object::members`, `Object::get` and `Object::node`
 
 `Node` also has `Node::span`, `Node::text`, `Node::traverse`, `Node::path_at` and `Node::member_span`.
-
-`Value::children`, `Value::child_at`, `Value::path_at`, `Value::traverse`, `Value::member_span`, `Value::is_container` and `Value::is_primitive` are no longer public, use `Node` instead.
