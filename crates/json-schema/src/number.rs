@@ -49,10 +49,6 @@ impl<'a> Decimal<'a> {
             frac
         };
         let (int, frac, exp) = trim_trailing_zeros(int, frac, exp);
-        Some(Self::new(negative, int, frac, exp))
-    }
-
-    fn new(negative: bool, int: &'a str, frac: &'a str, exp: i64) -> Self {
         let (sign, exp) = if int.is_empty() && frac.is_empty() {
             (Sign::Zero, 0)
         } else if negative {
@@ -60,12 +56,12 @@ impl<'a> Decimal<'a> {
         } else {
             (Sign::Positive, exp)
         };
-        Self {
+        Some(Self {
             sign,
             int,
             frac,
             exp,
-        }
+        })
     }
 
     pub fn is_integer(&self) -> bool {
