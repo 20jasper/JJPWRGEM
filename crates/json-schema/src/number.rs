@@ -7,16 +7,6 @@ enum Sign {
     Positive,
 }
 
-impl Sign {
-    fn then_with(self, magnitude: impl FnOnce() -> Ordering) -> Ordering {
-        match self {
-            Self::Zero => Ordering::Equal,
-            Self::Positive => magnitude(),
-            Self::Negative => magnitude().reverse(),
-        }
-    }
-}
-
 /// Decimal is normalized by treating the integer and fraction as a whole integer and changing the exponent,
 /// then removing leading and trailing zeros so each value has one form
 /// 1.0e1 -> 10e0 -> 1e1
@@ -127,11 +117,15 @@ impl PartialOrd for Decimal<'_> {
 impl Ord for Decimal<'_> {
     fn cmp(&self, other: &Self) -> Ordering {
         self.sign.cmp(&other.sign).then_with(|| {
-            self.sign.then_with(|| {
-                self.order_of_magnitude()
-                    .cmp(&other.order_of_magnitude())
-                    .then_with(|| self.digits().cmp(other.digits()))
-            })
+            let magnitude = self
+                .order_of_magnitude()
+                .cmp(&other.order_of_magnitude())
+                .then_with(|| self.digits().cmp(other.digits()));
+            if self.sign == Sign::Negative {
+                magnitude.reverse()
+            } else {
+                magnitude
+            }
         })
     }
 }
