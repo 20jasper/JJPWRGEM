@@ -268,6 +268,41 @@ impl<'a, S: AsRef<str>> Node<'a, S> {
         }
     }
 
+    pub fn as_str(self) -> Option<Str<'a, S>> {
+        match self.kind() {
+            Kind::String(s) => Some(s),
+            _ => None,
+        }
+    }
+
+    pub fn as_number(self) -> Option<Number<'a, S>> {
+        match self.kind() {
+            Kind::Number(n) => Some(n),
+            _ => None,
+        }
+    }
+
+    pub fn as_bool(self) -> Option<bool> {
+        match self.kind() {
+            Kind::Bool(b) => Some(b),
+            _ => None,
+        }
+    }
+
+    pub fn as_array(self) -> Option<Array<'a, S>> {
+        match self.kind() {
+            Kind::Array(a) => Some(a),
+            _ => None,
+        }
+    }
+
+    pub fn as_object(self) -> Option<Object<'a, S>> {
+        match self.kind() {
+            Kind::Object(o) => Some(o),
+            _ => None,
+        }
+    }
+
     /// source text of the whole node, including string quotes
     pub fn text(self) -> &'a str {
         self.doc.slice(self.value.span())
@@ -429,6 +464,22 @@ mod tests {
         );
         assert_eq!(array.len(), 6);
         assert_eq!(array.node().span(), doc.root().span());
+    }
+
+    #[test]
+    fn one_kind_accessors() {
+        let doc = parse(r#"["a", 1, true, [], {}]"#);
+        let items = doc.root().as_array().unwrap().items().collect::<Vec<_>>();
+        assert_eq!(items[0].as_str().unwrap().raw(), "a");
+        assert!(items[1].as_str().is_none());
+        assert_eq!(items[1].as_number().unwrap().text().mantissa(), "1");
+        assert!(items[0].as_number().is_none());
+        assert_eq!(items[2].as_bool(), Some(true));
+        assert_eq!(items[1].as_bool(), None);
+        assert!(items[3].as_array().is_some());
+        assert!(items[4].as_array().is_none());
+        assert!(items[4].as_object().is_some());
+        assert!(items[3].as_object().is_none());
     }
 
     #[test]

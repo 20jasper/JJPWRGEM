@@ -5,7 +5,7 @@ use std::{
 };
 
 use anyhow::{Context, Result, anyhow, bail};
-use jjpwrgem_parse::{Array, Kind, Node, Object, SyntaxOptions, ast::Document};
+use jjpwrgem_parse::{Array, Node, Object, SyntaxOptions, ast::Document};
 use plotters::{
     coord::ranged1d::{DefaultFormatting, KeyPointHint, KeyPointWeight},
     element::DashedPathElement,
@@ -36,23 +36,17 @@ fn field<'a>(object: Object<'a, &'a str>, name: &str) -> Result<DocNode<'a>> {
 }
 
 fn as_object<'a>(node: DocNode<'a>, what: &str) -> Result<Object<'a, &'a str>> {
-    match node.kind() {
-        Kind::Object(object) => Ok(object),
-        _ => bail!("{what} must be an object"),
-    }
+    node.as_object()
+        .ok_or_else(|| anyhow!("{what} must be an object"))
 }
 
 fn as_array<'a>(node: DocNode<'a>, what: &str) -> Result<Array<'a, &'a str>> {
-    match node.kind() {
-        Kind::Array(array) => Ok(array),
-        _ => bail!("{what} must be an array"),
-    }
+    node.as_array()
+        .ok_or_else(|| anyhow!("{what} must be an array"))
 }
 
 fn as_f64(node: DocNode<'_>) -> Option<f64> {
-    let Kind::Number(number) = node.kind() else {
-        return None;
-    };
+    let number = node.as_number()?;
     match number.exponent() {
         Some(exponent) => format!("{}e{exponent}", number.mantissa()).parse().ok(),
         None => number.mantissa().parse().ok(),
@@ -62,16 +56,16 @@ fn as_f64(node: DocNode<'_>) -> Option<f64> {
 fn parse_result(item: DocNode<'_>) -> Result<BenchmarkResult> {
     let object = as_object(item, "result")?;
 
-    let command = match field(object, "command")?.kind() {
-        Kind::String(command) => command.unescape(),
-        _ => bail!("'command' must be a string"),
-    };
+    let command = field(object, "command")?
+        .as_str()
+        .ok_or_else(|| anyhow!("'command' must be a string"))?
+        .unescape();
     // `name` holds the `--command-name` label, `command` the full command line
-    let command = match object.get("name").map(DocNode::kind) {
-        Some(Kind::String(name)) => name.unescape(),
-        _ => command,
-    }
-    .into_owned();
+    let command = object
+        .get("name")
+        .and_then(DocNode::as_str)
+        .map_or(command, |name| name.unescape())
+        .into_owned();
 
     let times = as_array(field(object, "measurements")?, "'measurements'")?
         .items()

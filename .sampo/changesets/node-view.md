@@ -11,4 +11,4 @@ add a `Node` view that carries its document, where `Node::kind` gives typed acce
 - `Kind::Array` with `Array::items`, `Array::len`, `Array::is_empty` and `Array::node`
 - `Kind::Object` with `Object::members`, `Object::get` and `Object::node`
 
-`Node` also has `Node::span`, `Node::text`, `Node::traverse`, `Node::path_at` and `Node::member_span`.
+`Node` also has `Node::span`, `Node::text`, `Node::traverse`, `Node::path_at`, `Node::member_span`, `Node::as_str`, `Node::as_number`, `Node::as_bool`, `Node::as_array` and `Node::as_object`.

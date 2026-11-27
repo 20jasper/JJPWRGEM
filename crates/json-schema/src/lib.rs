@@ -66,25 +66,21 @@ impl ObjectSchema {
 }
 
 fn string_keyword<S: AsRef<str>>(object: Object<'_, S>, key: &str) -> Option<String> {
-    let Kind::String(string) = object.get(key)?.kind() else {
-        return None;
-    };
-    Some(string.unescape().into_owned())
+    object.get(key)?.as_str().map(|s| s.unescape().into_owned())
 }
 
 fn type_keyword<S: AsRef<str>>(object: Object<'_, S>) -> Result<Option<Type>> {
     let Some(value) = object.get(keyword::TYPE) else {
         return Ok(None);
     };
-    let name = if let Kind::String(string) = value.kind() {
-        Type::from_name(&string.unescape())
-    } else {
-        None
-    };
-    name.map(Some).ok_or_else(|| Error::InvalidType {
-        range: value.span(),
-        found: value.text().to_owned(),
-    })
+    let ty = value
+        .as_str()
+        .and_then(|s| Type::from_name(&s.unescape()))
+        .ok_or_else(|| Error::InvalidType {
+            range: value.span(),
+            found: value.text().to_owned(),
+        })?;
+    Ok(Some(ty))
 }
 
 impl Schema {
