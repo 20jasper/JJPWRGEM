@@ -20,12 +20,6 @@ impl ObjectEntries {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum Key {
-    Name(Range<usize>),
-    Index(usize),
-}
-
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub(crate) enum Value {
     Null(Range<usize>),
@@ -62,44 +56,44 @@ impl Value {
         }
     }
 
-    pub(crate) fn member_span(&self, key: Key) -> Range<usize> {
+    pub(crate) fn member_span(&self, name: Option<Range<usize>>) -> Range<usize> {
         let span = self.span();
-        match key {
-            Key::Name(name) => quoted(name).start..span.end,
-            Key::Index(_) => span,
+        match name {
+            Some(name) => quoted(name).start..span.end,
+            None => span,
         }
     }
 
-    pub(crate) fn child_at(&self, offset: usize) -> Option<(Key, &Value)> {
-        self.children().find(|(key, child)| {
-            let member = child.member_span(*key);
+    pub(crate) fn child_at(&self, offset: usize) -> Option<(Option<Range<usize>>, &Value)> {
+        self.children().find(|(name, child)| {
+            let member = child.member_span(*name);
             member.start <= offset && offset <= member.end
         })
     }
 
-    pub(crate) fn path_at(&self, offset: usize) -> impl Iterator<Item = (Key, &Value)> {
+    pub(crate) fn path_at(
+        &self,
+        offset: usize,
+    ) -> impl Iterator<Item = (Option<Range<usize>>, &Value)> {
         core::iter::successors(self.child_at(offset), move |(_, child)| {
             child.child_at(offset)
         })
     }
 
     /// outputs layer of direct children
-    pub(crate) fn children(&self) -> impl DoubleEndedIterator<Item = (Key, &Value)> {
+    pub(crate) fn children(
+        &self,
+    ) -> impl DoubleEndedIterator<Item = (Option<Range<usize>>, &Value)> {
         let (entries, items) = match self {
             Value::Object(_, entries) => (Some(entries.0.iter()), None),
-            Value::Array(_, items) => (None, Some(items.iter().enumerate())),
+            Value::Array(_, items) => (None, Some(items.iter())),
             _ => (None, None),
         };
         entries
             .into_iter()
             .flatten()
-            .map(|(name, value)| (Key::Name(*name), value))
-            .chain(
-                items
-                    .into_iter()
-                    .flatten()
-                    .map(|(index, value)| (Key::Index(index), value)),
-            )
+            .map(|(name, value)| (Some(*name), value))
+            .chain(items.into_iter().flatten().map(|value| (None, value)))
     }
 
     /// preorder walk over the value, outputting a flat stream of Values

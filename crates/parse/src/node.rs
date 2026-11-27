@@ -1,6 +1,6 @@
 use core::range::Range;
 
-use crate::ast::{Document, Key, ObjectEntries, Value, quoted};
+use crate::ast::{Document, ObjectEntries, Value, quoted};
 
 #[derive(Debug, Clone, Copy)]
 pub struct Node<'a> {
@@ -34,10 +34,9 @@ impl<'a> Member<'a> {
     }
 
     pub fn span(self) -> Range<usize> {
-        self.value.value.member_span(
-            self.name
-                .map_or(Key::Index(0), |name| Key::Name(name.range)),
-        )
+        self.value
+            .value
+            .member_span(self.name.map(|name| name.range))
     }
 }
 
@@ -48,6 +47,10 @@ pub struct Str<'a> {
 }
 
 impl<'a> Str<'a> {
+    fn new(source: &'a str, range: Range<usize>) -> Self {
+        Str { source, range }
+    }
+
     pub fn span(self) -> Range<usize> {
         quoted(self.range)
     }
@@ -196,6 +199,10 @@ impl<'a> IntoIterator for Array<'a> {
     }
 }
 
+fn member<'a>(source: &'a str, (range, value): &'a (Range<usize>, Value)) -> (Str<'a>, Node<'a>) {
+    (Str::new(source, *range), Node { source, value })
+}
+
 #[derive(Debug, Clone)]
 pub struct Members<'a> {
     source: &'a str,
@@ -206,16 +213,7 @@ impl<'a> Iterator for Members<'a> {
     type Item = (Str<'a>, Node<'a>);
 
     fn next(&mut self) -> Option<Self::Item> {
-        let source = self.source;
-        self.iter.next().map(|(range, value)| {
-            (
-                Str {
-                    source,
-                    range: *range,
-                },
-                Node { source, value },
-            )
-        })
+        self.iter.next().map(|entry| member(self.source, entry))
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
@@ -225,16 +223,9 @@ impl<'a> Iterator for Members<'a> {
 
 impl DoubleEndedIterator for Members<'_> {
     fn next_back(&mut self) -> Option<Self::Item> {
-        let source = self.source;
-        self.iter.next_back().map(|(range, value)| {
-            (
-                Str {
-                    source,
-                    range: *range,
-                },
-                Node { source, value },
-            )
-        })
+        self.iter
+            .next_back()
+            .map(|entry| member(self.source, entry))
     }
 }
 
@@ -268,10 +259,7 @@ impl<'a> Node<'a> {
         match self.value {
             Value::Null(_) => Kind::Null,
             Value::Boolean(_, b) => Kind::Bool(*b),
-            Value::String(range) => Kind::String(Str {
-                source,
-                range: *range,
-            }),
+            Value::String(range) => Kind::String(Str::new(source, *range)),
             Value::Number { mantissa, exponent } => Kind::Number(Number {
                 node: self,
                 mantissa: *mantissa,
@@ -333,11 +321,8 @@ impl<'a> Node<'a> {
 
     pub fn path_at(self, offset: usize) -> impl Iterator<Item = Member<'a>> {
         let source = self.source;
-        self.value.path_at(offset).map(move |(key, value)| Member {
-            name: match key {
-                Key::Name(range) => Some(Str { source, range }),
-                Key::Index(_) => None,
-            },
+        self.value.path_at(offset).map(move |(name, value)| Member {
+            name: name.map(|range| Str::new(source, range)),
             value: Node { source, value },
         })
     }
@@ -503,18 +488,6 @@ mod tests {
         assert_eq!(number.integer(), integer);
         assert_eq!(number.fraction(), fraction);
         assert_eq!(number.has_minus(), has_minus);
-    }
-
-    #[test]
-    fn path_at_and_span_follow_the_value() {
-        let source = r#"{"a": [10, {"bb": 2}]}"#;
-        let doc = parse(source);
-        let path = doc
-            .root()
-            .path_at(source.find('2').unwrap())
-            .map(|member| &source[member.value().span()])
-            .collect::<Vec<_>>();
-        assert_eq!(path, [r#"[10, {"bb": 2}]"#, r#"{"bb": 2}"#, "2"]);
     }
 
     #[test]

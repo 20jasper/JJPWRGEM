@@ -27,25 +27,23 @@ struct BenchmarkResult {
     times: Vec<f64>,
 }
 
-type DocNode<'a> = Node<'a>;
-
-fn field<'a>(object: Object<'a>, name: &str) -> Result<DocNode<'a>> {
+fn field<'a>(object: Object<'a>, name: &str) -> Result<Node<'a>> {
     object
         .get(name)
         .ok_or_else(|| anyhow!("missing '{name}' field"))
 }
 
-fn as_object<'a>(node: DocNode<'a>, what: &str) -> Result<Object<'a>> {
+fn as_object<'a>(node: Node<'a>, what: &str) -> Result<Object<'a>> {
     node.as_object()
         .ok_or_else(|| anyhow!("{what} must be an object"))
 }
 
-fn as_array<'a>(node: DocNode<'a>, what: &str) -> Result<Array<'a>> {
+fn as_array<'a>(node: Node<'a>, what: &str) -> Result<Array<'a>> {
     node.as_array()
         .ok_or_else(|| anyhow!("{what} must be an array"))
 }
 
-fn as_f64(node: DocNode<'_>) -> Option<f64> {
+fn as_f64(node: Node<'_>) -> Option<f64> {
     let number = node.as_number()?;
     let text = match number.exponent() {
         Some(exponent) => format!("{}e{exponent}", number.mantissa()),
@@ -54,7 +52,7 @@ fn as_f64(node: DocNode<'_>) -> Option<f64> {
     Some(text.parse().expect("valid json number text parses as f64"))
 }
 
-fn parse_result(item: DocNode<'_>) -> Result<BenchmarkResult> {
+fn parse_result(item: Node<'_>) -> Result<BenchmarkResult> {
     let object = as_object(item, "result")?;
 
     let command = field(object, "command")?
@@ -64,7 +62,7 @@ fn parse_result(item: DocNode<'_>) -> Result<BenchmarkResult> {
     // `name` holds the `--command-name` label, `command` the full command line
     let command = object
         .get("name")
-        .and_then(DocNode::as_str)
+        .and_then(Node::as_str)
         .map_or(command, |name| name.raw())
         .to_owned();
 
