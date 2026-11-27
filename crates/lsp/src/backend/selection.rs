@@ -59,7 +59,7 @@ fn contains_inclusive(span: ByteRange<usize>, offset: usize) -> bool {
     (span.start..=span.end).contains(&offset)
 }
 
-fn inside_container(node: Node<'_, String>, offset: usize) -> Option<ByteRange<usize>> {
+fn inside_container(node: Node<'_>, offset: usize) -> Option<ByteRange<usize>> {
     let span = node.span();
     let inside_brackets = ByteRange::from(span.start + BRACKET_LEN..span.end - BRACKET_LEN);
 
@@ -70,15 +70,12 @@ fn inside_container(node: Node<'_, String>, offset: usize) -> Option<ByteRange<u
     offset_in_container.then_some(inside_brackets)
 }
 
-fn value_and_interior(
-    node: Node<'_, String>,
-    offset: usize,
-) -> impl Iterator<Item = ByteRange<usize>> {
+fn value_and_interior(node: Node<'_>, offset: usize) -> impl Iterator<Item = ByteRange<usize>> {
     std::iter::once(node.span()).chain(inside_container(node, offset))
 }
 
 /// values from outer to inner
-fn steps(root: Node<'_, String>, offset: usize) -> Vec<ByteRange<usize>> {
+fn steps(root: Node<'_>, offset: usize) -> Vec<ByteRange<usize>> {
     let mut spans = Vec::new();
     let root_span = root.span();
     // add whole document if offset is inside

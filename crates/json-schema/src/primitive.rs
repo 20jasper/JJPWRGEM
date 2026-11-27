@@ -41,7 +41,7 @@ impl fmt::Display for PrimitiveType {
     }
 }
 
-pub fn value_as_primitive<S: AsRef<str>>(node: Node<'_, S>) -> PrimitiveType {
+pub fn value_as_primitive(node: Node<'_>) -> PrimitiveType {
     match node.kind() {
         Kind::Null => PrimitiveType::Null,
         Kind::Bool(_) => PrimitiveType::Boolean,

@@ -21,14 +21,11 @@ pub struct Decimal<'a> {
     exp: i64,
 }
 
-impl<'a, S: AsRef<str>> From<Number<'a, S>> for Decimal<'a> {
-    fn from(number: Number<'a, S>) -> Self {
-        let (mantissa, exponent) = (number.mantissa(), number.exponent());
-        let (negative, unsigned) = mantissa
-            .strip_prefix('-')
-            .map_or((false, mantissa), |rest| (true, rest));
-        let (int, frac) = unsigned.split_once('.').unwrap_or((unsigned, ""));
-        let exp = match exponent.map(str::parse::<i64>) {
+impl<'a> From<Number<'a>> for Decimal<'a> {
+    fn from(number: Number<'a>) -> Self {
+        let negative = number.has_minus();
+        let (int, frac) = (number.integer(), number.fraction().unwrap_or(""));
+        let exp = match number.exponent().map(str::parse::<i64>) {
             None => 0,
             Some(Ok(exp)) => exp,
             Some(Err(err)) => match err.kind() {

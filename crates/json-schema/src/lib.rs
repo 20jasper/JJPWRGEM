@@ -56,7 +56,7 @@ mod keyword {
 }
 
 impl ObjectSchema {
-    fn parse<S: AsRef<str>>(object: Object<'_, S>) -> Result<Self> {
+    fn parse(object: Object<'_>) -> Result<Self> {
         Ok(Self {
             title: string_keyword(object, keyword::TITLE),
             description: string_keyword(object, keyword::DESCRIPTION),
@@ -65,11 +65,11 @@ impl ObjectSchema {
     }
 }
 
-fn string_keyword<S: AsRef<str>>(object: Object<'_, S>, key: &str) -> Option<String> {
+fn string_keyword(object: Object<'_>, key: &str) -> Option<String> {
     object.get(key)?.as_str().map(|s| s.raw().to_owned())
 }
 
-fn type_keyword<S: AsRef<str>>(object: Object<'_, S>) -> Result<Option<Type>> {
+fn type_keyword(object: Object<'_>) -> Result<Option<Type>> {
     let Some(value) = object.get(keyword::TYPE) else {
         return Ok(None);
     };

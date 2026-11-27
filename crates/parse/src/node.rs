@@ -2,67 +2,35 @@ use core::range::Range;
 
 use crate::ast::{Document, Key, ObjectEntries, Value, quoted};
 
-#[derive(Debug)]
-pub struct Node<'a, S> {
-    doc: &'a Document<S>,
+#[derive(Debug, Clone, Copy)]
+pub struct Node<'a> {
+    source: &'a str,
     value: &'a Value,
 }
 
-impl<S> Clone for Node<'_, S> {
-    fn clone(&self) -> Self {
-        *self
-    }
-}
-
-impl<S> Copy for Node<'_, S> {}
-
-#[derive(Debug)]
-pub enum Kind<'a, S> {
+#[derive(Debug, Clone, Copy)]
+pub enum Kind<'a> {
     Null,
     Bool(bool),
-    String(Str<'a, S>),
-    Number(Number<'a, S>),
-    Array(Array<'a, S>),
-    Object(Object<'a, S>),
+    String(Str<'a>),
+    Number(Number<'a>),
+    Array(Array<'a>),
+    Object(Object<'a>),
 }
 
-impl<S> Clone for Kind<'_, S> {
-    fn clone(&self) -> Self {
-        *self
-    }
-}
-
-impl<S> Copy for Kind<'_, S> {}
-
-#[derive(Debug)]
-pub enum PathKey<'a, S> {
-    Name(Str<'a, S>),
+#[derive(Debug, Clone, Copy)]
+pub enum PathKey<'a> {
+    Name(Str<'a>),
     Index(usize),
 }
 
-impl<S> Clone for PathKey<'_, S> {
-    fn clone(&self) -> Self {
-        *self
-    }
-}
-
-impl<S> Copy for PathKey<'_, S> {}
-
-#[derive(Debug)]
-pub struct Str<'a, S> {
-    doc: &'a Document<S>,
+#[derive(Debug, Clone, Copy)]
+pub struct Str<'a> {
+    source: &'a str,
     range: Range<usize>,
 }
 
-impl<S> Clone for Str<'_, S> {
-    fn clone(&self) -> Self {
-        *self
-    }
-}
-
-impl<S> Copy for Str<'_, S> {}
-
-impl<'a, S: AsRef<str>> Str<'a, S> {
+impl<'a> Str<'a> {
     pub fn span(self) -> Range<usize> {
         quoted(self.range)
     }
@@ -72,28 +40,20 @@ impl<'a, S: AsRef<str>> Str<'a, S> {
     }
 
     pub fn raw(self) -> &'a str {
-        self.doc.slice(self.range)
+        &self.source[self.range]
     }
 }
 
-#[derive(Debug)]
-pub struct Array<'a, S> {
-    node: Node<'a, S>,
+#[derive(Debug, Clone, Copy)]
+pub struct Array<'a> {
+    node: Node<'a>,
     items: &'a [Value],
 }
 
-impl<S> Clone for Array<'_, S> {
-    fn clone(&self) -> Self {
-        *self
-    }
-}
-
-impl<S> Copy for Array<'_, S> {}
-
-impl<'a, S: AsRef<str>> Array<'a, S> {
-    pub fn iter(self) -> Items<'a, S> {
+impl<'a> Array<'a> {
+    pub fn iter(self) -> Items<'a> {
         Items {
-            doc: self.node.doc,
+            source: self.node.source,
             iter: self.items.iter(),
         }
     }
@@ -106,98 +66,86 @@ impl<'a, S: AsRef<str>> Array<'a, S> {
         self.items.is_empty()
     }
 
-    pub fn node(self) -> Node<'a, S> {
+    pub fn node(self) -> Node<'a> {
         self.node
     }
 }
 
-#[derive(Debug)]
-pub struct Object<'a, S> {
-    node: Node<'a, S>,
+#[derive(Debug, Clone, Copy)]
+pub struct Object<'a> {
+    node: Node<'a>,
     entries: &'a ObjectEntries,
 }
 
-impl<S> Clone for Object<'_, S> {
-    fn clone(&self) -> Self {
-        *self
-    }
-}
-
-impl<S> Copy for Object<'_, S> {}
-
-impl<'a, S: AsRef<str>> Object<'a, S> {
-    pub fn iter(self) -> Members<'a, S> {
+impl<'a> Object<'a> {
+    pub fn iter(self) -> Members<'a> {
         Members {
-            doc: self.node.doc,
+            source: self.node.source,
             iter: self.entries.0.iter(),
         }
     }
 
-    pub fn get(self, name: &str) -> Option<Node<'a, S>> {
+    pub fn get(self, name: &str) -> Option<Node<'a>> {
         self.iter()
             .find(|(key, _)| key.raw() == name)
             .map(|(_, node)| node)
     }
 
-    pub fn node(self) -> Node<'a, S> {
+    pub fn node(self) -> Node<'a> {
         self.node
     }
 }
 
-#[derive(Debug)]
-pub struct Number<'a, S> {
-    node: Node<'a, S>,
+#[derive(Debug, Clone, Copy)]
+pub struct Number<'a> {
+    node: Node<'a>,
     mantissa: Range<usize>,
     exponent: Option<Range<usize>>,
 }
 
-impl<S> Clone for Number<'_, S> {
-    fn clone(&self) -> Self {
-        *self
-    }
-}
-
-impl<S> Copy for Number<'_, S> {}
-
-impl<'a, S: AsRef<str>> Number<'a, S> {
+impl<'a> Number<'a> {
     pub fn mantissa(self) -> &'a str {
-        self.node.doc.slice(self.mantissa)
+        &self.node.source[self.mantissa]
     }
 
     pub fn exponent(self) -> Option<&'a str> {
-        self.exponent.map(|e| self.node.doc.slice(e))
+        self.exponent.map(|e| &self.node.source[e])
+    }
+
+    pub fn integer(self) -> &'a str {
+        let unsigned = self.mantissa().trim_start_matches('-');
+        unsigned.split_once('.').map_or(unsigned, |(int, _)| int)
+    }
+
+    pub fn fraction(self) -> Option<&'a str> {
+        self.mantissa().split_once('.').map(|(_, frac)| frac)
+    }
+
+    pub fn has_minus(self) -> bool {
+        self.mantissa().starts_with('-')
     }
 
     pub fn span(self) -> Range<usize> {
         self.node.span()
     }
 
-    pub fn node(self) -> Node<'a, S> {
+    pub fn node(self) -> Node<'a> {
         self.node
     }
 }
 
-#[derive(Debug)]
-pub struct Items<'a, S> {
-    doc: &'a Document<S>,
+#[derive(Debug, Clone)]
+pub struct Items<'a> {
+    source: &'a str,
     iter: core::slice::Iter<'a, Value>,
 }
 
-impl<S> Clone for Items<'_, S> {
-    fn clone(&self) -> Self {
-        Self {
-            doc: self.doc,
-            iter: self.iter.clone(),
-        }
-    }
-}
-
-impl<'a, S> Iterator for Items<'a, S> {
-    type Item = Node<'a, S>;
+impl<'a> Iterator for Items<'a> {
+    type Item = Node<'a>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let doc = self.doc;
-        self.iter.next().map(|value| Node { doc, value })
+        let source = self.source;
+        self.iter.next().map(|value| Node { source, value })
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
@@ -205,47 +153,44 @@ impl<'a, S> Iterator for Items<'a, S> {
     }
 }
 
-impl<S> DoubleEndedIterator for Items<'_, S> {
+impl DoubleEndedIterator for Items<'_> {
     fn next_back(&mut self) -> Option<Self::Item> {
-        let doc = self.doc;
-        self.iter.next_back().map(|value| Node { doc, value })
+        let source = self.source;
+        self.iter.next_back().map(|value| Node { source, value })
     }
 }
 
-impl<S> ExactSizeIterator for Items<'_, S> {}
+impl ExactSizeIterator for Items<'_> {}
 
-impl<'a, S: AsRef<str>> IntoIterator for Array<'a, S> {
-    type Item = Node<'a, S>;
-    type IntoIter = Items<'a, S>;
+impl<'a> IntoIterator for Array<'a> {
+    type Item = Node<'a>;
+    type IntoIter = Items<'a>;
 
-    fn into_iter(self) -> Items<'a, S> {
+    fn into_iter(self) -> Items<'a> {
         self.iter()
     }
 }
 
-#[derive(Debug)]
-pub struct Members<'a, S> {
-    doc: &'a Document<S>,
+#[derive(Debug, Clone)]
+pub struct Members<'a> {
+    source: &'a str,
     iter: core::slice::Iter<'a, (Range<usize>, Value)>,
 }
 
-impl<S> Clone for Members<'_, S> {
-    fn clone(&self) -> Self {
-        Self {
-            doc: self.doc,
-            iter: self.iter.clone(),
-        }
-    }
-}
-
-impl<'a, S> Iterator for Members<'a, S> {
-    type Item = (Str<'a, S>, Node<'a, S>);
+impl<'a> Iterator for Members<'a> {
+    type Item = (Str<'a>, Node<'a>);
 
     fn next(&mut self) -> Option<Self::Item> {
-        let doc = self.doc;
-        self.iter
-            .next()
-            .map(|(range, value)| (Str { doc, range: *range }, Node { doc, value }))
+        let source = self.source;
+        self.iter.next().map(|(range, value)| {
+            (
+                Str {
+                    source,
+                    range: *range,
+                },
+                Node { source, value },
+            )
+        })
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
@@ -253,46 +198,55 @@ impl<'a, S> Iterator for Members<'a, S> {
     }
 }
 
-impl<S> DoubleEndedIterator for Members<'_, S> {
+impl DoubleEndedIterator for Members<'_> {
     fn next_back(&mut self) -> Option<Self::Item> {
-        let doc = self.doc;
-        self.iter
-            .next_back()
-            .map(|(range, value)| (Str { doc, range: *range }, Node { doc, value }))
+        let source = self.source;
+        self.iter.next_back().map(|(range, value)| {
+            (
+                Str {
+                    source,
+                    range: *range,
+                },
+                Node { source, value },
+            )
+        })
     }
 }
 
-impl<S> ExactSizeIterator for Members<'_, S> {}
+impl ExactSizeIterator for Members<'_> {}
 
-impl<'a, S: AsRef<str>> IntoIterator for Object<'a, S> {
-    type Item = (Str<'a, S>, Node<'a, S>);
-    type IntoIter = Members<'a, S>;
+impl<'a> IntoIterator for Object<'a> {
+    type Item = (Str<'a>, Node<'a>);
+    type IntoIter = Members<'a>;
 
-    fn into_iter(self) -> Members<'a, S> {
+    fn into_iter(self) -> Members<'a> {
         self.iter()
     }
 }
 
-impl<S> Document<S> {
-    pub fn root(&self) -> Node<'_, S> {
+impl<S: AsRef<str>> Document<S> {
+    pub fn root(&self) -> Node<'_> {
         Node {
-            doc: self,
+            source: self.source(),
             value: &self.root,
         }
     }
 }
 
-impl<'a, S: AsRef<str>> Node<'a, S> {
+impl<'a> Node<'a> {
     pub fn span(self) -> Range<usize> {
         self.value.span()
     }
 
-    pub fn kind(self) -> Kind<'a, S> {
-        let doc = self.doc;
+    pub fn kind(self) -> Kind<'a> {
+        let source = self.source;
         match self.value {
             Value::Null(_) => Kind::Null,
             Value::Boolean(_, b) => Kind::Bool(*b),
-            Value::String(range) => Kind::String(Str { doc, range: *range }),
+            Value::String(range) => Kind::String(Str {
+                source,
+                range: *range,
+            }),
             Value::Number { mantissa, exponent } => Kind::Number(Number {
                 node: self,
                 mantissa: *mantissa,
@@ -306,14 +260,14 @@ impl<'a, S: AsRef<str>> Node<'a, S> {
         }
     }
 
-    pub fn as_str(self) -> Option<Str<'a, S>> {
+    pub fn as_str(self) -> Option<Str<'a>> {
         match self.kind() {
             Kind::String(s) => Some(s),
             _ => None,
         }
     }
 
-    pub fn as_number(self) -> Option<Number<'a, S>> {
+    pub fn as_number(self) -> Option<Number<'a>> {
         match self.kind() {
             Kind::Number(n) => Some(n),
             _ => None,
@@ -327,14 +281,14 @@ impl<'a, S: AsRef<str>> Node<'a, S> {
         }
     }
 
-    pub fn as_array(self) -> Option<Array<'a, S>> {
+    pub fn as_array(self) -> Option<Array<'a>> {
         match self.kind() {
             Kind::Array(a) => Some(a),
             _ => None,
         }
     }
 
-    pub fn as_object(self) -> Option<Object<'a, S>> {
+    pub fn as_object(self) -> Option<Object<'a>> {
         match self.kind() {
             Kind::Object(o) => Some(o),
             _ => None,
@@ -342,26 +296,28 @@ impl<'a, S: AsRef<str>> Node<'a, S> {
     }
 
     pub fn text(self) -> &'a str {
-        self.doc.slice(self.value.span())
+        &self.source[self.value.span()]
     }
 
-    pub fn traverse(self) -> impl Iterator<Item = Node<'a, S>> {
-        let doc = self.doc;
-        self.value.traverse().map(move |value| Node { doc, value })
+    pub fn traverse(self) -> impl Iterator<Item = Node<'a>> {
+        let source = self.source;
+        self.value
+            .traverse()
+            .map(move |value| Node { source, value })
     }
 
-    pub fn path_at(self, offset: usize) -> impl Iterator<Item = (PathKey<'a, S>, Node<'a, S>)> {
-        let doc = self.doc;
+    pub fn path_at(self, offset: usize) -> impl Iterator<Item = (PathKey<'a>, Node<'a>)> {
+        let source = self.source;
         self.value.path_at(offset).map(move |(key, value)| {
             let key = match key {
-                Key::Name(range) => PathKey::Name(Str { doc, range }),
+                Key::Name(range) => PathKey::Name(Str { source, range }),
                 Key::Index(index) => PathKey::Index(index),
             };
-            (key, Node { doc, value })
+            (key, Node { source, value })
         })
     }
 
-    pub fn member_span(self, key: PathKey<'a, S>) -> Range<usize> {
+    pub fn member_span(self, key: PathKey<'a>) -> Range<usize> {
         let key = match key {
             PathKey::Name(name) => Key::Name(name.range),
             PathKey::Index(index) => Key::Index(index),
@@ -381,7 +337,7 @@ mod tests {
         Document::parse(json, SyntaxOptions::JSON).unwrap()
     }
 
-    fn name(kind: &Kind<'_, &str>) -> &'static str {
+    fn name(kind: &Kind<'_>) -> &'static str {
         match kind {
             Kind::Null => "null",
             Kind::Bool(_) => "bool",
@@ -499,6 +455,25 @@ mod tests {
         assert_eq!(number.mantissa(), mantissa);
         assert_eq!(number.exponent(), exponent);
         assert_eq!(&json[number.span()], json);
+    }
+
+    #[rstest]
+    #[case("-12.50", "12", Some("50"), true)]
+    #[case("7", "7", None, false)]
+    #[case("-0", "0", None, true)]
+    fn number_helpers(
+        #[case] json: &str,
+        #[case] integer: &str,
+        #[case] fraction: Option<&str>,
+        #[case] has_minus: bool,
+    ) {
+        let doc = parse(json);
+        let Kind::Number(number) = doc.root().kind() else {
+            panic!("number");
+        };
+        assert_eq!(number.integer(), integer);
+        assert_eq!(number.fraction(), fraction);
+        assert_eq!(number.has_minus(), has_minus);
     }
 
     #[test]

@@ -23,7 +23,7 @@ fn document_symbols(
 
 fn map_children(
     positions: &Positions,
-    node: Node<'_, String>,
+    node: Node<'_>,
     remaining: &mut usize,
 ) -> Option<Vec<DocumentSymbol>> {
     match node.kind() {
@@ -53,7 +53,7 @@ fn child_symbol(
     positions: &Positions,
     name: String,
     selection: Span<usize>,
-    node: Node<'_, String>,
+    node: Node<'_>,
     remaining: &mut usize,
 ) -> Option<DocumentSymbol> {
     *remaining = remaining.checked_sub(1)?;
@@ -65,7 +65,7 @@ fn symbol(
     positions: &Positions,
     name: String,
     selection: Span<usize>,
-    node: Node<'_, String>,
+    node: Node<'_>,
     children: Option<Vec<DocumentSymbol>>,
 ) -> DocumentSymbol {
     let full = Span::from(selection.start..node.span().end);

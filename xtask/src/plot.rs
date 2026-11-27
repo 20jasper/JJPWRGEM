@@ -27,20 +27,20 @@ struct BenchmarkResult {
     times: Vec<f64>,
 }
 
-type DocNode<'a> = Node<'a, &'a str>;
+type DocNode<'a> = Node<'a>;
 
-fn field<'a>(object: Object<'a, &'a str>, name: &str) -> Result<DocNode<'a>> {
+fn field<'a>(object: Object<'a>, name: &str) -> Result<DocNode<'a>> {
     object
         .get(name)
         .ok_or_else(|| anyhow!("missing '{name}' field"))
 }
 
-fn as_object<'a>(node: DocNode<'a>, what: &str) -> Result<Object<'a, &'a str>> {
+fn as_object<'a>(node: DocNode<'a>, what: &str) -> Result<Object<'a>> {
     node.as_object()
         .ok_or_else(|| anyhow!("{what} must be an object"))
 }
 
-fn as_array<'a>(node: DocNode<'a>, what: &str) -> Result<Array<'a, &'a str>> {
+fn as_array<'a>(node: DocNode<'a>, what: &str) -> Result<Array<'a>> {
     node.as_array()
         .ok_or_else(|| anyhow!("{what} must be an array"))
 }
