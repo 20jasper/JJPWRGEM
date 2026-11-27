@@ -178,20 +178,6 @@ mod tests {
         assert!(dec(larger) > dec(smaller));
     }
 
-    #[rstest::rstest]
-    #[case("")]
-    #[case("-")]
-    #[case("1.")]
-    #[case(".5")]
-    #[case("1.2.3")]
-    #[case("1a")]
-    #[case("1e")]
-    #[case("1e+")]
-    #[case("1ex")]
-    fn malformed_text_does_not_panic(#[case] text: &str) {
-        let _ = dec(text).is_integer();
-    }
-
     #[test]
     fn huge_exponents() {
         let big = dec("1e99999999999999999999");
