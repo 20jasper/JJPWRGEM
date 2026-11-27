@@ -69,7 +69,7 @@ fn parse_result(item: DocNode<'_>) -> Result<BenchmarkResult> {
         .to_owned();
 
     let times = as_array(field(object, "measurements")?, "'measurements'")?
-        .items()
+        .iter()
         .enumerate()
         .map(|(index, measurement)| {
             let what = format!("measurements[{index}]");
@@ -92,7 +92,7 @@ fn parse_benchmark_results(raw: &str) -> Result<Vec<BenchmarkResult>> {
     let root = as_object(doc.root(), "benchmark data")?;
 
     as_array(field(root, "results")?, "'results'")?
-        .items()
+        .iter()
         .enumerate()
         .map(|(index, item)| parse_result(item).with_context(|| format!("index: {index}")))
         .collect()

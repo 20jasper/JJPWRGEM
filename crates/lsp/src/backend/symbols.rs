@@ -29,7 +29,7 @@ fn map_children(
     match node.kind() {
         Kind::Object(object) => Some(
             object
-                .members()
+                .iter()
                 .map_while(|(key, child)| {
                     child_symbol(positions, name(key.raw()), key.span(), child, remaining)
                 })
@@ -37,7 +37,7 @@ fn map_children(
         ),
         Kind::Array(array) => Some(
             array
-                .items()
+                .iter()
                 .enumerate()
                 .map_while(|(index, child)| {
                     child_symbol(positions, index.to_string(), child.span(), child, remaining)

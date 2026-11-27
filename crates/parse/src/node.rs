@@ -2,7 +2,6 @@ use core::range::Range;
 
 use crate::ast::{Document, Key, ObjectEntries, Value, quoted};
 
-/// A value together with the document it was parsed from.
 #[derive(Debug)]
 pub struct Node<'a, S> {
     doc: &'a Document<S>,
@@ -17,7 +16,6 @@ impl<S> Clone for Node<'_, S> {
 
 impl<S> Copy for Node<'_, S> {}
 
-/// The kind of a node, carrying a typed view of its data.
 #[derive(Debug)]
 pub enum Kind<'a, S> {
     Null,
@@ -36,7 +34,6 @@ impl<S> Clone for Kind<'_, S> {
 
 impl<S> Copy for Kind<'_, S> {}
 
-/// A string literal, decoded only when asked.
 #[derive(Debug)]
 pub struct Str<'a, S> {
     doc: &'a Document<S>,
@@ -52,12 +49,10 @@ impl<S> Clone for Str<'_, S> {
 impl<S> Copy for Str<'_, S> {}
 
 impl<'a, S: AsRef<str>> Str<'a, S> {
-    /// span including the surrounding quotes
     pub fn span(self) -> Range<usize> {
         quoted(self.range)
     }
 
-    /// source text between the quotes, escapes untouched
     pub fn raw(self) -> &'a str {
         self.doc.slice(self.range)
     }
@@ -78,9 +73,11 @@ impl<S> Clone for Array<'_, S> {
 impl<S> Copy for Array<'_, S> {}
 
 impl<'a, S: AsRef<str>> Array<'a, S> {
-    pub fn items(self) -> impl DoubleEndedIterator<Item = Node<'a, S>> {
-        let doc = self.node.doc;
-        self.items.iter().map(move |value| Node { doc, value })
+    pub fn iter(self) -> Items<'a, S> {
+        Items {
+            doc: self.node.doc,
+            iter: self.items.iter(),
+        }
     }
 
     pub fn len(self) -> usize {
@@ -111,17 +108,15 @@ impl<S> Clone for Object<'_, S> {
 impl<S> Copy for Object<'_, S> {}
 
 impl<'a, S: AsRef<str>> Object<'a, S> {
-    pub fn members(self) -> impl DoubleEndedIterator<Item = (Str<'a, S>, Node<'a, S>)> {
-        let doc = self.node.doc;
-        self.entries
-            .0
-            .iter()
-            .map(move |(range, value)| (Str { doc, range: *range }, Node { doc, value }))
+    pub fn iter(self) -> Members<'a, S> {
+        Members {
+            doc: self.node.doc,
+            iter: self.entries.0.iter(),
+        }
     }
 
-    /// member by raw name, escapes untouched
     pub fn get(self, name: &str) -> Option<Node<'a, S>> {
-        self.members()
+        self.iter()
             .find(|(key, _)| key.raw() == name)
             .map(|(_, node)| node)
     }
@@ -131,7 +126,6 @@ impl<'a, S: AsRef<str>> Object<'a, S> {
     }
 }
 
-/// A number literal, sliced only when asked.
 #[derive(Debug)]
 pub struct Number<'a, S> {
     doc: &'a Document<S>,
@@ -148,12 +142,10 @@ impl<S> Clone for Number<'_, S> {
 impl<S> Copy for Number<'_, S> {}
 
 impl<'a, S: AsRef<str>> Number<'a, S> {
-    /// mantissa with its sign
     pub fn mantissa(self) -> &'a str {
         self.doc.slice(self.mantissa)
     }
 
-    /// exponent digits after `e` or `E`, with their sign
     pub fn exponent(self) -> Option<&'a str> {
         self.exponent.map(|e| self.doc.slice(e))
     }
@@ -164,6 +156,102 @@ impl<'a, S: AsRef<str>> Number<'a, S> {
             start: self.mantissa.start,
             end,
         }
+    }
+}
+
+#[derive(Debug)]
+pub struct Items<'a, S> {
+    doc: &'a Document<S>,
+    iter: core::slice::Iter<'a, Value>,
+}
+
+impl<S> Clone for Items<'_, S> {
+    fn clone(&self) -> Self {
+        Self {
+            doc: self.doc,
+            iter: self.iter.clone(),
+        }
+    }
+}
+
+impl<'a, S> Iterator for Items<'a, S> {
+    type Item = Node<'a, S>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let doc = self.doc;
+        self.iter.next().map(|value| Node { doc, value })
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.iter.size_hint()
+    }
+}
+
+impl<S> DoubleEndedIterator for Items<'_, S> {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        let doc = self.doc;
+        self.iter.next_back().map(|value| Node { doc, value })
+    }
+}
+
+impl<S> ExactSizeIterator for Items<'_, S> {}
+
+impl<'a, S: AsRef<str>> IntoIterator for Array<'a, S> {
+    type Item = Node<'a, S>;
+    type IntoIter = Items<'a, S>;
+
+    fn into_iter(self) -> Items<'a, S> {
+        self.iter()
+    }
+}
+
+#[derive(Debug)]
+pub struct Members<'a, S> {
+    doc: &'a Document<S>,
+    iter: core::slice::Iter<'a, (Range<usize>, Value)>,
+}
+
+impl<S> Clone for Members<'_, S> {
+    fn clone(&self) -> Self {
+        Self {
+            doc: self.doc,
+            iter: self.iter.clone(),
+        }
+    }
+}
+
+impl<'a, S> Iterator for Members<'a, S> {
+    type Item = (Str<'a, S>, Node<'a, S>);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let doc = self.doc;
+        self.iter
+            .next()
+            .map(|(range, value)| (Str { doc, range: *range }, Node { doc, value }))
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.iter.size_hint()
+    }
+}
+
+impl<S> DoubleEndedIterator for Members<'_, S> {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        let doc = self.doc;
+        self.iter
+            .next_back()
+            .map(|(range, value)| (Str { doc, range: *range }, Node { doc, value }))
+    }
+}
+
+impl<S> ExactSizeIterator for Members<'_, S> {}
+
+impl<'a, S: AsRef<str>> IntoIterator for Object<'a, S> {
+    type Item = (Str<'a, S>, Node<'a, S>);
+    type IntoIter = Members<'a, S>;
+
+    fn into_iter(self) -> Members<'a, S> {
+        self.iter()
     }
 }
 
@@ -235,18 +323,15 @@ impl<'a, S: AsRef<str>> Node<'a, S> {
         }
     }
 
-    /// source text of the whole node, including string quotes
     pub fn text(self) -> &'a str {
         self.doc.slice(self.value.span())
     }
 
-    /// preorder walk over this node and its descendants
     pub fn traverse(self) -> impl Iterator<Item = Node<'a, S>> {
         let doc = self.doc;
         self.value.traverse().map(move |value| Node { doc, value })
     }
 
-    /// the chain of descendants containing `offset`, outermost first
     pub fn path_at(self, offset: usize) -> impl Iterator<Item = (Key, Node<'a, S>)> {
         let doc = self.doc;
         self.value
@@ -288,7 +373,7 @@ mod tests {
             panic!("root is an array");
         };
         let kinds = array
-            .items()
+            .iter()
             .map(|node| name(&node.kind()))
             .collect::<Vec<_>>();
         assert_eq!(
@@ -302,7 +387,7 @@ mod tests {
     #[test]
     fn one_kind_accessors() {
         let doc = parse(r#"["a", 1, true, [], {}]"#);
-        let items = doc.root().as_array().unwrap().items().collect::<Vec<_>>();
+        let items = doc.root().as_array().unwrap().iter().collect::<Vec<_>>();
         assert_eq!(items[0].as_str().unwrap().raw(), "a");
         assert!(items[1].as_str().is_none());
         assert_eq!(items[1].as_number().unwrap().mantissa(), "1");
@@ -321,7 +406,7 @@ mod tests {
         let Kind::Object(object) = doc.root().kind() else {
             panic!("root is an object");
         };
-        let members = object.members().collect::<Vec<_>>();
+        let members = object.iter().collect::<Vec<_>>();
         assert_eq!(members.len(), 2);
         assert_eq!(members[0].0.raw(), "a");
         assert!(matches!(members[1].1.kind(), Kind::Bool(true)));
@@ -329,13 +414,13 @@ mod tests {
         let Kind::Array(array) = members[0].1.kind() else {
             panic!("member is an array");
         };
-        let items = array.items().collect::<Vec<_>>();
+        let items = array.iter().collect::<Vec<_>>();
         assert!(matches!(
             items[1].kind(),
             Kind::Number(n) if n.mantissa() == "20" && n.exponent().is_none()
         ));
         assert_eq!(object.node().span(), doc.root().span());
-        assert_eq!(object.members().next_back().unwrap().0.raw(), "b");
+        assert_eq!(object.iter().next_back().unwrap().0.raw(), "b");
     }
 
     #[test]
@@ -345,7 +430,7 @@ mod tests {
             panic!("root is an array");
         };
         let strs = array
-            .items()
+            .iter()
             .map(|node| match node.kind() {
                 Kind::String(s) => s,
                 _ => panic!("string"),

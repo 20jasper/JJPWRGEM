@@ -11,7 +11,7 @@ pub mod tokens;
 mod traverse;
 
 pub use check::validate_str;
-pub use node::{Array, Kind, Node, Number, Object, Str};
+pub use node::{Array, Items, Kind, Members, Node, Number, Object, Str};
 
 pub use crate::error::{Error, ErrorKind, Result};
 
