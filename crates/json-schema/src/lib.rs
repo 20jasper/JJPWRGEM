@@ -66,7 +66,7 @@ impl ObjectSchema {
 }
 
 fn string_keyword<S: AsRef<str>>(object: Object<'_, S>, key: &str) -> Option<String> {
-    object.get(key)?.as_str().map(|s| s.unescape().into_owned())
+    object.get(key)?.as_str().map(|s| s.raw().to_owned())
 }
 
 fn type_keyword<S: AsRef<str>>(object: Object<'_, S>) -> Result<Option<Type>> {
@@ -75,7 +75,7 @@ fn type_keyword<S: AsRef<str>>(object: Object<'_, S>) -> Result<Option<Type>> {
     };
     let ty = value
         .as_str()
-        .and_then(|s| Type::from_name(&s.unescape()))
+        .and_then(|s| Type::from_name(s.raw()))
         .ok_or_else(|| Error::InvalidType {
             range: value.span(),
             found: value.text().to_owned(),

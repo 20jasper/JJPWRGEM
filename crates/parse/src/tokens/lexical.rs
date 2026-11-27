@@ -27,22 +27,7 @@ impl JsonByte {
     /// see [`JsonChar::can_be_escaped_directly`]
     #[inline]
     pub(crate) fn can_be_escaped_directly(self) -> bool {
-        self.unescaped().is_some()
-    }
-
-    /// the char a short escape like `\n` stands for
-    pub(crate) fn unescaped(self) -> Option<char> {
-        Some(match self.0 {
-            b'"' => '"',
-            b'\\' => '\\',
-            b'/' => '/',
-            b'b' => '\u{8}',
-            b'f' => '\u{c}',
-            b'n' => '\n',
-            b'r' => '\r',
-            b't' => '\t',
-            _ => return None,
-        })
+        JsonChar(self.0.into()).can_be_escaped_directly()
     }
 
     #[inline]
@@ -118,7 +103,7 @@ impl JsonChar {
 
     #[inline]
     pub(crate) fn can_be_escaped_directly(self) -> bool {
-        u8::try_from(self.0).is_ok_and(|b| JsonByte(b).can_be_escaped_directly())
+        matches!(self.0, '"' | '\\' | '/' | 'b' | 'f' | 'n' | 'r' | 't')
     }
 
     /// See [RFC 8259, Section 7](https://datatracker.ietf.org/doc/html/rfc8259#section-7)
@@ -193,24 +178,6 @@ mod tests {
     use rstest::rstest;
 
     use super::*;
-
-    #[test]
-    fn short_escapes_round_trip() {
-        for c in ['"', '\\', '/', '\u{8}', '\u{c}', '\n', '\r', '\t'] {
-            let escape = JsonChar(c).direct_escape().unwrap();
-            let mut bytes = escape.bytes();
-            assert_eq!(bytes.next(), Some(b'\\'));
-            let x = bytes.next().unwrap();
-            assert!(bytes.next().is_none());
-            assert_eq!(JsonByte(x).unescaped(), Some(c));
-        }
-        for b in 0..=u8::MAX {
-            if let Some(c) = JsonByte(b).unescaped() {
-                let escape = JsonChar(c).direct_escape().unwrap();
-                assert_eq!(escape.as_bytes(), [b'\\', b]);
-            }
-        }
-    }
 
     #[rstest]
     #[case('"', Some(r#"\""#))]

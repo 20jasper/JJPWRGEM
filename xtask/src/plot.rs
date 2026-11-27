@@ -60,13 +60,13 @@ fn parse_result(item: DocNode<'_>) -> Result<BenchmarkResult> {
     let command = field(object, "command")?
         .as_str()
         .ok_or_else(|| anyhow!("'command' must be a string"))?
-        .unescape();
+        .raw();
     // `name` holds the `--command-name` label, `command` the full command line
     let command = object
         .get("name")
         .and_then(DocNode::as_str)
-        .map_or(command, |name| name.unescape())
-        .into_owned();
+        .map_or(command, |name| name.raw())
+        .to_owned();
 
     let times = as_array(field(object, "measurements")?, "'measurements'")?
         .items()

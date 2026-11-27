@@ -1,10 +1,6 @@
 use core::range::Range;
-use std::borrow::Cow;
 
-use crate::{
-    ast::{Document, Key, ObjectEntries, Value, quoted},
-    tokens::lexical::{JsonByte, UNICODE_ESCAPE_DIGITS},
-};
+use crate::ast::{Document, Key, ObjectEntries, Value, quoted};
 
 /// A value together with the document it was parsed from.
 #[derive(Debug)]
@@ -65,10 +61,6 @@ impl<'a, S: AsRef<str>> Str<'a, S> {
     pub fn raw(self) -> &'a str {
         self.doc.slice(self.range)
     }
-
-    pub fn unescape(self) -> Cow<'a, str> {
-        unescape(self.raw())
-    }
 }
 
 #[derive(Debug)]
@@ -127,10 +119,10 @@ impl<'a, S: AsRef<str>> Object<'a, S> {
             .map(move |(range, value)| (Str { doc, range: *range }, Node { doc, value }))
     }
 
-    /// member by unescaped name
+    /// member by raw name, escapes untouched
     pub fn get(self, name: &str) -> Option<Node<'a, S>> {
         self.members()
-            .find(|(key, _)| key.unescape() == name)
+            .find(|(key, _)| key.raw() == name)
             .map(|(_, node)| node)
     }
 
@@ -267,77 +259,6 @@ impl<'a, S: AsRef<str>> Node<'a, S> {
     }
 }
 
-/// Decodes JSON escapes in `raw`, borrowing when there are none.
-/// Input comes from the parser, so escapes are well formed; only lone surrogates become U+FFFD.
-pub(crate) fn unescape(raw: &str) -> Cow<'_, str> {
-    if !raw.contains('\\') {
-        return Cow::Borrowed(raw);
-    }
-    let mut out = String::with_capacity(raw.len());
-    let mut chars = raw.chars();
-    while let Some(c) = chars.next() {
-        if c != '\\' {
-            out.push(c);
-            continue;
-        }
-        let escape = chars
-            .next()
-            .unwrap_or_else(|| unreachable!("parser never ends a string on a backslash"));
-        if escape == 'u' {
-            out.push(unicode_escape(&mut chars));
-        } else {
-            out.push(
-                u8::try_from(escape)
-                    .ok()
-                    .and_then(|b| JsonByte(b).unescaped())
-                    .unwrap_or_else(|| {
-                        unreachable!("parser only accepts known escapes, got {escape:?}")
-                    }),
-            );
-        }
-    }
-    Cow::Owned(out)
-}
-
-fn is_high_surrogate(unit: u32) -> bool {
-    matches!(unit, 0xD800..=0xDBFF)
-}
-
-fn is_low_surrogate(unit: u32) -> bool {
-    matches!(unit, 0xDC00..=0xDFFF)
-}
-
-/// Reads the digits after `\u`, joining a surrogate pair when a low surrogate escape follows.
-fn unicode_escape(chars: &mut core::str::Chars<'_>) -> char {
-    let Some(unit) = hex4(chars) else {
-        unreachable!("parser guarantees 4 hex digits after \\u")
-    };
-    if is_high_surrogate(unit) {
-        let low = chars.as_str().strip_prefix("\\u").and_then(|rest| {
-            let mut ahead = rest.chars();
-            hex4(&mut ahead)
-                .filter(|low| is_low_surrogate(*low))
-                .map(|low| (low, ahead))
-        });
-        if let Some((low, ahead)) = low {
-            *chars = ahead;
-            let combined = 0x10000 + ((unit - 0xD800) << 10) + (low - 0xDC00);
-            return char::from_u32(combined).expect("a surrogate pair is always a valid char");
-        }
-    }
-    char::from_u32(unit).unwrap_or(char::REPLACEMENT_CHARACTER)
-}
-
-/// Reads four hex digits and advances past them, consuming nothing when they are not there.
-fn hex4(chars: &mut core::str::Chars<'_>) -> Option<u32> {
-    let hex = chars.as_str().get(..UNICODE_ESCAPE_DIGITS)?;
-    let unit = hex
-        .chars()
-        .try_fold(0u32, |acc, c| Some(acc << 4 | c.to_digit(16)?))?;
-    chars.nth(UNICODE_ESCAPE_DIGITS - 1);
-    Some(unit)
-}
-
 #[cfg(test)]
 mod tests {
     use rstest::rstest;
@@ -347,37 +268,6 @@ mod tests {
 
     fn parse(json: &str) -> Document<&str> {
         Document::parse(json, SyntaxOptions::JSON).unwrap()
-    }
-
-    #[test]
-    fn plain_stays_borrowed() {
-        assert!(matches!(unescape("abc"), Cow::Borrowed("abc")));
-        assert!(matches!(unescape(""), Cow::Borrowed("")));
-    }
-
-    #[rstest]
-    #[case(r#"\""#, "\"")]
-    #[case(r"\\", "\\")]
-    #[case(r"\/", "/")]
-    #[case(r"\b", "\u{8}")]
-    #[case(r"\f", "\u{c}")]
-    #[case(r"\n", "\n")]
-    #[case(r"\r", "\r")]
-    #[case(r"\t", "\t")]
-    #[case(r"ab", "ab")]
-    #[case(r"é", "é")]
-    #[case("", "")]
-    #[case(r"😀", "😀")]
-    #[case(r"\ud83d", "\u{FFFD}")]
-    #[case(r"\ud83dA", "\u{FFFD}A")]
-    #[case(r"\ud83d\n", "\u{FFFD}\n")]
-    #[case(r"\ude00", "\u{FFFD}")]
-    #[case(r"\\u0041", "\\u0041")]
-    #[case(r"\u0000", "\0")]
-    #[case(r"Ab", "Ab")]
-    #[case(r#"a\"b\\c"#, "a\"b\\c")]
-    fn decodes(#[case] raw: &str, #[case] expected: &str) {
-        assert_eq!(unescape(raw), expected);
     }
 
     fn name(kind: &Kind<'_, &str>) -> &'static str {
@@ -449,7 +339,7 @@ mod tests {
     }
 
     #[test]
-    fn str_unescapes_and_borrows_when_plain() {
+    fn str_raw_and_span() {
         let doc = parse(r#"["plain", "a\nbé"]"#);
         let Kind::Array(array) = doc.root().kind() else {
             panic!("root is an array");
@@ -461,14 +351,13 @@ mod tests {
                 _ => panic!("string"),
             })
             .collect::<Vec<_>>();
-        assert!(matches!(strs[0].unescape(), Cow::Borrowed("plain")));
-        assert_eq!(strs[1].unescape(), "a\nbé");
+        assert_eq!(strs[0].raw(), "plain");
         assert_eq!(strs[1].raw(), "a\\nbé");
         assert_eq!(doc.slice(strs[0].span()), "\"plain\"");
     }
 
     #[test]
-    fn get_matches_unescaped_names() {
+    fn get_matches_raw_names() {
         let doc = parse(r#"{"ab": 1, "x\"y": 2, "plain": "v"}"#);
         let Kind::Object(root) = doc.root().kind() else {
             panic!("root is an object");
@@ -478,21 +367,10 @@ mod tests {
             _ => panic!("number"),
         };
         assert_eq!(mantissa("ab"), "1");
-        assert_eq!(mantissa("x\"y"), "2");
+        assert_eq!(mantissa("x\\\"y"), "2");
         assert!(matches!(root.get("plain").unwrap().kind(), Kind::String(_)));
-        assert!(root.get("a\\u0062").is_none());
+        assert!(root.get("x\"y").is_none());
         assert!(root.get("missing").is_none());
-    }
-
-    #[test]
-    fn member_names_unescape() {
-        let doc = parse(r#"{"k\u0041": 1}"#);
-        let Kind::Object(root) = doc.root().kind() else {
-            panic!("root is an object");
-        };
-        let (key, _) = root.members().next().unwrap();
-        assert_eq!(key.unescape(), "kA");
-        assert_eq!(key.raw(), "k\\u0041");
     }
 
     #[rstest]
