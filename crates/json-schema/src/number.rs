@@ -91,13 +91,6 @@ impl<'a> Decimal<'a> {
             .unwrap_or(i64::MAX)
             .saturating_add(self.exp)
     }
-
-    /// Compares absolute values.
-    fn cmp_magnitude(&self, other: &Self) -> Ordering {
-        self.order_of_magnitude()
-            .cmp(&other.order_of_magnitude())
-            .then_with(|| self.digits().cmp(other.digits()))
-    }
 }
 
 fn is_digits(text: &str) -> bool {
@@ -133,9 +126,13 @@ impl PartialOrd for Decimal<'_> {
 
 impl Ord for Decimal<'_> {
     fn cmp(&self, other: &Self) -> Ordering {
-        self.sign
-            .cmp(&other.sign)
-            .then_with(|| self.sign.then_with(|| self.cmp_magnitude(other)))
+        self.sign.cmp(&other.sign).then_with(|| {
+            self.sign.then_with(|| {
+                self.order_of_magnitude()
+                    .cmp(&other.order_of_magnitude())
+                    .then_with(|| self.digits().cmp(other.digits()))
+            })
+        })
     }
 }
 
