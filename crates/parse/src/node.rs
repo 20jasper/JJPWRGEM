@@ -328,8 +328,7 @@ impl<'a, S: AsRef<str>> Node<'a, S> {
 }
 
 /// Decodes JSON escapes in `raw`, borrowing when there are none.
-/// Input from the parser is well formed, so the malformed cases are only handled deterministically:
-/// an unknown escape stands for itself, and a bad `\u` or a lone surrogate becomes U+FFFD.
+/// Input comes from the parser, so escapes are well formed; only lone surrogates become U+FFFD.
 pub(crate) fn unescape(raw: &str) -> Cow<'_, str> {
     if !raw.contains('\\') {
         return Cow::Borrowed(raw);
@@ -341,7 +340,9 @@ pub(crate) fn unescape(raw: &str) -> Cow<'_, str> {
             out.push(c);
             continue;
         }
-        let Some(escape) = chars.next() else { break };
+        let escape = chars
+            .next()
+            .unwrap_or_else(|| unreachable!("parser never ends a string on a backslash"));
         if escape == 'u' {
             out.push(unicode_escape(&mut chars));
         } else {
@@ -349,7 +350,9 @@ pub(crate) fn unescape(raw: &str) -> Cow<'_, str> {
                 u8::try_from(escape)
                     .ok()
                     .and_then(|b| JsonByte(b).unescaped())
-                    .unwrap_or(escape),
+                    .unwrap_or_else(|| {
+                        unreachable!("parser only accepts known escapes, got {escape:?}")
+                    }),
             );
         }
     }
@@ -367,7 +370,7 @@ fn is_low_surrogate(unit: u32) -> bool {
 /// Reads the digits after `\u`, joining a surrogate pair when a low surrogate escape follows.
 fn unicode_escape(chars: &mut core::str::Chars<'_>) -> char {
     let Some(unit) = hex4(chars) else {
-        return char::REPLACEMENT_CHARACTER;
+        unreachable!("parser guarantees 4 hex digits after \\u")
     };
     if is_high_surrogate(unit) {
         let low = chars.as_str().strip_prefix("\\u").and_then(|rest| {
@@ -379,7 +382,7 @@ fn unicode_escape(chars: &mut core::str::Chars<'_>) -> char {
         if let Some((low, ahead)) = low {
             *chars = ahead;
             let combined = 0x10000 + ((unit - 0xD800) << 10) + (low - 0xDC00);
-            return char::from_u32(combined).unwrap_or(char::REPLACEMENT_CHARACTER);
+            return char::from_u32(combined).expect("a surrogate pair is always a valid char");
         }
     }
     char::from_u32(unit).unwrap_or(char::REPLACEMENT_CHARACTER)

@@ -47,10 +47,11 @@ fn as_array<'a>(node: DocNode<'a>, what: &str) -> Result<Array<'a, &'a str>> {
 
 fn as_f64(node: DocNode<'_>) -> Option<f64> {
     let number = node.as_number()?;
-    match number.exponent() {
-        Some(exponent) => format!("{}e{exponent}", number.mantissa()).parse().ok(),
-        None => number.mantissa().parse().ok(),
-    }
+    let text = match number.exponent() {
+        Some(exponent) => format!("{}e{exponent}", number.mantissa()),
+        None => number.mantissa().to_owned(),
+    };
+    Some(text.parse().expect("valid json number text parses as f64"))
 }
 
 fn parse_result(item: DocNode<'_>) -> Result<BenchmarkResult> {
