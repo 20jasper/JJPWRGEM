@@ -4,8 +4,10 @@ mod error;
 mod number;
 mod primitive;
 
+use std::borrow::Cow;
+
 use error::{Error, Result};
-use jjpwrgem_parse::{Kind, Node, ast::Document};
+use jjpwrgem_parse::{Kind, Node, Object, ast::Document};
 
 use crate::primitive::{type_as_primitive, value_as_primitive};
 
@@ -56,27 +58,31 @@ mod keyword {
 }
 
 impl ObjectSchema {
-    fn parse<S: AsRef<str>>(node: Node<'_, S>) -> Result<Self> {
+    fn parse<S: AsRef<str>>(object: Object<'_, S>) -> Result<Self> {
         Ok(Self {
-            title: string_keyword(node, keyword::TITLE),
-            description: string_keyword(node, keyword::DESCRIPTION),
-            types: type_keyword(node)?,
+            title: string_keyword(object, keyword::TITLE),
+            description: string_keyword(object, keyword::DESCRIPTION),
+            types: type_keyword(object)?,
         })
     }
 }
 
-fn string_keyword<S: AsRef<str>>(node: Node<'_, S>, key: &str) -> Option<String> {
-    node.get(key)
-        .and_then(Node::as_str)
-        .map(std::borrow::Cow::into_owned)
+fn string_value<S: AsRef<str>>(node: Node<'_, S>) -> Option<Cow<'_, str>> {
+    match node.kind() {
+        Kind::String(string) => Some(string.unescape()),
+        _ => None,
+    }
 }
 
-fn type_keyword<S: AsRef<str>>(node: Node<'_, S>) -> Result<Option<Type>> {
-    let Some(value) = node.get(keyword::TYPE) else {
+fn string_keyword<S: AsRef<str>>(object: Object<'_, S>, key: &str) -> Option<String> {
+    object.get(key).and_then(string_value).map(Cow::into_owned)
+}
+
+fn type_keyword<S: AsRef<str>>(object: Object<'_, S>) -> Result<Option<Type>> {
+    let Some(value) = object.get(keyword::TYPE) else {
         return Ok(None);
     };
-    value
-        .as_str()
+    string_value(value)
         .and_then(|name| Type::from_name(&name))
         .map(Some)
         .ok_or_else(|| Error::InvalidType {
@@ -89,15 +95,13 @@ impl Schema {
     // r[impl json-schema-v7.schema.root]
     pub fn parse<S: AsRef<str>>(doc: &Document<S>) -> Result<Self> {
         let root = doc.root_node();
-        if let Some(b) = root.as_bool() {
-            Ok(Schema::Bool(b))
-        } else if root.kind() == Kind::Object {
-            Ok(Schema::Object(ObjectSchema::parse(root)?))
-        } else {
-            Err(Error::InvalidSchemaRoot {
+        match root.kind() {
+            Kind::Bool(b) => Ok(Schema::Bool(b)),
+            Kind::Object(object) => Ok(Schema::Object(ObjectSchema::parse(object)?)),
+            _ => Err(Error::InvalidSchemaRoot {
                 range: root.span(),
                 found: value_as_primitive(root),
-            })
+            }),
         }
     }
 }

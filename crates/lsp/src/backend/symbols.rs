@@ -1,10 +1,7 @@
 use std::range::Range as Span;
 
 use gen_lsp_types::*;
-use jjpwrgem_parse::{
-    Kind, Node,
-    ast::{Document, Key, quoted},
-};
+use jjpwrgem_parse::{Kind, Node, Str, ast::Document};
 
 use crate::{
     backend::Backend,
@@ -32,41 +29,60 @@ struct Source<'a> {
     positions: Positions,
 }
 
+enum Member<'a> {
+    Name(Str<'a, String>),
+    Index(usize),
+}
+
 fn map_children(
     source: &Source<'_>,
     node: Node<'_, String>,
     remaining: &mut usize,
 ) -> Option<Vec<DocumentSymbol>> {
-    node.is_container().then(|| {
-        node.children()
-            .map_while(|(key, child)| {
+    let members: Box<dyn Iterator<Item = (Member<'_>, Node<'_, String>)>> = match node.kind() {
+        Kind::Object(object) => Box::new(
+            object
+                .members()
+                .map(|(key, child)| (Member::Name(key), child)),
+        ),
+        Kind::Array(array) => Box::new(
+            array
+                .items()
+                .enumerate()
+                .map(|(index, child)| (Member::Index(index), child)),
+        ),
+        _ => return None,
+    };
+    Some(
+        members
+            .map_while(|(member, child)| {
                 *remaining = remaining.checked_sub(1)?;
-                Some(source.symbol(key, child, map_children(source, child, remaining)))
+                Some(source.symbol(&member, child, map_children(source, child, remaining)))
             })
-            .collect()
-    })
+            .collect(),
+    )
 }
 
 impl Source<'_> {
     fn symbol(
         &self,
-        key: Key,
+        member: &Member<'_>,
         node: Node<'_, String>,
         children: Option<Vec<DocumentSymbol>>,
     ) -> DocumentSymbol {
-        let (name, selection) = match key {
-            Key::Name(key) => (name(self.document.slice(key)), quoted(key)),
-            Key::Index(index) => (index.to_string(), node.span()),
+        let (name, selection) = match member {
+            Member::Name(key) => (name(key.raw()), key.span()),
+            Member::Index(index) => (index.to_string(), node.span()),
         };
         let full = Span::from(selection.start..node.span().end);
         // detail shows the raw source between the quotes, so it reads the unquoted range off the value
         let detail = Some(node.value().range());
         let (kind, detail) = match node.kind() {
-            Kind::Object => (SymbolKind::Object, None),
-            Kind::Array => (SymbolKind::Array, None),
-            Kind::String => (SymbolKind::String, detail),
-            Kind::Number => (SymbolKind::Number, detail),
-            Kind::Bool => (SymbolKind::Boolean, detail),
+            Kind::Object(_) => (SymbolKind::Object, None),
+            Kind::Array(_) => (SymbolKind::Array, None),
+            Kind::String(_) => (SymbolKind::String, detail),
+            Kind::Number(_) => (SymbolKind::Number, detail),
+            Kind::Bool(_) => (SymbolKind::Boolean, detail),
             Kind::Null => (SymbolKind::Null, detail),
         };
         #[expect(deprecated, reason = "the field is required to build the struct")]

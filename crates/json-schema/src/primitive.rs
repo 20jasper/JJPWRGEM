@@ -42,22 +42,16 @@ impl fmt::Display for PrimitiveType {
 }
 
 pub fn value_as_primitive<S: AsRef<str>>(node: Node<'_, S>) -> PrimitiveType {
-    if let Some(number) = node.as_number() {
-        // "integer" which matches any number with a zero fractional part
-        // https://json-schema.org/draft-07/draft-handrews-json-schema-validation-01#rfc.section.6.1.1
-        return if Decimal::from(number).is_integer() {
-            PrimitiveType::Integer
-        } else {
-            PrimitiveType::Number
-        };
-    }
     match node.kind() {
         Kind::Null => PrimitiveType::Null,
-        Kind::Bool => PrimitiveType::Boolean,
-        Kind::String => PrimitiveType::String,
-        Kind::Number => PrimitiveType::Number,
-        Kind::Array => PrimitiveType::Array,
-        Kind::Object => PrimitiveType::Object,
+        Kind::Bool(_) => PrimitiveType::Boolean,
+        Kind::String(_) => PrimitiveType::String,
+        // "integer" which matches any number with a zero fractional part
+        // https://json-schema.org/draft-07/draft-handrews-json-schema-validation-01#rfc.section.6.1.1
+        Kind::Number(number) if Decimal::from(number).is_integer() => PrimitiveType::Integer,
+        Kind::Number(_) => PrimitiveType::Number,
+        Kind::Array(_) => PrimitiveType::Array,
+        Kind::Object(_) => PrimitiveType::Object,
     }
 }
 

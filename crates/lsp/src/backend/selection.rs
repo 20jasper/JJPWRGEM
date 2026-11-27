@@ -66,8 +66,10 @@ fn inside_container(node: Node<'_, String>, offset: usize) -> Option<ByteRange<u
     let span = node.span();
     let inside_brackets = ByteRange::from(span.start + BRACKET_LEN..span.end - BRACKET_LEN);
 
-    let offset_in_container = (node.is_container() || node.kind() == Kind::String)
-        && contains_inclusive(inside_brackets, offset);
+    let offset_in_container = matches!(
+        node.kind(),
+        Kind::Array(_) | Kind::Object(_) | Kind::String(_)
+    ) && contains_inclusive(inside_brackets, offset);
     offset_in_container.then_some(inside_brackets)
 }
 

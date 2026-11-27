@@ -1,7 +1,7 @@
 use core::range::Range;
 use std::borrow::Cow;
 
-use crate::ast::{Document, Key, Value};
+use crate::ast::{Document, Key, ObjectEntries, Value, quoted};
 
 /// A value together with the document it was parsed from.
 pub struct Node<'a, S> {
@@ -25,14 +25,143 @@ impl<S> core::fmt::Debug for Node<'_, S> {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Kind {
+/// The kind of a node, carrying a typed view of its data.
+#[derive(Debug)]
+pub enum Kind<'a, S> {
     Null,
-    Bool,
-    String,
-    Number,
-    Array,
-    Object,
+    Bool(bool),
+    String(Str<'a, S>),
+    Number(NumberText<'a>),
+    Array(Array<'a, S>),
+    Object(Object<'a, S>),
+}
+
+impl<S> Clone for Kind<'_, S> {
+    fn clone(&self) -> Self {
+        *self
+    }
+}
+
+impl<S> Copy for Kind<'_, S> {}
+
+/// A string literal, decoded only when asked.
+pub struct Str<'a, S> {
+    doc: &'a Document<S>,
+    range: Range<usize>,
+}
+
+impl<S> Clone for Str<'_, S> {
+    fn clone(&self) -> Self {
+        *self
+    }
+}
+
+impl<S> Copy for Str<'_, S> {}
+
+impl<S> core::fmt::Debug for Str<'_, S> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.debug_struct("Str")
+            .field("range", &self.range)
+            .finish_non_exhaustive()
+    }
+}
+
+impl<'a, S: AsRef<str>> Str<'a, S> {
+    /// span including the surrounding quotes
+    pub fn span(self) -> Range<usize> {
+        quoted(self.range)
+    }
+
+    /// source text between the quotes, escapes untouched
+    pub fn raw(self) -> &'a str {
+        self.doc.slice(self.range)
+    }
+
+    pub fn unescape(self) -> Cow<'a, str> {
+        unescape(self.raw())
+    }
+}
+
+pub struct Array<'a, S> {
+    node: Node<'a, S>,
+    items: &'a [Value],
+}
+
+impl<S> Clone for Array<'_, S> {
+    fn clone(&self) -> Self {
+        *self
+    }
+}
+
+impl<S> Copy for Array<'_, S> {}
+
+impl<S> core::fmt::Debug for Array<'_, S> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.debug_struct("Array")
+            .field("items", &self.items)
+            .finish_non_exhaustive()
+    }
+}
+
+impl<'a, S: AsRef<str>> Array<'a, S> {
+    pub fn items(self) -> impl DoubleEndedIterator<Item = Node<'a, S>> {
+        let doc = self.node.doc;
+        self.items.iter().map(move |value| Node { doc, value })
+    }
+
+    pub fn len(self) -> usize {
+        self.items.len()
+    }
+
+    pub fn is_empty(self) -> bool {
+        self.items.is_empty()
+    }
+
+    pub fn node(self) -> Node<'a, S> {
+        self.node
+    }
+}
+
+pub struct Object<'a, S> {
+    node: Node<'a, S>,
+    entries: &'a ObjectEntries,
+}
+
+impl<S> Clone for Object<'_, S> {
+    fn clone(&self) -> Self {
+        *self
+    }
+}
+
+impl<S> Copy for Object<'_, S> {}
+
+impl<S> core::fmt::Debug for Object<'_, S> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.debug_struct("Object")
+            .field("entries", &self.entries)
+            .finish_non_exhaustive()
+    }
+}
+
+impl<'a, S: AsRef<str>> Object<'a, S> {
+    pub fn members(self) -> impl DoubleEndedIterator<Item = (Str<'a, S>, Node<'a, S>)> {
+        let doc = self.node.doc;
+        self.entries
+            .0
+            .iter()
+            .map(move |(range, value)| (Str { doc, range: *range }, Node { doc, value }))
+    }
+
+    /// member by unescaped name
+    pub fn get(self, name: &str) -> Option<Node<'a, S>> {
+        self.members()
+            .find(|(key, _)| key.unescape() == name)
+            .map(|(_, node)| node)
+    }
+
+    pub fn node(self) -> Node<'a, S> {
+        self.node
+    }
 }
 
 /// Source text of a number: the mantissa with its sign, and the exponent after `e` or `E`.
@@ -56,14 +185,21 @@ impl<'a, S: AsRef<str>> Node<'a, S> {
         self.value.span()
     }
 
-    pub fn kind(self) -> Kind {
+    pub fn kind(self) -> Kind<'a, S> {
+        let doc = self.doc;
         match self.value {
             Value::Null(_) => Kind::Null,
-            Value::Boolean(..) => Kind::Bool,
-            Value::String(_) => Kind::String,
-            Value::Number { .. } => Kind::Number,
-            Value::Array(..) => Kind::Array,
-            Value::Object(..) => Kind::Object,
+            Value::Boolean(_, b) => Kind::Bool(*b),
+            Value::String(range) => Kind::String(Str { doc, range: *range }),
+            Value::Number { mantissa, exponent } => Kind::Number(NumberText {
+                mantissa: doc.slice(*mantissa),
+                exponent: exponent.map(|e| doc.slice(e)),
+            }),
+            Value::Array(_, items) => Kind::Array(Array { node: self, items }),
+            Value::Object(_, entries) => Kind::Object(Object {
+                node: self,
+                entries,
+            }),
         }
     }
 
@@ -75,44 +211,6 @@ impl<'a, S: AsRef<str>> Node<'a, S> {
     /// escape hatch for code that needs raw ranges
     pub fn value(self) -> &'a Value {
         self.value
-    }
-
-    pub fn is_container(self) -> bool {
-        self.value.is_container()
-    }
-
-    pub fn as_bool(self) -> Option<bool> {
-        match self.value {
-            Value::Boolean(_, b) => Some(*b),
-            _ => None,
-        }
-    }
-
-    /// unescaped text, `None` only when the node is not a string
-    pub fn as_str(self) -> Option<Cow<'a, str>> {
-        match self.value {
-            Value::String(r) => Some(unescape(self.doc.slice(*r))),
-            _ => None,
-        }
-    }
-
-    /// `None` only when the node is not a number
-    pub fn as_number(self) -> Option<NumberText<'a>> {
-        match self.value {
-            Value::Number { mantissa, exponent } => Some(NumberText {
-                mantissa: self.doc.slice(*mantissa),
-                exponent: exponent.map(|e| self.doc.slice(e)),
-            }),
-            _ => None,
-        }
-    }
-
-    /// direct children in document order
-    pub fn children(self) -> impl DoubleEndedIterator<Item = (Key, Node<'a, S>)> {
-        let doc = self.doc;
-        self.value
-            .children()
-            .map(move |(key, value)| (key, Node { doc, value }))
     }
 
     /// preorder walk over this node and its descendants
@@ -131,29 +229,6 @@ impl<'a, S: AsRef<str>> Node<'a, S> {
 
     pub fn member_span(self, key: Key) -> Range<usize> {
         self.value.member_span(key)
-    }
-
-    /// object member by unescaped name
-    pub fn get(self, name: &str) -> Option<Node<'a, S>> {
-        let Value::Object(_, entries) = self.value else {
-            return None;
-        };
-        entries
-            .0
-            .iter()
-            .find(|(key, _)| unescape(self.doc.slice(*key)) == name)
-            .map(|(_, value)| Node {
-                doc: self.doc,
-                value,
-            })
-    }
-
-    /// unescaped member name, `None` only for array indices
-    pub fn key_name(self, key: Key) -> Option<Cow<'a, str>> {
-        match key {
-            Key::Name(range) => Some(unescape(self.doc.slice(range))),
-            Key::Index(_) => None,
-        }
     }
 }
 
@@ -290,89 +365,106 @@ mod tests {
         assert_eq!(unescape(raw), expected);
     }
 
+    fn name(kind: &Kind<'_, &str>) -> &'static str {
+        match kind {
+            Kind::Null => "null",
+            Kind::Bool(_) => "bool",
+            Kind::String(_) => "string",
+            Kind::Number(_) => "number",
+            Kind::Array(_) => "array",
+            Kind::Object(_) => "object",
+        }
+    }
+
     #[test]
     fn kinds() {
         let doc = parse(r#"[null, true, 1, "a", [], {}]"#);
-        let kinds = doc
-            .root_node()
-            .children()
-            .map(|(_, node)| node.kind())
+        let Kind::Array(array) = doc.root_node().kind() else {
+            panic!("root is an array");
+        };
+        let kinds = array
+            .items()
+            .map(|node| name(&node.kind()))
             .collect::<Vec<_>>();
         assert_eq!(
             kinds,
-            [
-                Kind::Null,
-                Kind::Bool,
-                Kind::Number,
-                Kind::String,
-                Kind::Array,
-                Kind::Object
-            ]
+            ["null", "bool", "number", "string", "array", "object"]
         );
-        assert_eq!(doc.root_node().kind(), Kind::Array);
+        assert_eq!(array.len(), 6);
+        assert_eq!(array.node().span(), doc.root_node().span());
     }
 
     #[test]
-    fn children_navigate_with_keys() {
+    fn members_and_items_navigate() {
         let doc = parse(r#"{"a": [10, 20], "b": true}"#);
-        let root = doc.root_node();
-        let children = root.children().collect::<Vec<_>>();
-        assert_eq!(children.len(), 2);
-        assert!(matches!(children[0].0, Key::Name(_)));
-        assert_eq!(children[1].1.as_bool(), Some(true));
+        let Kind::Object(object) = doc.root_node().kind() else {
+            panic!("root is an object");
+        };
+        let members = object.members().collect::<Vec<_>>();
+        assert_eq!(members.len(), 2);
+        assert_eq!(members[0].0.raw(), "a");
+        assert!(matches!(members[1].1.kind(), Kind::Bool(true)));
 
-        let items = children[0].1.children().collect::<Vec<_>>();
-        assert_eq!(items[1].0, Key::Index(1));
-        assert_eq!(
-            items[1].1.as_number(),
-            Some(NumberText {
+        let Kind::Array(array) = members[0].1.kind() else {
+            panic!("member is an array");
+        };
+        let items = array.items().collect::<Vec<_>>();
+        assert!(matches!(
+            items[1].kind(),
+            Kind::Number(NumberText {
                 mantissa: "20",
                 exponent: None
             })
-        );
-        assert_eq!(root.children().count(), 2);
-        assert_eq!(items[0].1.children().count(), 0);
+        ));
+        assert_eq!(object.node().span(), doc.root_node().span());
+        assert_eq!(object.members().next_back().unwrap().0.raw(), "b");
     }
 
     #[test]
-    fn as_str_unescapes_and_borrows_when_plain() {
-        let doc = parse(r#"["plain", "a\nbé", 1]"#);
-        let items = doc
-            .root_node()
-            .children()
-            .map(|(_, n)| n)
+    fn str_unescapes_and_borrows_when_plain() {
+        let doc = parse(r#"["plain", "a\nbé"]"#);
+        let Kind::Array(array) = doc.root_node().kind() else {
+            panic!("root is an array");
+        };
+        let strs = array
+            .items()
+            .map(|node| match node.kind() {
+                Kind::String(s) => s,
+                _ => panic!("string"),
+            })
             .collect::<Vec<_>>();
-        assert!(matches!(items[0].as_str(), Some(Cow::Borrowed("plain"))));
-        assert_eq!(items[1].as_str().as_deref(), Some("a\nbé"));
-        assert_eq!(items[2].as_str(), None);
+        assert!(matches!(strs[0].unescape(), Cow::Borrowed("plain")));
+        assert_eq!(strs[1].unescape(), "a\nbé");
+        assert_eq!(strs[1].raw(), "a\\nbé");
+        assert_eq!(doc.slice(strs[0].span()), "\"plain\"");
     }
 
     #[test]
     fn get_matches_unescaped_names() {
         let doc = parse(r#"{"ab": 1, "x\"y": 2, "plain": "v"}"#);
-        let root = doc.root_node();
-        assert_eq!(
-            root.get("ab").and_then(Node::as_number).unwrap().mantissa,
-            "1"
-        );
-        assert_eq!(
-            root.get("x\"y").and_then(Node::as_number).unwrap().mantissa,
-            "2"
-        );
-        assert_eq!(root.get("plain").unwrap().as_str().as_deref(), Some("v"));
+        let Kind::Object(root) = doc.root_node().kind() else {
+            panic!("root is an object");
+        };
+        let mantissa = |name| match root.get(name).unwrap().kind() {
+            Kind::Number(n) => n.mantissa,
+            _ => panic!("number"),
+        };
+        assert_eq!(mantissa("ab"), "1");
+        assert_eq!(mantissa("x\"y"), "2");
+        assert!(matches!(root.get("plain").unwrap().kind(), Kind::String(_)));
         assert!(root.get("a\\u0062").is_none());
         assert!(root.get("missing").is_none());
-        assert!(root.get("plain").unwrap().get("x").is_none());
     }
 
     #[test]
-    fn key_name_unescapes_member_names_only() {
-        let doc = parse(r#"{"kA": [1]}"#);
-        let root = doc.root_node();
-        let (key, array) = root.children().next().unwrap();
-        assert_eq!(root.key_name(key).as_deref(), Some("kA"));
-        let (index, _) = array.children().next().unwrap();
-        assert_eq!(array.key_name(index), None);
+    fn member_names_unescape() {
+        let doc = parse(r#"{"k\u0041": 1}"#);
+        let Kind::Object(root) = doc.root_node().kind() else {
+            panic!("root is an object");
+        };
+        let (key, _) = root.members().next().unwrap();
+        assert_eq!(key.unescape(), "kA");
+        assert_eq!(key.raw(), "k\\u0041");
     }
 
     #[rstest]
@@ -382,21 +474,12 @@ mod tests {
     #[case("1.5e1", "1.5", Some("1"))]
     #[case("2E+10", "2", Some("10"))]
     #[case("9223372036854775808", "9223372036854775808", None)]
-    fn as_number_text(#[case] json: &str, #[case] mantissa: &str, #[case] exponent: Option<&str>) {
+    fn number_text(#[case] json: &str, #[case] mantissa: &str, #[case] exponent: Option<&str>) {
         let doc = parse(json);
-        assert_eq!(
-            doc.root_node().as_number(),
-            Some(NumberText { mantissa, exponent })
-        );
-    }
-
-    #[test]
-    fn accessors_are_none_for_other_kinds() {
-        let doc = parse(r#""s""#);
-        let node = doc.root_node();
-        assert_eq!(node.as_bool(), None);
-        assert_eq!(node.as_number(), None);
-        assert_eq!(node.get("x").map(Node::kind), None);
+        let Kind::Number(number) = doc.root_node().kind() else {
+            panic!("number");
+        };
+        assert_eq!(number, NumberText { mantissa, exponent });
     }
 
     #[test]
