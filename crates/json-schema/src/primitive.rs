@@ -48,7 +48,7 @@ pub fn value_as_primitive<S: AsRef<str>>(node: Node<'_, S>) -> PrimitiveType {
         Kind::String(_) => PrimitiveType::String,
         // "integer" which matches any number with a zero fractional part
         // https://json-schema.org/draft-07/draft-handrews-json-schema-validation-01#rfc.section.6.1.1
-        Kind::Number(number) if Decimal::from(number.text()).is_integer() => PrimitiveType::Integer,
+        Kind::Number(number) if Decimal::from(number).is_integer() => PrimitiveType::Integer,
         Kind::Number(_) => PrimitiveType::Number,
         Kind::Array(_) => PrimitiveType::Array,
         Kind::Object(_) => PrimitiveType::Object,

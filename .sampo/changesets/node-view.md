@@ -7,7 +7,7 @@ add a `Node` view that carries its document, where `Node::kind` gives typed acce
 - `Kind::Null`
 - `Kind::Bool`
 - `Kind::String` with `Str::raw`, `Str::unescape` and `Str::span`
-- `Kind::Number` with `Number::mantissa`, `Number::exponent`, `Number::span` and `Number::text`, which returns a `NumberText` with `NumberText::mantissa` and `NumberText::exponent`
+- `Kind::Number` with `Number::mantissa`, `Number::exponent` and `Number::span`
 - `Kind::Array` with `Array::items`, `Array::len`, `Array::is_empty` and `Array::node`
 - `Kind::Object` with `Object::members`, `Object::get` and `Object::node`
 

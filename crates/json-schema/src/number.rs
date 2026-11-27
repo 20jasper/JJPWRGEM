@@ -1,6 +1,6 @@
 use std::{cmp::Ordering, num::IntErrorKind};
 
-use jjpwrgem_parse::NumberText;
+use jjpwrgem_parse::Number;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 enum Sign {
@@ -21,9 +21,9 @@ pub struct Decimal<'a> {
     exp: i64,
 }
 
-impl<'a> From<NumberText<'a>> for Decimal<'a> {
-    fn from(text: NumberText<'a>) -> Self {
-        let (mantissa, exponent) = (text.mantissa(), text.exponent());
+impl<'a, S: AsRef<str>> From<Number<'a, S>> for Decimal<'a> {
+    fn from(number: Number<'a, S>) -> Self {
+        let (mantissa, exponent) = (number.mantissa(), number.exponent());
         let (negative, unsigned) = mantissa
             .strip_prefix('-')
             .map_or((false, mantissa), |rest| (true, rest));
@@ -135,7 +135,7 @@ mod tests {
         let Kind::Number(number) = doc.root().kind() else {
             panic!("number");
         };
-        Decimal::from(number.text())
+        Decimal::from(number)
     }
 
     #[rstest::rstest]

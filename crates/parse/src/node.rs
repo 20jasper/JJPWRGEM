@@ -7,6 +7,7 @@ use crate::{
 };
 
 /// A value together with the document it was parsed from.
+#[derive(Debug)]
 pub struct Node<'a, S> {
     doc: &'a Document<S>,
     value: &'a Value,
@@ -19,14 +20,6 @@ impl<S> Clone for Node<'_, S> {
 }
 
 impl<S> Copy for Node<'_, S> {}
-
-impl<S> core::fmt::Debug for Node<'_, S> {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        f.debug_struct("Node")
-            .field("value", &self.value)
-            .finish_non_exhaustive()
-    }
-}
 
 /// The kind of a node, carrying a typed view of its data.
 #[derive(Debug)]
@@ -48,6 +41,7 @@ impl<S> Clone for Kind<'_, S> {
 impl<S> Copy for Kind<'_, S> {}
 
 /// A string literal, decoded only when asked.
+#[derive(Debug)]
 pub struct Str<'a, S> {
     doc: &'a Document<S>,
     range: Range<usize>,
@@ -60,14 +54,6 @@ impl<S> Clone for Str<'_, S> {
 }
 
 impl<S> Copy for Str<'_, S> {}
-
-impl<S> core::fmt::Debug for Str<'_, S> {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        f.debug_struct("Str")
-            .field("range", &self.range)
-            .finish_non_exhaustive()
-    }
-}
 
 impl<'a, S: AsRef<str>> Str<'a, S> {
     /// span including the surrounding quotes
@@ -85,6 +71,7 @@ impl<'a, S: AsRef<str>> Str<'a, S> {
     }
 }
 
+#[derive(Debug)]
 pub struct Array<'a, S> {
     node: Node<'a, S>,
     items: &'a [Value],
@@ -97,14 +84,6 @@ impl<S> Clone for Array<'_, S> {
 }
 
 impl<S> Copy for Array<'_, S> {}
-
-impl<S> core::fmt::Debug for Array<'_, S> {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        f.debug_struct("Array")
-            .field("items", &self.items)
-            .finish_non_exhaustive()
-    }
-}
 
 impl<'a, S: AsRef<str>> Array<'a, S> {
     pub fn items(self) -> impl DoubleEndedIterator<Item = Node<'a, S>> {
@@ -125,6 +104,7 @@ impl<'a, S: AsRef<str>> Array<'a, S> {
     }
 }
 
+#[derive(Debug)]
 pub struct Object<'a, S> {
     node: Node<'a, S>,
     entries: &'a ObjectEntries,
@@ -137,14 +117,6 @@ impl<S> Clone for Object<'_, S> {
 }
 
 impl<S> Copy for Object<'_, S> {}
-
-impl<S> core::fmt::Debug for Object<'_, S> {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        f.debug_struct("Object")
-            .field("entries", &self.entries)
-            .finish_non_exhaustive()
-    }
-}
 
 impl<'a, S: AsRef<str>> Object<'a, S> {
     pub fn members(self) -> impl DoubleEndedIterator<Item = (Str<'a, S>, Node<'a, S>)> {
@@ -167,24 +139,8 @@ impl<'a, S: AsRef<str>> Object<'a, S> {
     }
 }
 
-/// Source text of a number: the mantissa with its sign, and the exponent after `e` or `E`.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct NumberText<'a> {
-    mantissa: &'a str,
-    exponent: Option<&'a str>,
-}
-
-impl<'a> NumberText<'a> {
-    pub fn mantissa(self) -> &'a str {
-        self.mantissa
-    }
-
-    pub fn exponent(self) -> Option<&'a str> {
-        self.exponent
-    }
-}
-
 /// A number literal, sliced only when asked.
+#[derive(Debug)]
 pub struct Number<'a, S> {
     doc: &'a Document<S>,
     mantissa: Range<usize>,
@@ -198,15 +154,6 @@ impl<S> Clone for Number<'_, S> {
 }
 
 impl<S> Copy for Number<'_, S> {}
-
-impl<S> core::fmt::Debug for Number<'_, S> {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        f.debug_struct("Number")
-            .field("mantissa", &self.mantissa)
-            .field("exponent", &self.exponent)
-            .finish_non_exhaustive()
-    }
-}
 
 impl<'a, S: AsRef<str>> Number<'a, S> {
     /// mantissa with its sign
@@ -224,13 +171,6 @@ impl<'a, S: AsRef<str>> Number<'a, S> {
         Range {
             start: self.mantissa.start,
             end,
-        }
-    }
-
-    pub fn text(self) -> NumberText<'a> {
-        NumberText {
-            mantissa: self.mantissa(),
-            exponent: self.exponent(),
         }
     }
 }
@@ -475,7 +415,7 @@ mod tests {
         let items = doc.root().as_array().unwrap().items().collect::<Vec<_>>();
         assert_eq!(items[0].as_str().unwrap().raw(), "a");
         assert!(items[1].as_str().is_none());
-        assert_eq!(items[1].as_number().unwrap().text().mantissa(), "1");
+        assert_eq!(items[1].as_number().unwrap().mantissa(), "1");
         assert!(items[0].as_number().is_none());
         assert_eq!(items[2].as_bool(), Some(true));
         assert_eq!(items[1].as_bool(), None);
@@ -502,7 +442,7 @@ mod tests {
         let items = array.items().collect::<Vec<_>>();
         assert!(matches!(
             items[1].kind(),
-            Kind::Number(n) if n.text().mantissa() == "20" && n.text().exponent().is_none()
+            Kind::Number(n) if n.mantissa() == "20" && n.exponent().is_none()
         ));
         assert_eq!(object.node().span(), doc.root().span());
         assert_eq!(object.members().next_back().unwrap().0.raw(), "b");
@@ -567,8 +507,8 @@ mod tests {
         let Kind::Number(number) = doc.root().kind() else {
             panic!("number");
         };
-        assert_eq!(number.text().mantissa(), mantissa);
-        assert_eq!(number.text().exponent(), exponent);
+        assert_eq!(number.mantissa(), mantissa);
+        assert_eq!(number.exponent(), exponent);
         assert_eq!(&json[number.span()], json);
     }
 
