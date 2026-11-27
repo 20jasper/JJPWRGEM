@@ -34,7 +34,7 @@ impl<'a> From<NumberText<'a>> for Decimal<'a> {
             Some(Err(err)) => match err.kind() {
                 IntErrorKind::PosOverflow => i64::MAX,
                 IntErrorKind::NegOverflow => i64::MIN,
-                _ => 0,
+                kind => unreachable!("parser only produces exponent digits, got {kind:?}"),
             },
         };
         let exp = fraction_to_exponent(frac, exp);
