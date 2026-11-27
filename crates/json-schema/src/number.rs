@@ -1,4 +1,4 @@
-use std::cmp::Ordering;
+use std::{cmp::Ordering, num::IntErrorKind};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 enum Sign {
@@ -35,12 +35,13 @@ impl<'a> Decimal<'a> {
         let (negative, unsigned) = mantissa
             .strip_prefix('-')
             .map_or((false, mantissa), |rest| (true, rest));
-        let exp = exponent.map_or(0, |e| {
-            e.parse::<i64>().unwrap_or(if e.starts_with('-') {
-                i64::MIN
-            } else {
-                i64::MAX
-            })
+        let exp = exponent.map_or(0, |e| match e.parse::<i64>() {
+            Ok(exp) => exp,
+            Err(err) => match err.kind() {
+                IntErrorKind::PosOverflow => i64::MAX,
+                IntErrorKind::NegOverflow => i64::MIN,
+                kind => unreachable!("parser validates exponent digits, got {kind:?}"),
+            },
         });
         let (int, frac, exp) = fraction_to_exponent(unsigned, exp);
         // strip leading and trailing 0s
