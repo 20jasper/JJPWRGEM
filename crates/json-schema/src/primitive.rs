@@ -2,7 +2,7 @@ use std::fmt;
 
 use jjpwrgem_parse::ast::{Document, Value};
 
-use crate::Type;
+use crate::{Type, number::Decimal};
 
 // r[json-schema-v7.type.primitive]
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
@@ -46,12 +46,12 @@ pub fn value_as_primitive<S: AsRef<str>>(value: &Value, doc: &Document<S>) -> Pr
         Value::Null(_) => PrimitiveType::Null,
         Value::Boolean(_, _) => PrimitiveType::Boolean,
         Value::String(_) => PrimitiveType::String,
-        Value::Number { mantissa, .. } => {
+        Value::Number { mantissa, exponent } => {
             // "integer" which matches any number with a zero fractional part
             // https://json-schema.org/draft-07/draft-handrews-json-schema-validation-01#rfc.section.6.1.1
-            let s = doc.slice(*mantissa);
-            if s.find('.')
-                .is_none_or(|i| s[i + 1..].chars().all(|c| c == '0'))
+            if Decimal::from_parts(doc.slice(*mantissa), exponent.map(|e| doc.slice(e)))
+                .expect("parser only produces valid number text")
+                .is_integer()
             {
                 PrimitiveType::Integer
             } else {
@@ -103,6 +103,8 @@ mod tests {
     #[case("123.0", PrimitiveType::Integer)]
     #[case("1e3", PrimitiveType::Integer)]
     #[case("1.5", PrimitiveType::Number)]
+    #[case("1.5e1", PrimitiveType::Integer)]
+    #[case("1e-1", PrimitiveType::Number)]
     fn number_is_classified_by_value(#[case] json: &str, #[case] expected: PrimitiveType) {
         let doc = doc(json);
         assert_eq!(value_as_primitive(doc.root(), &doc), expected);

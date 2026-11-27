@@ -1,6 +1,7 @@
-#![feature(new_range)]
+#![cfg_attr(test, feature(new_range))]
 
 mod error;
+mod number;
 mod primitive;
 
 use error::{Error, Result};
