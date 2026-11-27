@@ -4,10 +4,8 @@ mod error;
 mod number;
 mod primitive;
 
-use std::borrow::Cow;
-
 use error::{Error, Result};
-use jjpwrgem_parse::{Kind, Node, Object, ast::Document};
+use jjpwrgem_parse::{Kind, Object, ast::Document};
 
 use crate::primitive::{type_as_primitive, value_as_primitive};
 
@@ -67,28 +65,25 @@ impl ObjectSchema {
     }
 }
 
-fn string_value<S: AsRef<str>>(node: Node<'_, S>) -> Option<Cow<'_, str>> {
-    match node.kind() {
-        Kind::String(string) => Some(string.unescape()),
+fn string_keyword<S: AsRef<str>>(object: Object<'_, S>, key: &str) -> Option<String> {
+    match object.get(key)?.kind() {
+        Kind::String(string) => Some(string.unescape().into_owned()),
         _ => None,
     }
-}
-
-fn string_keyword<S: AsRef<str>>(object: Object<'_, S>, key: &str) -> Option<String> {
-    object.get(key).and_then(string_value).map(Cow::into_owned)
 }
 
 fn type_keyword<S: AsRef<str>>(object: Object<'_, S>) -> Result<Option<Type>> {
     let Some(value) = object.get(keyword::TYPE) else {
         return Ok(None);
     };
-    string_value(value)
-        .and_then(|name| Type::from_name(&name))
-        .map(Some)
-        .ok_or_else(|| Error::InvalidType {
-            range: value.span(),
-            found: value.text().to_owned(),
-        })
+    let name = match value.kind() {
+        Kind::String(string) => Type::from_name(&string.unescape()),
+        _ => None,
+    };
+    name.map(Some).ok_or_else(|| Error::InvalidType {
+        range: value.span(),
+        found: value.text().to_owned(),
+    })
 }
 
 impl Schema {
