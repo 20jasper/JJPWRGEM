@@ -67,6 +67,11 @@ impl<'a, S: AsRef<str>> Node<'a, S> {
         }
     }
 
+    /// source text of the whole node, including string quotes
+    pub fn text(self) -> &'a str {
+        self.doc.slice(self.value.span())
+    }
+
     /// escape hatch for code that needs raw ranges
     pub fn value(self) -> &'a Value {
         self.value

@@ -5,28 +5,27 @@ mod number;
 mod primitive;
 
 use error::{Error, Result};
-use jjpwrgem_parse::ast::{Document, ObjectEntries};
+use jjpwrgem_parse::{Kind, Node, ast::Document};
 
 use crate::primitive::{type_as_primitive, value_as_primitive};
 
 pub fn validate<S: AsRef<str>>(doc: &Document<S>, schema: &Schema) -> Result<()> {
+    let root = doc.root_node();
     match schema {
         // r[impl json-schema-v7.schema.boolean-true]
         Schema::Bool(true) => Ok(()),
-        Schema::Bool(false) => Err(Error::FalseRoot {
-            range: doc.root().span(),
-        }),
+        Schema::Bool(false) => Err(Error::FalseRoot { range: root.span() }),
         Schema::Object(ObjectSchema { types: None, .. }) => Ok(()),
         Schema::Object(ObjectSchema {
             types: Some(ty), ..
         }) => {
-            let actual = value_as_primitive(doc.root(), doc);
+            let actual = value_as_primitive(root);
             let expected = type_as_primitive(ty);
 
             if actual.is_subset(expected) {
                 Ok(())
             } else {
-                let range = doc.root().span();
+                let range = root.span();
                 Err(Error::MismatchedTypes {
                     range,
                     expected,
@@ -57,48 +56,47 @@ mod keyword {
 }
 
 impl ObjectSchema {
-    fn parse<S: AsRef<str>>(doc: &Document<S>, entries: &ObjectEntries) -> Result<Self> {
+    fn parse<S: AsRef<str>>(node: Node<'_, S>) -> Result<Self> {
         Ok(Self {
-            title: string_keyword(doc, entries, keyword::TITLE).map(ToOwned::to_owned),
-            description: string_keyword(doc, entries, keyword::DESCRIPTION).map(ToOwned::to_owned),
-            types: type_keyword(doc, entries)?,
+            title: string_keyword(node, keyword::TITLE),
+            description: string_keyword(node, keyword::DESCRIPTION),
+            types: type_keyword(node)?,
         })
     }
 }
 
-fn string_keyword<'a, S: AsRef<str>>(
-    doc: &'a Document<S>,
-    entries: &ObjectEntries,
-    key: &str,
-) -> Option<&'a str> {
-    doc.get_object_value(entries, key)
-        .and_then(|value| doc.as_str(value))
+fn string_keyword<S: AsRef<str>>(node: Node<'_, S>, key: &str) -> Option<String> {
+    node.get(key)
+        .and_then(Node::as_str)
+        .map(std::borrow::Cow::into_owned)
 }
 
-fn type_keyword<S: AsRef<str>>(doc: &Document<S>, entries: &ObjectEntries) -> Result<Option<Type>> {
-    let Some(value) = doc.get_object_value(entries, keyword::TYPE) else {
+fn type_keyword<S: AsRef<str>>(node: Node<'_, S>) -> Result<Option<Type>> {
+    let Some(value) = node.get(keyword::TYPE) else {
         return Ok(None);
     };
-    doc.as_str(value)
-        .and_then(Type::from_name)
+    value
+        .as_str()
+        .and_then(|name| Type::from_name(&name))
         .map(Some)
         .ok_or_else(|| Error::InvalidType {
             range: value.span(),
-            found: doc.slice(value.span()).to_owned(),
+            found: value.text().to_owned(),
         })
 }
 
 impl Schema {
     // r[impl json-schema-v7.schema.root]
     pub fn parse<S: AsRef<str>>(doc: &Document<S>) -> Result<Self> {
-        if let Some(b) = doc.as_bool(doc.root()) {
+        let root = doc.root_node();
+        if let Some(b) = root.as_bool() {
             Ok(Schema::Bool(b))
-        } else if let Some(entries) = doc.as_object(doc.root()) {
-            Ok(Schema::Object(ObjectSchema::parse(doc, entries)?))
+        } else if root.kind() == Kind::Object {
+            Ok(Schema::Object(ObjectSchema::parse(root)?))
         } else {
             Err(Error::InvalidSchemaRoot {
-                range: doc.root().span(),
-                found: value_as_primitive(doc.root(), doc),
+                range: root.span(),
+                found: value_as_primitive(root),
             })
         }
     }

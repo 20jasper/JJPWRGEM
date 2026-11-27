@@ -1,5 +1,7 @@
 use std::{cmp::Ordering, num::IntErrorKind};
 
+use jjpwrgem_parse::NumberText;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 enum Sign {
     Negative,
@@ -19,25 +21,19 @@ pub struct Decimal<'a> {
     exp: i64,
 }
 
-impl<'a> Decimal<'a> {
-    pub fn from_parts(mantissa: &'a str, exponent: Option<&str>) -> Option<Self> {
+impl<'a> From<NumberText<'a>> for Decimal<'a> {
+    fn from(NumberText { mantissa, exponent }: NumberText<'a>) -> Self {
         let (negative, unsigned) = mantissa
             .strip_prefix('-')
             .map_or((false, mantissa), |rest| (true, rest));
-        let (int, frac, has_dot) = match unsigned.split_once('.') {
-            Some((int, frac)) => (int, frac, true),
-            None => (unsigned, "", false),
-        };
-        if !is_digits(int) || (has_dot && !is_digits(frac)) {
-            return None;
-        }
+        let (int, frac) = unsigned.split_once('.').unwrap_or((unsigned, ""));
         let exp = match exponent.map(str::parse::<i64>) {
             None => 0,
             Some(Ok(exp)) => exp,
             Some(Err(err)) => match err.kind() {
                 IntErrorKind::PosOverflow => i64::MAX,
                 IntErrorKind::NegOverflow => i64::MIN,
-                _ => return None,
+                _ => 0,
             },
         };
         let exp = fraction_to_exponent(frac, exp);
@@ -56,14 +52,16 @@ impl<'a> Decimal<'a> {
         } else {
             (Sign::Positive, exp)
         };
-        Some(Self {
+        Self {
             sign,
             int,
             frac,
             exp,
-        })
+        }
     }
+}
 
+impl Decimal<'_> {
     pub fn is_integer(&self) -> bool {
         self.exp >= 0
     }
@@ -77,10 +75,6 @@ impl<'a> Decimal<'a> {
             .unwrap_or(i64::MAX)
             .saturating_add(self.exp)
     }
-}
-
-fn is_digits(text: &str) -> bool {
-    !text.is_empty() && text.bytes().all(|b| b.is_ascii_digit())
 }
 
 fn fraction_to_exponent(frac: &str, exp: i64) -> i64 {
@@ -135,7 +129,7 @@ mod tests {
             Some(i) => (&text[..i], Some(&text[i + 1..])),
             None => (text, None),
         };
-        Decimal::from_parts(mantissa, exponent).expect("valid number")
+        Decimal::from(NumberText { mantissa, exponent })
     }
 
     #[rstest::rstest]
@@ -194,12 +188,8 @@ mod tests {
     #[case("1e")]
     #[case("1e+")]
     #[case("1ex")]
-    fn rejected(#[case] text: &str) {
-        let (mantissa, exponent) = match text.find(['e', 'E']) {
-            Some(i) => (&text[..i], Some(&text[i + 1..])),
-            None => (text, None),
-        };
-        assert_eq!(Decimal::from_parts(mantissa, exponent), None);
+    fn malformed_text_does_not_panic(#[case] text: &str) {
+        let _ = dec(text).is_integer();
     }
 
     #[test]

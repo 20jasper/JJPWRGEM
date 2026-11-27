@@ -1,6 +1,6 @@
 use std::fmt;
 
-use jjpwrgem_parse::ast::{Document, Value};
+use jjpwrgem_parse::{Kind, Node};
 
 use crate::{Type, number::Decimal};
 
@@ -41,25 +41,23 @@ impl fmt::Display for PrimitiveType {
     }
 }
 
-pub fn value_as_primitive<S: AsRef<str>>(value: &Value, doc: &Document<S>) -> PrimitiveType {
-    match value {
-        Value::Null(_) => PrimitiveType::Null,
-        Value::Boolean(_, _) => PrimitiveType::Boolean,
-        Value::String(_) => PrimitiveType::String,
-        Value::Number { mantissa, exponent } => {
-            // "integer" which matches any number with a zero fractional part
-            // https://json-schema.org/draft-07/draft-handrews-json-schema-validation-01#rfc.section.6.1.1
-            if Decimal::from_parts(doc.slice(*mantissa), exponent.map(|e| doc.slice(e)))
-                .expect("parser only produces valid number text")
-                .is_integer()
-            {
-                PrimitiveType::Integer
-            } else {
-                PrimitiveType::Number
-            }
-        }
-        Value::Array(_, _) => PrimitiveType::Array,
-        Value::Object(_, _) => PrimitiveType::Object,
+pub fn value_as_primitive<S: AsRef<str>>(node: Node<'_, S>) -> PrimitiveType {
+    if let Some(number) = node.as_number() {
+        // "integer" which matches any number with a zero fractional part
+        // https://json-schema.org/draft-07/draft-handrews-json-schema-validation-01#rfc.section.6.1.1
+        return if Decimal::from(number).is_integer() {
+            PrimitiveType::Integer
+        } else {
+            PrimitiveType::Number
+        };
+    }
+    match node.kind() {
+        Kind::Null => PrimitiveType::Null,
+        Kind::Bool => PrimitiveType::Boolean,
+        Kind::String => PrimitiveType::String,
+        Kind::Number => PrimitiveType::Number,
+        Kind::Array => PrimitiveType::Array,
+        Kind::Object => PrimitiveType::Object,
     }
 }
 
@@ -77,7 +75,7 @@ pub fn type_as_primitive(ty: &Type) -> PrimitiveType {
 
 #[cfg(test)]
 mod tests {
-    use jjpwrgem_parse::SyntaxOptions;
+    use jjpwrgem_parse::{SyntaxOptions, ast::Document};
 
     use super::*;
 
@@ -94,7 +92,7 @@ mod tests {
     #[case("{}", PrimitiveType::Object)]
     fn value_maps_to_primitive(#[case] json: &str, #[case] expected: PrimitiveType) {
         let doc = doc(json);
-        assert_eq!(value_as_primitive(doc.root(), &doc), expected);
+        assert_eq!(value_as_primitive(doc.root_node()), expected);
     }
 
     // r[verify json-schema-v7.type.integer-subset]
@@ -107,7 +105,7 @@ mod tests {
     #[case("1e-1", PrimitiveType::Number)]
     fn number_is_classified_by_value(#[case] json: &str, #[case] expected: PrimitiveType) {
         let doc = doc(json);
-        assert_eq!(value_as_primitive(doc.root(), &doc), expected);
+        assert_eq!(value_as_primitive(doc.root_node()), expected);
     }
 
     // r[verify json-schema-v7.type.integer-subset]
