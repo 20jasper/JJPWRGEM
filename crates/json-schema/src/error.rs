@@ -21,6 +21,11 @@ pub enum Error {
     FalseRoot { range: Range<usize> },
     /// invalid type {found}
     InvalidType { range: Range<usize>, found: String },
+    /// `properties` must be an object. found {found}
+    InvalidProperties {
+        range: Range<usize>,
+        found: PrimitiveType,
+    },
 }
 
 impl Error {
@@ -29,6 +34,7 @@ impl Error {
             Error::MismatchedTypes { range, .. }
             | Error::InvalidSchemaRoot { range, .. }
             | Error::InvalidType { range, .. }
+            | Error::InvalidProperties { range, .. }
             | FalseRoot { range } => range,
         }
     }
