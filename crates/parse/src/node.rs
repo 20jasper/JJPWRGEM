@@ -66,6 +66,10 @@ impl<'a> Array<'a> {
         self.items.is_empty()
     }
 
+    pub fn span(self) -> Range<usize> {
+        self.node.span()
+    }
+
     pub fn node(self) -> Node<'a> {
         self.node
     }
@@ -89,6 +93,10 @@ impl<'a> Object<'a> {
         self.iter()
             .find(|(key, _)| key.raw() == name)
             .map(|(_, node)| node)
+    }
+
+    pub fn span(self) -> Range<usize> {
+        self.node.span()
     }
 
     pub fn node(self) -> Node<'a> {
@@ -318,11 +326,11 @@ impl<'a> Node<'a> {
     }
 
     pub fn member_span(self, key: PathKey<'a>) -> Range<usize> {
-        let key = match key {
-            PathKey::Name(name) => Key::Name(name.range),
-            PathKey::Index(index) => Key::Index(index),
-        };
-        self.value.member_span(key)
+        let span = self.span();
+        match key {
+            PathKey::Name(name) => name.span().start..span.end,
+            PathKey::Index(_) => span,
+        }
     }
 }
 
@@ -363,7 +371,19 @@ mod tests {
             ["null", "bool", "number", "string", "array", "object"]
         );
         assert_eq!(array.len(), 6);
-        assert_eq!(array.node().span(), doc.root().span());
+        assert_eq!(array.span(), doc.root().span());
+    }
+
+    #[test]
+    fn container_views_answer_span() {
+        let doc = parse(r#"{"a": [1, 2], "b": {"c": 3}}"#);
+        let object = doc.root().as_object().unwrap();
+        assert_eq!(object.span(), object.node().span());
+        let array = object.get("a").unwrap().as_array().unwrap();
+        assert_eq!(doc.slice(array.span()), "[1, 2]");
+        assert_eq!(array.span(), array.node().span());
+        let inner = object.get("b").unwrap().as_object().unwrap();
+        assert_eq!(doc.slice(inner.span()), r#"{"c": 3}"#);
     }
 
     #[test]
@@ -401,7 +421,7 @@ mod tests {
             items[1].kind(),
             Kind::Number(n) if n.mantissa() == "20" && n.exponent().is_none()
         ));
-        assert_eq!(object.node().span(), doc.root().span());
+        assert_eq!(object.span(), doc.root().span());
         assert_eq!(object.iter().next_back().unwrap().0.raw(), "b");
     }
 
