@@ -1,7 +1,7 @@
 use std::range::Range as Span;
 
 use gen_lsp_types::*;
-use jjpwrgem_parse::ast::{Document, Key, Value, quoted};
+use jjpwrgem_parse::{Kind, Node, ast::Document};
 
 use crate::{
     backend::Backend,
@@ -16,66 +16,77 @@ fn document_symbols(
     document: &Document<String>,
     encoding: PositionEncoding,
 ) -> Vec<DocumentSymbol> {
-    let source = Source {
-        document,
-        positions: Positions::new(document.source(), encoding),
-    };
+    let positions = Positions::new(document.source(), encoding);
     let mut remaining = MAX_SYMBOLS;
-    map_children(&source, document.root(), &mut remaining).unwrap_or_default()
-}
-
-struct Source<'a> {
-    document: &'a Document<String>,
-    positions: Positions,
+    map_children(&positions, document.root(), &mut remaining).unwrap_or_default()
 }
 
 fn map_children(
-    source: &Source<'_>,
-    value: &Value,
+    positions: &Positions,
+    node: Node<'_>,
     remaining: &mut usize,
 ) -> Option<Vec<DocumentSymbol>> {
-    matches!(value, Value::Object(..) | Value::Array(..)).then(|| {
-        value
-            .children()
-            .map_while(|(key, child)| {
-                *remaining = remaining.checked_sub(1)?;
-                Some(source.symbol(key, child, map_children(source, child, remaining)))
-            })
-            .collect()
-    })
+    match node.kind() {
+        Kind::Object(object) => Some(
+            object
+                .iter()
+                .map_while(|(key, child)| {
+                    child_symbol(positions, name(key.raw()), key.span(), child, remaining)
+                })
+                .collect(),
+        ),
+        Kind::Array(array) => Some(
+            array
+                .iter()
+                .enumerate()
+                .map_while(|(index, child)| {
+                    child_symbol(positions, index.to_string(), child.span(), child, remaining)
+                })
+                .collect(),
+        ),
+        _ => None,
+    }
 }
 
-impl Source<'_> {
-    fn symbol(
-        &self,
-        key: Key,
-        value: &Value,
-        children: Option<Vec<DocumentSymbol>>,
-    ) -> DocumentSymbol {
-        let (name, selection) = match key {
-            Key::Name(key) => (name(self.document.slice(key)), quoted(key)),
-            Key::Index(index) => (index.to_string(), value.span()),
-        };
-        let full = Span::from(selection.start..value.span().end);
-        let (kind, detail) = match value {
-            Value::Object(..) => (SymbolKind::Object, None),
-            Value::Array(..) => (SymbolKind::Array, None),
-            Value::String(..) => (SymbolKind::String, Some(value.range())),
-            Value::Number { .. } => (SymbolKind::Number, Some(value.range())),
-            Value::Boolean(..) => (SymbolKind::Boolean, Some(value.range())),
-            Value::Null(..) => (SymbolKind::Null, Some(value.range())),
-        };
-        #[expect(deprecated, reason = "the field is required to build the struct")]
-        DocumentSymbol {
-            name,
-            detail: detail.map(|range| truncated(self.document.slice(range))),
-            kind,
-            tags: None,
-            deprecated: None,
-            range: self.positions.range(full),
-            selection_range: self.positions.range(selection),
-            children,
-        }
+/// Returns `None` once the symbol cap is exhausted, which ends the caller's iteration.
+fn child_symbol(
+    positions: &Positions,
+    name: String,
+    selection: Span<usize>,
+    node: Node<'_>,
+    remaining: &mut usize,
+) -> Option<DocumentSymbol> {
+    *remaining = remaining.checked_sub(1)?;
+    let children = map_children(positions, node, remaining);
+    Some(symbol(positions, name, selection, node, children))
+}
+
+fn symbol(
+    positions: &Positions,
+    name: String,
+    selection: Span<usize>,
+    node: Node<'_>,
+    children: Option<Vec<DocumentSymbol>>,
+) -> DocumentSymbol {
+    let full = Span::from(selection.start..node.span().end);
+    let (kind, detail) = match node.kind() {
+        Kind::Object(_) => (SymbolKind::Object, None),
+        Kind::Array(_) => (SymbolKind::Array, None),
+        Kind::String(s) => (SymbolKind::String, Some(s.raw())),
+        Kind::Number(_) => (SymbolKind::Number, Some(node.text())),
+        Kind::Bool(_) => (SymbolKind::Boolean, Some(node.text())),
+        Kind::Null => (SymbolKind::Null, Some(node.text())),
+    };
+    #[expect(deprecated, reason = "the field is required to build the struct")]
+    DocumentSymbol {
+        name,
+        detail: detail.map(truncated),
+        kind,
+        tags: None,
+        deprecated: None,
+        range: positions.range(full),
+        selection_range: positions.range(selection),
+        children,
     }
 }
 

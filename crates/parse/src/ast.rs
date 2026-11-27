@@ -6,35 +6,22 @@ use crate::{Result, SyntaxOptions, tokens::TokenStream, traverse::parse_tokens};
 
 pub(crate) const QUOTE_LEN: usize = 1;
 
-pub fn quoted(range: Range<usize>) -> Range<usize> {
+pub(crate) fn quoted(range: Range<usize>) -> Range<usize> {
     range.start - QUOTE_LEN..range.end + QUOTE_LEN
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
-pub struct ObjectEntries(pub(crate) Vec<(Range<usize>, Value)>);
+pub(crate) struct ObjectEntries(pub(crate) Vec<(Range<usize>, Value)>);
 
 impl ObjectEntries {
     #[inline]
     pub(crate) fn is_empty(&self) -> bool {
         self.0.is_empty()
     }
-
-    pub(crate) fn find<'a>(&'a self, source: &str, key: &str) -> Option<&'a Value> {
-        self.0
-            .iter()
-            .find(|(kr, _)| &source[*kr] == key)
-            .map(|(_, v)| v)
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Key {
-    Name(Range<usize>),
-    Index(usize),
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
-pub enum Value {
+pub(crate) enum Value {
     Null(Range<usize>),
     /// excludes surrounding quotes
     String(Range<usize>),
@@ -48,15 +35,7 @@ pub enum Value {
 }
 
 impl Value {
-    pub fn is_container(&self) -> bool {
-        matches!(self, Self::Object(..) | Self::Array(..))
-    }
-
-    pub fn is_primitive(&self) -> bool {
-        !self.is_container()
-    }
-
-    pub fn range(&self) -> Range<usize> {
+    pub(crate) fn range(&self) -> Range<usize> {
         match self {
             Value::Null(r)
             | Value::String(r)
@@ -69,7 +48,7 @@ impl Value {
         }
     }
 
-    pub fn span(&self) -> Range<usize> {
+    pub(crate) fn span(&self) -> Range<usize> {
         let range = self.range();
         match self {
             Value::String(_) => quoted(range),
@@ -77,67 +56,54 @@ impl Value {
         }
     }
 
-    pub fn member_span(&self, key: Key) -> Range<usize> {
+    pub(crate) fn member_span(&self, name: Option<Range<usize>>) -> Range<usize> {
         let span = self.span();
-        match key {
-            Key::Name(name) => quoted(name).start..span.end,
-            Key::Index(_) => span,
+        match name {
+            Some(name) => quoted(name).start..span.end,
+            None => span,
         }
     }
 
-    pub fn child_at(&self, offset: usize) -> Option<(Key, &Value)> {
-        self.children().find(|(key, child)| {
-            let member = child.member_span(*key);
+    pub(crate) fn child_at(&self, offset: usize) -> Option<(Option<Range<usize>>, &Value)> {
+        self.children().find(|(name, child)| {
+            let member = child.member_span(*name);
             member.start <= offset && offset <= member.end
         })
     }
 
-    pub fn path_at(&self, offset: usize) -> impl Iterator<Item = (Key, &Value)> {
+    pub(crate) fn path_at(
+        &self,
+        offset: usize,
+    ) -> impl Iterator<Item = (Option<Range<usize>>, &Value)> {
         core::iter::successors(self.child_at(offset), move |(_, child)| {
             child.child_at(offset)
         })
     }
 
     /// outputs layer of direct children
-    pub fn children(&self) -> impl DoubleEndedIterator<Item = (Key, &Value)> {
+    pub(crate) fn children(
+        &self,
+    ) -> impl DoubleEndedIterator<Item = (Option<Range<usize>>, &Value)> {
         let (entries, items) = match self {
             Value::Object(_, entries) => (Some(entries.0.iter()), None),
-            Value::Array(_, items) => (None, Some(items.iter().enumerate())),
+            Value::Array(_, items) => (None, Some(items.iter())),
             _ => (None, None),
         };
         entries
             .into_iter()
             .flatten()
-            .map(|(name, value)| (Key::Name(*name), value))
-            .chain(
-                items
-                    .into_iter()
-                    .flatten()
-                    .map(|(index, value)| (Key::Index(index), value)),
-            )
+            .map(|(name, value)| (Some(*name), value))
+            .chain(items.into_iter().flatten().map(|value| (None, value)))
     }
 
     /// preorder walk over the value, outputting a flat stream of Values
-    pub fn traverse(&self) -> impl Iterator<Item = &Value> {
+    pub(crate) fn traverse(&self) -> impl Iterator<Item = &Value> {
         let mut stack = vec![self];
         core::iter::from_fn(move || {
             let value = stack.pop()?;
             stack.extend(value.children().rev().map(|(_, child)| child));
             Some(value)
         })
-    }
-
-    pub(crate) fn to_f64(&self, source: &str) -> Option<f64> {
-        let Value::Number { mantissa, exponent } = self else {
-            return None;
-        };
-        let m = &source[*mantissa];
-        if let Some(exponent) = exponent {
-            let e = &source[*exponent];
-            format!("{m}e{e}").parse().ok()
-        } else {
-            m.parse().ok()
-        }
     }
 }
 
@@ -157,7 +123,7 @@ impl<S: AsRef<str>> Document<S> {
     }
 
     #[inline]
-    pub fn root(&self) -> &Value {
+    pub(crate) fn root_value(&self) -> &Value {
         &self.root
     }
 
@@ -174,54 +140,6 @@ impl<S: AsRef<str>> Document<S> {
     #[inline]
     pub fn slice(&self, range: Range<usize>) -> &str {
         &self.source.as_ref()[range]
-    }
-
-    pub fn get_object_value<'a>(&self, entries: &'a ObjectEntries, key: &str) -> Option<&'a Value> {
-        entries.find(self.source.as_ref(), key)
-    }
-
-    #[inline]
-    pub fn as_str<'a>(&'a self, value: &Value) -> Option<&'a str> {
-        match value {
-            Value::String(r) => Some(self.slice(*r)),
-            _ => None,
-        }
-    }
-
-    pub fn parse_f64(&self, value: &Value) -> Option<f64> {
-        value.to_f64(self.source.as_ref())
-    }
-
-    pub fn as_null(&self, value: &Value) -> Option<()> {
-        matches!(value, Value::Null(_)).then_some(())
-    }
-
-    pub fn as_bool(&self, value: &Value) -> Option<bool> {
-        match value {
-            Value::Boolean(_, b) => Some(*b),
-            _ => None,
-        }
-    }
-
-    pub fn as_array<'a>(&self, value: &'a Value) -> Option<&'a [Value]> {
-        match value {
-            Value::Array(_, items) => Some(items.as_slice()),
-            _ => None,
-        }
-    }
-
-    pub fn as_object<'a>(&self, value: &'a Value) -> Option<&'a ObjectEntries> {
-        match value {
-            Value::Object(_, entries) => Some(entries),
-            _ => None,
-        }
-    }
-
-    pub fn as_number(&self, value: &Value) -> Option<&str> {
-        match value {
-            Value::Number { .. } => Some(self.slice(value.range())),
-            _ => None,
-        }
     }
 }
 
@@ -448,52 +366,6 @@ mod tests {
         assert!(Document::parse(json, SyntaxOptions::JSON).is_err());
     }
 
-    #[test]
-    fn as_accessors_return_data_for_matching_variant() {
-        let doc = Document::parse(
-            r#"[null, true, 1.5, "a", [2], {"k": 3}]"#,
-            SyntaxOptions::JSON,
-        )
-        .unwrap();
-        let items = doc.as_array(doc.root()).unwrap();
-        assert_eq!(items.len(), 6);
-
-        assert_eq!(doc.as_null(&items[0]), Some(()));
-        assert_eq!(doc.as_bool(&items[1]), Some(true));
-        assert_eq!(doc.as_number(&items[2]), Some("1.5"));
-        assert_eq!(doc.as_str(&items[3]), Some("a"));
-        assert_eq!(doc.as_array(&items[4]).map(<[Value]>::len), Some(1));
-        assert_eq!(
-            doc.get_object_value(doc.as_object(&items[5]).unwrap(), "k")
-                .and_then(|v| doc.as_number(v)),
-            Some("3")
-        );
-    }
-
-    #[rstest::rstest]
-    #[case("42", Some("42"))]
-    #[case("-7", Some("-7"))]
-    #[case("1.50", Some("1.50"))]
-    #[case("1.5e1", Some("1.5e1"))]
-    #[case("9223372036854775808", Some("9223372036854775808"))]
-    #[case(r#""1""#, None)]
-    fn as_number_returns_source_text(#[case] json: &str, #[case] expected: Option<&str>) {
-        let doc = Document::parse(json, SyntaxOptions::JSON).unwrap();
-        assert_eq!(doc.as_number(doc.root()), expected);
-    }
-
-    #[test]
-    fn as_accessors_return_none_for_other_variants() {
-        let doc = Document::parse("1", SyntaxOptions::JSON).unwrap();
-        let root = doc.root();
-
-        assert_eq!(doc.as_null(root), None);
-        assert_eq!(doc.as_bool(root), None);
-        assert_eq!(doc.as_array(root), None);
-        assert!(doc.as_object(root).is_none());
-        assert_eq!(doc.as_str(root), None);
-    }
-
     fn range_of(source: &str, needle: &str) -> Range<usize> {
         let start = source.find(needle).expect("needle in source");
         start..start + needle.len()
@@ -510,7 +382,10 @@ mod tests {
     #[test]
     fn empty_object() {
         let doc = Document::parse("{}", SyntaxOptions::JSON).unwrap();
-        assert_eq!(doc.root(), &Value::Object(0..2, ObjectEntries::default()));
+        assert_eq!(
+            doc.root_value(),
+            &Value::Object(0..2, ObjectEntries::default())
+        );
     }
 
     #[test]
@@ -518,7 +393,7 @@ mod tests {
         let json = r#"{"hi":"bye"}"#;
         let doc = Document::parse(json, SyntaxOptions::JSON).unwrap();
         assert_eq!(
-            doc.root(),
+            doc.root_value(),
             &make_obj(vec![("hi", Value::String(range_of(json, "bye")))], json)
         );
     }
@@ -549,7 +424,7 @@ mod tests {
         let source = r#"{"a": [10, {"bb": 2}]}"#;
         let doc = Document::parse(source, SyntaxOptions::JSON).unwrap();
         let path = |needle: &str, shift: usize| {
-            doc.root()
+            doc.root_value()
                 .path_at(source.find(needle).unwrap() + shift)
                 .map(|(_, value)| doc.slice(value.span()))
                 .collect::<Vec<_>>()
@@ -580,12 +455,12 @@ mod tests {
         );
         let doc = Document::parse(&json, SyntaxOptions::JSON).unwrap();
         let want = make_obj(vec![("rust", expected(&json))], &json);
-        assert_eq!(doc.root(), &want);
+        assert_eq!(doc.root_value(), &want);
     }
 
     #[rstest_reuse::apply(primitive_template)]
     fn primitives(#[case] json: &str, #[case] expected: fn(&str) -> Value) {
         let doc = Document::parse(json, SyntaxOptions::JSON).unwrap();
-        assert_eq!(doc.root(), &expected(json));
+        assert_eq!(doc.root_value(), &expected(json));
     }
 }

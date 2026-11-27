@@ -1,6 +1,6 @@
 use gen_lsp_types::*;
 use itertools::Itertools;
-use jjpwrgem_parse::ast::{Document, Value};
+use jjpwrgem_parse::{Kind, ast::Document};
 
 use crate::{
     backend::Backend,
@@ -16,9 +16,9 @@ fn folding_ranges(document: &Document<String>, encoding: PositionEncoding) -> Ve
     document
         .root()
         .traverse()
-        .filter(|value| matches!(value, Value::Object(..) | Value::Array(..)))
-        .filter_map(|value| {
-            let range = value.range();
+        .filter(|node| matches!(node.kind(), Kind::Array(_) | Kind::Object(_)))
+        .filter_map(|node| {
+            let range = node.span();
             let start_line = positions.line(range.start);
             let close_line = positions.line(range.end - CLOSING_BRACKET_LEN);
             let end_line = close_line.checked_sub(1)?;

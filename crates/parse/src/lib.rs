@@ -5,11 +5,13 @@ pub mod diagnostics;
 pub mod error;
 pub mod format;
 pub mod jsonlines;
+mod node;
 pub mod settings;
 pub mod tokens;
 mod traverse;
 
 pub use check::validate_str;
+pub use node::{Array, Items, Kind, Member, Members, Node, Number, Object, Str};
 
 pub use crate::error::{Error, ErrorKind, Result};
 

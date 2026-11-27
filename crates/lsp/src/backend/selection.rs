@@ -4,7 +4,7 @@
 use std::range::Range as ByteRange;
 
 use gen_lsp_types::*;
-use jjpwrgem_parse::ast::{Document, Key, Value, quoted};
+use jjpwrgem_parse::{Kind, Node, ast::Document};
 
 use crate::{
     backend::Backend,
@@ -59,21 +59,23 @@ fn contains_inclusive(span: ByteRange<usize>, offset: usize) -> bool {
     (span.start..=span.end).contains(&offset)
 }
 
-fn inside_container(value: &Value, offset: usize) -> Option<ByteRange<usize>> {
-    let span = value.span();
+fn inside_container(node: Node<'_>, offset: usize) -> Option<ByteRange<usize>> {
+    let span = node.span();
     let inside_brackets = ByteRange::from(span.start + BRACKET_LEN..span.end - BRACKET_LEN);
 
-    let offset_in_container = (value.is_container() || matches!(value, Value::String(..)))
-        && contains_inclusive(inside_brackets, offset);
+    let offset_in_container = matches!(
+        node.kind(),
+        Kind::Array(_) | Kind::Object(_) | Kind::String(_)
+    ) && contains_inclusive(inside_brackets, offset);
     offset_in_container.then_some(inside_brackets)
 }
 
-fn value_and_interior(value: &Value, offset: usize) -> impl Iterator<Item = ByteRange<usize>> {
-    std::iter::once(value.span()).chain(inside_container(value, offset))
+fn value_and_interior(node: Node<'_>, offset: usize) -> impl Iterator<Item = ByteRange<usize>> {
+    std::iter::once(node.span()).chain(inside_container(node, offset))
 }
 
 /// values from outer to inner
-fn steps(root: &Value, offset: usize) -> Vec<ByteRange<usize>> {
+fn steps(root: Node<'_>, offset: usize) -> Vec<ByteRange<usize>> {
     let mut spans = Vec::new();
     let root_span = root.span();
     // add whole document if offset is inside
@@ -83,20 +85,20 @@ fn steps(root: &Value, offset: usize) -> Vec<ByteRange<usize>> {
     spans.extend(inside_container(root, offset));
 
     // iterate outer to inner
-    for (key, value) in root.path_at(offset) {
-        match key {
-            Key::Name(name) if contains_inclusive(quoted(name), offset) => {
-                spans.push(value.member_span(key));
-                spans.push(quoted(name));
-                if contains_inclusive(name, offset) {
-                    spans.push(name);
+    for member in root.path_at(offset) {
+        match member.name() {
+            Some(name) if contains_inclusive(name.span(), offset) => {
+                spans.push(member.span());
+                spans.push(name.span());
+                if contains_inclusive(name.raw_span(), offset) {
+                    spans.push(name.raw_span());
                 }
             }
-            Key::Name(_) => {
-                spans.push(value.member_span(key));
-                spans.extend(value_and_interior(value, offset));
+            Some(_) => {
+                spans.push(member.span());
+                spans.extend(value_and_interior(member.value(), offset));
             }
-            Key::Index(_) => spans.extend(value_and_interior(value, offset)),
+            None => spans.extend(value_and_interior(member.value(), offset)),
         }
     }
 

@@ -1,5 +1,7 @@
 use std::{cmp::Ordering, num::IntErrorKind};
 
+use jjpwrgem_parse::Number;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 enum Sign {
     Negative,
@@ -19,25 +21,17 @@ pub struct Decimal<'a> {
     exp: i64,
 }
 
-impl<'a> Decimal<'a> {
-    pub fn from_parts(mantissa: &'a str, exponent: Option<&str>) -> Option<Self> {
-        let (negative, unsigned) = mantissa
-            .strip_prefix('-')
-            .map_or((false, mantissa), |rest| (true, rest));
-        let (int, frac, has_dot) = match unsigned.split_once('.') {
-            Some((int, frac)) => (int, frac, true),
-            None => (unsigned, "", false),
-        };
-        if !is_digits(int) || (has_dot && !is_digits(frac)) {
-            return None;
-        }
-        let exp = match exponent.map(str::parse::<i64>) {
+impl<'a> From<Number<'a>> for Decimal<'a> {
+    fn from(number: Number<'a>) -> Self {
+        let negative = number.has_minus();
+        let (int, frac) = (number.integer(), number.fraction().unwrap_or(""));
+        let exp = match number.exponent().map(str::parse::<i64>) {
             None => 0,
             Some(Ok(exp)) => exp,
             Some(Err(err)) => match err.kind() {
                 IntErrorKind::PosOverflow => i64::MAX,
                 IntErrorKind::NegOverflow => i64::MIN,
-                _ => return None,
+                kind => unreachable!("parser only produces exponent digits, got {kind:?}"),
             },
         };
         let exp = fraction_to_exponent(frac, exp);
@@ -56,14 +50,16 @@ impl<'a> Decimal<'a> {
         } else {
             (Sign::Positive, exp)
         };
-        Some(Self {
+        Self {
             sign,
             int,
             frac,
             exp,
-        })
+        }
     }
+}
 
+impl Decimal<'_> {
     pub fn is_integer(&self) -> bool {
         self.exp >= 0
     }
@@ -77,10 +73,6 @@ impl<'a> Decimal<'a> {
             .unwrap_or(i64::MAX)
             .saturating_add(self.exp)
     }
-}
-
-fn is_digits(text: &str) -> bool {
-    !text.is_empty() && text.bytes().all(|b| b.is_ascii_digit())
 }
 
 fn fraction_to_exponent(frac: &str, exp: i64) -> i64 {
@@ -128,14 +120,19 @@ impl Ord for Decimal<'_> {
 
 #[cfg(test)]
 mod tests {
+    use jjpwrgem_parse::{Kind, SyntaxOptions, ast::Document};
+
     use super::*;
 
-    fn dec(text: &str) -> Decimal<'_> {
-        let (mantissa, exponent) = match text.find(['e', 'E']) {
-            Some(i) => (&text[..i], Some(&text[i + 1..])),
-            None => (text, None),
+    fn parsed(text: &str) -> Document<&str> {
+        Document::parse(text, SyntaxOptions::JSON).unwrap()
+    }
+
+    fn dec<'a>(doc: &'a Document<&str>) -> Decimal<'a> {
+        let Kind::Number(number) = doc.root().kind() else {
+            panic!("number");
         };
-        Decimal::from_parts(mantissa, exponent).expect("valid number")
+        Decimal::from(number)
     }
 
     #[rstest::rstest]
@@ -150,7 +147,7 @@ mod tests {
     #[case("0.0005", "5e-4")]
     #[case("1e+2", "100")]
     fn equal(#[case] lhs: &str, #[case] rhs: &str) {
-        assert_eq!(dec(lhs), dec(rhs));
+        assert_eq!(dec(&parsed(lhs)), dec(&parsed(rhs)));
     }
 
     // r[verify json-schema-v7.type.integer-subset]
@@ -163,7 +160,7 @@ mod tests {
     #[case("-3e2", true)]
     #[case("12e-1", false)]
     fn integer_detection(#[case] text: &str, #[case] expected: bool) {
-        assert_eq!(dec(text).is_integer(), expected);
+        assert_eq!(dec(&parsed(text)).is_integer(), expected);
     }
 
     #[rstest::rstest]
@@ -180,37 +177,25 @@ mod tests {
     #[case("-1e100", "-1")]
     #[case("-1", "-0.5")]
     fn ordered(#[case] smaller: &str, #[case] larger: &str) {
-        assert!(dec(smaller) < dec(larger));
-        assert!(dec(larger) > dec(smaller));
-    }
-
-    #[rstest::rstest]
-    #[case("")]
-    #[case("-")]
-    #[case("1.")]
-    #[case(".5")]
-    #[case("1.2.3")]
-    #[case("1a")]
-    #[case("1e")]
-    #[case("1e+")]
-    #[case("1ex")]
-    fn rejected(#[case] text: &str) {
-        let (mantissa, exponent) = match text.find(['e', 'E']) {
-            Some(i) => (&text[..i], Some(&text[i + 1..])),
-            None => (text, None),
-        };
-        assert_eq!(Decimal::from_parts(mantissa, exponent), None);
+        let (smaller, larger) = (parsed(smaller), parsed(larger));
+        assert!(dec(&smaller) < dec(&larger));
+        assert!(dec(&larger) > dec(&smaller));
     }
 
     #[test]
     fn huge_exponents() {
-        let big = dec("1e99999999999999999999");
-        let small = dec("1e-99999999999999999999");
+        let (big, small) = (
+            parsed("1e99999999999999999999"),
+            parsed("1e-99999999999999999999"),
+        );
+        let (one, neg_one, neg_big) =
+            (parsed("1"), parsed("-1"), parsed("-1e99999999999999999999"));
+        let (big, small) = (dec(&big), dec(&small));
         assert!(big.is_integer());
         assert!(!small.is_integer());
-        assert!(small < dec("1"));
-        assert!(dec("1") < big);
+        assert!(small < dec(&one));
+        assert!(dec(&one) < big);
         assert!(small < big);
-        assert!(dec("-1e99999999999999999999") < dec("-1"));
+        assert!(dec(&neg_big) < dec(&neg_one));
     }
 }

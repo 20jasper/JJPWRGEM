@@ -133,7 +133,7 @@ pub(crate) fn format_str(
 ) -> Result<String> {
     let mut buf = FormatBuf::new(String::with_capacity(json.len()), options, preferred_width);
     let doc = Document::parse(json, SyntaxOptions::JSON)?;
-    format_document_value_into(&mut buf, &doc, doc.root(), 0);
+    format_document_value_into(&mut buf, &doc, doc.root_value(), 0);
     Ok(buf.into_inner())
 }
 
@@ -331,7 +331,7 @@ fn format_document<S: AsRef<str>>(
     preferred_width: usize,
 ) -> String {
     let mut buf = FormatBuf::new(String::new(), *options, preferred_width);
-    format_document_value_into(&mut buf, doc, doc.root(), 0);
+    format_document_value_into(&mut buf, doc, doc.root_value(), 0);
     buf.into_inner()
 }
 
@@ -358,7 +358,7 @@ pub fn prettify_document_into<S: AsRef<str>>(
         FormatOptions::prettify(line_ending),
         preferred_width,
     );
-    format_document_value_into(&mut fmt_buf, doc, doc.root(), 0);
+    format_document_value_into(&mut fmt_buf, doc, doc.root_value(), 0);
     *buf = fmt_buf.into_inner();
 }
 
