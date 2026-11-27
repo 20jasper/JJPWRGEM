@@ -34,12 +34,11 @@ impl<'a> Decimal<'a> {
         let (negative, unsigned) = mantissa
             .strip_prefix('-')
             .map_or((false, mantissa), |rest| (true, rest));
-        let (int, frac) = match unsigned.split_once('.') {
-            Some((int, frac)) if is_digits(frac) => (int, frac),
-            Some(_) => return None,
-            None => (unsigned, ""),
+        let (int, frac, has_dot) = match unsigned.split_once('.') {
+            Some((int, frac)) => (int, frac, true),
+            None => (unsigned, "", false),
         };
-        if !is_digits(int) {
+        if !is_digits(int) || (has_dot && !is_digits(frac)) {
             return None;
         }
         let exp = match exponent.map(str::parse::<i64>) {
