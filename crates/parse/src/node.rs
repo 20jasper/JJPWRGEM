@@ -35,6 +35,20 @@ impl<S> Clone for Kind<'_, S> {
 impl<S> Copy for Kind<'_, S> {}
 
 #[derive(Debug)]
+pub enum PathKey<'a, S> {
+    Name(Str<'a, S>),
+    Index(usize),
+}
+
+impl<S> Clone for PathKey<'_, S> {
+    fn clone(&self) -> Self {
+        *self
+    }
+}
+
+impl<S> Copy for PathKey<'_, S> {}
+
+#[derive(Debug)]
 pub struct Str<'a, S> {
     doc: &'a Document<S>,
     range: Range<usize>,
@@ -51,6 +65,10 @@ impl<S> Copy for Str<'_, S> {}
 impl<'a, S: AsRef<str>> Str<'a, S> {
     pub fn span(self) -> Range<usize> {
         quoted(self.range)
+    }
+
+    pub fn raw_span(self) -> Range<usize> {
+        self.range
     }
 
     pub fn raw(self) -> &'a str {
@@ -128,7 +146,7 @@ impl<'a, S: AsRef<str>> Object<'a, S> {
 
 #[derive(Debug)]
 pub struct Number<'a, S> {
-    doc: &'a Document<S>,
+    node: Node<'a, S>,
     mantissa: Range<usize>,
     exponent: Option<Range<usize>>,
 }
@@ -143,19 +161,19 @@ impl<S> Copy for Number<'_, S> {}
 
 impl<'a, S: AsRef<str>> Number<'a, S> {
     pub fn mantissa(self) -> &'a str {
-        self.doc.slice(self.mantissa)
+        self.node.doc.slice(self.mantissa)
     }
 
     pub fn exponent(self) -> Option<&'a str> {
-        self.exponent.map(|e| self.doc.slice(e))
+        self.exponent.map(|e| self.node.doc.slice(e))
     }
 
     pub fn span(self) -> Range<usize> {
-        let end = self.exponent.map_or(self.mantissa.end, |e| e.end);
-        Range {
-            start: self.mantissa.start,
-            end,
-        }
+        self.node.span()
+    }
+
+    pub fn node(self) -> Node<'a, S> {
+        self.node
     }
 }
 
@@ -276,7 +294,7 @@ impl<'a, S: AsRef<str>> Node<'a, S> {
             Value::Boolean(_, b) => Kind::Bool(*b),
             Value::String(range) => Kind::String(Str { doc, range: *range }),
             Value::Number { mantissa, exponent } => Kind::Number(Number {
-                doc,
+                node: self,
                 mantissa: *mantissa,
                 exponent: *exponent,
             }),
@@ -332,14 +350,22 @@ impl<'a, S: AsRef<str>> Node<'a, S> {
         self.value.traverse().map(move |value| Node { doc, value })
     }
 
-    pub fn path_at(self, offset: usize) -> impl Iterator<Item = (Key, Node<'a, S>)> {
+    pub fn path_at(self, offset: usize) -> impl Iterator<Item = (PathKey<'a, S>, Node<'a, S>)> {
         let doc = self.doc;
-        self.value
-            .path_at(offset)
-            .map(move |(key, value)| (key, Node { doc, value }))
+        self.value.path_at(offset).map(move |(key, value)| {
+            let key = match key {
+                Key::Name(range) => PathKey::Name(Str { doc, range }),
+                Key::Index(index) => PathKey::Index(index),
+            };
+            (key, Node { doc, value })
+        })
     }
 
-    pub fn member_span(self, key: Key) -> Range<usize> {
+    pub fn member_span(self, key: PathKey<'a, S>) -> Range<usize> {
+        let key = match key {
+            PathKey::Name(name) => Key::Name(name.range),
+            PathKey::Index(index) => Key::Index(index),
+        };
         self.value.member_span(key)
     }
 }

@@ -6,12 +6,12 @@ use crate::{Result, SyntaxOptions, tokens::TokenStream, traverse::parse_tokens};
 
 pub(crate) const QUOTE_LEN: usize = 1;
 
-pub fn quoted(range: Range<usize>) -> Range<usize> {
+pub(crate) fn quoted(range: Range<usize>) -> Range<usize> {
     range.start - QUOTE_LEN..range.end + QUOTE_LEN
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
-pub struct ObjectEntries(pub(crate) Vec<(Range<usize>, Value)>);
+pub(crate) struct ObjectEntries(pub(crate) Vec<(Range<usize>, Value)>);
 
 impl ObjectEntries {
     #[inline]
@@ -21,13 +21,13 @@ impl ObjectEntries {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Key {
+pub(crate) enum Key {
     Name(Range<usize>),
     Index(usize),
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
-pub enum Value {
+pub(crate) enum Value {
     Null(Range<usize>),
     /// excludes surrounding quotes
     String(Range<usize>),
@@ -41,7 +41,7 @@ pub enum Value {
 }
 
 impl Value {
-    pub fn range(&self) -> Range<usize> {
+    pub(crate) fn range(&self) -> Range<usize> {
         match self {
             Value::Null(r)
             | Value::String(r)
@@ -54,7 +54,7 @@ impl Value {
         }
     }
 
-    pub fn span(&self) -> Range<usize> {
+    pub(crate) fn span(&self) -> Range<usize> {
         let range = self.range();
         match self {
             Value::String(_) => quoted(range),
