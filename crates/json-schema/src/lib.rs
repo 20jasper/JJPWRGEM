@@ -12,7 +12,7 @@ use jjpwrgem_parse::{Kind, Node, Object, ast::Document};
 use crate::primitive::{type_as_primitive, value_as_primitive};
 
 pub fn validate<S: AsRef<str>>(doc: &Document<S>, schema: &Schema) -> Result<()> {
-    let root = doc.root_node();
+    let root = doc.root();
     match schema {
         // r[impl json-schema-v7.schema.boolean-true]
         Schema::Bool(true) => Ok(()),
@@ -94,7 +94,7 @@ fn type_keyword<S: AsRef<str>>(object: Object<'_, S>) -> Result<Option<Type>> {
 impl Schema {
     // r[impl json-schema-v7.schema.root]
     pub fn parse<S: AsRef<str>>(doc: &Document<S>) -> Result<Self> {
-        let root = doc.root_node();
+        let root = doc.root();
         match root.kind() {
             Kind::Bool(b) => Ok(Schema::Bool(b)),
             Kind::Object(object) => Ok(Schema::Object(ObjectSchema::parse(object)?)),

@@ -14,7 +14,7 @@ const MAX_FOLDING_RANGES: usize = 5000;
 fn folding_ranges(document: &Document<String>, encoding: PositionEncoding) -> Vec<FoldingRange> {
     let positions = Positions::new(document.source(), encoding);
     document
-        .root_node()
+        .root()
         .traverse()
         .filter(|node| matches!(node.kind(), Kind::Array(_) | Kind::Object(_)))
         .filter_map(|node| {

@@ -12,3 +12,4 @@ How cases undefined by the spec are handled
 - no limitations on nesting or length
 - extensions are not allowed unless enabled with `SyntaxOptions`: trailing commas and comments are not valid in json but are valid in jsonc
 - surrogates are not validated, eg a lone continuation byte is valid
+- unpaired surrogates in string escapes are replaced with U+FFFD when unescaping

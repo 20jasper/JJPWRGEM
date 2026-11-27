@@ -144,7 +144,7 @@ pub fn visit_document<'a, S: AsRef<str>>(
     doc: &'a crate::ast::Document<S>,
     visitor: &mut impl Visitor<'a>,
 ) {
-    visit_value(doc.source.as_ref(), doc.root(), visitor);
+    visit_value(doc.source.as_ref(), doc.root_value(), visitor);
 }
 
 pub(crate) fn visit_value<'a>(

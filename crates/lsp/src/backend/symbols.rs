@@ -21,7 +21,7 @@ fn document_symbols(
         positions: Positions::new(document.source(), encoding),
     };
     let mut remaining = MAX_SYMBOLS;
-    map_children(&source, document.root_node(), &mut remaining).unwrap_or_default()
+    map_children(&source, document.root(), &mut remaining).unwrap_or_default()
 }
 
 struct Source<'a> {

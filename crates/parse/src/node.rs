@@ -223,7 +223,7 @@ impl<'a, S: AsRef<str>> Number<'a, S> {
 }
 
 impl<S> Document<S> {
-    pub fn root_node(&self) -> Node<'_, S> {
+    pub fn root(&self) -> Node<'_, S> {
         Node {
             doc: self,
             value: &self.root,
@@ -431,7 +431,7 @@ mod tests {
     #[test]
     fn kinds() {
         let doc = parse(r#"[null, true, 1, "a", [], {}]"#);
-        let Kind::Array(array) = doc.root_node().kind() else {
+        let Kind::Array(array) = doc.root().kind() else {
             panic!("root is an array");
         };
         let kinds = array
@@ -443,13 +443,13 @@ mod tests {
             ["null", "bool", "number", "string", "array", "object"]
         );
         assert_eq!(array.len(), 6);
-        assert_eq!(array.node().span(), doc.root_node().span());
+        assert_eq!(array.node().span(), doc.root().span());
     }
 
     #[test]
     fn members_and_items_navigate() {
         let doc = parse(r#"{"a": [10, 20], "b": true}"#);
-        let Kind::Object(object) = doc.root_node().kind() else {
+        let Kind::Object(object) = doc.root().kind() else {
             panic!("root is an object");
         };
         let members = object.members().collect::<Vec<_>>();
@@ -465,14 +465,14 @@ mod tests {
             items[1].kind(),
             Kind::Number(n) if n.text() == NumberText { mantissa: "20", exponent: None }
         ));
-        assert_eq!(object.node().span(), doc.root_node().span());
+        assert_eq!(object.node().span(), doc.root().span());
         assert_eq!(object.members().next_back().unwrap().0.raw(), "b");
     }
 
     #[test]
     fn str_unescapes_and_borrows_when_plain() {
         let doc = parse(r#"["plain", "a\nbé"]"#);
-        let Kind::Array(array) = doc.root_node().kind() else {
+        let Kind::Array(array) = doc.root().kind() else {
             panic!("root is an array");
         };
         let strs = array
@@ -491,7 +491,7 @@ mod tests {
     #[test]
     fn get_matches_unescaped_names() {
         let doc = parse(r#"{"ab": 1, "x\"y": 2, "plain": "v"}"#);
-        let Kind::Object(root) = doc.root_node().kind() else {
+        let Kind::Object(root) = doc.root().kind() else {
             panic!("root is an object");
         };
         let mantissa = |name| match root.get(name).unwrap().kind() {
@@ -508,7 +508,7 @@ mod tests {
     #[test]
     fn member_names_unescape() {
         let doc = parse(r#"{"k\u0041": 1}"#);
-        let Kind::Object(root) = doc.root_node().kind() else {
+        let Kind::Object(root) = doc.root().kind() else {
             panic!("root is an object");
         };
         let (key, _) = root.members().next().unwrap();
@@ -525,7 +525,7 @@ mod tests {
     #[case("9223372036854775808", "9223372036854775808", None)]
     fn number_text(#[case] json: &str, #[case] mantissa: &str, #[case] exponent: Option<&str>) {
         let doc = parse(json);
-        let Kind::Number(number) = doc.root_node().kind() else {
+        let Kind::Number(number) = doc.root().kind() else {
             panic!("number");
         };
         assert_eq!(number.text(), NumberText { mantissa, exponent });
@@ -537,7 +537,7 @@ mod tests {
         let source = r#"{"a": [10, {"bb": 2}]}"#;
         let doc = parse(source);
         let path = doc
-            .root_node()
+            .root()
             .path_at(source.find('2').unwrap())
             .map(|(_, node)| &source[node.span()])
             .collect::<Vec<_>>();

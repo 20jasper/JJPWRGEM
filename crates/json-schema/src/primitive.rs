@@ -86,7 +86,7 @@ mod tests {
     #[case("{}", PrimitiveType::Object)]
     fn value_maps_to_primitive(#[case] json: &str, #[case] expected: PrimitiveType) {
         let doc = doc(json);
-        assert_eq!(value_as_primitive(doc.root_node()), expected);
+        assert_eq!(value_as_primitive(doc.root()), expected);
     }
 
     // r[verify json-schema-v7.type.integer-subset]
@@ -99,7 +99,7 @@ mod tests {
     #[case("1e-1", PrimitiveType::Number)]
     fn number_is_classified_by_value(#[case] json: &str, #[case] expected: PrimitiveType) {
         let doc = doc(json);
-        assert_eq!(value_as_primitive(doc.root_node()), expected);
+        assert_eq!(value_as_primitive(doc.root()), expected);
     }
 
     // r[verify json-schema-v7.type.integer-subset]

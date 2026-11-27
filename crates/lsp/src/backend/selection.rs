@@ -37,7 +37,7 @@ fn selection_range(
 ) -> SelectionRange {
     let offset = positions.offset(document.source(), position);
     // iterate outer to inner to track selection chain
-    let chain = steps(document.root_node(), offset)
+    let chain = steps(document.root(), offset)
         .into_iter()
         .map(|span| SelectionRange {
             range: positions.range(span),
@@ -149,7 +149,7 @@ mod tests {
     ) {
         let document = parse(text);
         assert_eq!(
-            inside_container(document.root_node(), offset),
+            inside_container(document.root(), offset),
             expected.map(ByteRange::from)
         );
     }

@@ -5,10 +5,7 @@ use std::{
 };
 
 use anyhow::{Context, Result, anyhow, bail};
-use jjpwrgem_parse::{
-    SyntaxOptions,
-    ast::{Document, ObjectEntries, Value},
-};
+use jjpwrgem_parse::{Array, Kind, Node, Object, SyntaxOptions, ast::Document};
 use plotters::{
     coord::ranged1d::{DefaultFormatting, KeyPointHint, KeyPointWeight},
     element::DashedPathElement,
@@ -30,49 +27,63 @@ struct BenchmarkResult {
     times: Vec<f64>,
 }
 
-fn field<'a>(doc: &Document<&str>, entries: &'a ObjectEntries, name: &str) -> Result<&'a Value> {
-    doc.get_object_value(entries, name)
+type DocNode<'a> = Node<'a, &'a str>;
+
+fn field<'a>(object: Object<'a, &'a str>, name: &str) -> Result<DocNode<'a>> {
+    object
+        .get(name)
         .ok_or_else(|| anyhow!("missing '{name}' field"))
 }
 
-fn as_object<'a>(value: &'a Value, what: &str) -> Result<&'a ObjectEntries> {
-    match value {
-        Value::Object(_, entries) => Ok(entries),
+fn as_object<'a>(node: DocNode<'a>, what: &str) -> Result<Object<'a, &'a str>> {
+    match node.kind() {
+        Kind::Object(object) => Ok(object),
         _ => bail!("{what} must be an object"),
     }
 }
 
-fn as_array<'a>(value: &'a Value, what: &str) -> Result<&'a [Value]> {
-    match value {
-        Value::Array(_, items) => Ok(items),
+fn as_array<'a>(node: DocNode<'a>, what: &str) -> Result<Array<'a, &'a str>> {
+    match node.kind() {
+        Kind::Array(array) => Ok(array),
         _ => bail!("{what} must be an array"),
     }
 }
 
-fn parse_result(doc: &Document<&str>, item: &Value) -> Result<BenchmarkResult> {
-    let entries = as_object(item, "result")?;
+fn as_f64(node: DocNode<'_>) -> Option<f64> {
+    let Kind::Number(number) = node.kind() else {
+        return None;
+    };
+    match number.exponent() {
+        Some(exponent) => format!("{}e{exponent}", number.mantissa()).parse().ok(),
+        None => number.mantissa().parse().ok(),
+    }
+}
 
-    let command = doc
-        .as_str(field(doc, entries, "command")?)
-        .ok_or_else(|| anyhow!("'command' must be a string"))?;
+fn parse_result(item: DocNode<'_>) -> Result<BenchmarkResult> {
+    let object = as_object(item, "result")?;
+
+    let command = match field(object, "command")?.kind() {
+        Kind::String(command) => command.unescape(),
+        _ => bail!("'command' must be a string"),
+    };
     // `name` holds the `--command-name` label, `command` the full command line
-    let command = field(doc, entries, "name")
-        .ok()
-        .and_then(|name| doc.as_str(name))
-        .unwrap_or(command)
-        .to_owned();
+    let command = match object.get("name").map(DocNode::kind) {
+        Some(Kind::String(name)) => name.unescape(),
+        _ => command,
+    }
+    .into_owned();
 
-    let times = as_array(field(doc, entries, "measurements")?, "'measurements'")?
-        .iter()
+    let times = as_array(field(object, "measurements")?, "'measurements'")?
+        .items()
         .enumerate()
         .map(|(index, measurement)| {
             let what = format!("measurements[{index}]");
             let fields = as_object(measurement, &what)?;
             let wall_clock = as_object(
-                field(doc, fields, "time_wall_clock").with_context(|| what.clone())?,
+                field(fields, "time_wall_clock").with_context(|| what.clone())?,
                 &format!("{what}.time_wall_clock"),
             )?;
-            doc.parse_f64(field(doc, wall_clock, "value").with_context(|| what.clone())?)
+            as_f64(field(wall_clock, "value").with_context(|| what.clone())?)
                 .ok_or_else(|| anyhow!("{what}.time_wall_clock.value must be a number"))
         })
         .collect::<Result<Vec<_>>>()?;
@@ -83,12 +94,12 @@ fn parse_result(doc: &Document<&str>, item: &Value) -> Result<BenchmarkResult> {
 fn parse_benchmark_results(raw: &str) -> Result<Vec<BenchmarkResult>> {
     let doc = Document::parse(raw, SyntaxOptions::JSON)
         .map_err(|err| anyhow!("failed to parse JSON with jjpwrgem parser: {err}"))?;
-    let entries = as_object(doc.root(), "benchmark data")?;
+    let root = as_object(doc.root(), "benchmark data")?;
 
-    as_array(field(&doc, entries, "results")?, "'results'")?
-        .iter()
+    as_array(field(root, "results")?, "'results'")?
+        .items()
         .enumerate()
-        .map(|(index, item)| parse_result(&doc, item).with_context(|| format!("index: {index}")))
+        .map(|(index, item)| parse_result(item).with_context(|| format!("index: {index}")))
         .collect()
 }
 
