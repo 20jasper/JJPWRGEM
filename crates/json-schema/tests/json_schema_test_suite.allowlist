@@ -1,0 +1,18 @@
+additionalProperties.json / additionalProperties are allowed by default
+boolean_schema.json / boolean schema 'false'
+boolean_schema.json / boolean schema 'true'
+properties.json / object properties validation
+properties.json / properties whose names are Javascript object property names
+properties.json / properties with boolean schema
+properties.json / properties with escaped characters
+properties.json / properties with null valued instance properties
+ref.json / property named $ref that is not a reference
+required.json / required default validation
+type.json / array type matches arrays
+type.json / boolean type matches booleans
+type.json / integer type matches integers
+type.json / integer type matches integers (6)
+type.json / null type matches only the null object
+type.json / number type matches numbers
+type.json / object type matches objects
+type.json / string type matches strings

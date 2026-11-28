@@ -9,6 +9,7 @@ repository.workspace = true
 readme = "README.md"
 keywords = ["json", "jsonschema", "validation"]
 categories = ["web-programming"]
+include = ["src/**/*", "README.md", "CHANGELOG.md"]
 
 [lib]
 doctest = false
@@ -22,3 +23,4 @@ workspace = true
 
 [dev-dependencies]
 rstest.workspace = true
+serde_json.workspace = true
