@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## 0.3.1 — 2026-11-28
+
+### Added
+
+- [ad4f32d](https://github.com/20jasper/JJPWRGEM/commit/ad4f32de0da87b34f1531fb9158b715a6f3f9f85) top level object schema validation. properties of objects are not yet validated
+
 ## 0.3.0 — 2026-11-25
 
 ### Added

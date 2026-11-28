@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## 0.16.0 — 2026-11-28
+
+### Changed
+
+- [e063070](https://github.com/20jasper/JJPWRGEM/commit/e0630703268c9fce34e02d4bbfbf583970b51b19) move `CheckParser` and `CheckInputSettings` to the cli, take an optional short flag in `Spec::shorthand`, and add a string setting kind.
+- [0893627](https://github.com/20jasper/JJPWRGEM/commit/08936274d0a683059f99a5877776d4f127083451) `Document::root` returns a `Node` instead of a `Value`.
+
+### Added
+
+- [e063070](https://github.com/20jasper/JJPWRGEM/commit/e0630703268c9fce34e02d4bbfbf583970b51b19) add settings and choice enum macros to define agnostic settings structs with rust like syntax.
+- [0893627](https://github.com/20jasper/JJPWRGEM/commit/08936274d0a683059f99a5877776d4f127083451) add a `Node` view that carries its document, so invalid indexing is impossible. provides accessors like `as_str` and `kind` for exhaustive matching
+
+### Removed
+
+- [0893627](https://github.com/20jasper/JJPWRGEM/commit/08936274d0a683059f99a5877776d4f127083451) remove `Value`, `Key`, `ObjectEntries` and `quoted` from the public API, use `Node` instead.
+
 ## 0.15.0 — 2026-11-25
 
 ### Changed
