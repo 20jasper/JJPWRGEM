@@ -12,11 +12,13 @@ const ALLOWLIST: &[(&str, &str)] = &[
     ),
     ("boolean_schema.json", "boolean schema 'false'"),
     ("boolean_schema.json", "boolean schema 'true'"),
+    // r[verify json-schema-v7.array.items-schema]
     ("items.json", "a schema given for items"),
     (
         "items.json",
         "additional items are allowed by default (2019)",
     ),
+    // r[verify json-schema-v7.array.items-tuple]
     ("items.json", "an array of schemas for items"),
     ("items.json", "array-form items with null instance elements"),
     ("items.json", "items as array with boolean schemas"),
