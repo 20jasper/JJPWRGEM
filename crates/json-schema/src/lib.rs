@@ -43,7 +43,6 @@ fn validate_type(node: Node<'_>, ty: &Type) -> Result<()> {
     Ok(())
 }
 
-/// Members are matched to property names by raw key text.
 // r[impl json-schema-v7.object.properties]
 fn validate_properties(object: Object<'_>, properties: &[(String, Schema)]) -> Result<()> {
     for (name, schema) in properties {
@@ -412,7 +411,6 @@ mod tests {
             assert!(check(schema, "{}").is_ok());
         }
 
-        /// Pins raw-text matching until string unescaping lands.
         // r[verify json-schema-v7.object.properties]
         #[test]
         fn escaped_names_match_by_raw_text() {
