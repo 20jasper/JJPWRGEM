@@ -4,3 +4,6 @@
 [submodule "tests/conformance/utf8tests"]
 	path = tests/conformance/utf8tests
 	url = https://github.com/flenniken/utf8tests
+[submodule "tests/conformance/JSON-Schema-Test-Suite"]
+	path = tests/conformance/JSON-Schema-Test-Suite
+	url = https://github.com/json-schema-org/JSON-Schema-Test-Suite
