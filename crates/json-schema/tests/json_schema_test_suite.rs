@@ -9,8 +9,36 @@ const DRAFT: u32 = 7;
 /// Keywords the validator implements, used only to suggest allowlist additions.
 const SUPPORTED_KEYWORDS: [&str; 4] = ["type", "properties", "title", "description"];
 
-/// Allowlisted groups, one `file / group description` per line; every test in each must match `valid`.
-const ALLOWLIST: &str = include_str!("json_schema_test_suite.allowlist");
+/// Allowlisted `(file, group description)` pairs; every test in each must match `valid`.
+const ALLOWLIST: &[(&str, &str)] = &[
+    (
+        "additionalProperties.json",
+        "additionalProperties are allowed by default",
+    ),
+    ("boolean_schema.json", "boolean schema 'false'"),
+    ("boolean_schema.json", "boolean schema 'true'"),
+    ("properties.json", "object properties validation"),
+    (
+        "properties.json",
+        "properties whose names are Javascript object property names",
+    ),
+    ("properties.json", "properties with boolean schema"),
+    ("properties.json", "properties with escaped characters"),
+    (
+        "properties.json",
+        "properties with null valued instance properties",
+    ),
+    ("ref.json", "property named $ref that is not a reference"),
+    ("required.json", "required default validation"),
+    ("type.json", "array type matches arrays"),
+    ("type.json", "boolean type matches booleans"),
+    ("type.json", "integer type matches integers"),
+    ("type.json", "integer type matches integers (6)"),
+    ("type.json", "null type matches only the null object"),
+    ("type.json", "number type matches numbers"),
+    ("type.json", "object type matches objects"),
+    ("type.json", "string type matches strings"),
+];
 
 fn suite_dir() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
@@ -97,7 +125,6 @@ fn json_schema_test_suite_draft7() {
         return;
     }
 
-    let allowlist: Vec<&str> = ALLOWLIST.lines().filter(|l| !l.is_empty()).collect();
     let mut files: Vec<_> = fs::read_dir(&dir)
         .unwrap()
         .map(|entry| entry.unwrap().path())
@@ -117,10 +144,11 @@ fn json_schema_test_suite_draft7() {
         let (mut allowed, mut file_total) = (0, 0);
 
         for group in groups["tests"].as_array().unwrap() {
-            let entry = format!("{file} / {}", group["description"].as_str().unwrap());
+            let description = group["description"].as_str().unwrap();
+            let entry = format!("{file} / {description}");
             let tests = group["tests"].as_array().unwrap();
             file_total += tests.len();
-            let listed = allowlist.contains(&entry.as_str());
+            let listed = ALLOWLIST.contains(&(file.as_str(), description));
             if listed {
                 seen.push(entry.clone());
                 allowed += tests.len();
@@ -145,7 +173,7 @@ fn json_schema_test_suite_draft7() {
             if listed {
                 failures.extend(group_failures);
             } else if group_failures.is_empty() {
-                suggestions.push(entry);
+                suggestions.push(format!("    ({file:?}, {description:?}),"));
             }
         }
 
@@ -154,9 +182,11 @@ fn json_schema_test_suite_draft7() {
         total += file_total;
     }
 
-    for entry in &allowlist {
-        if !seen.iter().any(|s| s == entry) {
-            failures.push(format!("{entry}: allowlisted group not found in the suite"));
+    for (file, description) in ALLOWLIST {
+        if !seen.iter().any(|s| s == &format!("{file} / {description}")) {
+            failures.push(format!(
+                "{file} / {description}: allowlisted group not found in the suite"
+            ));
         }
     }
 
