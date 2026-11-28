@@ -18,29 +18,34 @@ fn validate_node(node: Node<'_>, schema: &Schema) -> Result<()> {
         // r[impl json-schema-v7.schema.boolean-true]
         Schema::Bool(true) => Ok(()),
         Schema::Bool(false) => Err(Error::FalseRoot { range: node.span() }),
-        Schema::Object(object) => {
-            if let Some(ty) = &object.types {
-                let actual = value_as_primitive(node);
-                let expected = type_as_primitive(ty);
-                if !actual.is_subset(expected) {
-                    return Err(Error::MismatchedTypes {
-                        range: node.span(),
-                        expected,
-                        actual,
-                    });
-                }
+        Schema::Object(schema) => {
+            if let Some(ty) = &schema.types {
+                validate_type(node, ty)?;
             }
-            validate_properties(node, &object.properties)
+            if let Some(object) = node.as_object() {
+                validate_properties(object, &schema.properties)?;
+            }
+            Ok(())
         }
     }
 }
 
+fn validate_type(node: Node<'_>, ty: &Type) -> Result<()> {
+    let actual = value_as_primitive(node);
+    let expected = type_as_primitive(ty);
+    if !actual.is_subset(expected) {
+        return Err(Error::MismatchedTypes {
+            range: node.span(),
+            expected,
+            actual,
+        });
+    }
+    Ok(())
+}
+
 /// Members are matched to property names by raw key text.
 // r[impl json-schema-v7.object.properties]
-fn validate_properties(node: Node<'_>, properties: &[(String, Schema)]) -> Result<()> {
-    let Some(object) = node.as_object() else {
-        return Ok(());
-    };
+fn validate_properties(object: Object<'_>, properties: &[(String, Schema)]) -> Result<()> {
     for (name, schema) in properties {
         if let Some(value) = object.get(name) {
             validate_node(value, schema)?;
