@@ -26,6 +26,11 @@ pub enum Error {
         range: Range<usize>,
         found: PrimitiveType,
     },
+    /// `items` must be a schema or an array of schemas. found {found}
+    InvalidItems {
+        range: Range<usize>,
+        found: PrimitiveType,
+    },
 }
 
 impl Error {
@@ -35,6 +40,7 @@ impl Error {
             | Error::InvalidSchemaRoot { range, .. }
             | Error::InvalidType { range, .. }
             | Error::InvalidProperties { range, .. }
+            | Error::InvalidItems { range, .. }
             | FalseRoot { range } => range,
         }
     }

@@ -5,7 +5,7 @@ mod number;
 mod primitive;
 
 use error::{Error, Result};
-use jjpwrgem_parse::{Kind, Node, Object, ast::Document};
+use jjpwrgem_parse::{Array, Kind, Node, Object, ast::Document};
 
 use crate::primitive::{type_as_primitive, value_as_primitive};
 
@@ -24,6 +24,9 @@ fn validate_node(node: Node<'_>, schema: &Schema) -> Result<()> {
             }
             if let Some(object) = node.as_object() {
                 validate_properties(object, &schema.properties)?;
+            }
+            if let (Some(array), Some(items)) = (node.as_array(), &schema.items) {
+                validate_items(array, items)?;
             }
             Ok(())
         }
@@ -53,6 +56,20 @@ fn validate_properties(object: Object<'_>, properties: &[(String, Schema)]) -> R
     Ok(())
 }
 
+// r[impl json-schema-v7.array.items-schema]
+// r[impl json-schema-v7.array.items-tuple]
+fn validate_items(array: Array<'_>, items: &Items) -> Result<()> {
+    match items {
+        Items::Schema(schema) => array
+            .iter()
+            .try_for_each(|element| validate_node(element, schema)),
+        Items::Tuple(schemas) => array
+            .iter()
+            .zip(schemas)
+            .try_for_each(|(element, schema)| validate_node(element, schema)),
+    }
+}
+
 #[derive(Debug, PartialEq, Eq)]
 pub enum Schema {
     Bool(bool),
@@ -65,6 +82,14 @@ pub struct ObjectSchema {
     description: Option<String>,
     types: Option<Type>,
     properties: Vec<(String, Schema)>,
+    items: Option<Items>,
+}
+
+/// The `items` keyword: one schema for every element, or one schema per position.
+#[derive(Debug, PartialEq, Eq)]
+pub enum Items {
+    Schema(Box<Schema>),
+    Tuple(Vec<Schema>),
 }
 
 mod keyword {
@@ -72,6 +97,7 @@ mod keyword {
     pub const DESCRIPTION: &str = "description";
     pub const TYPE: &str = "type";
     pub const PROPERTIES: &str = "properties";
+    pub const ITEMS: &str = "items";
 }
 
 impl ObjectSchema {
@@ -81,6 +107,7 @@ impl ObjectSchema {
             description: string_keyword(object, keyword::DESCRIPTION),
             types: type_keyword(object)?,
             properties: properties_keyword(object)?,
+            items: items_keyword(object)?,
         })
     }
 }
@@ -103,6 +130,28 @@ fn properties_keyword(object: Object<'_>) -> Result<Vec<(String, Schema)>> {
         .iter()
         .map(|(name, node)| Ok((name.raw().to_owned(), Schema::parse_node(node)?)))
         .collect()
+}
+
+fn items_keyword(object: Object<'_>) -> Result<Option<Items>> {
+    let Some(value) = object.get(keyword::ITEMS) else {
+        return Ok(None);
+    };
+    let items = match value.kind() {
+        Kind::Bool(_) | Kind::Object(_) => Items::Schema(Box::new(Schema::parse_node(value)?)),
+        Kind::Array(array) => Items::Tuple(
+            array
+                .iter()
+                .map(Schema::parse_node)
+                .collect::<Result<_>>()?,
+        ),
+        _ => {
+            return Err(Error::InvalidItems {
+                range: value.span(),
+                found: value_as_primitive(value),
+            });
+        }
+    };
+    Ok(Some(items))
 }
 
 fn type_keyword(object: Object<'_>) -> Result<Option<Type>> {
@@ -205,6 +254,7 @@ mod tests {
                     description: Some("TCP port".to_string()),
                     types: None,
                     properties: Vec::new(),
+                    items: None,
                 }))
             );
         }
@@ -251,6 +301,17 @@ mod tests {
                 Err(Error::InvalidProperties {
                     range: 15..17,
                     found: PrimitiveType::Array,
+                })
+            );
+        }
+
+        #[test]
+        fn items_must_be_a_schema_or_array() {
+            assert_eq!(
+                parse_schema(r#"{"items": 1}"#),
+                Err(Error::InvalidItems {
+                    range: 10..11,
+                    found: PrimitiveType::Integer,
                 })
             );
         }
@@ -417,6 +478,39 @@ mod tests {
             let schema = r#"{"properties": {"a\u0062": false}}"#;
             assert!(check(schema, r#"{"a\u0062": 1}"#).is_err());
             assert!(check(schema, r#"{"ab": 1}"#).is_ok());
+        }
+    }
+
+    mod items {
+        use super::*;
+
+        fn check(schema: &str, instance: &str) -> Result<()> {
+            validate(&doc(instance), &parse_schema(schema).unwrap())
+        }
+
+        #[test]
+        fn schema_form_reports_first_failing_element_range() {
+            assert_eq!(
+                check(r#"{"items": {"type": "string"}}"#, r#"["a", 1, null]"#),
+                Err(Error::MismatchedTypes {
+                    range: 6..7,
+                    expected: PrimitiveType::String,
+                    actual: PrimitiveType::Integer,
+                })
+            );
+        }
+
+        #[test]
+        fn tuple_form_reports_failing_position_range() {
+            let schema = r#"{"items": [{"type": "string"}, {"type": "integer"}]}"#;
+            assert_eq!(
+                check(schema, r#"["a", "b"]"#),
+                Err(Error::MismatchedTypes {
+                    range: 6..9,
+                    expected: PrimitiveType::Integer,
+                    actual: PrimitiveType::String,
+                })
+            );
         }
     }
 
