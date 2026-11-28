@@ -9,3 +9,6 @@ extend-exclude = [
   "*.cast",
   "**/CHANGELOG.md",
 ]
+
+[default.extend-words]
+valiation = "valiation"
