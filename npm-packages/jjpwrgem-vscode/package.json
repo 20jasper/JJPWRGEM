@@ -1,7 +1,7 @@
 {
   "name": "jjpwrgem-vscode",
   "displayName": "JJPWRGEM",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "description": "JSON language server with rich error messages",
   "categories": ["Formatters", "Linters"],

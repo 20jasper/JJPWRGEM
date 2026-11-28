@@ -6,6 +6,12 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 ## [Unreleased]
 
+## 0.1.1 — 2026-11-28
+
+### Added
+
+- [e063070](https://github.com/20jasper/JJPWRGEM/commit/e0630703268c9fce34e02d4bbfbf583970b51b19) add the `jjpwrgem.trace.server` setting.
+
 ## 0.1.0 — 2026-11-25
 
 ### Added
