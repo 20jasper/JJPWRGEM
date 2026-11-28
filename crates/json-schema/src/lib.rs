@@ -5,35 +5,52 @@ mod number;
 mod primitive;
 
 use error::{Error, Result};
-use jjpwrgem_parse::{Kind, Object, ast::Document};
+use jjpwrgem_parse::{Kind, Node, Object, ast::Document};
 
 use crate::primitive::{type_as_primitive, value_as_primitive};
 
 pub fn validate<S: AsRef<str>>(doc: &Document<S>, schema: &Schema) -> Result<()> {
-    let root = doc.root();
+    validate_node(doc.root(), schema)
+}
+
+fn validate_node(node: Node<'_>, schema: &Schema) -> Result<()> {
     match schema {
         // r[impl json-schema-v7.schema.boolean-true]
         Schema::Bool(true) => Ok(()),
-        Schema::Bool(false) => Err(Error::FalseRoot { range: root.span() }),
-        Schema::Object(ObjectSchema { types: None, .. }) => Ok(()),
-        Schema::Object(ObjectSchema {
-            types: Some(ty), ..
-        }) => {
-            let actual = value_as_primitive(root);
-            let expected = type_as_primitive(ty);
-
-            if actual.is_subset(expected) {
-                Ok(())
-            } else {
-                let range = root.span();
-                Err(Error::MismatchedTypes {
-                    range,
-                    expected,
-                    actual,
-                })
+        Schema::Bool(false) => Err(Error::FalseRoot { range: node.span() }),
+        Schema::Object(schema) => {
+            if let Some(ty) = &schema.types {
+                validate_type(node, ty)?;
             }
+            if let Some(object) = node.as_object() {
+                validate_properties(object, &schema.properties)?;
+            }
+            Ok(())
         }
     }
+}
+
+fn validate_type(node: Node<'_>, ty: &Type) -> Result<()> {
+    let actual = value_as_primitive(node);
+    let expected = type_as_primitive(ty);
+    if !actual.is_subset(expected) {
+        return Err(Error::MismatchedTypes {
+            range: node.span(),
+            expected,
+            actual,
+        });
+    }
+    Ok(())
+}
+
+// r[impl json-schema-v7.object.properties]
+fn validate_properties(object: Object<'_>, properties: &[(String, Schema)]) -> Result<()> {
+    for (name, schema) in properties {
+        if let Some(value) = object.get(name) {
+            validate_node(value, schema)?;
+        }
+    }
+    Ok(())
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -47,12 +64,14 @@ pub struct ObjectSchema {
     title: Option<String>,
     description: Option<String>,
     types: Option<Type>,
+    properties: Vec<(String, Schema)>,
 }
 
 mod keyword {
     pub const TITLE: &str = "title";
     pub const DESCRIPTION: &str = "description";
     pub const TYPE: &str = "type";
+    pub const PROPERTIES: &str = "properties";
 }
 
 impl ObjectSchema {
@@ -61,12 +80,29 @@ impl ObjectSchema {
             title: string_keyword(object, keyword::TITLE),
             description: string_keyword(object, keyword::DESCRIPTION),
             types: type_keyword(object)?,
+            properties: properties_keyword(object)?,
         })
     }
 }
 
 fn string_keyword(object: Object<'_>, key: &str) -> Option<String> {
     object.get(key)?.as_str().map(|s| s.raw().to_owned())
+}
+
+fn properties_keyword(object: Object<'_>) -> Result<Vec<(String, Schema)>> {
+    let Some(value) = object.get(keyword::PROPERTIES) else {
+        return Ok(Vec::new());
+    };
+    let Some(properties) = value.as_object() else {
+        return Err(Error::InvalidProperties {
+            range: value.span(),
+            found: value_as_primitive(value),
+        });
+    };
+    properties
+        .iter()
+        .map(|(name, node)| Ok((name.raw().to_owned(), Schema::parse_node(node)?)))
+        .collect()
 }
 
 fn type_keyword(object: Object<'_>) -> Result<Option<Type>> {
@@ -86,13 +122,16 @@ fn type_keyword(object: Object<'_>) -> Result<Option<Type>> {
 impl Schema {
     // r[impl json-schema-v7.schema.root]
     pub fn parse<S: AsRef<str>>(doc: &Document<S>) -> Result<Self> {
-        let root = doc.root();
-        match root.kind() {
+        Self::parse_node(doc.root())
+    }
+
+    fn parse_node(node: Node<'_>) -> Result<Self> {
+        match node.kind() {
             Kind::Bool(b) => Ok(Schema::Bool(b)),
             Kind::Object(object) => Ok(Schema::Object(ObjectSchema::parse(object)?)),
             _ => Err(Error::InvalidSchemaRoot {
-                range: root.span(),
-                found: value_as_primitive(root),
+                range: node.span(),
+                found: value_as_primitive(node),
             }),
         }
     }
@@ -165,6 +204,7 @@ mod tests {
                     title: Some("Port".to_string()),
                     description: Some("TCP port".to_string()),
                     types: None,
+                    properties: Vec::new(),
                 }))
             );
         }
@@ -188,6 +228,31 @@ mod tests {
         #[case("false", false)]
         fn boolean_schema(#[case] json: &str, #[case] value: bool) {
             assert_eq!(parse_schema(json), Ok(Schema::Bool(value)));
+        }
+
+        #[test]
+        fn properties_parse_recursively() {
+            assert_eq!(
+                parse_schema(r#"{"properties": {"a": {"type": "string"}, "b": false}}"#),
+                Ok(Schema::Object(ObjectSchema {
+                    properties: vec![
+                        ("a".to_string(), type_schema(Type::String)),
+                        ("b".to_string(), Schema::Bool(false)),
+                    ],
+                    ..Default::default()
+                }))
+            );
+        }
+
+        #[test]
+        fn properties_must_be_an_object() {
+            assert_eq!(
+                parse_schema(r#"{"properties": []}"#),
+                Err(Error::InvalidProperties {
+                    range: 15..17,
+                    found: PrimitiveType::Array,
+                })
+            );
         }
 
         #[rstest::rstest]
@@ -262,6 +327,96 @@ mod tests {
         fn empty_and_true_schemas_accept_any_value(#[case] json: &str) {
             assert!(validate(&doc(json), &parse_schema("{}").unwrap()).is_ok());
             assert!(validate(&doc(json), &Schema::Bool(true)).is_ok());
+        }
+    }
+
+    mod properties {
+        use super::*;
+
+        fn check(schema: &str, instance: &str) -> Result<()> {
+            validate(&doc(instance), &parse_schema(schema).unwrap())
+        }
+
+        // r[verify json-schema-v7.object.properties]
+        #[rstest::rstest]
+        #[case(r#"{"a": "x"}"#)]
+        #[case("{}")]
+        fn matching_or_missing_property_passes(#[case] instance: &str) {
+            let schema = r#"{"properties": {"a": {"type": "string"}}}"#;
+            assert!(check(schema, instance).is_ok());
+        }
+
+        // r[verify json-schema-v7.object.properties]
+        #[test]
+        fn mismatch_reports_nested_range() {
+            assert_eq!(
+                check(
+                    r#"{"properties": {"a": {"type": "string"}}}"#,
+                    r#"{"a": 1}"#
+                ),
+                Err(Error::MismatchedTypes {
+                    range: 6..7,
+                    expected: PrimitiveType::String,
+                    actual: PrimitiveType::Integer,
+                })
+            );
+        }
+
+        // r[verify json-schema-v7.object.properties]
+        #[test]
+        fn nests_two_levels() {
+            let schema = r#"{"properties": {"a": {"properties": {"b": {"type": "integer"}}}}}"#;
+            assert!(check(schema, r#"{"a": {"b": 1}}"#).is_ok());
+            assert_eq!(
+                check(schema, r#"{"a": {"b": "x"}}"#),
+                Err(Error::MismatchedTypes {
+                    range: 12..15,
+                    expected: PrimitiveType::Integer,
+                    actual: PrimitiveType::String,
+                })
+            );
+        }
+
+        // r[verify json-schema-v7.object.properties]
+        #[rstest::rstest]
+        #[case("5")]
+        #[case(r#""text""#)]
+        #[case("[1]")]
+        fn non_object_instance_ignores_properties(#[case] instance: &str) {
+            let schema = r#"{"properties": {"a": false}}"#;
+            assert!(check(schema, instance).is_ok());
+        }
+
+        // r[verify json-schema-v7.object.properties]
+        #[test]
+        fn extra_members_are_ignored() {
+            let schema = r#"{"properties": {"a": {"type": "string"}}}"#;
+            assert!(check(schema, r#"{"a": "x", "b": 1}"#).is_ok());
+        }
+
+        // r[verify json-schema-v7.object.properties]
+        #[test]
+        fn true_subschema_accepts_any_value() {
+            assert!(check(r#"{"properties": {"a": true}}"#, r#"{"a": 1}"#).is_ok());
+        }
+
+        // r[verify json-schema-v7.object.properties]
+        #[test]
+        fn false_reports_nested_range() {
+            let schema = r#"{"properties": {"a": false}}"#;
+            assert_eq!(
+                check(schema, r#"{"a": 1}"#),
+                Err(Error::FalseRoot { range: 6..7 })
+            );
+            assert!(check(schema, "{}").is_ok());
+        }
+
+        // r[verify json-schema-v7.object.properties]
+        #[test]
+        fn escaped_names_match_by_raw_text() {
+            let schema = r#"{"properties": {"a\u0062": false}}"#;
+            assert!(check(schema, r#"{"a\u0062": 1}"#).is_err());
+            assert!(check(schema, r#"{"ab": 1}"#).is_ok());
         }
     }
 

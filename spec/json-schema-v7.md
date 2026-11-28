@@ -101,7 +101,18 @@ Validation rules derived from
 > TODO. See [§6.5.3](https://json-schema.org/draft-07/draft-handrews-json-schema-validation-01#rfc.section.6.5.3).
 
 > r[json-schema-v7.object.properties]
-> TODO. See [§6.5.4](https://json-schema.org/draft-07/draft-handrews-json-schema-validation-01#rfc.section.6.5.4).
+> The value of "properties" MUST be an object. Each value of this object MUST be a valid JSON
+> Schema.
+>
+> This keyword determines how child instances validate for objects, and does not directly validate
+> the immediate instance itself.
+>
+> Validation succeeds if, for each name that appears in both the instance and as a name within this
+> keyword's value, the child instance for that name successfully validates against the corresponding
+> schema.
+>
+> Omitting this keyword has the same behavior as an empty object.
+> See [§6.5.4](https://json-schema.org/draft-07/draft-handrews-json-schema-validation-01#rfc.section.6.5.4).
 
 > r[json-schema-v7.object.pattern-properties]
 > TODO. See [§6.5.5](https://json-schema.org/draft-07/draft-handrews-json-schema-validation-01#rfc.section.6.5.5).
